@@ -1,0 +1,21 @@
+{
+  "name": "@tinyfold/core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./domain": "./domain/index.ts",
+    "./application": "./application/index.ts",
+    "./infra": "./infra/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@orpc/server": "1.16.1",
+    "better-sqlite3": "13.0.3",
+    "kysely": "0.29.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0"
+  }
+}

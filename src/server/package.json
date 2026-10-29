@@ -1,0 +1,26 @@
+{
+  "name": "@tinyfold/server",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./router": "./router.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "dev": "tsx watch --env-file-if-exists=../../.env main.ts"
+  },
+  "dependencies": {
+    "@tinyfold/core": "workspace:*",
+    "@tinyfold/auth": "workspace:*",
+    "@tinyfold/workspace": "workspace:*",
+    "@hono/node-server": "2.1.5",
+    "@orpc/server": "1.16.1",
+    "hono": "4.13.13",
+    "kysely": "0.29.7",
+    "tsx": "4.23.15",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@orpc/client": "1.16.1"
+  }
+}

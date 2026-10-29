@@ -1,0 +1,39 @@
+{
+  "name": "tinyfold",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=26.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @tinyfold/server --filter @tinyfold/web dev",
+    "build": "pnpm --filter @tinyfold/web build",
+    "start": "tsx --env-file-if-exists=.env src/server/main.ts",
+    "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "pnpm -r typecheck && tsc -p e2e && tsc -p scripts",
+    "deps": "depcruise src --config .dependency-cruiser.cjs",
+    "test": "vitest run --project unit",
+    "test:db": "vitest run --project db",
+    "e2e": "playwright test",
+    "db:migrate": "tsx --env-file-if-exists=.env src/server/cli/migrate.ts",
+    "reset-password": "tsx --env-file-if-exists=.env src/server/cli/reset-password.ts",
+    "backup:create": "tsx --env-file-if-exists=.env scripts/backup.ts",
+    "backup:restore": "tsx --env-file-if-exists=.env scripts/restore.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.3",
+    "@playwright/test": "1.64.1",
+    "@swc/core": "1.16.20",
+    "@types/node": "26.6.5",
+    "dependency-cruiser": "18.7.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5",
+    "@types/better-sqlite3": "9.6.0",
+    "@orpc/client": "1.16.1",
+    "better-sqlite3": "13.0.3"
+  }
+}

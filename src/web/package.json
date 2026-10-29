@@ -1,0 +1,40 @@
+{
+  "name": "@tinyfold/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@blocknote/core": "0.56.0",
+    "@blocknote/mantine": "0.56.0",
+    "@blocknote/math-block": "0.56.0",
+    "@blocknote/react": "0.56.0",
+    "@fontsource-variable/inter": "5.3.0",
+    "@mantine/core": "9.7.4",
+    "@mantine/hooks": "9.7.4",
+    "@orpc/client": "1.16.1",
+    "@tanstack/react-query": "5.104.5",
+    "@tanstack/react-router": "1.170.46",
+    "lucide-react": "1.61.0",
+    "mdast-util-from-markdown": "2.1.0",
+    "mdast-util-math": "3.0.0",
+    "micromark-extension-math": "3.1.0",
+    "react": "19.3.1",
+    "react-aria-components": "1.22.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@orpc/server": "1.16.1",
+    "@tinyfold/server": "workspace:*",
+    "@tinyfold/workspace": "workspace:*",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "happy-dom": "21.0.4",
+    "vite": "8.3.5"
+  }
+}

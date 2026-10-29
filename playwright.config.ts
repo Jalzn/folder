@@ -1,0 +1,42 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { defineConfig, devices } from '@playwright/test';
+
+const data = mkdtempSync(join(tmpdir(), 'tinyfold-e2e-'));
+export default defineConfig({
+  testDir: './e2e',
+  fullyParallel: false,
+  workers: 1,
+  timeout: 45_000,
+  expect: { timeout: 10_000 },
+  reporter: [['list'], ['html', { open: 'never' }]],
+  use: {
+    baseURL: 'http://localhost:5171',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+  },
+  projects: [
+    {
+      name: 'chrome-desktop',
+      use: { ...devices['Desktop Chrome'], channel: 'chrome', viewport: { width: 1440, height: 1000 } },
+    },
+    { name: 'chrome-mobile', use: { ...devices['Pixel 7'], channel: 'chrome' } },
+  ],
+  webServer: {
+    command: 'pnpm exec tsx src/server/main.ts',
+    url: 'http://localhost:5171/ready',
+    reuseExistingServer: false,
+    env: {
+      DATABASE_PATH: join(data, 'tinyfold.sqlite'),
+      OWNER_PASSWORD: 'tinyfold-e2e-passphrase',
+      OWNER_NAME: 'Você',
+      APP_ORIGIN: 'http://localhost:5171',
+      PORT: '5171',
+      HOST: '127.0.0.1',
+      WEB_DIR: 'src/web/dist',
+      COOKIE_SECURE: 'false',
+      NODE_ENV: 'test',
+    },
+  },
+});

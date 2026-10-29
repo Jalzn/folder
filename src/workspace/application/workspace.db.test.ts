@@ -1,0 +1,331 @@
+import { randomUUID } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { DocumentBlock } from '../domain/models.js';
+import { workspaceModule } from '../infra/module.js';
+import { createWorkspaceService } from '../infra/service.js';
+
+const request = () => ({ requestId: randomUUID() });
+const content = (text: string, blockId = 'block-one'): DocumentBlock[] => [
+  { id: blockId, type: 'paragraph', content: [{ type: 'text', text, styles: {} }], children: [] },
+];
+
+describe('workspace persistence and adversarial cases', () => {
+  let directory: string;
+  let filename: string;
+  let db: Database;
+  let service: ReturnType<typeof createWorkspaceService>;
+
+  beforeEach(async () => {
+    directory = await mkdtemp(join(tmpdir(), 'tinyfold-workspace-'));
+    filename = join(directory, 'test.sqlite');
+    db = createDatabase(filename);
+    await migrate(db, [coreModule, workspaceModule]);
+    service = createWorkspaceService(db);
+  });
+
+  afterEach(async () => {
+    await db.destroy();
+    await rm(directory, { recursive: true, force: true });
+  });
+
+  it('creates an unassigned document, persists edits and reopens after server restart', async () => {
+    const document = await service.createDocument(request());
+    expect(document).toMatchObject({ title: 'Sem título', projectId: null, version: 1, content: [] });
+    const ack = await service.saveDocument({
+      ...request(),
+      id: document.id,
+      expectedVersion: 1,
+      title: 'Primeira ideia',
+      content: content('Continuar no celular'),
+    });
+    expect(ack).toEqual({ id: document.id, version: 2, updatedAt: expect.any(String) });
+    await db.destroy();
+    db = createDatabase(filename);
+    await migrate(db, [coreModule, workspaceModule]);
+    const saved = await createWorkspaceService(db).getDocument({ id: document.id });
+    expect(saved).toMatchObject({ title: 'Primeira ideia', plainText: 'Continuar no celular', version: 2 });
+  });
+
+  it('persists, reopens and searches display and inline math, including unfinished LaTeX', async () => {
+    const equations: DocumentBlock[] = [
+      {
+        id: 'equation',
+        type: 'mathBlock',
+        props: {},
+        content: [{ type: 'text', text: String.raw`\frac{a+b}{c}`, styles: {} }],
+        children: [],
+      },
+      {
+        id: 'formula',
+        type: 'paragraph',
+        content: [
+          { type: 'text', text: 'Identidade: ', styles: {} },
+          { type: 'math', props: {}, content: String.raw`\sin^2(x)+\cos^2(x)=1` },
+        ],
+      },
+    ];
+    const document = await service.createDocument({ ...request(), title: 'Equações do projeto', content: equations });
+    await db.destroy();
+    db = createDatabase(filename);
+    await migrate(db, [coreModule, workspaceModule]);
+    service = createWorkspaceService(db);
+    expect((await service.getDocument({ id: document.id })).content).toEqual(equations);
+    expect((await service.listDocuments({ query: String.raw`\frac{a+b}{c}` })).map((item) => item.id)).toEqual([
+      document.id,
+    ]);
+    expect((await service.listDocuments({ query: String.raw`\sin^2(x)` })).map((item) => item.id)).toEqual([
+      document.id,
+    ]);
+    const unfinished: DocumentBlock[] = [
+      { id: 'equation', type: 'mathBlock', props: {}, content: String.raw`\frac{a}{` },
+    ];
+    const ack = await service.saveDocument({
+      ...request(),
+      id: document.id,
+      expectedVersion: document.version,
+      title: document.title,
+      content: unfinished,
+    });
+    expect((await service.getDocument({ id: document.id })).content).toEqual(unfinished);
+    expect((await service.getDocument({ id: document.id })).version).toBe(ack.version);
+    expect((await service.listDocuments({ query: String.raw`\frac{a}{` })).map((item) => item.id)).toEqual([
+      document.id,
+    ]);
+  });
+
+  it('rejects malformed math before writing and preserves the previous valid document', async () => {
+    const document = await service.createDocument({
+      ...request(),
+      content: [{ type: 'mathBlock', props: {}, content: 'x^2' }],
+    });
+    expect(() =>
+      service.saveDocument({
+        ...request(),
+        id: document.id,
+        expectedVersion: document.version,
+        title: 'Inválido',
+        content: [{ type: 'paragraph', content: [{ type: 'math', content: { latex: 'x^2' } }] }],
+      }),
+    ).toThrow();
+    expect((await service.getDocument({ id: document.id })).content).toEqual([
+      { type: 'mathBlock', props: {}, content: 'x^2' },
+    ]);
+    expect((await service.getDocument({ id: document.id })).version).toBe(1);
+  });
+
+  it('retries a save once, rejects request reuse and leaves a compact acknowledgment', async () => {
+    const document = await service.createDocument(request());
+    const input = {
+      ...request(),
+      id: document.id,
+      expectedVersion: 1,
+      title: 'Planejamento',
+      content: content('Texto importante '.repeat(1000)),
+    };
+    const ack = await service.saveDocument(input);
+    expect(await service.saveDocument(input)).toEqual(ack);
+    expect((await service.getDocument({ id: document.id })).version).toBe(2);
+    await expect(service.saveDocument({ ...input, title: 'Outro texto' })).rejects.toMatchObject({
+      code: 'REQUEST_REUSED',
+    });
+    const mutation = await tables<{ core_mutations: { request_id: string; response: string } }>(db)
+      .selectFrom('core_mutations')
+      .select('response')
+      .where('request_id', '=', input.requestId)
+      .executeTakeFirstOrThrow();
+    expect(mutation.response.length).toBeLessThan(200);
+  });
+
+  it('rejects stale document changes from another database connection', async () => {
+    const document = await service.createDocument({ ...request(), content: content('Original') });
+    const second = createDatabase(filename);
+    try {
+      const other = createWorkspaceService(second);
+      const snapshot = await other.getDocument({ id: document.id });
+      await service.saveDocument({
+        ...request(),
+        id: document.id,
+        expectedVersion: 1,
+        title: 'Computador',
+        content: content('Versão nova'),
+      });
+      await expect(
+        other.saveDocument({
+          ...request(),
+          id: document.id,
+          expectedVersion: snapshot.version,
+          title: 'Celular',
+          content: content('Rascunho antigo'),
+        }),
+      ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+      expect((await other.getDocument({ id: document.id })).plainText).toBe('Versão nova');
+    } finally {
+      await second.destroy();
+    }
+  });
+
+  it('serializes competing edits and commits only one expected revision', async () => {
+    const document = await service.createDocument(request());
+    const results = await Promise.allSettled(
+      ['A', 'B'].map((title) =>
+        service.saveDocument({ ...request(), id: document.id, expectedVersion: 1, title, content: content(title) }),
+      ),
+    );
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    const rejected = results.find((result) => result.status === 'rejected');
+    expect(rejected).toMatchObject({ reason: { code: 'VERSION_CONFLICT' } });
+    expect((await service.getDocument({ id: document.id })).version).toBe(2);
+  });
+
+  it('searches accented text and treats SQL wildcard characters literally', async () => {
+    const document = await service.createDocument({
+      ...request(),
+      title: 'Ideias de ação',
+      content: content('Referências para o portfólio: 100% pessoal'),
+    });
+    expect((await service.listDocuments({ query: 'REFERENCIAS' })).map((item) => item.id)).toEqual([document.id]);
+    expect(await service.listDocuments({ query: '%' })).toHaveLength(1);
+    expect(await service.listDocuments({ query: '_' })).toHaveLength(0);
+  });
+
+  it('assigns and archives projects without losing documents', async () => {
+    const project = await service.createProject({ ...request(), name: 'Site pessoal' });
+    const document = await service.createDocument({ ...request(), projectId: project.id });
+    await service.updateProject({ ...request(), id: project.id, expectedVersion: 1, archived: true });
+    expect(await service.listProjects({})).toEqual([]);
+    expect(await service.listProjects({ includeArchived: true })).toHaveLength(1);
+    expect(await service.listDocuments({ projectId: project.id })).toHaveLength(1);
+    // Existing writing can continue, while new assignments require an active project.
+    await service.saveDocument({
+      ...request(),
+      id: document.id,
+      expectedVersion: 1,
+      title: 'Ainda acessível',
+      content: [],
+    });
+    await expect(service.createDocument({ ...request(), projectId: project.id })).rejects.toMatchObject({
+      code: 'VALIDATION',
+    });
+    await expect(service.createDocument({ ...request(), projectId: randomUUID() })).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+  });
+
+  it('creates a source-linked task exactly once and keeps it when text and document are removed', async () => {
+    const document = await service.createDocument({
+      ...request(),
+      title: 'Meu plano',
+      content: content('Publicar meu portfólio'),
+    });
+    const input = {
+      ...request(),
+      title: 'Publicar meu portfólio',
+      source: { documentId: document.id, blockId: 'block-one', excerpt: 'meu portfólio', expectedVersion: 1 },
+    };
+    const first = await service.createTask(input);
+    expect(await service.createTask(input)).toEqual(first);
+    expect((await service.listTasks({})).tasks).toHaveLength(1);
+    await service.saveDocument({
+      ...request(),
+      id: document.id,
+      expectedVersion: 1,
+      title: 'Meu plano',
+      content: content('Outra ideia', 'block-two'),
+    });
+    const changed = (await service.listTasks({ documentId: document.id })).tasks[0];
+    expect(changed?.source).toMatchObject({ available: true, blockAvailable: false, excerpt: 'meu portfólio' });
+    const removed = await service.deleteDocument({ ...request(), id: document.id, expectedVersion: 2 });
+    expect((await service.listTasks({})).tasks[0]?.source).toMatchObject({
+      available: false,
+      excerpt: 'meu portfólio',
+    });
+    await expect(service.getDocument({ id: document.id })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(await service.listDocuments({ deleted: true })).toHaveLength(1);
+    await service.restoreDocument({ ...request(), id: document.id, expectedVersion: removed.version });
+    expect((await service.listTasks({})).tasks[0]?.source?.available).toBe(true);
+  });
+
+  it('rejects stale or fabricated source references atomically', async () => {
+    const document = await service.createDocument({ ...request(), content: content('Criar uma página') });
+    const task = {
+      title: 'Publicar',
+      source: { documentId: document.id, blockId: 'block-one', excerpt: 'uma página', expectedVersion: 1 },
+    };
+    await expect(
+      service.createTask({ ...request(), ...task, source: { ...task.source, blockId: 'missing' } }),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    await expect(
+      service.createTask({ ...request(), ...task, source: { ...task.source, excerpt: 'Texto que não existe' } }),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    await expect(
+      service.createTask({ ...request(), ...task, source: { ...task.source, expectedVersion: 10 } }),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    expect(await service.listTasks({})).toEqual({ tasks: [], revision: 0 });
+  });
+
+  it('reorders tasks with board concurrency checks and preserves stable order', async () => {
+    const a = await service.createTask({ ...request(), title: 'A' });
+    const b = await service.createTask({ ...request(), title: 'B' });
+    const c = await service.createTask({ ...request(), title: 'C' });
+    const move = {
+      ...request(),
+      id: c.task.id,
+      expectedVersion: c.task.version,
+      expectedRevision: c.revision,
+      status: 'todo' as const,
+      beforeTaskId: a.task.id,
+    };
+    const moved = await service.moveTask(move);
+    expect(await service.moveTask(move)).toEqual(moved);
+    const current = await service.listTasks({});
+    expect(current.tasks.map((task) => task.title)).toEqual(['C', 'A', 'B']);
+    expect(current.revision).toBe(4);
+    await expect(
+      service.moveTask({
+        ...request(),
+        id: b.task.id,
+        expectedVersion: b.task.version,
+        expectedRevision: c.revision,
+        status: 'doing',
+      }),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    expect((await service.listTasks({})).revision).toBe(4);
+  });
+
+  it('keeps document text unchanged when the linked task is renamed and completed', async () => {
+    const document = await service.createDocument({ ...request(), content: content('Escrever apresentação') });
+    const created = await service.createTask({
+      ...request(),
+      title: 'Escrever apresentação',
+      source: { documentId: document.id, excerpt: 'Escrever apresentação' },
+    });
+    const result = await service.updateTask({
+      ...request(),
+      id: created.task.id,
+      expectedVersion: 1,
+      title: 'Publicar apresentação',
+      status: 'done',
+    });
+    expect(result.task.status).toBe('done');
+    expect((await service.getDocument({ id: document.id })).plainText).toBe('Escrever apresentação');
+    await expect(
+      service.updateTask({ ...request(), id: created.task.id, expectedVersion: 1, title: 'Edição antiga' }),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+  });
+
+  it('distinguishes unassigned items from all projects and persists task deletion', async () => {
+    const project = await service.createProject({ ...request(), name: 'Projeto' });
+    const unassigned = await service.createTask({ ...request(), title: 'Solta' });
+    await service.createTask({ ...request(), title: 'Organizada', projectId: project.id });
+    expect((await service.listTasks({})).tasks).toHaveLength(2);
+    expect((await service.listTasks({ projectId: null })).tasks.map((task) => task.id)).toEqual([unassigned.task.id]);
+    expect((await service.listTasks({ projectId: project.id })).tasks).toHaveLength(1);
+    const deletion = { ...request(), id: unassigned.task.id, expectedVersion: 1 };
+    expect(await service.deleteTask(deletion)).toEqual(await service.deleteTask(deletion));
+    expect((await service.listTasks({})).tasks).toHaveLength(1);
+  });
+});

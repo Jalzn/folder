@@ -1,0 +1,19 @@
+{
+  "name": "@tinyfold/workspace",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./domain": "./domain/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@tinyfold/core": "workspace:*",
+    "@orpc/server": "1.16.1",
+    "kysely": "0.29.7",
+    "zod": "4.6.7"
+  }
+}

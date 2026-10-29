@@ -1,0 +1,30 @@
+import { authedProcedure, pub } from '@tinyfold/core/infra';
+import { z } from 'zod';
+import type { AuthService } from '../application/service.js';
+
+export function createAuthRouter(auth: AuthService) {
+  return {
+    login: pub.input(z.object({ password: z.string().min(1).max(256) })).handler(async ({ input, context }) => {
+      const result = await auth.login(input, context.client);
+      context.cookies.setSession(result.token, result.expiresAt);
+      return { owner: result.owner };
+    }),
+    session: authedProcedure.handler(({ context }) => ({
+      owner: context.session.owner,
+      sessionId: context.session.sessionId,
+    })),
+    logout: authedProcedure.handler(async ({ context }) => {
+      const result = await auth.logout(context.session.sessionId);
+      context.cookies.clearSession();
+      return result;
+    }),
+    changePassword: authedProcedure
+      .input(z.object({ currentPassword: z.string().max(256), newPassword: z.string().min(12).max(256) }))
+      .handler(({ input, context }) => auth.changePassword(context.session.sessionId, input)),
+    listSessions: authedProcedure.handler(({ context }) => auth.listSessions(context.session.sessionId)),
+    revokeSession: authedProcedure
+      .input(z.object({ sessionId: z.uuid() }))
+      .handler(({ input, context }) => auth.revokeSession(context.session.sessionId, input.sessionId)),
+    revokeOtherSessions: authedProcedure.handler(({ context }) => auth.revokeOtherSessions(context.session.sessionId)),
+  };
+}

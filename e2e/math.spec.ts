@@ -1,0 +1,142 @@
+import { readFile } from 'node:fs/promises';
+import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+
+let cookies: Awaited<ReturnType<BrowserContext['cookies']>> | undefined;
+const sourceInput = (page: Page) => page.locator('.bn-preview-with-source-popup[data-open="true"] code[aria-label]');
+
+async function startDocument(page: Page, title: string) {
+  if (cookies) await page.context().addCookies(cookies);
+  await page.goto('/');
+  if (!cookies) {
+    await page.getByLabel('Sua senha').fill('tinyfold-e2e-passphrase');
+    await page.getByRole('button', { name: 'Entrar no Tinyfold' }).click();
+    await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
+    cookies = await page.context().cookies();
+  }
+  await page.getByRole('button', { name: 'Começar a escrever' }).click();
+  await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+}
+
+async function editFormula(page: Page, latex: string) {
+  const saved = page.waitForResponse(
+    (response) => response.url().includes('/workspace/saveDocument') && response.status() === 200,
+  );
+  const inlineContent = sourceInput(page).locator('[data-node-view-content-react]');
+  await ((await inlineContent.count()) ? inlineContent : sourceInput(page)).fill(latex);
+  await expect(sourceInput(page)).toHaveText(latex);
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+  await saved;
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+}
+
+async function exportMarkdown(page: Page) {
+  await page.getByRole('button', { name: 'Opções do documento' }).click();
+  const downloaded = page.waitForEvent('download');
+  await page.getByRole('menuitem', { name: 'Exportar Markdown' }).click();
+  const path = await (await downloaded).path();
+  if (!path) throw new Error('Markdown download was not saved.');
+  return readFile(path, 'utf8');
+}
+
+test('insert a display equation from the menu, recover invalid LaTeX and edit after reload', async ({ page }, info) => {
+  const policyErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.text().includes('Content Security Policy')) policyErrors.push(message.text());
+  });
+  await startDocument(page, `Equações ${info.project.name}`);
+  await page.getByTestId('document-content').pressSequentially('/equacao');
+  await page
+    .getByRole('option')
+    .filter({ has: page.getByText('Equação', { exact: true }) })
+    .click();
+  await expect(sourceInput(page)).toBeVisible();
+  await editFormula(page, '\\frac{a}{b} + \\sqrt{x}');
+  const block = page.locator('[data-content-type="mathBlock"]');
+  await expect(block.locator('.katex')).toBeVisible();
+  await page.reload();
+  await expect(block.locator('.katex')).toBeVisible();
+  await block.locator('.bn-preview-container').click();
+  await expect(sourceInput(page)).toHaveText('\\frac{a}{b} + \\sqrt{x}');
+  await editFormula(page, '\\frac{');
+  await expect(page.getByText('Equação inválida (clique para editar)', { exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByText('Equação inválida (clique para editar)', { exact: true }).click();
+  await expect(sourceInput(page)).toHaveText('\\frac{');
+  await editFormula(page, '\\int_0^1 x^2\\,dx = \\frac{1}{3}');
+  await expect(block.locator('.katex')).toBeVisible();
+  await page.screenshot({ path: info.outputPath('equacao-bloco.png'), fullPage: true });
+  expect(await exportMarkdown(page)).toContain('$$\n\\int_0^1 x^2\\,dx = \\frac{1}{3}\n$$');
+  expect(policyErrors).toEqual([]);
+});
+
+test('insert inline math after text and keep the editing popup within the viewport', async ({ page }, info) => {
+  await startDocument(page, `Matemática em linha ${info.project.name}`);
+  const editor = page.getByTestId('document-content');
+  await editor.pressSequentially('A energia pode ser descrita assim: /equacao');
+  await page
+    .getByRole('option')
+    .filter({ has: page.getByText('Equação em linha', { exact: true }) })
+    .click();
+  const popup = page.locator('.bn-preview-with-source-popup[data-open="true"] .bn-source-block-popup');
+  await expect(popup).toBeVisible();
+  const bounds = await popup.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect((bounds?.x ?? -1) >= 0).toBe(true);
+  expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
+  await editFormula(page, 'E = mc^2');
+  await page.reload();
+  await expect(editor.locator('.katex')).toBeVisible();
+  await expect(editor).toContainText('A energia pode ser descrita assim:');
+  await editor.locator('[data-inline-content-type="math"] .bn-preview-container').click();
+  const reopenedBounds = await popup.boundingBox();
+  expect(reopenedBounds).not.toBeNull();
+  expect((reopenedBounds?.x ?? 0) + (reopenedBounds?.width ?? 0)).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
+  await editFormula(page, 'E = mc^{2}');
+  expect(await exportMarkdown(page)).toContain('$E = mc^{2}$');
+  await page.screenshot({ path: info.outputPath('equacao-linha.png'), fullPage: true });
+});
+
+test('Markdown math round-trips without converting code or dropping invalid source', async ({ page }, info) => {
+  await startDocument(page, `Importação ${info.project.name}`);
+  const markdown = String.raw`# Matemática
+
+Fórmula em linha: $e^{i\pi} + 1 = 0$.
+
+$$
+\begin{pmatrix}1 & 2 \\ 3 & 4\end{pmatrix}
+$$
+
+$$
+\frac{
+$$
+
+~~~text
+$nao_e_equacao$
+~~~
+`;
+  await page.getByLabel('Importar arquivo Markdown').setInputFiles({
+    name: 'Matematica.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from(markdown),
+  });
+  await expect(page.getByRole('textbox', { name: 'Título do documento' })).toHaveValue('Matematica');
+  const editor = page.getByTestId('document-content');
+  await expect(editor.locator('.katex')).toHaveCount(2);
+  await expect(editor.getByText('Equação inválida (clique para editar)', { exact: true })).toBeVisible();
+  await expect(editor.locator('[data-content-type="codeBlock"]')).toContainText('$nao_e_equacao$');
+  await page.reload();
+  await expect(editor.locator('.katex')).toHaveCount(2);
+  const exported = await exportMarkdown(page);
+  expect(exported).toContain('$e^{i\\pi} + 1 = 0$');
+  expect(exported).toContain('\\begin{pmatrix}1 & 2 \\\\ 3 & 4\\end{pmatrix}');
+  expect(exported).toContain('$$\n\\frac{\n$$');
+  await page.getByLabel('Importar arquivo Markdown').setInputFiles({
+    name: 'Reimportado.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from(exported),
+  });
+  await expect(page.getByRole('textbox', { name: 'Título do documento' })).toHaveValue('Reimportado');
+  await expect(editor.locator('.katex')).toHaveCount(2);
+  await page.screenshot({ path: info.outputPath('equacoes-markdown.png'), fullPage: true });
+});
