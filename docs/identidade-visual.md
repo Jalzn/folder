@@ -33,4 +33,4 @@ Os mockups são referência visual estática. O comportamento final segue `produ
 - Ação de concluir tarefa explícita.
 - Interface de edição com foco no texto; menus acessíveis por teclado e toque.
 
-Próximas explorações de design devem ser feitas pelo Claude, usando `claude-infinity-0` e o sistema nativo de artefatos, com o link retornado por ele. A estrutura aprovada é Documento primeiro.
+Próximas explorações de design devem ser feitas pelo Claude, usando `claude-infinity-0` e o sistema nativo de artefatos, com o link retornado por ele. A paleta continua aprovada. A estrutura Documento primeiro do artefato foi substituída pelo projeto no centro em 2026-10-30; a nova navegação ainda precisa de exploração.

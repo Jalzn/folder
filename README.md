@@ -1,6 +1,6 @@
 # Tinyfold
 
-Um espaço pessoal para escrever e desenhar ideias, organizar projetos e acompanhar tarefas em Kanban. Interface escura em grafite, cinzas frios e azul discreto, com dados em SQLite no servidor e autenticação por senha.
+Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar. Interface escura em grafite, cinzas frios e azul discreto, com dados em SQLite no servidor e autenticação por senha.
 
 **Estado:** primeira versão implementada e validada localmente. Hospedagem pública, domínio e destino externo dos backups ainda não estão configurados.
 

@@ -20,6 +20,23 @@ Acrescentar novas decisões ao histórico e atualizar os documentos afetados. Um
 | 2026-10-29 | Conversa com o usuário | Abrir um worktree no Tinyfold para explorar uma feature de canvas semelhante ao Excalidraw. |
 | 2026-10-29 | Proposta técnica | [Etapa 06](etapas/06-canvas.md): desenhos independentes, com projeto opcional, Excalidraw incorporado e salvamento com versão e recuperação. |
 | 2026-10-29 | Conversa com o usuário | Implementar a feature de canvas no worktree com subagentes. |
+| 2026-10-30 | Conversa com o usuário | Tinyfold é um espaço pessoal e minimalista para projetos de software e outros. Reúne o que antes ficava em Notion, Trello e Excalidraw. |
+| 2026-10-30 | Conversa com o usuário | O projeto é o centro da experiência e sua página passa a ser a tela principal. Substitui a direção Documento primeiro. |
+| 2026-10-30 | Conversa com o usuário | Uso apenas pessoal. Nenhuma ferramenta além de documentos, desenhos e Kanban está prevista. |
+| 2026-10-30 | Conversa com o usuário | Peso do projeto: cerca de 60% laboratório de arquitetura para os próximos aplicativos e 40% ferramenta de uso diário. |
+| 2026-10-30 | Conversa com o usuário | Markdown é a sintaxe de digitação dos documentos; não há exigência de arquivos `.md` como armazenamento. |
+| 2026-10-30 | Conversa com o usuário | Tarefas ganham descrição, checklist, datas, etiquetas e colunas próprias. |
+| 2026-10-30 | Conversa com o usuário | Servidor MCP para o Claude Code acessar documentos, desenhos e tarefas. |
+| 2026-10-30 | Proposta de produto | Fora do escopo: bancos de dados, modelos, hierarquias profundas, campos personalizados, automações, colaboração e outras contas. Discutida na conversa; o usuário incluiu os campos de tarefa. |
+| 2026-10-30 | Proposta de produto | Descrição da tarefa com o editor de documentos e links internos genéricos entre documentos, desenhos e tarefas. Pendentes de confirmação. |
+| 2026-10-30 | Conversa com o usuário | MCP somente leitura. Desenhos chegam ao Claude como imagem PNG e como textos e estrutura da cena. |
+| 2026-10-30 | Conversa com o usuário | A descrição da tarefa usa o editor de documentos. |
+| 2026-10-30 | Conversa com o usuário | Ligações existem apenas nos documentos: um documento incorpora tarefas, exibidas como card, e desenhos, exibidos renderizados. Substitui a proposta de links genéricos. |
+| 2026-10-30 | Conversa com o usuário | Detalhes dos campos e colunas do Kanban delegados à proposta de produto. |
+| 2026-10-30 | Proposta de produto | Colunas únicas para todo o espaço, com uma coluna de conclusão; prazo opcional sem hora, sem início nem lembretes; etiquetas globais com paleta curta; checklist da tarefa vem dos blocos de checklist da descrição. |
+| 2026-10-30 | Proposta de produto | Itens incorporados excluídos aparecem como indisponíveis. Na exportação `.md`, viram links com o título. |
+| 2026-10-30 | Proposta técnica | Autenticação do MCP por token pessoal somente leitura, criado e revogado no Perfil. Pendente de confirmação. |
+| 2026-10-30 | Conversa com o usuário | Confirma a autenticação do MCP por token pessoal somente leitura, criado e revogado no Perfil. |
 
 ## Decisões de implementação
 
