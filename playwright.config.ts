@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
 const data = mkdtempSync(join(tmpdir(), 'tinyfold-e2e-'));
+const port = Number(process.env.E2E_PORT ?? 5171);
+const origin = `http://localhost:${port}`;
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -12,7 +14,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:5171',
+    baseURL: origin,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -25,14 +27,14 @@ export default defineConfig({
   ],
   webServer: {
     command: 'pnpm exec tsx src/server/main.ts',
-    url: 'http://localhost:5171/ready',
+    url: `${origin}/ready`,
     reuseExistingServer: false,
     env: {
       DATABASE_PATH: join(data, 'tinyfold.sqlite'),
       OWNER_PASSWORD: 'tinyfold-e2e-passphrase',
       OWNER_NAME: 'Você',
-      APP_ORIGIN: 'http://localhost:5171',
-      PORT: '5171',
+      APP_ORIGIN: origin,
+      PORT: String(port),
       HOST: '127.0.0.1',
       WEB_DIR: 'src/web/dist',
       COOKIE_SECURE: 'false',

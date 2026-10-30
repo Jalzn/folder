@@ -4,3 +4,5 @@ allowBuilds:
   "@swc/core": false
   esbuild: true
   better-sqlite3: false
+patchedDependencies:
+  "@excalidraw/excalidraw@0.18.1": patches/@excalidraw__excalidraw@0.18.1.patch

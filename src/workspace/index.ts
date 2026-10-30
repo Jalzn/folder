@@ -1,3 +1,4 @@
+export type { Canvas, CanvasAck, CanvasElement, CanvasScene, CanvasSummary } from './domain/canvas.js';
 export type {
   Document,
   DocumentAck,

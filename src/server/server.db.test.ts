@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createORPCClient } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import { isProcedure, type RouterClient } from '@orpc/server';
@@ -113,6 +114,34 @@ describe('server boundaries', () => {
     });
     expect(response.status).toBe(413);
   });
+  it('persists authenticated canvas RPC calls and rejects malformed canvas data', async () => {
+    const { browser } = await fixture();
+    const { client } = browser();
+    await client.auth.login({ password });
+    const created = await client.workspace.createCanvas({ requestId: randomUUID(), title: 'Fluxo' });
+    const canvas = await client.workspace.getCanvas({ id: created.id });
+    expect(canvas.scene.elements).toEqual([]);
+    const input = {
+      requestId: randomUUID(),
+      id: canvas.id,
+      expectedVersion: canvas.version,
+      title: 'Atualizado',
+      scene: canvas.scene,
+    };
+    const ack = await client.workspace.saveCanvas(input);
+    expect(await client.workspace.saveCanvas(input)).toEqual(ack);
+    expect((await client.workspace.listCanvases({ query: 'Atualizado' }))[0]?.id).toBe(canvas.id);
+    await expect(client.workspace.saveCanvas({ ...input, requestId: randomUUID() })).rejects.toMatchObject({
+      status: 409,
+      data: { code: 'VERSION_CONFLICT' },
+    });
+    await expect(
+      client.workspace.createCanvas({
+        requestId: randomUUID(),
+        scene: { ...canvas.scene, elements: [{ id: 'bad', type: 'image' }] },
+      }),
+    ).rejects.toMatchObject({ status: 400, data: { code: 'VALIDATION' } });
+  });
   it('serves SPA routes without serving HTML for missing assets', async () => {
     const { app } = await fixture();
     const route = await app.request('/documentos/example');
@@ -128,7 +157,7 @@ describe('server boundaries', () => {
   it('validates production origin and resolves database paths independent of process working directory', () => {
     expect(() => readConfig({ NODE_ENV: 'production', APP_ORIGIN: origin })).toThrow('HTTPS');
     const config = readConfig({ DATABASE_PATH: 'data/another.sqlite' });
-    expect(config.databasePath).toMatch(/tinyfold\/data\/another.sqlite$/);
+    expect(config.databasePath).toBe(fileURLToPath(new URL('../../data/another.sqlite', import.meta.url)));
     expect(
       readConfig({ NODE_ENV: 'production', APP_ORIGIN: 'https://tinyfold.example', COOKIE_SECURE: 'false' })
         .secureCookie,

@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   LoaderCircle,
   Menu as MenuIcon,
+  PenTool,
   Plus,
   Search,
   Trash2,
@@ -26,8 +27,10 @@ interface Owner {
 interface AppContextValue {
   owner: Owner;
   newDocument: (projectId?: string | null) => Promise<void>;
+  newCanvas: (projectId?: string | null) => Promise<void>;
   openProjectDialog: () => void;
   creatingDocument: boolean;
+  creatingCanvas: boolean;
 }
 const AppContext = createContext<AppContextValue | null>(null);
 export function useApp() {
@@ -187,11 +190,14 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
   const [projectName, setProjectName] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchKind, setSearchKind] = useState<'documents' | 'canvases'>('documents');
   const navigation = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const createAction = useAction();
+  const canvasAction = useAction();
   const projectAction = useAction();
   const createRequest = useRequest();
+  const canvasRequest = useRequest();
   const projectRequest = useRequest();
   const previousPath = useRef(pathname);
   useEffect(() => {
@@ -203,14 +209,16 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        if (event.defaultPrevented || (event.target instanceof Element && event.target.closest('.excalidraw'))) return;
         event.preventDefault();
+        setSearchKind(pathname.startsWith('/desenhos') ? 'canvases' : 'documents');
         setSearchOpen(true);
       }
       if (event.key === 'Escape') setMobileOpen(false);
     };
     window.addEventListener('keydown', shortcut);
     return () => window.removeEventListener('keydown', shortcut);
-  }, []);
+  }, [pathname]);
   async function newDocument(projectId: string | null = null) {
     const input = { projectId };
     await createAction.run(
@@ -220,6 +228,20 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
         void navigation({ to: '/documentos/$documentId', params: { documentId: doc.id } });
       },
     );
+  }
+  async function newCanvas(projectId: string | null = null) {
+    const input = { projectId };
+    await canvasAction.run(
+      () => api.workspace.createCanvas({ ...input, requestId: canvasRequest.for(input) }),
+      (canvas) => {
+        canvasRequest.clear();
+        void navigation({ to: '/desenhos/$canvasId', params: { canvasId: canvas.id } });
+      },
+    );
+  }
+  function openSearch() {
+    setSearchKind(pathname.startsWith('/desenhos') ? 'canvases' : 'documents');
+    setSearchOpen(true);
   }
   async function createProject(event: FormEvent) {
     event.preventDefault();
@@ -237,7 +259,14 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
   }
   return (
     <AppContext.Provider
-      value={{ owner, newDocument, openProjectDialog: () => setProjectOpen(true), creatingDocument: createAction.busy }}
+      value={{
+        owner,
+        newDocument,
+        newCanvas,
+        openProjectDialog: () => setProjectOpen(true),
+        creatingDocument: createAction.busy,
+        creatingCanvas: canvasAction.busy,
+      }}
     >
       <div className="app-shell">
         <header className="mobile-header" inert={mobileOpen}>
@@ -252,12 +281,7 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
           <Link to="/" aria-label="Tinyfold, início">
             <Logo compact />
           </Link>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Buscar documentos"
-            onClick={() => setSearchOpen(true)}
-          >
+          <button type="button" className="icon-button" aria-label="Buscar documentos ou desenhos" onClick={openSearch}>
             <Search size={20} />
           </button>
         </header>
@@ -283,7 +307,7 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
               <X size={19} />
             </button>
           </div>
-          <button type="button" className="search-trigger" onClick={() => setSearchOpen(true)}>
+          <button type="button" className="search-trigger" onClick={openSearch}>
             <Search size={16} />
             <span>Buscar</span>
             <kbd>⌘ K</kbd>
@@ -310,6 +334,10 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
             <Link to="/documentos" className="nav-item" activeProps={{ className: 'nav-item active' }}>
               <FileText size={17} />
               Documentos
+            </Link>
+            <Link to="/desenhos" className="nav-item" activeProps={{ className: 'nav-item active' }}>
+              <PenTool size={17} />
+              Desenhos
             </Link>
             <Link to="/kanban" className="nav-item" activeProps={{ className: 'nav-item active' }}>
               <LayoutGrid size={17} />
@@ -369,7 +397,7 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
       </div>
       <Dialog title="Um novo projeto" open={projectOpen} onClose={() => setProjectOpen(false)}>
         <form onSubmit={createProject}>
-          <p className="muted">Um lugar para reunir documentos e próximos passos.</p>
+          <p className="muted">Um lugar para reunir documentos, desenhos e próximos passos.</p>
           <label className="field">
             Nome do projeto
             <input
@@ -392,7 +420,7 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
         </form>
       </Dialog>
       <Dialog
-        title="Buscar documentos"
+        title={searchKind === 'canvases' ? 'Buscar desenhos' : 'Buscar documentos'}
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         className="search-dialog"
@@ -401,9 +429,19 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
           onSubmit={(event) => {
             event.preventDefault();
             setSearchOpen(false);
-            void navigation({ to: '/documentos', search: { q: search } });
+            void navigation({ to: searchKind === 'canvases' ? '/desenhos' : '/documentos', search: { q: search } });
           }}
         >
+          <label className="field">
+            Buscar em
+            <select
+              value={searchKind}
+              onChange={(event) => setSearchKind(event.target.value as 'documents' | 'canvases')}
+            >
+              <option value="documents">Documentos</option>
+              <option value="canvases">Desenhos</option>
+            </select>
+          </label>
           <label className="field">
             <span className="sr-only">Buscar por título ou conteúdo</span>
             <input
@@ -413,7 +451,11 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
               placeholder="Uma ideia, uma palavra, um projeto…"
             />
           </label>
-          <p className="muted small">Busque pelo título ou pelo conteúdo dos seus documentos.</p>
+          <p className="muted small">
+            {searchKind === 'canvases'
+              ? 'Busque pelo título ou pelos textos dos seus desenhos.'
+              : 'Busque pelo título ou pelo conteúdo dos seus documentos.'}
+          </p>
           <div className="dialog-actions">
             <button type="submit" className="button primary">
               <Search size={16} />

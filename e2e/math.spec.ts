@@ -125,13 +125,20 @@ test('insert inline math, replace its source with the keyboard and cancel safely
   await expect(editor).toContainText(' e texto.');
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   await page.reload();
-  await editor.getByRole('button', { name: 'Editar equação em linha' }).last().click();
+  const shortcutEquation = editor.locator('[data-inline-content-type="math"]').filter({
+    has: page.locator('annotation[encoding="application/x-tex"]').filter({ hasText: /^x\^2\s*$/ }),
+  });
+  await expect(shortcutEquation).toHaveCount(1);
+  await shortcutEquation.getByRole('button', { name: 'Editar equação em linha' }).click();
   await expect(input).toHaveValue(/x\^2\s*/);
   await input.fill('\\frac{');
   await page.getByRole('button', { name: 'Salvar equação' }).click();
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   await page.reload();
-  await editor.getByRole('button', { name: 'Editar equação em linha' }).last().click();
+  await editor
+    .getByRole('button', { name: 'Editar equação em linha' })
+    .filter({ hasText: 'Equação inválida (clique para editar)' })
+    .click();
   await expect(input).toHaveValue('\\frac{');
   await page.getByRole('button', { name: 'Cancelar' }).click();
   expect(await exportMarkdown(page)).toContain('$\\frac{$');

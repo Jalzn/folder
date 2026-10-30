@@ -1,4 +1,5 @@
 import type { Database } from '@tinyfold/core/infra';
+import * as canvases from '../application/canvases.js';
 import * as documents from '../application/documents.js';
 import * as projects from '../application/projects.js';
 import * as schemas from '../application/schemas.js';
@@ -9,6 +10,16 @@ import { workspaceContext } from './context.js';
 export function createWorkspaceService(db: Database, clock = () => new Date()) {
   const ctx = workspaceContext(db, clock);
   return {
+    listCanvases: (input: schemas.ListCanvasesInput = {}) =>
+      canvases.listCanvases(ctx, schemas.ListCanvasesInput.parse(input)),
+    getCanvas: (input: schemas.GetCanvasInput) => canvases.getCanvas(ctx, schemas.GetCanvasInput.parse(input)),
+    createCanvas: (input: schemas.CreateCanvasInput) =>
+      canvases.createCanvas(ctx, schemas.CreateCanvasInput.parse(input)),
+    saveCanvas: (input: schemas.SaveCanvasInput) => canvases.saveCanvas(ctx, schemas.SaveCanvasInput.parse(input)),
+    deleteCanvas: (input: schemas.DeleteCanvasInput) =>
+      canvases.deleteCanvas(ctx, schemas.DeleteCanvasInput.parse(input)),
+    restoreCanvas: (input: schemas.RestoreCanvasInput) =>
+      canvases.restoreCanvas(ctx, schemas.RestoreCanvasInput.parse(input)),
     listProjects: (input: schemas.ListProjectsInput = {}) =>
       projects.listProjects(ctx, schemas.ListProjectsInput.parse(input)),
     createProject: (input: schemas.CreateProjectInput) =>

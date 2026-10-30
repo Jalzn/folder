@@ -1,0 +1,94 @@
+.canvas-page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 540px;
+  overflow: hidden;
+}
+.canvas-page .canvas-topbar {
+  flex-shrink: 0;
+  position: relative;
+  top: 0;
+}
+.canvas-metadata {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 15px 24px;
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+.canvas-title {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+.canvas-editor {
+  flex: 1;
+  min-height: 320px;
+  position: relative;
+}
+.canvas-editor .excalidraw {
+  --color-primary: #8da9d1;
+  --color-primary-darker: #7394c3;
+  --color-primary-darkest: #607da5;
+  --color-primary-light: #33435b;
+  --color-surface-low: #25282e;
+  --color-surface-mid: #2b2f36;
+  --color-surface-high: #343943;
+  --color-surface-lowest: #1b1d22;
+  --color-on-surface: #e4e7ed;
+  --default-bg-color: #202329;
+  --island-bg-color: #25282e;
+  --sidebar-bg-color: #202329;
+  --popup-bg-color: #25282e;
+  --border-radius-lg: 10px;
+}
+.canvas-editor .excalidraw button {
+  min-height: unset;
+  font: inherit;
+}
+.canvas-editor .excalidraw input {
+  min-height: unset;
+}
+.canvas-page > .editor-alert {
+  flex-shrink: 0;
+  margin: 0;
+  border-radius: 0;
+}
+@media (max-width: 860px) {
+  .canvas-page {
+    height: calc(100dvh - 54px);
+    min-height: 500px;
+  }
+}
+@media (max-width: 760px) {
+  .canvas-metadata {
+    padding: 10px 14px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .canvas-title {
+    flex-basis: 100%;
+    font-size: 18px;
+  }
+  .canvas-metadata .project-picker {
+    max-width: 100%;
+  }
+  .canvas-page .editor-alert {
+    flex-wrap: wrap;
+    padding: 12px 14px;
+  }
+  .canvas-page .editor-alert > div {
+    flex-basis: calc(100% - 40px);
+  }
+  .canvas-topbar .current-crumb {
+    max-width: 100px;
+  }
+}

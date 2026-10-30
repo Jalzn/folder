@@ -43,9 +43,24 @@ export interface SourceRow {
 }
 
 export interface WorkspaceTables {
+  workspace_canvases: CanvasRow;
   workspace_projects: ProjectRow;
   workspace_documents: DocumentRow;
   workspace_tasks: TaskRow;
   workspace_task_sources: SourceRow;
   workspace_state: { id: number; board_revision: number };
+}
+
+export interface CanvasRow {
+  id: string;
+  project_id: string | null;
+  title: string;
+  scene: string;
+  plain_text: string;
+  search_text: string;
+  format_version: number;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
 }

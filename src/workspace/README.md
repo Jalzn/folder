@@ -1,6 +1,6 @@
 # Workspace
 
-Projetos, documentos, tarefas e seus vínculos no mesmo módulo. A interface usa o router `workspace` de oRPC; scripts e testes podem usar `createWorkspaceService(db)`.
+Projetos, documentos, desenhos, tarefas e seus vínculos no mesmo módulo. A interface usa o router `workspace` de oRPC; scripts e testes podem usar `createWorkspaceService(db)`.
 
 ## Regras implementadas
 
@@ -11,6 +11,9 @@ Projetos, documentos, tarefas e seus vínculos no mesmo módulo. A interface usa
 - Todo pedido de escrita tem `requestId`. Repetição idêntica devolve a resposta original; reutilização para outro conteúdo é recusada. Atualizações também exigem `expectedVersion`.
 - Salvar documento devolve somente ID, versão e data, mantendo o registro de idempotência compacto. Criar e ler devolvem o documento completo.
 - Excluir documento move para a lixeira e incrementa a versão. Restaurar também é uma escrita versionada.
+- Desenhos têm cena JSON própria, até 1 MiB e 5.000 elementos vetoriais. Busca deriva do título e do texto ativo. Formas, setas vinculadas, quadros, texto e traço livre são validados; imagens e conteúdo incorporado são recusados.
+- Criar, salvar, excluir e restaurar desenho devolvem somente ID, versão e data. Leitura autenticada inclui cenas na lixeira para recuperação de rascunhos; salvar desenho excluído é recusado.
+- A compactação preserva elementos ativos e excluídos referenciados transitivamente; somente os demais são removidos da cena persistida. O histórico de desfazer permanece no editor.
 - Tarefas usam `todo`, `doing` e `done`. Toda alteração de tarefa incrementa uma revisão global do quadro. Reordenação exige `expectedRevision` e `expectedVersion`, além de um destino opcional `beforeTaskId`.
 - A posição é global por coluna; quadros de projeto filtram essa ordem. Reordenar pode incrementar as versões dos cartões reposicionados, e a interface deve recarregar a lista.
 - Tarefa criada a partir de trecho valida o documento salvo, sua versão quando enviada, bloco e trecho. Tarefa e vínculo são gravados na mesma transação.
@@ -20,3 +23,5 @@ Projetos, documentos, tarefas e seus vínculos no mesmo módulo. A interface usa
 ## Verificação
 
 `domain/document.test.ts` verifica o formato suportado, limites, propriedades e links inválidos. `application/workspace.db.test.ts` usa SQLite real em arquivos temporários para testar reabertura após reinício, dois clientes, conflitos, idempotência, busca, arquivamento, lixeira, ordenação e referências que sobrevivem à remoção do conteúdo de origem.
+
+`domain/canvas.test.ts` verifica cenas e compactação sem mutação; `application/canvases.db.test.ts` cobre os contratos de desenhos, concorrência, reinício e migração de uma base anterior. `scripts/canvas-backup.db.test.ts` verifica backup e restauração independente com cena e projeto.

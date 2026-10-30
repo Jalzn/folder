@@ -1,8 +1,36 @@
-# Tinyfold — Validação da primeira versão
+# Tinyfold — Validação local
 
 Validação local em 29 de outubro de 2026. A aplicação foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada. Nenhuma publicação na nuvem foi realizada.
 
-## Verificações executadas
+## Canvas e regressão no worktree
+
+A etapa 06 foi implementada com três subagentes para persistência, editor e navegação, com revisão cruzada dos contratos e recuperação de rascunhos. A execução integrada usa bancos SQLite temporários e a porta 5172, preservando os servidores existentes da pasta original.
+
+| Verificação | Resultado |
+| --- | --- |
+| `mise exec -- pnpm install --frozen-lockfile` | Instalação aprovada com o patch versionado de fontes |
+| `mise exec -- pnpm check` | Biome, tipos, fronteiras e 105 testes unitários aprovados, em 5 arquivos |
+| `mise exec -- pnpm test:db` | 38 testes aprovados, em 7 arquivos, com bancos temporários |
+| `mise exec -- pnpm build` | Bundle de produção aprovado com editor sob demanda e fontes na própria origem |
+| `E2E_PORT=5172 mise exec -- pnpm e2e` | 44 testes aprovados: 22 desktop e 22 emulação Pixel 7, incluindo traço por toque |
+
+Os novos fluxos verificam desenho real com retângulo, texto e traço livre; no perfil mobile, o traço usa eventos de toque do Chrome. Exportação PNG e ida e volta de `.excalidraw` preservam o desenho, a busca encontra seu texto e as fontes não geram violações de CSP. Projetos, recentes, filtros, abas por teclado, arquivamento, lixeira e restauração também são exercitados pela interface.
+
+| Tela | Desktop | Celular |
+| --- | --- | --- |
+| Canvas | [Captura](screens/canvas-desktop.png) | [Captura](screens/canvas-mobile.png) |
+
+Os testes de falha verificam resposta perdida com reenvio idêntico, novas edições durante o pedido, recarga de rascunho, duas sessões em conflito, abas duplicadas, sessão expirada e cópia após exclusão remota. A revisão corrigiu recuperação em projetos arquivados, acesso ao rascunho de desenho excluído, acúmulo de elementos apagados, intervalo máximo de escrita local e sobreposição do título mobile.
+
+O banco foi reaberto após reinício; migração de uma base anterior preservou documentos e tarefas. O teste de backup/restauração verificou cena, versão e projeto em outro arquivo, independente de escritas posteriores no original.
+
+A regressão também cobre as equações que estavam em desenvolvimento no snapshot inicial: substituição, cancelamento e recarga de matemática em linha, além de intercâmbio Markdown com LaTeX inválido preservado. As correções correspondentes foram adaptadas das alterações de matemática da pasta original, sem modificá-la.
+
+Na integração na `main`, foram preservadas as correções mais recentes das equações e repetidos `check` (105 testes unitários), `test:db` (38 testes) e build. A suíte na porta 5188 aprovou 42 cenários; os dois testes de equação foram aprovados no reteste desktop/mobile após ajustar o seletor para identificar a fórmula pela fonte LaTeX, em vez da posição no documento.
+
+Imagens no canvas, colaboração simultânea e validação em aparelhos físicos continuam fora deste recorte. Os testes não substituem publicação ou verificação de infraestrutura externa.
+
+## Verificações da versão inicial
 
 | Verificação | Resultado |
 | --- | --- |
@@ -17,7 +45,7 @@ Validação local em 29 de outubro de 2026. A aplicação foi implementada com t
 
 O build informa chunks acima de 500 kB. O editor foi separado em importação dinâmica; esse aviso continua, especialmente pelo conjunto de dependências de edição, e não impede o build.
 
-## Fluxos no Chrome
+## Fluxos da versão inicial no Chrome
 
 Os E2E usam a interface e API reais, com banco isolado. Os mesmos doze cenários foram executados nos dois perfis:
 

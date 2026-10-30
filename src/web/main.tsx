@@ -8,6 +8,7 @@ import { I18nProvider } from 'react-aria-components';
 import { createRoot } from 'react-dom/client';
 import { queryClient } from './lib/api';
 import { BoardPage } from './pages/Board';
+import { CanvasesPage } from './pages/Canvases';
 import { DocumentsPage, HomePage, ProjectPage, TrashPage } from './pages/Library';
 import { ProfilePage } from './pages/Profile';
 import { Shell } from './shell';
@@ -22,6 +23,22 @@ const routeTree = rootRoute.addChildren([
     path: '/documentos',
     component: DocumentsPage,
     validateSearch: (search): { q?: string } => (typeof search.q === 'string' ? { q: search.q } : {}),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/desenhos',
+    component: CanvasesPage,
+    validateSearch: (search): { q?: string } => (typeof search.q === 'string' ? { q: search.q } : {}),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/desenhos/$canvasId',
+    component: lazyRouteComponent(() => import('./pages/CanvasEditor'), 'CanvasPage'),
+    pendingComponent: () => (
+      <div className="page">
+        <Spinner label="Abrindo desenho…" />
+      </div>
+    ),
   }),
   createRoute({
     getParentRoute: () => rootRoute,
