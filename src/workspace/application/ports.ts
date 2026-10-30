@@ -1,10 +1,15 @@
+import type { Canvas, CanvasSummary } from '../domain/canvas.js';
 import type { Document, DocumentSummary, Project, Task, TaskSource, TaskStatus } from '../domain/models.js';
-import type { ListDocumentsInput, ListTasksInput } from './schemas.js';
+import type { ListCanvasesInput, ListDocumentsInput, ListTasksInput } from './schemas.js';
 
 export type TaskRecord = Omit<Task, 'source'> & { deletedAt: string | null };
 export type TaskSourceRecord = Pick<TaskSource, 'documentId' | 'blockId' | 'excerpt'> & { taskId: string };
 
 export interface WorkspaceRepository {
+  listCanvases(input: ListCanvasesInput): Promise<CanvasSummary[]>;
+  findCanvas(id: string): Promise<Canvas | undefined>;
+  insertCanvas(canvas: Canvas): Promise<void>;
+  saveCanvas(canvas: Canvas, expectedVersion: number): Promise<void>;
   listProjects(includeArchived: boolean): Promise<Project[]>;
   findProject(id: string): Promise<Project | undefined>;
   insertProject(project: Project): Promise<void>;

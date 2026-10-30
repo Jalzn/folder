@@ -1,3 +1,13 @@
+export type { Canvas, CanvasAck, CanvasElement, CanvasScene, CanvasSceneLimits, CanvasSummary } from './canvas.js';
+export {
+  canvasPlainText,
+  compactCanvasScene,
+  emptyCanvasScene,
+  MAX_CANVAS_BYTES,
+  MAX_CANVAS_ELEMENTS,
+  RECOVERY_CANVAS_LIMITS,
+  readCanvasScene,
+} from './canvas.js';
 export type { DocumentContentLimits } from './document.js';
 export {
   documentPlainText,

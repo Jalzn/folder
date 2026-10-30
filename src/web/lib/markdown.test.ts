@@ -1,0 +1,358 @@
+import { registerHooks } from 'node:module';
+import { BlockNoteEditor, BlockNoteSchema } from '@blocknote/core';
+import {
+  type DocumentContent,
+  documentPlainText,
+  type JsonValue,
+  readDocumentContent,
+} from '@tinyfold/workspace/domain';
+import { Window } from 'happy-dom';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { exportMarkdownWithMath, importMarkdownWithMath } from './markdown';
+
+// The package imports KaTeX CSS at runtime. Node validates its real schema/parser without needing stylesheets.
+const cssModules = registerHooks({
+  load(url, context, nextLoad) {
+    return url.endsWith('.css')
+      ? { format: 'module', source: 'export default {}', shortCircuit: true }
+      : nextLoad(url, context);
+  },
+});
+
+describe('Markdown export preserves raw equations', () => {
+  const exportBlocks = (blocks: DocumentContent) =>
+    editor.blocksToMarkdownLossy(blocks as unknown as typeof editor.document);
+  async function roundTrip(blocks: DocumentContent) {
+    const markdown = await exportMarkdownWithMath(blocks, exportBlocks);
+    const restored = await imported(markdown);
+    return { markdown, restored };
+  }
+
+  it('preserves invalid inline and display sources without passing them to KaTeX', async () => {
+    const blocks: DocumentContent = [
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', text: 'Before ', styles: {} },
+          { type: 'math', props: {}, content: '\\frac{' },
+        ],
+      },
+      { type: 'mathBlock', props: {}, content: '\\sqrt{' },
+    ];
+    const { markdown, restored } = await roundTrip(blocks);
+    expect(markdown).toContain('$\\frac{$');
+    expect(markdown).toContain('$$\n\\sqrt{\n$$');
+    expect(formulas(restored, 'math')).toEqual(['\\frac{']);
+    expect(formulas(restored, 'mathBlock')).toEqual(['\\sqrt{']);
+  });
+
+  it.each([String.raw`\text{cost \$5}`, String.raw`\text{a $ b $$ c $$$ d}`, '$x$', '  x  ', ' x', 'x ', '   ', '\t'])(
+    'chooses unambiguous inline fences and preserves source: %s',
+    async (source) => {
+      const { restored } = await roundTrip([
+        { type: 'paragraph', content: [{ type: 'math', props: {}, content: source }] },
+      ]);
+      expect(formulas(restored, 'math')).toEqual([source]);
+    },
+  );
+
+  it('exports adjacent inline formulas as separate nodes without adding visible text', async () => {
+    const { markdown, restored } = await roundTrip([
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'math', props: {}, content: 'x' },
+          { type: 'math', props: {}, content: 'y' },
+        ],
+      },
+    ]);
+    expect(markdown).toContain('$x$<!-- -->$y$');
+    expect(formulas(restored, 'math')).toEqual(['x', 'y']);
+    expect(documentPlainText(restored)).toBe('xy');
+  });
+
+  it('retains a display source containing dollar fences, leading spaces and blank lines', async () => {
+    const source = '\n  x\n$$\ny $$$ z  \n';
+    const { restored } = await roundTrip([{ type: 'mathBlock', props: {}, content: source }]);
+    expect(formulas(restored, 'mathBlock')).toEqual([source]);
+  });
+
+  it('retains sources and styles inside list and quote containers', async () => {
+    const blocks: DocumentContent = [
+      {
+        id: 'parent',
+        type: 'bulletListItem',
+        content: [
+          { type: 'text', text: 'Topic ', styles: { bold: true } },
+          { type: 'math', props: {}, content: 'x' },
+        ],
+        children: [{ id: 'formula', type: 'mathBlock', props: {}, content: 'a\nb' }],
+      },
+      {
+        id: 'quote',
+        type: 'quote',
+        content: 'Quote',
+        children: [{ type: 'mathBlock', props: {}, content: '\\frac{' }],
+      },
+    ];
+    const before = JSON.stringify(blocks);
+    let masked: DocumentContent = [];
+    const markdown = await exportMarkdownWithMath(blocks, (content) => {
+      masked = content;
+      return exportBlocks(content);
+    });
+    expect(masked[0]?.id).toBe('parent');
+    expect(masked[0]?.children?.[0]?.id).toBe('formula');
+    expect(JSON.stringify(blocks)).toBe(before);
+    const restored = await imported(markdown);
+    expect(formulas(restored, 'math')).toEqual(['x']);
+    expect(formulas(restored, 'mathBlock')).toEqual(['a\nb', '\\frac{']);
+    expect((restored[0]?.content as JsonValue[] | undefined)?.[0]).toEqual({
+      type: 'text',
+      text: 'Topic',
+      styles: { bold: true },
+    });
+    expect(documentPlainText(restored)).toContain('Topic x');
+  });
+
+  it('uses standard Markdown whitespace semantics for empty and multiline inline formulas', async () => {
+    const { restored } = await roundTrip([
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'math', props: {}, content: '' },
+          { type: 'math', props: {}, content: 'a\nb' },
+        ],
+      },
+    ]);
+    expect(formulas(restored, 'math')).toEqual([' ', 'a b']);
+  });
+
+  it('does not change code containing dollar signs', async () => {
+    const { restored } = await roundTrip([
+      { type: 'codeBlock', props: { language: 'text' }, content: '$code$\n$$code$$' },
+      { type: 'paragraph', content: [{ type: 'math', props: {}, content: 'x' }] },
+    ]);
+    expect(documentPlainText([restored[0] as NonNullable<(typeof restored)[0]>])).toBe('$code$\n$$code$$');
+    expect(formulas(restored, 'math')).toEqual(['x']);
+  });
+
+  it.each(['drop', 'duplicate'] as const)(
+    'fails instead of publishing Markdown if export would %s a source',
+    async (fault) => {
+      await expect(
+        exportMarkdownWithMath([{ type: 'mathBlock', props: {}, content: 'x' }], (blocks) => {
+          const text = documentPlainText(blocks);
+          return fault === 'drop' ? '' : `${text}\n\n${text}`;
+        }),
+      ).rejects.toThrow('Não foi possível preservar todas as equações');
+    },
+  );
+});
+const { createReactInlineMathSpec, createReactMathBlockSpec } = await import('@blocknote/math-block');
+cssModules.deregister();
+
+const schema = BlockNoteSchema.create().extend({
+  blockSpecs: { mathBlock: createReactMathBlockSpec() },
+  inlineContentSpecs: { math: createReactInlineMathSpec() },
+});
+const createEditor = () => BlockNoteEditor.create({ schema });
+let editor: ReturnType<typeof createEditor>;
+let window: Window;
+
+beforeAll(() => {
+  window = new Window();
+  window.document.write('<!doctype html><html><head></head><body></body></html>');
+  for (const key of [
+    'window',
+    'document',
+    'navigator',
+    'HTMLElement',
+    'Element',
+    'Node',
+    'DOMParser',
+    'MutationObserver',
+    'DocumentFragment',
+  ] as const) {
+    vi.stubGlobal(key, key === 'window' ? window : window[key]);
+  }
+  editor = createEditor();
+});
+afterEach(() => vi.restoreAllMocks());
+afterAll(async () => {
+  editor?._tiptapEditor.destroy();
+  await window.happyDOM.close();
+  vi.unstubAllGlobals();
+});
+
+const parse = (source: string) => editor.tryParseMarkdownToBlocks(source) as unknown as DocumentContent;
+async function imported(markdown: string) {
+  const blocks = await importMarkdownWithMath(markdown, parse);
+  readDocumentContent(blocks);
+  const reload = BlockNoteEditor.create({
+    schema,
+    initialContent: blocks as unknown as typeof editor.document,
+  });
+  const result = reload.document as unknown as DocumentContent;
+  readDocumentContent(result);
+  reload._tiptapEditor.destroy();
+  return result;
+}
+
+function formulas(value: unknown, type: 'mathBlock' | 'math'): string[] {
+  if (Array.isArray(value)) return value.flatMap((entry) => formulas(entry, type));
+  if (value === null || typeof value !== 'object') return [];
+  const node = value as { type?: string; content?: unknown; children?: unknown };
+  const own =
+    node.type === type
+      ? [
+          typeof node.content === 'string'
+            ? node.content
+            : documentPlainText([{ type: 'paragraph', content: node.content as JsonValue }]),
+        ]
+      : [];
+  return [...own, ...formulas(node.content, type), ...formulas(node.children, type)];
+}
+
+describe('Markdown equations with the real BlockNote parser', () => {
+  it('preserves inline formulas and the styles of neighboring text', async () => {
+    const blocks = await imported('**Before $x^2$ after** and *$y$ italic*.');
+    expect(formulas(blocks, 'math')).toEqual(['x^2', 'y']);
+    expect(blocks[0]?.content).toEqual([
+      { type: 'text', text: 'Before ', styles: { bold: true } },
+      { type: 'math', props: {}, content: 'x^2' },
+      { type: 'text', text: ' after', styles: { bold: true } },
+      { type: 'text', text: ' and ', styles: {} },
+      { type: 'math', props: {}, content: 'y' },
+      { type: 'text', text: ' italic', styles: { italic: true } },
+      { type: 'text', text: '.', styles: {} },
+    ]);
+  });
+
+  it('keeps display formulas separate even without blank lines', async () => {
+    const blocks = await imported('Before\n$$\n\\frac{a}{b}\n$$\nAfter');
+    expect(blocks.map((block) => block.type)).toEqual(['paragraph', 'mathBlock', 'paragraph']);
+    expect(formulas(blocks, 'mathBlock')).toEqual(['\\frac{a}{b}']);
+    expect(documentPlainText(blocks)).toBe('Before\n\\frac{a}{b}\nAfter');
+  });
+
+  it('preserves empty and invalid LaTeX sources without interpreting them', async () => {
+    const blocks = await imported('$$\n\n$$\n\n$$\n\\frac{\n$$\n\nIncomplete $\\sqrt{$.');
+    expect(formulas(blocks, 'mathBlock')).toEqual(['', '\\frac{']);
+    expect(formulas(blocks, 'math')).toEqual(['\\sqrt{']);
+  });
+
+  it('keeps formulas and following paragraphs inside nested lists', async () => {
+    const blocks = await imported('- Parent\n  - Child $x$\n\n    $$\n    y\n    $$\n\n    After');
+    const child = blocks[0]?.children?.[0];
+    expect(blocks[0]?.type).toBe('bulletListItem');
+    expect(child?.type).toBe('bulletListItem');
+    expect(formulas(child?.content, 'math')).toEqual(['x']);
+    expect(child?.children?.map((block) => block.type)).toEqual(['mathBlock', 'paragraph']);
+    expect(documentPlainText(child?.children ?? [])).toBe('y\nAfter');
+  });
+
+  it('preserves quote content surrounding a display formula', async () => {
+    const blocks = await imported('> Before $x$\n>\n> $$\n> y\n> $$\n>\n> After $z$');
+    expect(blocks[0]?.type).toBe('quote');
+    expect(formulas(blocks[0]?.content, 'math')).toEqual(['x']);
+    expect(blocks[0]?.children?.map((block) => block.type)).toEqual(['mathBlock', 'paragraph']);
+    expect(formulas(blocks[0]?.children, 'math')).toEqual(['z']);
+  });
+
+  it.each(['- ', '1. ', '> '])('preserves the container when a formula is its first content: %s', async (prefix) => {
+    const continuation = prefix === '> ' ? '> ' : ' '.repeat(prefix.length);
+    const blocks = await imported(`${prefix}$$\n${continuation}x\n${continuation}$$`);
+    expect(blocks[0]?.type).toBe(prefix === '> ' ? 'quote' : prefix === '- ' ? 'bulletListItem' : 'numberedListItem');
+    expect(blocks[0]?.children?.[0]?.type).toBe('mathBlock');
+    expect(formulas(blocks, 'mathBlock')).toEqual(['x']);
+  });
+
+  it('leaves fenced code, inline code, escaped dollars and link labels untouched', async () => {
+    const markdown = String.raw`Escaped \$not_math\$, code \`$not_math$\`, [$link$](https://example.com) and $yes$.
+
+~~~text
+$$
+not_math
+$$
+~~~
+`.replaceAll('\\`', '`');
+    const blocks = await imported(markdown);
+    expect(formulas(blocks, 'math')).toEqual(['yes']);
+    expect(formulas(blocks, 'mathBlock')).toEqual([]);
+    expect(blocks.find((block) => block.type === 'codeBlock')).toBeDefined();
+    expect(documentPlainText(blocks)).toContain('$$\nnot_math\n$$');
+    expect(documentPlainText(blocks)).toContain('$link$');
+  });
+
+  it('does not mask HTML contents or reference link labels', async () => {
+    const markdown = '<span>$html$</span> outside $yes$ and [$ref$][target].\n\n[target]: https://example.com';
+    let masked = '';
+    const blocks = await importMarkdownWithMath(markdown, (source) => {
+      masked = source;
+      return parse(source);
+    });
+    expect(masked).toContain('<span>$html$</span>');
+    expect(masked).toContain('[$ref$][target]');
+    expect(formulas(blocks, 'math')).toEqual(['yes']);
+  });
+
+  it('keeps existing Markdown behavior exactly when no formulas are recognized', async () => {
+    const markdown = '# Heading\n\n`$literal$`\n\n\\$escaped\\$ and an unmatched $ sign.';
+    const callback = vi.fn(async () => [{ id: 'existing', type: 'paragraph', content: 'parsed' }]);
+    const result = await importMarkdownWithMath(markdown, callback);
+    expect(callback).toHaveBeenCalledExactlyOnceWith(markdown);
+    expect(result).toBe(await callback.mock.results[0]?.value);
+  });
+
+  it('understands repeated dollar delimiters, adjacent formulas and CRLF', async () => {
+    const blocks = await imported('A $x$ $y$ and $$a $ b$$.\r\n\r\n$$$\r\nc $$ d\r\n$$$');
+    expect(formulas(blocks, 'math')).toEqual(['x', 'y', 'a $ b']);
+    expect(formulas(blocks, 'mathBlock')).toEqual(['c $$ d']);
+  });
+
+  it('preserves long formulas and many distinct placeholders', async () => {
+    const source = `${Array.from({ length: 120 }, (_, index) => `$x_{${index}}$`).join(' ')} $${'a'.repeat(20_000)}$`;
+    const blocks = await imported(source);
+    expect(formulas(blocks, 'math')).toHaveLength(121);
+    expect(formulas(blocks, 'math').at(-1)).toHaveLength(20_000);
+    expect(JSON.stringify(blocks)).not.toContain('TINYFOLDMATH');
+  });
+
+  it('retains parser-generated ids, children and neighboring content without mutating the parser result', async () => {
+    let original: DocumentContent = [];
+    let originalJson = '';
+    const result = await importMarkdownWithMath('- item $x$\n  - child', (source) => {
+      original = parse(source);
+      originalJson = JSON.stringify(original);
+      return original;
+    });
+    expect(JSON.stringify(original)).toBe(originalJson);
+    expect(result[0]?.id).toBe(original[0]?.id);
+    expect(result[0]?.children?.[0]?.id).toBe(original[0]?.children?.[0]?.id);
+    expect(documentPlainText(result)).toBe('item x\nchild');
+  });
+
+  it.each(['drop', 'duplicate', 'link'] as const)(
+    'fails safely when the parser would %s a placeholder',
+    async (fault) => {
+      await expect(
+        importMarkdownWithMath('$x$', (source) => {
+          if (fault === 'drop') return [];
+          if (fault === 'duplicate') return [{ type: 'paragraph', content: `${source} ${source}` }];
+          return [{ type: 'paragraph', content: [{ type: 'link', href: 'https://example.com', content: source }] }];
+        }),
+      ).rejects.toThrow('Não foi possível preservar todas as equações');
+    },
+  );
+
+  it('regenerates a placeholder namespace that collides with user text', async () => {
+    const first = '11111111-1111-4111-8111-111111111111';
+    const second = '22222222-2222-4222-8222-222222222222';
+    const prefix = `TINYFOLDMATH${first.replaceAll('-', '')}Q`;
+    const random = vi.spyOn(crypto, 'randomUUID').mockReturnValueOnce(first).mockReturnValueOnce(second);
+    const blocks = await importMarkdownWithMath(`${prefix} stays and $x$`, parse);
+    expect(random).toHaveBeenCalledTimes(2);
+    expect(documentPlainText(blocks)).toBe(`${prefix} stays and x`);
+  });
+});

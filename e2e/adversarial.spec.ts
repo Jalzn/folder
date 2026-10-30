@@ -51,7 +51,7 @@ test('two independent sessions keep both versions when a conflicting draft is sa
   const title = `Conflito ${info.project.name} ${Date.now()}`;
   const documentUrl = await createDocument(page, title, 'Ideia original compartilhada.');
   const otherContext = await browser.newContext({
-    baseURL: 'http://localhost:5171',
+    baseURL: new URL(page.url()).origin,
     viewport: page.viewportSize() ?? { width: 1440, height: 1000 },
   });
   let release = () => {};

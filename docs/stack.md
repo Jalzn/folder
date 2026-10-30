@@ -14,6 +14,7 @@
 | Persistência | Kysely e better-sqlite3 13.0.3, SQLite 3.53.4 | Substitui PostgreSQL |
 | Login | Conta única, scrypt, sessões por cookie | Adaptado do módulo auth |
 | Editor | BlockNote 0.56.0 e integração Mantine | JSON versionado, Markdown e idioma pt-BR |
+| Desenho | Excalidraw 0.18.1 | Cena vetorial própria, idioma pt-BR e carregamento sob demanda |
 | Qualidade | Biome, tipos, dependency-cruiser, Vitest e Playwright | Testes de banco em SQLite e navegador Chrome |
 | Operação | Docker, uma instância e volume persistente | Backup pela API do SQLite |
 
@@ -22,3 +23,9 @@ O driver inclui binários nativos para as plataformas suportadas; a instalação
 O editor carrega sob demanda ao abrir um documento. O CSS permanece antecipado para manter a ordem do tema estável. Os componentes React Aria cobrem diálogos e menus; o editor usa o tema Mantine do BlockNote com ajustes para a paleta do aplicativo.
 
 O JSON é a fonte do conteúdo. Importação/exportação Markdown usa a conversão do BlockNote e pode perder propriedades que Markdown não representa. O escopo usa apenas blocos de texto suportados; upload de mídia e recursos XL não estão habilitados.
+
+## Fontes do canvas
+
+O Vite copia as fontes do pacote Excalidraw para `public/excalidraw/fonts`, tanto no desenvolvimento quanto antes do build. Essa pasta é gerada e fica fora do Git; o bundle recebe os arquivos na própria origem. `excalidraw-assets.ts` define `EXCALIDRAW_ASSET_PATH` antes de carregar o editor.
+
+O pacote 0.18.1 acrescenta um CDN à lista de fontes mesmo quando o caminho local foi configurado. O patch em `patches/@excalidraw__excalidraw@0.18.1.patch`, registrado em `pnpm-workspace.yaml` e no lockfile, usa o fallback apenas quando não existe caminho explícito. A correção cobre as distribuições de desenvolvimento e produção; instalação com lockfile reaplica o patch. Ao atualizar o Excalidraw, revisar essa correção e repetir os testes de fontes e PNG sem violações de CSP.

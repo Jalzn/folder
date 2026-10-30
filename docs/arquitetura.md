@@ -10,14 +10,14 @@ O Orbis serviu de referência para o workspace pnpm, TypeScript, SPA React/Vite,
 src/
 ├── core/          erros, banco, transações, migrações e idempotência
 ├── auth/          conta pessoal, senha e sessões
-├── workspace/     projetos, documentos, tarefas e vínculos
+├── workspace/     projetos, documentos, desenhos, tarefas e vínculos
 ├── server/        Hono, oRPC, composição, configuração e comandos
 └── web/           React: navegação, editor, projetos e Kanban
 ```
 
 Cada pasta é um pacote `@tinyfold/<nome>`. Auth e workspace seguem domínio, aplicação e infraestrutura. O domínio é puro; casos de uso dependem de portas; a infraestrutura implementa SQL e transporte. O servidor compõe os módulos e a web importa tipos e regras puras. Dependency-cruiser verifica os limites.
 
-Projetos, documentos e tarefas pertencem ao mesmo módulo para preservar invariantes e gravar a criação de uma tarefa e seu vínculo documental na mesma transação.
+Projetos, documentos, desenhos e tarefas pertencem ao mesmo módulo para preservar as regras de atribuição e gravar a criação de uma tarefa e seu vínculo documental na mesma transação. Desenhos têm contrato próprio; cenas não são blocos do editor de documentos.
 
 ## Execução e SQLite
 
@@ -48,6 +48,7 @@ A implantação prevê uma instância e um volume local ao processo. Não há r�
 | `auth_sessions` | Hash do token, aparelho e validade |
 | `workspace_projects` | Nome, versão, datas e arquivamento |
 | `workspace_documents` | Projeto opcional, título, JSON, texto de busca, formato, versão e exclusão lógica |
+| `workspace_canvases` | Projeto opcional, título, cena vetorial JSON, texto de busca, formato, versão e exclusão lógica |
 | `workspace_tasks` | Projeto opcional, título, estado, posição, versão e exclusão lógica |
 | `workspace_task_sources` | Uma origem por tarefa: documento, bloco opcional e trecho capturado |
 | `workspace_state` | Revisão do quadro para validar movimentos concorrentes |
@@ -69,6 +70,8 @@ As relações têm chaves estrangeiras. A lixeira preserva documentos e vínculo
 
 A recuperação depende do armazenamento disponível no navegador; não equivale a um cliente offline completo. Rascunhos inválidos não são carregados no editor.
 
+O controlador de autosave aceita snapshots e validadores de rascunho específicos de documentos e desenhos. As chaves antigas dos documentos foram preservadas; desenhos usam outro namespace por instalação, recurso e escritor. Durante o desenho contínuo, as gravações locais são agrupadas em intervalos de até 100 ms, com persistência adicional ao soltar o ponteiro ou sair. O envio ao servidor aguarda 650 ms de pausa e mantém uma chamada em voo.
+
 ## Editor e limites
 
 BlockNote armazena JSON no formato versão 1. O esquema permite parágrafos, títulos, listas, checklist, citações e código. A validação verifica hierarquia, IDs, estilos, links, propriedades e blocos aceitos pelo editor. O texto extraído alimenta a busca sem diferenciação de acentos.
@@ -78,6 +81,18 @@ O conteúdo persistido tem limite de 1 MiB e 5.000 blocos; pedidos HTTP têm lim
 Importar Markdown cria outro documento e preserva o documento aberto. Exportar usa o conteúdo atual do editor. Propriedades que Markdown não representa podem ser perdidas; projetos, tarefas, vínculos e sessões não fazem parte do arquivo `.md`.
 
 Criar tarefa é uma ação explícita sobre a seleção. Um trecho de um único bloco usa sua âncora; uma seleção que atravessa blocos usa o documento como origem. Checklists continuam locais ao texto.
+
+## Canvas e limites
+
+O Excalidraw 0.18.1 carrega sob demanda em `/desenhos/$canvasId`; a listagem fica em `/desenhos`. O domínio valida JSON vetorial sem depender do runtime do editor. A cena persiste elementos e cor de fundo; viewport, seleção, menus, arquivos de mídia e histórico de desfazer não fazem parte do conteúdo no servidor.
+
+Cada cena admite até 1 MiB e 5.000 elementos; a recuperação local admite até 5 MiB e 20.000 elementos válidos. A cena gravada remove elementos excluídos sem referências, preservando os necessários aos vínculos ativos. O histórico nativo em memória mantém os elementos para desfazer ações. Texto de busca é derivado apenas dos elementos de texto ativos.
+
+Todas as mutações de canvas retornam confirmação compacta. A migração adicional `002_canvases.sql` mantém intactos documentos e tarefas existentes. A leitura autenticada também retorna desenhos na lixeira, permitindo recuperar um rascunho local após exclusão remota; gravar sobre um desenho excluído continua recusado.
+
+Importar `.excalidraw` valida e compacta a cena antes de criar outro desenho. O arquivo tem limite de 2 MiB e a cena final respeita o teto persistido. PNG é gerado a partir do snapshot atual, com lado máximo de 4.096 pixels. Imagens e conteúdo incorporado são recusados em importação, colagem e arraste.
+
+As fontes são copiadas pelo Vite para a própria origem no desenvolvimento e no build. Uma correção versionada pelo pnpm remove o fallback de CDN quando há caminho de fontes configurado, mantendo a política `font-src 'self'`; veja [stack](stack.md).
 
 ## Operação
 

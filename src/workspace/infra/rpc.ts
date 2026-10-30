@@ -5,6 +5,14 @@ import { createWorkspaceService } from './service.js';
 export function createWorkspaceRouter(db: Database) {
   const service = createWorkspaceService(db);
   return {
+    listCanvases: authedProcedure.input(schemas.ListCanvasesInput).handler(({ input }) => service.listCanvases(input)),
+    getCanvas: authedProcedure.input(schemas.GetCanvasInput).handler(({ input }) => service.getCanvas(input)),
+    createCanvas: authedProcedure.input(schemas.CreateCanvasInput).handler(({ input }) => service.createCanvas(input)),
+    saveCanvas: authedProcedure.input(schemas.SaveCanvasInput).handler(({ input }) => service.saveCanvas(input)),
+    deleteCanvas: authedProcedure.input(schemas.DeleteCanvasInput).handler(({ input }) => service.deleteCanvas(input)),
+    restoreCanvas: authedProcedure
+      .input(schemas.RestoreCanvasInput)
+      .handler(({ input }) => service.restoreCanvas(input)),
     listProjects: authedProcedure.input(schemas.ListProjectsInput).handler(({ input }) => service.listProjects(input)),
     createProject: authedProcedure
       .input(schemas.CreateProjectInput)

@@ -15,9 +15,10 @@ Uma tarefa também pode nascer diretamente no Kanban. Um checklist no documento 
 
 ## Navegação
 
-- Início: ação Novo documento e itens recentes.
+- Início: ações de escrever e desenhar, com documentos e desenhos recentes.
 - Documentos: lista e busca, incluindo documentos sem projeto.
-- Projetos: cada projeto tem as abas Documentos e Kanban.
+- Desenhos: lista e busca por título e texto, incluindo desenhos sem projeto.
+- Projetos: cada projeto tem as abas Documentos, Desenhos e Kanban.
 - Kanban: quadro geral, incluindo tarefas sem projeto, com filtro por projeto.
 - Perfil: senha, sessões e sair.
 
@@ -33,6 +34,16 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 - Importação e exportação `.md`, com comportamento documentado para elementos específicos do aplicativo.
 - Conteúdo estruturado é a fonte principal; Markdown é um formato de intercâmbio.
 - Busca por título e texto. Exclusão recuperável na lixeira.
+
+## Desenhos
+
+- Canvas Excalidraw em página própria, com título, projeto opcional, formas, setas, texto, quadros de agrupamento e traço livre.
+- Salvamento automático, rascunho recuperável e resolução de conflitos por versão, como nos documentos.
+- Busca por título e pelos textos do desenho, recentes, filtro de projeto e exclusão recuperável na lixeira.
+- Importação de `.excalidraw` cria outro desenho; exportação editável ou PNG usa o conteúdo atual, inclusive com salvamento pendente.
+- Seleção, cursor e zoom não criam versões de conteúdo. O histórico de desfazer permanece na sessão do editor.
+- Cópia de recuperação e importação de um desenho em projeto arquivado criam o novo conteúdo sem projeto, com aviso.
+- Imagens, conteúdo incorporado, colaboração simultânea e integração com IA ficam para entregas futuras.
 
 ## Projetos e tarefas
 

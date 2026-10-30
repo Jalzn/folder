@@ -62,7 +62,7 @@ module.exports = {
     parser: 'swc',
     enhancedResolveOptions: {
       exportsFields: ['exports'],
-      conditionNames: ['import', 'types', 'node', 'default'],
+      conditionNames: ['import', 'types', 'node', 'production', 'default'],
       extensions: ['.ts', '.tsx', '.js'],
     },
   },

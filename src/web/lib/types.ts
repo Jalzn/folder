@@ -1,6 +1,16 @@
 import type { TaskStatus } from '@tinyfold/workspace/domain';
 
-export type { Document, DocumentContent, DocumentSummary, Project, Task, TaskStatus } from '@tinyfold/workspace/domain';
+export type {
+  Canvas,
+  CanvasScene,
+  CanvasSummary,
+  Document,
+  DocumentContent,
+  DocumentSummary,
+  Project,
+  Task,
+  TaskStatus,
+} from '@tinyfold/workspace/domain';
 
 export const statusLabels: Record<TaskStatus, string> = { todo: 'A fazer', doing: 'Em andamento', done: 'Concluído' };
 export const taskStatuses: TaskStatus[] = ['todo', 'doing', 'done'];

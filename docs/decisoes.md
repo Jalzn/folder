@@ -16,6 +16,9 @@ Acrescentar novas decisões ao histórico e atualizar os documentos afetados. Um
 | 2026-10-29 | Proposta técnica | Kysely com better-sqlite3; BlockNote sujeito à prova do editor. Validar versões na fundação. |
 | 2026-10-29 | Proposta técnica | Autosave com controle de versão, pedido idempotente e recuperação de rascunho. Conflito mantém a cópia local para resolução explícita. |
 | 2026-10-29 | Proposta técnica | Backup e restauração verificados antes do uso diário em produção. Hospedagem, domínio e destino do backup permanecem pendentes. |
+| 2026-10-29 | Conversa com o usuário | Abrir um worktree no Tinyfold para explorar uma feature de canvas semelhante ao Excalidraw. |
+| 2026-10-29 | Proposta técnica | [Etapa 06](etapas/06-canvas.md): desenhos independentes, com projeto opcional, Excalidraw incorporado e salvamento com versão e recuperação. |
+| 2026-10-29 | Conversa com o usuário | Implementar a feature de canvas no worktree com subagentes. |
 
 ## Decisões de implementação
 
@@ -26,3 +29,6 @@ Acrescentar novas decisões ao histórico e atualizar os documentos afetados. Um
 - CSS com tokens substituiu a proposta de Tailwind; React Aria foi mantido para diálogos e menus.
 - Editor carrega sob demanda. A navegação e o Kanban funcionam em viewport estreito, com menu como alternativa ao arrastar.
 - Docker e backup/restauração foram implementados. A entrega é local: remoto Git, provedor, domínio e backup externo continuam pendentes.
+- Desenhos usam Excalidraw 0.18.1 sob demanda, em tabela própria no módulo workspace. O recorte inicial é vetorial, com importação/exportação editável e PNG; mídia e colaboração ficam para depois.
+- Fontes do canvas são locais, com patch versionado para respeitar a configuração sem incluir CDN. Rascunhos de documentos mantêm compatibilidade após a extração do controlador de autosave compartilhado.
+- A leitura autenticada de desenhos inclui itens na lixeira para permitir recuperação após exclusão remota. Gravação em desenho excluído continua recusada; salvar como cópia em projeto arquivado usa destino sem projeto e informa a mudança.

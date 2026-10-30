@@ -2,9 +2,10 @@ import { AppError } from '@tinyfold/core/application';
 import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import type { TaskRecord, WorkspaceRepository } from '../application/ports.js';
+import type { Canvas, CanvasSummary } from '../domain/canvas.js';
 import { documentPlainText, findBlock } from '../domain/document.js';
 import type { Document, DocumentBlock, DocumentSummary, Project, Task } from '../domain/models.js';
-import type { DocumentRow, ProjectRow, TaskRow, WorkspaceTables } from './db.js';
+import type { CanvasRow, DocumentRow, ProjectRow, TaskRow, WorkspaceTables } from './db.js';
 
 const projectModel = (row: ProjectRow): Project => ({
   id: row.id,
@@ -74,6 +75,35 @@ const taskRow = (task: TaskRecord): TaskRow => ({
   deleted_at: task.deletedAt,
 });
 
+const canvasSummary = (row: Omit<CanvasRow, 'scene' | 'search_text'>): CanvasSummary => ({
+  id: row.id,
+  title: row.title,
+  projectId: row.project_id,
+  plainText: row.plain_text,
+  formatVersion: row.format_version,
+  version: row.version,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+  deletedAt: row.deleted_at,
+});
+const canvasModel = (row: CanvasRow): Canvas => ({
+  ...canvasSummary(row),
+  scene: JSON.parse(row.scene) as Canvas['scene'],
+});
+const canvasRow = (canvas: Canvas): CanvasRow => ({
+  id: canvas.id,
+  project_id: canvas.projectId,
+  title: canvas.title,
+  scene: JSON.stringify(canvas.scene),
+  plain_text: canvas.plainText,
+  search_text: searchText(`${canvas.title}\n${canvas.plainText}`),
+  format_version: canvas.formatVersion,
+  version: canvas.version,
+  created_at: canvas.createdAt,
+  updated_at: canvas.updatedAt,
+  deleted_at: canvas.deletedAt,
+});
+
 function expectUpdated(count: bigint): void {
   if (count !== 1n)
     throw new AppError('VERSION_CONFLICT', 'Este item mudou em outro dispositivo. Atualize antes de continuar.');
@@ -127,6 +157,49 @@ export function workspaceRepository(connection: Database): WorkspaceRepository {
   }
 
   return {
+    async listCanvases(input) {
+      let query = db
+        .selectFrom('workspace_canvases')
+        .select([
+          'id',
+          'project_id',
+          'title',
+          'plain_text',
+          'format_version',
+          'version',
+          'created_at',
+          'updated_at',
+          'deleted_at',
+        ])
+        .where('deleted_at', input.deleted ? 'is not' : 'is', null);
+      if (input.projectId !== undefined)
+        query =
+          input.projectId === null
+            ? query.where('project_id', 'is', null)
+            : query.where('project_id', '=', input.projectId);
+      if (input.query?.trim())
+        query = query.where(sql<boolean>`instr(search_text, ${searchText(input.query.trim())}) > 0`);
+      return (await query.orderBy('updated_at', 'desc').orderBy('id').execute()).map((row) => ({
+        ...canvasSummary(row),
+        plainText: row.plain_text.slice(0, 280),
+      }));
+    },
+    async findCanvas(id) {
+      const row = await db.selectFrom('workspace_canvases').selectAll().where('id', '=', id).executeTakeFirst();
+      return row && canvasModel(row);
+    },
+    async insertCanvas(canvas) {
+      await db.insertInto('workspace_canvases').values(canvasRow(canvas)).execute();
+    },
+    async saveCanvas(canvas, expectedVersion) {
+      const result = await db
+        .updateTable('workspace_canvases')
+        .set(canvasRow(canvas))
+        .where('id', '=', canvas.id)
+        .where('version', '=', expectedVersion)
+        .executeTakeFirstOrThrow();
+      expectUpdated(result.numUpdatedRows);
+    },
     async listProjects(includeArchived) {
       let query = db.selectFrom('workspace_projects').selectAll();
       if (!includeArchived) query = query.where('archived_at', 'is', null);

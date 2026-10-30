@@ -11,18 +11,20 @@ import {
   FolderPlus,
   LayoutGrid,
   MoreHorizontal,
+  PenTool,
   Plus,
   RotateCcw,
   Search,
   Trash2,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type KeyboardEvent, useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { useDocuments, useProjects } from '../lib/queries';
+import { useCanvases, useDocuments, useProjects } from '../lib/queries';
 import { type DocumentSummary, type Project, relativeDate } from '../lib/types';
 import { useApp } from '../shell';
 import { Dialog, EmptyState, ErrorNotice, Menu, Spinner, useAction, useRequest } from '../ui';
 import { Kanban } from './Board';
+import { CanvasRows, ContentRows, type ContentSummary } from './Canvases';
 
 export function PageHeader({
   eyebrow,
@@ -57,36 +59,20 @@ export function DocumentRows({
   compact?: boolean;
 }) {
   return (
-    <div className={`document-list ${compact ? 'compact' : ''}`}>
-      {documents.map((doc) => (
-        <Link key={doc.id} to="/documentos/$documentId" params={{ documentId: doc.id }} className="document-row">
-          <span className="document-row-icon">
-            <FileText size={20} />
-          </span>
-          <div className="document-row-body">
-            <strong>{doc.title}</strong>
-            {!compact && <p>{doc.plainText.trim() || 'Uma página aberta para suas ideias.'}</p>}
-          </div>
-          <div className="document-row-meta">
-            {doc.projectId && (
-              <span className="project-label">
-                <Folder size={12} />
-                {projects.find((p) => p.id === doc.projectId)?.name ?? 'Projeto'}
-              </span>
-            )}
-            <time dateTime={doc.updatedAt}>{relativeDate(doc.updatedAt)}</time>
-          </div>
-          <ArrowUpRight size={16} className="row-arrow" />
-        </Link>
-      ))}
-    </div>
+    <ContentRows items={documents.map((item) => ({ kind: 'document', item }))} projects={projects} compact={compact} />
   );
 }
 
 export function HomePage() {
   const app = useApp();
   const documents = useDocuments();
+  const canvases = useCanvases();
   const projects = useProjects();
+  const recentItems: ContentSummary[] = [
+    ...(documents.data ?? []).map((item) => ({ kind: 'document' as const, item })),
+    ...(canvases.data ?? []).map((item) => ({ kind: 'canvas' as const, item })),
+  ];
+  recentItems.sort((a, b) => b.item.updatedAt.localeCompare(a.item.updatedAt) || a.item.id.localeCompare(b.item.id));
   const date = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   return (
     <div className="page home-page">
@@ -109,16 +95,27 @@ export function HomePage() {
             Uma ideia solta já é um bom começo.
             <br />A organização pode vir depois.
           </p>
-          <button
-            type="button"
-            className="button primary"
-            onClick={() => void app.newDocument()}
-            disabled={app.creatingDocument}
-          >
-            <Plus size={17} />
-            Começar a escrever
-            <ArrowRight size={17} />
-          </button>
+          <div className="capture-actions">
+            <button
+              type="button"
+              className="button primary"
+              onClick={() => void app.newDocument()}
+              disabled={app.creatingDocument}
+            >
+              <Plus size={17} />
+              Começar a escrever
+              <ArrowRight size={17} />
+            </button>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => void app.newCanvas()}
+              disabled={app.creatingCanvas}
+            >
+              <PenTool size={17} />
+              Começar um desenho
+            </button>
+          </div>
         </div>
         <div className="paper-stack" aria-hidden="true">
           <div className="paper paper-back" />
@@ -141,17 +138,28 @@ export function HomePage() {
             <Clock3 size={17} />
             Continue de onde parou
           </h2>
-          <Link to="/documentos" className="text-button">
-            Ver documentos
-            <ArrowRight size={15} />
-          </Link>
+          <div className="recent-actions">
+            <Link to="/documentos" className="text-button">
+              Documentos
+            </Link>
+            <Link to="/desenhos" className="text-button">
+              Desenhos
+              <ArrowRight size={15} />
+            </Link>
+          </div>
         </div>
-        {documents.isPending ? (
+        {documents.isPending || canvases.isPending ? (
           <Spinner />
-        ) : documents.error ? (
-          <ErrorNotice error={documents.error} retry={() => void documents.refetch()} />
-        ) : documents.data?.length ? (
-          <DocumentRows documents={documents.data.slice(0, 5)} projects={projects.data ?? []} />
+        ) : documents.error || canvases.error ? (
+          <ErrorNotice
+            error={documents.error ?? canvases.error}
+            retry={() => {
+              void documents.refetch();
+              void canvases.refetch();
+            }}
+          />
+        ) : recentItems.length ? (
+          <ContentRows items={recentItems.slice(0, 5)} projects={projects.data ?? []} showKind />
         ) : (
           <div className="first-document">
             <FileText size={27} />
@@ -194,7 +202,10 @@ export function HomePage() {
                 <ArrowUpRight size={16} />
               </div>
               <h3>{project.name}</h3>
-              <span>{documents.data?.filter((d) => d.projectId === project.id).length ?? 0} documentos</span>
+              <span>
+                {documents.data?.filter((item) => item.projectId === project.id).length ?? 0} documentos ·{' '}
+                {canvases.data?.filter((item) => item.projectId === project.id).length ?? 0} desenhos
+              </span>
             </Link>
           ))}
           <button type="button" className="project-card add-project-card" onClick={app.openProjectDialog}>
@@ -303,12 +314,34 @@ export function ProjectPage() {
   const projects = useProjects(true);
   const project = projects.data?.find((p) => p.id === projectId);
   const documents = useDocuments({ projectId });
-  const [tabState, setTabState] = useState<{ projectId: string; tab: 'documents' | 'kanban' }>({
+  const canvases = useCanvases({ projectId });
+  type ProjectTab = 'documents' | 'canvases' | 'kanban';
+  const [tabState, setTabState] = useState<{ projectId: string; tab: ProjectTab }>({
     projectId,
     tab: 'documents',
   });
   const tab = tabState.projectId === projectId ? tabState.tab : 'documents';
-  const setTab = (next: 'documents' | 'kanban') => setTabState({ projectId, tab: next });
+  const setTab = (next: ProjectTab) => setTabState({ projectId, tab: next });
+  function navigateTab(event: KeyboardEvent<HTMLButtonElement>, current: ProjectTab) {
+    const tabs: ProjectTab[] = ['documents', 'canvases', 'kanban'];
+    const index = tabs.indexOf(current);
+    const nextIndex =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? tabs.length - 1
+          : event.key === 'ArrowRight'
+            ? (index + 1) % tabs.length
+            : event.key === 'ArrowLeft'
+              ? (index + tabs.length - 1) % tabs.length
+              : null;
+    if (nextIndex === null) return;
+    const next = tabs[nextIndex];
+    if (!next) return;
+    event.preventDefault();
+    setTab(next);
+    document.getElementById(`project-${next}-tab`)?.focus();
+  }
   const [renameOpen, setRenameOpen] = useState(false);
   const [name, setName] = useState('');
   const app = useApp();
@@ -343,7 +376,7 @@ export function ProjectPage() {
         <EmptyState
           icon={<Folder size={30} />}
           title="Projeto não encontrado"
-          description="Ele pode ter sido removido. Seus documentos continuam na biblioteca."
+          description="Ele pode ter sido removido. Seus documentos e desenhos continuam na biblioteca."
         />
       </div>
     );
@@ -358,7 +391,7 @@ export function ProjectPage() {
         title={project.name}
         description={
           project.archivedAt
-            ? 'Projeto arquivado. Seus documentos e tarefas estão preservados.'
+            ? 'Projeto arquivado. Seus documentos, desenhos e tarefas estão preservados.'
             : 'Suas ideias e próximos passos, juntos.'
         }
       >
@@ -392,6 +425,17 @@ export function ProjectPage() {
             Novo documento
           </button>
         )}
+        {tab === 'canvases' && !project.archivedAt && (
+          <button
+            type="button"
+            className="button primary"
+            disabled={app.creatingCanvas}
+            onClick={() => void app.newCanvas(project.id)}
+          >
+            <Plus size={17} />
+            Novo desenho
+          </button>
+        )}
       </PageHeader>
       <div className="tabs" role="tablist" aria-label="Conteúdo do projeto">
         <button
@@ -403,16 +447,24 @@ export function ProjectPage() {
           aria-controls="project-documents-panel"
           className={tab === 'documents' ? 'active' : ''}
           onClick={() => setTab('documents')}
-          onKeyDown={(event) => {
-            if (['ArrowRight', 'ArrowLeft', 'End'].includes(event.key)) {
-              event.preventDefault();
-              setTab('kanban');
-              document.getElementById('project-kanban-tab')?.focus();
-            }
-          }}
+          onKeyDown={(event) => navigateTab(event, 'documents')}
         >
           <FileText size={16} />
           Documentos<span>{documents.data?.length ?? 0}</span>
+        </button>
+        <button
+          type="button"
+          id="project-canvases-tab"
+          role="tab"
+          tabIndex={tab === 'canvases' ? 0 : -1}
+          aria-selected={tab === 'canvases'}
+          aria-controls="project-canvases-panel"
+          className={tab === 'canvases' ? 'active' : ''}
+          onClick={() => setTab('canvases')}
+          onKeyDown={(event) => navigateTab(event, 'canvases')}
+        >
+          <PenTool size={16} />
+          Desenhos<span>{canvases.data?.length ?? 0}</span>
         </button>
         <button
           type="button"
@@ -423,13 +475,7 @@ export function ProjectPage() {
           aria-controls="project-kanban-panel"
           className={tab === 'kanban' ? 'active' : ''}
           onClick={() => setTab('kanban')}
-          onKeyDown={(event) => {
-            if (['ArrowRight', 'ArrowLeft', 'Home'].includes(event.key)) {
-              event.preventDefault();
-              setTab('documents');
-              document.getElementById('project-documents-tab')?.focus();
-            }
-          }}
+          onKeyDown={(event) => navigateTab(event, 'kanban')}
         >
           <LayoutGrid size={16} />
           Kanban
@@ -453,6 +499,34 @@ export function ProjectPage() {
                 <button type="button" className="button primary" onClick={() => void app.newDocument(project.id)}>
                   <Plus size={17} />
                   Escrever um documento
+                </button>
+              )}
+            </EmptyState>
+          )}
+        </section>
+      ) : tab === 'canvases' ? (
+        <section id="project-canvases-panel" role="tabpanel" aria-labelledby="project-canvases-tab">
+          {canvases.isPending ? (
+            <Spinner />
+          ) : canvases.error ? (
+            <ErrorNotice error={canvases.error} retry={() => void canvases.refetch()} />
+          ) : canvases.data?.length ? (
+            <CanvasRows canvases={canvases.data} />
+          ) : (
+            <EmptyState
+              icon={<PenTool size={30} />}
+              title="Dê forma às ideias do projeto"
+              description="Desenhe um fluxo, explore uma interface ou conecte suas referências."
+            >
+              {!project.archivedAt && (
+                <button
+                  type="button"
+                  className="button primary"
+                  disabled={app.creatingCanvas}
+                  onClick={() => void app.newCanvas(project.id)}
+                >
+                  <Plus size={17} />
+                  Criar desenho
                 </button>
               )}
             </EmptyState>
@@ -490,13 +564,23 @@ export function ProjectPage() {
 
 export function TrashPage() {
   const documents = useDocuments({ deleted: true });
+  const canvases = useCanvases({ deleted: true });
   const projects = useProjects(true);
   const action = useAction();
   const request = useRequest();
-  async function restore(doc: DocumentSummary) {
-    const input = { id: doc.id, expectedVersion: doc.version };
+  const items: ContentSummary[] = [
+    ...(documents.data ?? []).map((item) => ({ kind: 'document' as const, item })),
+    ...(canvases.data ?? []).map((item) => ({ kind: 'canvas' as const, item })),
+  ];
+  items.sort((a, b) => (b.item.deletedAt ?? b.item.updatedAt).localeCompare(a.item.deletedAt ?? a.item.updatedAt));
+  async function restore(entry: ContentSummary) {
+    const input = { id: entry.item.id, expectedVersion: entry.item.version };
+    const requestId = request.for({ ...input, kind: entry.kind });
     await action.run(
-      () => api.workspace.restoreDocument({ ...input, requestId: request.for(input) }),
+      () =>
+        entry.kind === 'canvas'
+          ? api.workspace.restoreCanvas({ ...input, requestId })
+          : api.workspace.restoreDocument({ ...input, requestId }),
       () => request.clear(),
     );
   }
@@ -505,31 +589,42 @@ export function TrashPage() {
       <PageHeader
         eyebrow="SEU ESPAÇO"
         title="Lixeira"
-        description="Ideias podem mudar de lugar. Seus documentos podem voltar."
+        description="Ideias podem mudar de lugar. Seus documentos e desenhos podem voltar."
       />
-      {documents.isPending ? (
+      {documents.isPending || canvases.isPending ? (
         <Spinner />
-      ) : documents.error ? (
-        <ErrorNotice error={documents.error} />
-      ) : documents.data?.length ? (
+      ) : documents.error || canvases.error ? (
+        <ErrorNotice
+          error={documents.error ?? canvases.error}
+          retry={() => {
+            void documents.refetch();
+            void canvases.refetch();
+          }}
+        />
+      ) : items.length ? (
         <div className="document-list">
-          {documents.data.map((doc) => (
-            <div key={doc.id} className="document-row">
-              <span className="document-row-icon">
-                <FileText size={20} />
+          {items.map((entry) => (
+            <div key={`${entry.kind}:${entry.item.id}`} className="document-row">
+              <span
+                className="document-row-icon"
+                role="img"
+                aria-label={entry.kind === 'canvas' ? 'Desenho' : 'Documento'}
+              >
+                {entry.kind === 'canvas' ? <PenTool size={20} /> : <FileText size={20} />}
               </span>
               <div className="document-row-body">
-                <strong>{doc.title}</strong>
+                <strong>{entry.item.title}</strong>
                 <p>
-                  {projects.data?.find((p) => p.id === doc.projectId)?.name ?? 'Sem projeto'} · Excluído{' '}
-                  {relativeDate(doc.deletedAt ?? doc.updatedAt).toLocaleLowerCase('pt-BR')}
+                  {entry.kind === 'canvas' ? 'Desenho' : 'Documento'} ·{' '}
+                  {projects.data?.find((project) => project.id === entry.item.projectId)?.name ?? 'Sem projeto'} ·
+                  Excluído {relativeDate(entry.item.deletedAt ?? entry.item.updatedAt).toLocaleLowerCase('pt-BR')}
                 </p>
               </div>
               <button
                 type="button"
                 className="button secondary"
                 disabled={action.busy}
-                onClick={() => void restore(doc)}
+                onClick={() => void restore(entry)}
               >
                 <RotateCcw size={16} />
                 Restaurar
@@ -541,7 +636,7 @@ export function TrashPage() {
         <EmptyState
           icon={<Trash2 size={29} />}
           title="Tudo no seu lugar"
-          description="Os documentos que você excluir vão aparecer aqui para serem recuperados."
+          description="Os documentos e desenhos que você excluir vão aparecer aqui para serem recuperados."
         />
       )}
       <p className="page-footnote">

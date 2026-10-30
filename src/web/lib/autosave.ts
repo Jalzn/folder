@@ -6,26 +6,26 @@ export interface Snapshot {
   projectId: string | null;
   content: DocumentContent;
 }
-export interface SaveInput extends Snapshot {
+export type SaveInput<T = Snapshot> = T & {
   id: string;
   requestId: string;
   expectedVersion: number;
-}
+};
 export interface SaveAck {
   id: string;
   version: number;
   updatedAt: string;
 }
 export type SaveStatus = 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
-export interface SavedDraft {
+export interface SavedDraft<T = Snapshot> {
   format: 1;
   baseVersion: number;
-  snapshot: Snapshot;
-  pending: SaveInput | null;
+  snapshot: T;
+  pending: SaveInput<T> | null;
   recoveryData?: string | null;
 }
-export interface SaveState {
-  snapshot: Snapshot;
+export interface SaveState<T = Snapshot> {
+  snapshot: T;
   version: number;
   status: SaveStatus;
   error: unknown;
@@ -43,7 +43,7 @@ export interface DraftStorage {
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
-export function sameSnapshot(a: Snapshot, b: Snapshot) {
+export function sameSnapshot(a: unknown, b: unknown) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 export function parseDraft(value: string | null): SavedDraft | null {
@@ -89,40 +89,46 @@ export function parseDraft(value: string | null): SavedDraft | null {
 }
 
 /** One immutable request is retried until acknowledged; newer edits stay in the draft. */
-export class AutosaveController {
-  private state: SaveState;
-  private pending: SaveInput | null = null;
-  private savedSnapshot: Snapshot;
+export class AutosaveController<T = Snapshot> {
+  private state: SaveState<T>;
+  private pending: SaveInput<T> | null = null;
+  private savedSnapshot: T;
   private listeners = new Set<() => void>();
   private timer: ReturnType<typeof setTimeout> | undefined;
+  private draftTimer: ReturnType<typeof setTimeout> | undefined;
   private inFlight: Promise<boolean> | null = null;
-  private remote: { snapshot: Snapshot; version: number };
+  private remote: { snapshot: T; version: number };
 
   constructor(
     private options: {
       id: string;
-      snapshot: Snapshot;
+      snapshot: T;
       version: number;
       storage: DraftStorage;
-      send: (input: SaveInput) => Promise<SaveAck>;
+      send: (input: SaveInput<T>) => Promise<SaveAck>;
+      readDraft?: (value: string | null) => SavedDraft<T> | null;
+      equal?: (left: T, right: T) => boolean;
+      draftDelayMs?: number;
       idFactory: () => string;
       classifyError: (error: unknown) => string | undefined;
-      onSaved?: (ack: SaveAck, snapshot: Snapshot) => void;
+      onSaved?: (ack: SaveAck, snapshot: T) => void;
     },
   ) {
     this.savedSnapshot = clone(options.snapshot);
     this.remote = { snapshot: clone(options.snapshot), version: options.version };
-    let draft: SavedDraft | null = null;
+    let draft: SavedDraft<T> | null = null;
     let storageFailed = false;
     let rawDraft: string | null = null;
     try {
       rawDraft = options.storage.read();
-      draft = parseDraft(rawDraft);
+      draft = options.readDraft
+        ? options.readDraft(rawDraft)
+        : (parseDraft(rawDraft) as unknown as SavedDraft<T> | null);
     } catch {
       storageFailed = true;
     }
     if (draft?.pending && draft.pending.id !== options.id) draft.pending = null;
-    const hasDraft = draft !== null && (!sameSnapshot(draft.snapshot, options.snapshot) || draft.pending !== null);
+    const hasDraft = draft !== null && (!this.equal(draft.snapshot, options.snapshot) || draft.pending !== null);
     this.pending = hasDraft && draft ? draft.pending : null;
     this.state = {
       snapshot: clone(hasDraft && draft ? draft.snapshot : options.snapshot),
@@ -149,11 +155,16 @@ export class AutosaveController {
       this.listeners.delete(listener);
     };
   };
-  private emit(patch: Partial<SaveState> = {}) {
+  private emit(patch: Partial<SaveState<T>> = {}) {
     this.state = { ...this.state, ...patch };
     for (const listener of this.listeners) listener();
   }
+  private equal(left: T, right: T) {
+    return this.options.equal ? this.options.equal(left, right) : sameSnapshot(left, right);
+  }
   private persist() {
+    clearTimeout(this.draftTimer);
+    this.draftTimer = undefined;
     try {
       this.options.storage.write(
         JSON.stringify({
@@ -162,7 +173,7 @@ export class AutosaveController {
           snapshot: this.state.snapshot,
           pending: this.pending,
           recoveryData: this.state.recoveryData,
-        } satisfies SavedDraft),
+        } satisfies SavedDraft<T>),
       );
       if (this.state.storageFailed) this.emit({ storageFailed: false });
     } catch {
@@ -173,15 +184,20 @@ export class AutosaveController {
     clearTimeout(this.timer);
     this.timer = setTimeout(() => void this.flush(), 650);
   }
-  change(snapshot: Snapshot) {
-    if (sameSnapshot(snapshot, this.state.snapshot)) return;
+  persistDraft() {
+    if (this.state.status !== 'saved' || this.state.recoveryData) this.persist();
+  }
+  change(snapshot: T) {
+    if (this.equal(snapshot, this.state.snapshot)) return;
     const blocked = ['error', 'conflict'].includes(this.state.status);
     this.emit({
       snapshot: clone(snapshot),
       status: blocked ? this.state.status : this.inFlight ? 'saving' : 'dirty',
       recovered: false,
     });
-    this.persist();
+    if (this.options.draftDelayMs) {
+      this.draftTimer ??= setTimeout(() => this.persist(), this.options.draftDelayMs);
+    } else this.persist();
     if (!blocked) this.schedule();
   }
   async flush(): Promise<boolean> {
@@ -191,7 +207,7 @@ export class AutosaveController {
       return this.state.status === 'saved' || (this.state.status === 'dirty' ? this.flush() : false);
     }
     if (this.state.status === 'conflict') return false;
-    if (!this.pending && sameSnapshot(this.state.snapshot, this.savedSnapshot)) {
+    if (!this.pending && this.equal(this.state.snapshot, this.savedSnapshot)) {
       this.emit({ status: 'saved' });
       return true;
     }
@@ -208,8 +224,9 @@ export class AutosaveController {
       try {
         const ack = await this.options.send(sent);
         this.pending = null;
-        this.savedSnapshot = { title: sent.title, projectId: sent.projectId, content: sent.content };
-        const caughtUp = sameSnapshot(this.state.snapshot, this.savedSnapshot);
+        const { id: _id, requestId: _requestId, expectedVersion: _version, ...sentSnapshot } = sent;
+        this.savedSnapshot = sentSnapshot as T;
+        const caughtUp = this.equal(this.state.snapshot, this.savedSnapshot);
         const newerRemote = this.remote.version > ack.version;
         if (newerRemote && caughtUp) {
           this.savedSnapshot = clone(this.remote.snapshot);
@@ -262,7 +279,7 @@ export class AutosaveController {
     if (success && this.state.status === 'dirty') return this.flush();
     return success;
   }
-  receiveRemote(snapshot: Snapshot, version: number) {
+  receiveRemote(snapshot: T, version: number) {
     if (version <= this.remote.version) return;
     this.remote = { snapshot: clone(snapshot), version };
     if (this.inFlight || this.pending) return;
@@ -272,9 +289,11 @@ export class AutosaveController {
       this.persist();
     }
   }
-  acceptRemote(snapshot: Snapshot, version: number) {
-    clearTimeout(this.timer);
+  acceptRemote(snapshot: T, version: number) {
     if (this.inFlight) return;
+    clearTimeout(this.timer);
+    clearTimeout(this.draftTimer);
+    this.draftTimer = undefined;
     this.pending = null;
     this.savedSnapshot = clone(snapshot);
     this.remote = { snapshot: clone(snapshot), version };
