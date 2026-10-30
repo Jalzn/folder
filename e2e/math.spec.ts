@@ -19,11 +19,11 @@ async function startDocument(page: Page, title: string) {
 }
 
 async function editFormula(page: Page, latex: string) {
+  await expect(sourceInput(page)).toBeVisible();
   const saved = page.waitForResponse(
     (response) => response.url().includes('/workspace/saveDocument') && response.status() === 200,
   );
-  const inlineContent = sourceInput(page).locator('[data-node-view-content-react]');
-  await ((await inlineContent.count()) ? inlineContent : sourceInput(page)).fill(latex);
+  await sourceInput(page).fill(latex);
   await expect(sourceInput(page)).toHaveText(latex);
   await page.getByRole('button', { name: 'OK', exact: true }).click();
   await saved;
@@ -70,7 +70,7 @@ test('insert a display equation from the menu, recover invalid LaTeX and edit af
   expect(policyErrors).toEqual([]);
 });
 
-test('insert inline math after text and keep the editing popup within the viewport', async ({ page }, info) => {
+test('insert inline math, replace its source with the keyboard and cancel safely', async ({ page }, info) => {
   await startDocument(page, `Matemática em linha ${info.project.name}`);
   const editor = page.getByTestId('document-content');
   await editor.pressSequentially('A energia pode ser descrita assim: /equacao');
@@ -78,23 +78,63 @@ test('insert inline math after text and keep the editing popup within the viewpo
     .getByRole('option')
     .filter({ has: page.getByText('Equação em linha', { exact: true }) })
     .click();
-  const popup = page.locator('.bn-preview-with-source-popup[data-open="true"] .bn-source-block-popup');
+  const popup = page.getByRole('dialog', { name: 'Equação em linha' });
+  const input = page.getByRole('textbox', { name: 'Código LaTeX' });
   await expect(popup).toBeVisible();
+  await expect(input).toBeFocused();
   const bounds = await popup.boundingBox();
   expect(bounds).not.toBeNull();
   expect((bounds?.x ?? -1) >= 0).toBe(true);
   expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
-  await editFormula(page, 'E = mc^2');
+  await input.fill('E = mc^2');
+  await page.getByRole('button', { name: 'Salvar equação' }).click();
+  await expect(popup).not.toBeVisible();
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   await page.reload();
   await expect(editor.locator('.katex')).toBeVisible();
   await expect(editor).toContainText('A energia pode ser descrita assim:');
   await editor.locator('[data-inline-content-type="math"] .bn-preview-container').click();
+  await expect(input).toHaveValue('E = mc^2');
   const reopenedBounds = await popup.boundingBox();
   expect(reopenedBounds).not.toBeNull();
   expect((reopenedBounds?.x ?? 0) + (reopenedBounds?.width ?? 0)).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
-  await editFormula(page, 'E = mc^{2}');
+  await input.press('ControlOrMeta+A');
+  await input.pressSequentially('E = mc^{2}', { delay: 40 });
+  await expect(input).toHaveValue('E = mc^{2}');
+  await page.screenshot({ path: info.outputPath('equacao-linha-dialogo.png'), fullPage: true, animations: 'disabled' });
+  await page.getByRole('button', { name: 'Salvar equação' }).click();
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+  await page.reload();
+  await editor.getByRole('button', { name: 'Editar equação em linha' }).click();
+  await expect(input).toHaveValue('E = mc^{2}');
+  await input.fill('discard this draft');
+  await page.getByRole('button', { name: 'Cancelar' }).click();
   expect(await exportMarkdown(page)).toContain('$E = mc^{2}$');
   await page.screenshot({ path: info.outputPath('equacao-linha.png'), fullPage: true });
+  await editor.getByRole('button', { name: 'Editar equação em linha' }).click();
+  await input.fill(`\\underbrace{${'a+'.repeat(60)}b}_{\\text{long formula}}`);
+  await page.getByRole('button', { name: 'Salvar equação' }).click();
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+    page.viewportSize()?.width ?? 0,
+  );
+  await editor.press(process.platform === 'darwin' ? 'Meta+ArrowDown' : 'Control+End');
+  await editor.press('Enter');
+  await editor.pressSequentially('Atalho $x^2$ e texto.', { delay: 20 });
+  await expect(editor.locator('[data-inline-content-type="math"]')).toHaveCount(2);
+  await expect(editor).toContainText(' e texto.');
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+  await page.reload();
+  await editor.getByRole('button', { name: 'Editar equação em linha' }).last().click();
+  await expect(input).toHaveValue(/x\^2\s*/);
+  await input.fill('\\frac{');
+  await page.getByRole('button', { name: 'Salvar equação' }).click();
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+  await page.reload();
+  await editor.getByRole('button', { name: 'Editar equação em linha' }).last().click();
+  await expect(input).toHaveValue('\\frac{');
+  await page.getByRole('button', { name: 'Cancelar' }).click();
+  expect(await exportMarkdown(page)).toContain('$\\frac{$');
 });
 
 test('Markdown math round-trips without converting code or dropping invalid source', async ({ page }, info) => {

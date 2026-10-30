@@ -26,7 +26,7 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 ## Documentos
 
 - Editor visual em blocos, atalhos Markdown e menu de inserção.
-- Título, parágrafos, títulos internos, listas, checklist, links, citações e código como conjunto inicial.
+- Título, parágrafos, títulos internos, listas, checklist, links, citações, código e equações LaTeX em linha ou em bloco.
 - Documento criado sem título recebe um nome provisório; projeto é opcional.
 - Salvamento automático com estados visíveis: salvando, salvo e falha ao salvar.
 - Rascunho recuperável após recarga, queda de rede ou sessão expirada.

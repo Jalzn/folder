@@ -6,10 +6,10 @@ Validação local em 29 de outubro de 2026. A aplicação foi implementada com t
 
 | Verificação | Resultado |
 | --- | --- |
-| `pnpm check` | Biome, TypeScript de todos os pacotes, fronteiras de dependência e 29 testes unitários aprovados |
-| `pnpm test:db` | 27 testes aprovados, em 5 arquivos, com SQLite temporário real |
+| `pnpm check` | Biome, TypeScript de todos os pacotes, fronteiras de dependência e 80 testes unitários aprovados, incluindo equações |
+| `pnpm test:db` | 29 testes aprovados, em 5 arquivos, com SQLite temporário real, incluindo persistência e busca de LaTeX |
 | `pnpm build` | SPA de produção compilada, editor carregado sob demanda |
-| `pnpm e2e` | 18 testes aprovados em Google Chrome: 9 desktop e 9 emulação Pixel7 |
+| Chrome E2E | 24 cenários aprovados entre a suíte completa e a reexecução dos casos de equações: 12 desktop e 12 emulação Pixel7 |
 | Regressão após ajuste de título | 8 testes de `app.spec.ts` aprovados novamente nos dois perfis, incluindo ausência de corte/rolagem no título |
 | `docker build -t tinyfold:local .` | Instalação com lockfile e compilação em Linux aprovadas |
 | Smoke de Docker | Login, escrita, reinício, recriação do container e preservação de sessão/dados aprovados |
@@ -19,7 +19,7 @@ O build informa chunks acima de 500 kB. O editor foi separado em importação di
 
 ## Fluxos no Chrome
 
-Os E2E usam a interface e API reais, com banco isolado. Os mesmos nove cenários foram executados nos dois perfis:
+Os E2E usam a interface e API reais, com banco isolado. Os mesmos doze cenários foram executados nos dois perfis:
 
 1. Criar documento sem projeto, escrever, recarregar, buscar pelo conteúdo e conferir o Markdown exportado.
 2. Importar Markdown com título, negrito, link, checklist e código; recarregar e preservar o documento anterior.
@@ -30,6 +30,9 @@ Os E2E usam a interface e API reais, com banco isolado. Os mesmos nove cenários
 7. Interromper a resposta após o servidor gravar a tarefa e repetir sem duplicação.
 8. Duplicar a identidade de uma aba, escrever rascunhos diferentes e preservar cada um após recarga.
 9. Alterar o trecho de origem e atualizar o estado da tarefa sem sair do documento.
+10. Inserir equação em bloco, editar após recarga, preservar LaTeX inválido e exportar a fonte; verificar ausência de bloqueios CSP.
+11. Inserir equação em linha, substituir a fonte pelo teclado, cancelar sem alterar, conter fórmula longa, usar `$...$` e reabrir/exportar fonte inválida.
+12. Importar e reexportar Markdown com equações em linha, matriz, fórmula incompleta e código literal, sem converter o código ou omitir fontes.
 
 Também foi feita interação manual com a janela do **Google Chrome**: login, tela inicial, criação de documento, digitação, atalho Markdown de título, seleção, criação de tarefa vinculada e movimentação no Kanban. Desktop e mobile foram inspecionados visualmente pelas capturas; mobile é emulação, não um aparelho físico.
 
@@ -44,6 +47,7 @@ A captura mobile identificou título longo cortado no editor. A correção permi
 | Início | [Captura](screens/inicio-desktop.png) | [Captura](screens/inicio-mobile.png) |
 | Documento | [Captura](screens/editor-desktop.png) | [Captura](screens/editor-mobile.png) |
 | Kanban | [Captura](screens/kanban-desktop.png) | [Captura](screens/kanban-mobile.png) |
+| Editar equação | [Captura](screens/equacoes-desktop.png) | [Captura](screens/equacoes-mobile.png) |
 
 ## Rodadas adversariais
 
@@ -53,11 +57,26 @@ A primeira rodada confrontou a validação do servidor com o parser real do edit
 
 A segunda rodada exercitou falhas no navegador. A perda de rascunho em aba duplicada foi reproduzida contra o bundle anterior; o mesmo teste passou após separar a identidade de cada escritor. Conflitos preservaram ambas as versões, e resposta perdida não gerou tarefa duplicada. A revisão também passou a preservar conteúdo acima do limite do servidor para exportação e recuperação, com limites próprios e validação estrutural.
 
+## Equações
+
+A extensão de matemática foi revisada por dois subagentes, com validação do formato persistido, intercâmbio Markdown e interação real no Google Chrome. Os testes de Markdown usam o parser e o esquema reais da versão instalada do BlockNote. A revisão encontrou e corrigiu:
+
+- Perda do primeiro caractere ao substituir a fonte de uma equação em linha: a edição passou a usar textarea nativo em diálogo com prévia.
+- Exportação que omitia LaTeX inválido ou truncava fontes com sinais de dólar: o intercâmbio preserva a fonte e escolhe delimitadores seguros.
+- Ausência de importação matemática no parser padrão: equações são identificadas pela árvore sintática Markdown, preservando código, links e HTML.
+- Fontes KaTeX embutidas bloqueadas pela CSP: o build emite arquivos locais, sem flexibilizar a política.
+- Fórmula longa alargando a página: a rolagem fica dentro da equação, com verificação em desktop e celular.
+- Atalho inline não registrado pelo esquema da versão 0.56: a extensão de `$...$` é registrada explicitamente.
+
+Fórmulas inválidas permanecem editáveis e exportáveis. Os testes de domínio rejeitam estruturas incompatíveis sem impedir que o usuário salve uma fonte LaTeX ainda incompleta. A busca inclui a fonte; salvar e reabrir foi verificado em SQLite temporário.
+
+A suíte completa passou nos 18 cenários anteriores e nos quatro cenários de bloco/Markdown. O teste de fórmula longa reproduziu o overflow nos dois perfis; depois da correção, os seis cenários de equações foram verificados novamente, com aprovação final dos casos inline em desktop e celular. As capturas foram inspecionadas visualmente. O atalho de ir ao fim do documento no teste respeita a combinação de teclas do macOS.
+
 ## Operação e limites
 
 O smoke criou recursos exclusivos e temporários. Após reiniciar e recriar o container nos mesmos volumes, sessão, documentos e tarefas permaneceram. Original, snapshot e restauração retornaram `integrity_check=ok`; escritas posteriores no original não alteraram a restauração. Os recursos do teste foram removidos.
 
-A imagem foi reconstruída após o último ajuste de interface: `tinyfold:local`, digest `sha256:aafca02623d87582522319163a12a2f80efe4d5827af34eac43a0dd500811633`. Um novo container temporário dessa imagem respondeu em `/ready` e serviu a SPA compilada; ele também foi removido ao fim.
+A imagem foi reconstruída após os ajustes de equações: `tinyfold:local`, digest `sha256:4862efef2c3bee107a18c203cc3b40dad519350ce75642831b4d06eaf34e8454`. Um novo container temporário dessa imagem respondeu em `/ready`, serviu a SPA compilada e manteve a CSP de fontes na mesma origem; ele também foi removido ao fim.
 
 - Hospedagem, domínio, TLS/proxy real e backups externos agendados ainda não foram configurados.
 - Acesso de dois aparelhos físicos na origem pública permanece pendente.

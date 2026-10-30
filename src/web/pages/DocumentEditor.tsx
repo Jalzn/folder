@@ -11,10 +11,10 @@ import { filterSuggestionItems } from '@blocknote/core/extensions';
 import { pt } from '@blocknote/core/locales';
 import { BlockNoteView } from '@blocknote/mantine';
 import {
-  createReactInlineMathSpec,
   createReactMathBlockSpec,
   getMathBlockTypeSelectItems,
   getMathSlashMenuItems,
+  MathInlineInputRulesExtension,
   locales as mathLocales,
 } from '@blocknote/math-block';
 import {
@@ -47,8 +47,10 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { createInlineMathSpec } from '../components/InlineMath';
 import { api, errorCode, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../lib/api';
 import { AutosaveController, type Snapshot } from '../lib/autosave';
+import { exportMarkdownWithMath, importMarkdownWithMath } from '../lib/markdown';
 import { useDocument, useProjects, useTasks } from '../lib/queries';
 import type { Document, DocumentContent } from '../lib/types';
 import { useApp } from '../shell';
@@ -73,7 +75,7 @@ const schema = BlockNoteSchema.create({
   },
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,
-    math: createReactInlineMathSpec(),
+    math: createInlineMathSpec(),
   },
 });
 type EditorBlocks = PartialBlock<typeof schema.blockSchema, typeof schema.inlineContentSchema>[];
@@ -289,6 +291,8 @@ function DocumentEditor({ document }: { document: Document }) {
   const initial = useRef(state.snapshot.content);
   const editor = useCreateBlockNote({
     schema,
+    // BlockNote 0.56 registers block-spec extensions, but not inline-spec extensions.
+    extensions: [MathInlineInputRulesExtension],
     dictionary: {
       ...pt,
       math: {
@@ -382,8 +386,12 @@ function DocumentEditor({ document }: { document: Document }) {
   function update(patch: Partial<Snapshot>) {
     controller.change({ ...controller.getState().snapshot, ...patch });
   }
+  function selectedText() {
+    const { doc, selection } = editor.prosemirrorState;
+    return doc.textBetween(selection.from, selection.to, '\n').trim();
+  }
   async function createFromSelection() {
-    const text = editor.getSelectedText().trim();
+    const text = selectedText();
     if (!text) {
       toast('Selecione um trecho do documento para criar uma tarefa.', 'error');
       return;
@@ -444,7 +452,9 @@ function DocumentEditor({ document }: { document: Document }) {
   }
   async function exportMarkdown() {
     try {
-      const markdown = await editor.blocksToMarkdownLossy(editor.document);
+      const markdown = await exportMarkdownWithMath(editor.document as unknown as DocumentContent, (blocks) =>
+        editor.blocksToMarkdownLossy(blocks as unknown as EditorBlocks),
+      );
       const blob = new Blob([`# ${controller.getState().snapshot.title || 'Sem título'}\n\n${markdown}`], {
         type: 'text/markdown;charset=utf-8',
       });
@@ -481,7 +491,10 @@ function DocumentEditor({ document }: { document: Document }) {
     }
     try {
       const content = await file.text();
-      const blocks = await editor.tryParseMarkdownToBlocks(content);
+      const blocks = await importMarkdownWithMath(
+        content,
+        async (source) => (await editor.tryParseMarkdownToBlocks(source)) as unknown as DocumentContent,
+      );
       // Import into a fresh document: the open draft remains untouched.
       const input = {
         title: file.name.replace(/\.(md|markdown|txt)$/i, '').slice(0, 300),
@@ -694,7 +707,7 @@ function DocumentEditor({ document }: { document: Document }) {
               formattingToolbar={false}
               slashMenu={false}
               onChange={() => update({ content: editor.document as unknown as DocumentContent })}
-              onSelectionChange={() => setSelection(editor.getSelectedText().trim())}
+              onSelectionChange={() => setSelection(selectedText())}
             >
               <FormattingToolbarController
                 formattingToolbar={() => (

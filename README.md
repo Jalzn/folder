@@ -7,6 +7,7 @@ Um espaço pessoal para escrever ideias, organizar projetos e acompanhar tarefas
 ## O que funciona
 
 - Documentos independentes de projeto, editor visual em blocos, atalhos Markdown e importação/exportação `.md`.
+- Equações LaTeX em linha e em bloco, com prévia e preservação da fonte no Markdown.
 - Salvamento automático, recuperação de rascunhos e resolução explícita de conflitos entre dispositivos.
 - Projetos, recentes, busca pelo título e conteúdo, arquivamento e lixeira de documentos.
 - Kanban geral ou por projeto; criar, editar, mover, ordenar e concluir tarefas.
@@ -46,6 +47,7 @@ Os testes E2E usam Google Chrome instalado e bancos temporários isolados, em de
 | --- | --- |
 | [Produto](docs/produto.md) | Experiência e limites da primeira versão |
 | [Arquitetura](docs/arquitetura.md) | Módulos, autenticação, SQLite e salvamento |
+| [Equações](docs/equacoes.md) | Inserir, editar e importar/exportar fórmulas LaTeX |
 | [Stack](docs/stack.md) | Tecnologias e adaptações do Orbis |
 | [Identidade visual](docs/identidade-visual.md) | Direção escolhida e referência do Claude |
 | [Operação](docs/implantacao.md) | Docker, configuração, senha e backups |
