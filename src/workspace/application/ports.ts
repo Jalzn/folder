@@ -76,6 +76,9 @@ export interface WorkspaceContext {
     input: { requestId: string },
     work: (repository: WorkspaceRepository) => Promise<T>,
   ): Promise<T>;
-  /** A write that is safe to repeat, so it keeps no request record (and no copy of its input). */
-  repeatableWrite<T>(work: (repository: WorkspaceRepository) => Promise<T>): Promise<T>;
+  /**
+   * A write transaction that keeps no request record, and so no copy of its input. Only for writes
+   * that are safe to repeat as they are, such as storing a drawing preview.
+   */
+  writeWithoutRequestRecord<T>(work: (repository: WorkspaceRepository) => Promise<T>): Promise<T>;
 }

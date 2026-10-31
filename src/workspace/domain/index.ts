@@ -20,7 +20,7 @@ export {
   readDocumentContent,
 } from './document.js';
 export { documentToMarkdown } from './markdown.js';
-export { displayMathLines, inlineMath, MATH_SEPARATOR, mathFence, needsMathSeparator } from './markdown-math.js';
+export { displayMathLines, inlineMath, MATH_SEPARATOR, needsMathSeparator } from './markdown-math.js';
 export type {
   Document,
   DocumentAck,
@@ -35,4 +35,3 @@ export type {
   TaskStatus,
 } from './models.js';
 export { searchText } from './search-text.js';
-export { excerptPresent } from './task-source.js';

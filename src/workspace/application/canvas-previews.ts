@@ -30,7 +30,7 @@ export async function saveCanvasPreview(
       'VALIDATION',
       `A prévia passa de ${MAX_PREVIEW_SIDE.toLocaleString('pt-BR')} px no lado maior ou de ${MAX_PREVIEW_BYTES / 1024} KiB.`,
     );
-  return ctx.repeatableWrite(async (repo) => {
+  return ctx.writeWithoutRequestRecord(async (repo) => {
     const canvas = await repo.findCanvas(input.id);
     if (!canvas || canvas.deletedAt) throw new AppError('NOT_FOUND', 'O desenho não está disponível.');
     if (input.version > canvas.version)

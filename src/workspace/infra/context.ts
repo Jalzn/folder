@@ -9,6 +9,6 @@ export function workspaceContext(db: Database, clock = () => new Date()): Worksp
     newId: randomUUID,
     read: (work) => readTransaction(db, (trx) => work(workspaceRepository(trx))),
     write: (operation, input, work) => idempotentWrite(db, operation, input, (trx) => work(workspaceRepository(trx))),
-    repeatableWrite: (work) => writeTransaction(db, (trx) => work(workspaceRepository(trx))),
+    writeWithoutRequestRecord: (work) => writeTransaction(db, (trx) => work(workspaceRepository(trx))),
   };
 }
