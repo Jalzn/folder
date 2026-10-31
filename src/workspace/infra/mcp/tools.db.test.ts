@@ -6,7 +6,7 @@ import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/co
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentBlock } from '../../domain/models.js';
 import { drawingFixture } from '../../testing/canvas-scenes.js';
-import { pngHeader } from '../../testing/png.js';
+import { pngFile } from '../../testing/png.js';
 import { workspaceModule } from '../module.js';
 import { createWorkspaceService } from '../service.js';
 import { createWorkspaceTools } from './index.js';
@@ -328,7 +328,7 @@ describe('agent read tools', () => {
 
   it('sends the stored preview as an image and flags one from an older version', async () => {
     const canvas = await service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
-    const png = pngHeader(1200, 800, 500);
+    const png = pngFile(1200, 800, 500);
     await service.saveCanvasPreview({ id: canvas.id, version: 1, png });
     const tool = tools.find((candidate) => candidate.name === 'read_drawing');
     const read = async (input: Record<string, unknown>) => tool?.handler(tool.inputSchema.parse(input));

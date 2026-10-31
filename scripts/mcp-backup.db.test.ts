@@ -8,7 +8,7 @@ import { createDatabase, migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
 import { createWorkspaceService } from '../src/workspace/index.js';
 import { drawingFixture } from '../src/workspace/testing/canvas-scenes.js';
-import { pngHeader } from '../src/workspace/testing/png.js';
+import { pngFile } from '../src/workspace/testing/png.js';
 import { snapshot } from './storage.js';
 
 test('restores access tokens and drawing previews from a live SQLite backup', async () => {
@@ -23,7 +23,7 @@ test('restores access tokens and drawing previews from a live SQLite backup', as
     const created = await tokens.create({ name: 'Claude Code' });
     const workspace = createWorkspaceService(db);
     const canvas = await workspace.createCanvas({ requestId: randomUUID(), title: 'Fluxo', scene: drawingFixture() });
-    await workspace.saveCanvasPreview({ id: canvas.id, version: 1, png: pngHeader(640, 480, 2048) });
+    await workspace.saveCanvasPreview({ id: canvas.id, version: 1, png: pngFile(640, 480, 2048) });
     await snapshot(source, backup);
     await tokens.revoke({ id: created.accessToken.id });
     await snapshot(backup, restored);

@@ -1,6 +1,6 @@
 import type { CanvasScene } from '@tinyfold/workspace/domain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { pngHeader } from '../../workspace/testing/png';
+import { pngFile } from '../../workspace/testing/png';
 import {
   type CanvasPreviewOptions,
   CanvasPreviewUploader,
@@ -14,7 +14,7 @@ const scene = (label = 'Servidor', isDeleted = false): CanvasScene => ({
   elements: [{ id: label, type: 'rectangle', isDeleted }],
   appState: { viewBackgroundColor: '#ffffff' },
 });
-const png = (side: number, bytes: number) => new Blob([pngHeader(side, Math.round(side / 2), bytes)]);
+const png = (side: number, bytes: number) => new Blob([pngFile(side, Math.round(side / 2), bytes)]);
 /** A renderer whose file size depends on the requested side. */
 const rendererBySide = (sizes: Record<number, number>): RenderPng & { sides: number[] } => {
   const sides: number[] = [];
