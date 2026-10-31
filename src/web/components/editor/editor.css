@@ -1,0 +1,25 @@
+/* What the document and drawing editors share: the save state and the trashed item. */
+.save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 4px;
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.save-state[data-status="error"] {
+  color: var(--late);
+  font-weight: 500;
+}
+.save-state[data-status="conflict"] {
+  color: var(--conflict);
+  font-weight: 500;
+}
+.trashed-item {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 72px 0;
+}

@@ -118,7 +118,7 @@ test('draw, reload, export PNG and round-trip an editable drawing with local fon
   });
   page.on('request', (request) => {
     if (request.url().includes('/excalidraw/fonts/')) fontRequests.push(request.url());
-    if (/\/CanvasEditor-[^/]+\.js/.test(request.url())) editorRequests.push(request.url());
+    if (/\/DrawingPage-[^/]+\.js/.test(request.url())) editorRequests.push(request.url());
   });
   await login(page);
   expect(editorRequests).toEqual([]);
@@ -148,7 +148,7 @@ test('draw, reload, export PNG and round-trip an editable drawing with local fon
   await expect(page).not.toHaveURL(original);
   await expect(titleField(page)).toHaveValue(importedTitle);
   const titleBounds = await titleField(page).boundingBox();
-  const toolbarBounds = await page.locator('.canvas-topbar').boundingBox();
+  const toolbarBounds = await page.locator('.page-frame__bar').boundingBox();
   expect(titleBounds).not.toBeNull();
   expect(toolbarBounds).not.toBeNull();
   expect(titleBounds?.y ?? 0).toBeGreaterThanOrEqual((toolbarBounds?.y ?? 0) + (toolbarBounds?.height ?? 0));

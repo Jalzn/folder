@@ -1,9 +1,12 @@
 export { useApp } from './AppProvider';
 export { AppRoot } from './AppRoot';
 export type { Owner } from './LoginScreen';
-export { PageFrame } from './PageFrame';
+export { PageFrame, PageStatus } from './PageFrame';
 export { usePageCommands } from './page-commands';
+export { type CopyDestination, redirectedCopyText } from './project/copy-destination';
+export { ItemMenu, type ItemMenuAction } from './project/ItemMenu';
 export { NewItemMenu } from './project/NewItemMenu';
 export { ProjectMenu } from './project/ProjectMenu';
+export { useCopyDestination } from './project/use-copy-destination';
 export { useCurrentProject } from './project/use-current-project';
 export { useProjectActions } from './project/use-project-actions';

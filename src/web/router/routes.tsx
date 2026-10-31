@@ -1,12 +1,12 @@
 import { createRootRoute, createRoute, lazyRouteComponent, redirect } from '@tanstack/react-router';
-import { BoardPage } from '../pages/Board';
+import { BoardPage } from '../pages/board';
 import { DocumentRoute, DrawingRoute } from '../pages/project/ItemRoute';
 import { IndexPage } from '../pages/project/item-index';
 import { NoActiveProjectPage } from '../pages/project/NoActiveProjectPage';
 import { OverviewPage } from '../pages/project/overview';
 import { ProjectRoute } from '../pages/project/ProjectRoute';
 import { TrashPage } from '../pages/project/trash';
-import { AppRoot } from '../shell';
+import { AppRoot, PageStatus } from '../shell';
 import { Spinner } from '../ui';
 import { LegacyRedirect } from './LegacyRedirect';
 import type { IndexType } from './paths';
@@ -29,9 +29,9 @@ const profileRoute = createRoute({
   path: '/perfil',
   component: lazyRouteComponent(() => import('../pages/profile/ProfilePage'), 'ProfilePage'),
   pendingComponent: () => (
-    <div className="page">
+    <PageStatus>
       <Spinner />
-    </div>
+    </PageStatus>
   ),
 });
 

@@ -1,0 +1,57 @@
+/* The login card and the first loading screen, centred in the chosen theme. */
+.login-screen,
+.auth-loading {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: var(--bg);
+}
+.auth-loading {
+  align-content: center;
+  gap: 24px;
+}
+.login-card {
+  width: min(380px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 32px 28px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--raised-1);
+  box-shadow: var(--shadow-card);
+}
+.login-card > .logo {
+  margin-bottom: 20px;
+}
+.login-card__title {
+  margin: 0;
+  font: var(--type-h1);
+  letter-spacing: var(--tracking-h1);
+  color: var(--text);
+}
+.login-card__lead {
+  margin: 0 0 16px;
+  color: var(--text-2);
+  font: var(--type-ui);
+}
+.login-card__foot {
+  margin: 12px 0 0;
+  font: var(--type-meta);
+  color: var(--text-3);
+  text-align: center;
+}
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.login-form__lead {
+  margin: 0;
+  color: var(--text-2);
+}
+.login-form__submit {
+  width: 100%;
+  flex-direction: row-reverse;
+}

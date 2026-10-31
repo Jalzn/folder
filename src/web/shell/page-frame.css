@@ -11,6 +11,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
+  min-width: 0;
   height: 44px;
   padding: 0 12px 0 32px;
 }
@@ -19,6 +20,17 @@
   min-height: 0;
   overflow: auto;
   padding: 0 32px;
+}
+.page-frame__body[data-fill] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.page-frame__status {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 0;
 }
 @media (max-width: 760px) {
   .page-frame__bar {

@@ -23,6 +23,44 @@ body {
 ::selection {
   background: var(--text-selection);
 }
+/* Native controls and text start plain: no margins on headings and paragraphs, buttons without chrome. */
+:where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+:where(input, select, textarea) {
+  min-width: 0;
+  color: var(--text);
+}
+:where(input, textarea)::placeholder {
+  color: var(--text-3);
+}
+:where(button) {
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+:where(button:disabled) {
+  cursor: default;
+  opacity: 0.5;
+}
+:where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+:where(button, a, input, select, textarea) {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+:where(h1, h2, h3, p) {
+  margin: 0;
+}
+:where(h1, h2, h3, strong) {
+  overflow-wrap: anywhere;
+}
+:where(svg) {
+  flex-shrink: 0;
+}
 :where(:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

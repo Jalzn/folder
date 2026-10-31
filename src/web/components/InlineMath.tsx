@@ -14,7 +14,7 @@ import {
   useSourceInlineContentPreviewPopup,
 } from '@blocknote/react';
 import { useEffect, useId, useState } from 'react';
-import { Dialog } from '../ui';
+import { Button, Dialog, DialogActions } from '../ui';
 import './inline-math.css';
 
 type InlineMathProps = ReactCustomInlineContentRenderProps<MathInlineContentConfig, StyleSchema>;
@@ -84,11 +84,11 @@ function InlineMath(props: InlineMathProps) {
             apply();
           }}
         >
-          <label className="field" htmlFor={inputId}>
-            <span>Código LaTeX</span>
+          <label className="text-field" htmlFor={inputId}>
+            <span className="text-field__label">Código LaTeX</span>
             <textarea
               id={inputId}
-              className="inline-math-input"
+              className="input inline-math-input"
               autoFocus
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
@@ -119,14 +119,12 @@ function InlineMath(props: InlineMathProps) {
               A fórmula ainda não é válida. Você pode aplicar para continuar depois; o texto será preservado.
             </p>
           )}
-          <div className="dialog-actions">
-            <button type="button" className="button secondary" onClick={close}>
-              Cancelar
-            </button>
-            <button type="submit" className="button primary">
+          <DialogActions>
+            <Button onPress={close}>Cancelar</Button>
+            <Button type="submit" variant="primary">
               Salvar equação
-            </button>
-          </div>
+            </Button>
+          </DialogActions>
         </form>
       </Dialog>
     </>

@@ -1,0 +1,78 @@
+/*
+ * An open drawing (docs/interface/prototipo, "desenho"): the title in the page style over a frame with radius
+ * 8 that takes the rest of the page. Excalidraw's dark surfaces follow the Sumário elevation.
+ */
+.editor-banners--wide {
+  flex: none;
+  max-width: none;
+  margin: 0;
+  padding: 0 32px 8px;
+}
+.drawing__top {
+  flex: none;
+  padding: 28px 32px 16px;
+}
+.drawing__title {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-title);
+  letter-spacing: var(--tracking-title);
+  outline: none;
+}
+.drawing__title::placeholder {
+  color: var(--text-3);
+}
+.drawing__frame {
+  position: relative;
+  flex: 1;
+  min-height: 320px;
+  margin: 0 32px 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+.drawing__frame .excalidraw {
+  --color-primary: var(--accent);
+  --border-radius-lg: 10px;
+}
+.drawing__frame .excalidraw.theme--dark {
+  --color-primary-light: var(--selected);
+  --color-surface-low: var(--raised-1);
+  --color-surface-mid: var(--raised-2);
+  --color-surface-high: var(--raised-3);
+  --color-surface-lowest: var(--bg);
+  --color-on-surface: var(--text);
+  --default-bg-color: var(--bg);
+  --island-bg-color: var(--raised-2);
+  --sidebar-bg-color: var(--bg);
+  --popup-bg-color: var(--raised-2);
+}
+.drawing__frame .excalidraw button {
+  min-height: unset;
+  font: inherit;
+}
+.drawing__frame .excalidraw input {
+  min-height: unset;
+}
+@media (max-width: 760px) {
+  .editor-banners--wide {
+    padding: 0 16px 8px;
+  }
+  .drawing__top {
+    padding: 16px 16px 12px;
+  }
+  .drawing__title {
+    font: var(--type-h1);
+    letter-spacing: var(--tracking-h1);
+  }
+  .drawing__frame {
+    margin: 0 0 0;
+    border-width: 1px 0 0;
+    border-radius: 0;
+  }
+}

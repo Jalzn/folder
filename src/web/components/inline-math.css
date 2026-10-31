@@ -13,7 +13,7 @@
   cursor: pointer;
 }
 
-.document-editor .bn-inline-content-section .inline-math-preview.bn-preview-container {
+.document__content .bn-inline-content-section .inline-math-preview.bn-preview-container {
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
@@ -40,11 +40,16 @@
 }
 
 .inline-math-input {
+  height: auto;
   min-height: 112px;
+  padding: 8px 10px;
   resize: vertical;
-  font-family: var(--font-mono);
-  font-size: 14px;
-  line-height: 1.6;
+  font: var(--type-mono);
+}
+.inline-math-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-25);
 }
 
 .inline-math-help,

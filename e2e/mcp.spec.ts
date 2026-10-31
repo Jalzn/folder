@@ -97,7 +97,7 @@ test('Perfil shows a new token once, copies it with the Claude Code command and 
 
   await row.getByRole('button', { name: /^Revogar/ }).click();
   await page
-    .getByRole('dialog', { name: `Revogar “${name}”?` })
+    .getByRole('alertdialog', { name: `Revogar “${name}”?` })
     .getByRole('button', { name: 'Revogar token' })
     .click();
   await expect(page.getByText('Token revogado.')).toBeVisible();
@@ -241,7 +241,7 @@ test('Claude Code reads what the interface created, never the trash, until the t
   // The last use is recorded at most once a minute.
   await expect(row).toContainText(/Último uso (agora|há 1 minuto)/);
   await row.getByRole('button', { name: /^Revogar/ }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Revogar token' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Revogar token' }).click();
   await expect(row).toHaveCount(0);
   await expect(mcp.call('list_projects')).rejects.toThrow();
   expect(await mcpStatus(baseURL as string, token)).toBe(401);

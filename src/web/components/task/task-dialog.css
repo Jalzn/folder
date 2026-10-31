@@ -1,0 +1,97 @@
+/* The task dialog until the stage 10 drawer: title, column and project, origin, and deletion. */
+.task-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.task-dialog__title {
+  height: auto;
+  min-height: 56px;
+  padding: 6px 10px;
+  resize: vertical;
+  font: var(--type-desc);
+  letter-spacing: var(--tracking-desc);
+}
+.task-dialog__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.task-dialog__fields:empty {
+  display: none;
+}
+.task-dialog__error {
+  margin: 0;
+  font: var(--type-meta);
+  color: var(--late);
+}
+.task-dialog__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.task-dialog__confirm p {
+  margin: 0;
+  color: var(--late);
+}
+.task-dialog__delete {
+  margin-right: auto;
+}
+.task-dialog__delete,
+.task-dialog__delete svg {
+  color: var(--late);
+}
+
+.task-source {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raised-1);
+}
+.task-source__label {
+  margin: 0;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-3);
+}
+.task-source__excerpt {
+  margin: 8px 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--line-strong);
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.task-source__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--accent);
+  font: 500 13px / 20px var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.task-source__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.task-source__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.task-source__note {
+  margin: 0;
+  font: var(--type-meta);
+  color: var(--text-3);
+}

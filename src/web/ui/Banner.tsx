@@ -12,10 +12,23 @@ const icons: Record<BannerTone, ReactNode> = {
   info: <Info size={16} aria-hidden="true" />,
 };
 
-/** A band under the page header: save failure, conflict, recovered draft or archived project. */
-export function Banner({ tone, children, actions }: { tone: BannerTone; children: ReactNode; actions?: ReactNode }) {
+/**
+ * A band under the page header: save failure, conflict, recovered draft or archived project. An `urgent`
+ * band, such as a failed save, is announced as an alert.
+ */
+export function Banner({
+  tone,
+  urgent = false,
+  children,
+  actions,
+}: {
+  tone: BannerTone;
+  urgent?: boolean;
+  children: ReactNode;
+  actions?: ReactNode;
+}) {
   return (
-    <div className="banner" role="status" data-tone={tone}>
+    <div className="banner" role={urgent ? 'alert' : 'status'} data-tone={tone}>
       {icons[tone]}
       <div className="banner__text">{children}</div>
       {actions && <div className="banner__actions">{actions}</div>}

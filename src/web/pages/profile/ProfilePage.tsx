@@ -1,38 +1,36 @@
 import './profile.css';
-import { LogOut, ShieldCheck } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { api, errorMessage, queryClient, reportSessionError } from '../../lib/api';
-import { useApp } from '../../shell';
-import { PageHeader, useToast } from '../../ui';
+import { PageFrame } from '../../shell';
+import { Button, PageHeader, useToast } from '../../ui';
 import { AccessTokensSection } from './AccessTokensSection';
+import { AppearanceSection } from './AppearanceSection';
 import { PasswordSection } from './PasswordSection';
+import { ProfileSection } from './ProfileSection';
 import { SessionsSection } from './SessionsSection';
 
+/**
+ * `/perfil`: the stage 07 settings in the 720 px column, with section labels and hairlines. Aparência,
+ * Acesso pelo Claude Code, Dispositivos conectados, Senha and Sair.
+ */
 export function ProfilePage() {
-  const app = useApp();
   return (
-    <div className="page profile-page">
-      <PageHeader title="Perfil" description="Seu espaço, seus dispositivos." />
-      <div className="profile-owner">
-        <span className="avatar large">{app.owner.name.slice(0, 1).toUpperCase()}</span>
-        <div>
-          <h2>{app.owner.name}</h2>
-          <p>Espaço pessoal</p>
-        </div>
-        <span className="profile-owner-badge">
-          <ShieldCheck size={15} />
-          Acesso privado
-        </span>
+    <PageFrame>
+      <div className="profile-page">
+        <PageHeader title="Perfil e token" description="Seu espaço, seus dispositivos." />
+        <hr className="profile-page__hair" />
+        <AppearanceSection />
+        <AccessTokensSection />
+        <SessionsSection />
+        <PasswordSection />
+        <LogoutSection />
       </div>
-      <PasswordSection />
-      <SessionsSection />
-      <AccessTokensSection />
-      <LogoutButton />
-    </div>
+    </PageFrame>
   );
 }
 
-function LogoutButton() {
+function LogoutSection() {
   const [busy, setBusy] = useState(false);
   const toast = useToast();
   async function logout() {
@@ -49,11 +47,12 @@ function LogoutButton() {
     }
   }
   return (
-    <div className="profile-logout">
-      <button type="button" className="button secondary" disabled={busy} onClick={() => void logout()}>
-        <LogOut size={16} />
-        Sair deste dispositivo
-      </button>
-    </div>
+    <ProfileSection id="profile-logout" label="Sair">
+      <div>
+        <Button icon={<LogOut size={16} />} isPending={busy} onPress={() => void logout()}>
+          Sair deste dispositivo
+        </Button>
+      </div>
+    </ProfileSection>
   );
 }

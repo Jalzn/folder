@@ -47,7 +47,7 @@ export function AuthGate({ children }: { children: (owner: Owner) => ReactNode }
   }
   if (!owner && (session.isPending || (session.error && !signedOut(session.error) && !expired)))
     return (
-      <div className="full-page-center">
+      <div className="auth-loading">
         <Logo />
         {session.isPending ? (
           <Spinner label="Abrindo seu espaço…" />

@@ -5,12 +5,15 @@ import { errorCode } from '../../lib/api';
 import { useCanvas, useDocument } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
 import { paths } from '../../router/paths';
+import { PageStatus } from '../../shell';
 import { ErrorNotice, Spinner } from '../../ui';
 import { ItemNotFound } from './NotFoundPage';
 
-// The editors load on demand, as before; the route that finds their item does not.
-const DocumentPage = lazy(() => import('../DocumentEditor').then((module) => ({ default: module.DocumentPage })));
-const CanvasPage = lazy(() => import('../CanvasEditor').then((module) => ({ default: module.CanvasPage })));
+// The editors load on demand, each in a chunk named after its page; the route that finds their item does not.
+const DocumentPage = lazy(() =>
+  import('../document/DocumentPage').then((module) => ({ default: module.DocumentPage })),
+);
+const DrawingPage = lazy(() => import('../drawing/DrawingPage').then((module) => ({ default: module.DrawingPage })));
 
 const loadingLabels: Record<ItemType, string> = { document: 'Abrindo documento…', drawing: 'Abrindo desenho…' };
 
@@ -47,14 +50,14 @@ function ItemFrame<T extends { projectId: string | null }>({
     return errorCode(item.error) === 'NOT_FOUND' ? (
       <ItemNotFound type={type} id={id} />
     ) : (
-      <div className="page">
+      <PageStatus>
         <ErrorNotice error={item.error} retry={() => void item.refetch()} />
-      </div>
+      </PageStatus>
     );
   const loading = (
-    <div className="page">
+    <PageStatus>
       <Spinner label={loadingLabels[type]} />
-    </div>
+    </PageStatus>
   );
   // An item that moved keeps its page while the address catches up, so an open editor stays mounted.
   if (!item.data) return loading;
@@ -76,7 +79,7 @@ export function DrawingRoute() {
   const canvas = useCanvas(canvasId);
   return (
     <ItemFrame type="drawing" id={canvasId} projectId={projectId} item={canvas}>
-      {(data) => <CanvasPage canvas={data} />}
+      {(data) => <DrawingPage canvas={data} />}
     </ItemFrame>
   );
 }

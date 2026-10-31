@@ -1,7 +1,8 @@
-import { ArrowRight, LoaderCircle } from 'lucide-react';
+import './login.css';
+import { ArrowRight } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api, errorCode, errorMessage } from '../lib/api';
-import { Logo } from '../ui';
+import { Button, Logo, TextField } from '../ui';
 
 export interface Owner {
   name: string;
@@ -29,62 +30,44 @@ export function LoginForm({ expired = false, onSuccess }: { expired?: boolean; o
   }
   return (
     <form className="login-form" onSubmit={submit}>
-      {!expired && (
-        <>
-          <Logo />
-          <div className="login-intro">
-            <span className="eyebrow">SEU ESPAÇO PESSOAL</span>
-            <h1>
-              Ideias ganham
-              <br />
-              um lugar.
-            </h1>
-            <p>
-              Escreva livremente.
-              <br />
-              Organize no seu tempo.
-            </p>
-          </div>
-        </>
+      {expired && (
+        <p className="login-form__lead">Seu rascunho está preservado. Entre novamente para continuar de onde parou.</p>
       )}
-      {expired && <p className="muted">Seu rascunho está preservado. Entre novamente para continuar de onde parou.</p>}
-      <label className="field">
-        Sua senha
-        <input
-          type="password"
-          name="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-          required
-          placeholder="Digite sua senha"
-        />
-      </label>
-      {error && (
-        <p className="form-error" role="alert">
-          {error}
-        </p>
-      )}
-      <button className="button primary login-submit" disabled={busy} type="submit">
-        {busy ? <LoaderCircle size={17} className="spin" /> : <ArrowRight size={17} />}{' '}
-        {busy ? 'Entrando…' : 'Entrar no Tinyfold'}
-      </button>
-      {!expired && <p className="login-footnote">Um pouco de espaço para pensar melhor.</p>}
+      <TextField
+        label="Sua senha"
+        type="password"
+        name="password"
+        autoComplete="current-password"
+        placeholder="Digite sua senha"
+        value={password}
+        onChange={setPassword}
+        isRequired
+        errorMessage={error}
+      />
+      <Button
+        type="submit"
+        variant="primary"
+        className="login-form__submit"
+        isPending={busy}
+        icon={<ArrowRight size={16} />}
+      >
+        Entrar no Tinyfold
+      </Button>
     </form>
   );
 }
 
-/** Signed out, at any address: the app continues there after the password. */
+/** Signed out, at any address: a card in the chosen theme. The app continues there after the password. */
 export function LoginScreen({ onSuccess }: { onSuccess: (owner: Owner) => void }) {
   return (
-    <main className="login-page">
-      <div className="login-art" aria-hidden="true">
-        <div className="fold fold-one" />
-        <div className="fold fold-two" />
-        <div className="fold fold-three" />
-        <span className="login-art-caption">PENSE. ESCREVA. FAÇA.</span>
+    <main className="login-screen">
+      <div className="login-card">
+        <Logo />
+        <h1 className="login-card__title">Seu espaço pessoal</h1>
+        <p className="login-card__lead">Escreva livremente. Organize no seu tempo.</p>
+        <LoginForm onSuccess={onSuccess} />
+        <p className="login-card__foot">Um pouco de espaço para pensar melhor.</p>
       </div>
-      <LoginForm onSuccess={onSuccess} />
     </main>
   );
 }

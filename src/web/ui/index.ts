@@ -27,6 +27,7 @@ export { focusPageTitle, PageHeader } from './PageHeader';
 export { Popover, PopoverSurface, PopoverTrigger } from './Popover';
 export { RadioChip, RadioGroup } from './RadioGroup';
 export { SearchField, type SearchFieldProps } from './SearchField';
+export { Select, type SelectOption } from './Select';
 export { Spinner, SpinnerIcon } from './Spinner';
 export { TextField, type TextFieldProps } from './TextField';
 export { type Notify, type ToastAction, type ToastOptions, ToastProvider, useToast } from './Toast';

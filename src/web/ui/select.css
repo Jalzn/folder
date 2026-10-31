@@ -1,0 +1,34 @@
+/* A select field: the trigger looks like a text field, the list like a menu (docs/interface/visual.md §6). */
+.select__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.select__trigger > svg {
+  flex: none;
+  color: var(--icon);
+}
+.select__trigger[data-focus-visible],
+.select__trigger[aria-expanded="true"] {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-25);
+}
+.select__value {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select__value .menu-item__check {
+  display: none;
+}
+.select__popover {
+  min-width: var(--trigger-width);
+}

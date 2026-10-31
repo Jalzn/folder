@@ -78,7 +78,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             onCollapse={() => prefs.setCollapsed(true)}
           />
         ))}
-      <main id="main-content" className="app-layout__main" data-scroll-key="page" data-region="page" tabIndex={-1}>
+      <main id="main-content" className="app-layout__main" data-region="page" tabIndex={-1}>
         {children}
         <p className="sr-only" aria-live="polite">
           {ui.announcement || routeAnnouncement}

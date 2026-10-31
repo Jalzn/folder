@@ -1,11 +1,9 @@
 import type { RefObject } from 'react';
-import { api, queryClient } from '../../lib/api';
 import { useProjects } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
-import { useAction } from '../../lib/use-action';
-import { MenuItem, MenuList, MenuSection, PopoverSurface, ProjectMark, useToast } from '../../ui';
-import { moveItem } from './move-item';
+import { MenuItem, MenuList, MenuSection, PopoverSurface, ProjectMark } from '../../ui';
 import { activeProjects } from './project-order';
+import { useMoveItem } from './use-move-item';
 
 /**
  * "Mover para projeto…": the active projects, the item's own checked. Moving clears its pin; the toast's
@@ -27,27 +25,7 @@ export function MoveToProjectMenu({
   onOpenChange: (open: boolean) => void;
 }) {
   const projects = activeProjects(useProjects(true).data ?? []);
-  const action = useAction();
-  const toast = useToast();
-
-  async function move(to: string) {
-    if (to === projectId) return;
-    const moved = await action.run(() => moveItem(type, id, to));
-    if (!moved) return;
-    void queryClient.invalidateQueries({ queryKey: ['workspace', type === 'document' ? 'document' : 'canvas', id] });
-    const destination = projects.find((project) => project.id === to)?.name ?? 'outro projeto';
-    toast(`“${moved.title}” foi para ${destination}.`, {
-      action: {
-        label: 'Desfazer',
-        onAction: () =>
-          void action.run(async () => {
-            await moveItem(type, id, projectId);
-            // The pin comes back while the project has room for it; a full project keeps the item unpinned.
-            if (moved.pinned) await api.workspace.pinItem({ type, id }).catch(() => undefined);
-          }),
-      },
-    });
-  }
+  const { move } = useMoveItem();
   return (
     <PopoverSurface triggerRef={triggerRef} isOpen={isOpen} onOpenChange={onOpenChange} placement="bottom start">
       <MenuList
@@ -56,7 +34,7 @@ export function MoveToProjectMenu({
         selectedKeys={[projectId]}
         onAction={(key) => {
           onOpenChange(false);
-          void move(String(key));
+          void move(type, id, projectId, String(key));
         }}
       >
         <MenuSection title="Mover para projeto">

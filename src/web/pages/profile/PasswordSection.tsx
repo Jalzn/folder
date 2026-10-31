@@ -1,9 +1,10 @@
-import { KeyRound } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api, errorMessage, queryClient, reportSessionError } from '../../lib/api';
-import { useToast } from '../../ui';
+import { Button, TextField, useToast } from '../../ui';
+import { ProfileSection } from './ProfileSection';
 import { sessionsKey } from './SessionsSection';
 
+/** Changing the password, which ends the sessions of the other devices. */
 export function PasswordSection() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -28,48 +29,43 @@ export function PasswordSection() {
     }
   }
   return (
-    <section className="settings-section">
-      <div className="settings-description">
-        <h2>
-          <KeyRound size={18} />
-          Sua senha
-        </h2>
-        <p>Trocar a senha encerra as sessões dos outros dispositivos.</p>
-      </div>
-      <form onSubmit={changePassword}>
-        <label className="field">
-          Senha atual
-          <input
-            type="password"
-            autoComplete="current-password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            required
-            maxLength={256}
-          />
-        </label>
-        <label className="field">
-          Nova senha
-          <input
-            type="password"
-            autoComplete="new-password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            minLength={12}
-            maxLength={256}
-          />
-          <span className="field-hint">Pelo menos 12 caracteres.</span>
-        </label>
+    <ProfileSection
+      id="profile-password"
+      label="Senha"
+      description="Trocar a senha encerra as sessões dos outros dispositivos."
+    >
+      <form className="profile-form" onSubmit={changePassword}>
+        <TextField
+          label="Senha atual"
+          type="password"
+          autoComplete="current-password"
+          value={currentPassword}
+          onChange={setCurrentPassword}
+          isRequired
+          maxLength={256}
+        />
+        <TextField
+          label="Nova senha"
+          type="password"
+          autoComplete="new-password"
+          description="Pelo menos 12 caracteres."
+          value={newPassword}
+          onChange={setNewPassword}
+          isRequired
+          minLength={12}
+          maxLength={256}
+        />
         {error && (
-          <p className="form-error" role="alert">
+          <p className="profile-error" role="alert">
             {error}
           </p>
         )}
-        <button type="submit" className="button secondary" disabled={busy}>
-          Alterar senha
-        </button>
+        <div className="profile-form__actions">
+          <Button type="submit" isPending={busy}>
+            Alterar senha
+          </Button>
+        </div>
       </form>
-    </section>
+    </ProfileSection>
   );
 }

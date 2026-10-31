@@ -1,0 +1,260 @@
+/*
+ * An open document (docs/interface/prototipo, "doc"): a 680 px column with the title in the page style, a
+ * hairline and the content in 15/24, and the tasks born here in a panel on the side until the stage 10 drawer.
+ */
+.document-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+  min-height: 100%;
+}
+.document-page[data-tasks] {
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+.document-page__main {
+  min-width: 0;
+}
+.document-page__count {
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+.editor-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+.editor-banners:empty {
+  display: none;
+}
+.document {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 28px 0 160px;
+}
+.document__title {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  resize: none;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font: var(--type-title);
+  letter-spacing: var(--tracking-title);
+  outline: none;
+}
+.document__title::placeholder {
+  color: var(--text-3);
+}
+.document__hair {
+  height: 1px;
+  margin: 20px 0 16px;
+  border: 0;
+  background: var(--line);
+}
+.document__content {
+  min-height: 300px;
+}
+.document__hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 36px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+.document__task-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--accent);
+  font: 500 12px / 16px var(--font-sans);
+  cursor: pointer;
+}
+.document__task-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.document__task-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Every BlockNote root, including the menus it renders in portals, takes the Sumário tokens in both themes. */
+.bn-root[data-color-scheme] {
+  --bn-colors-editor-background: var(--bg);
+  --bn-colors-editor-text: var(--text);
+  --bn-colors-menu-background: var(--raised-2);
+  --bn-colors-menu-text: var(--text);
+  --bn-colors-tooltip-background: var(--toast);
+  --bn-colors-tooltip-text: var(--on-toast);
+  --bn-colors-hovered-background: var(--hover-raised);
+  --bn-colors-hovered-text: var(--text);
+  --bn-colors-selected-background: var(--selected);
+  --bn-colors-selected-text: var(--text);
+  --bn-colors-disabled-background: var(--hover);
+  --bn-colors-disabled-text: var(--text-3);
+  --bn-colors-border: var(--line);
+  --bn-colors-shadow: var(--scrim);
+  --bn-colors-side-menu: var(--icon);
+  --bn-font-family: var(--font-sans);
+}
+.document__content .bn-editor {
+  min-height: 300px;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-body);
+  letter-spacing: var(--tracking-body);
+}
+.document__content .bn-block-content {
+  font-size: 15px;
+  line-height: 24px;
+}
+.document__content .bn-inline-content[data-is-empty-and-focused]::before {
+  color: var(--text-3);
+}
+/*
+ * BlockNote sizes headings by --level on a selector too specific to override, so the levels set the variable.
+ * Level 1 has no data-level attribute.
+ */
+.document__content [data-content-type="heading"] {
+  --level: 24px;
+  color: var(--text);
+  line-height: 32px;
+  letter-spacing: var(--tracking-h1);
+}
+.document__content [data-content-type="heading"][data-level="2"] {
+  --level: 19px;
+  line-height: 26px;
+  letter-spacing: var(--tracking-h2);
+}
+.document__content [data-content-type="heading"][data-level="3"] {
+  --level: 16px;
+  line-height: 24px;
+  letter-spacing: var(--tracking-h3);
+}
+.document__content [data-content-type="codeBlock"] {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raised-1);
+}
+/* Keep equations on the document surface when BlockNote selects their preview. */
+.document__content [data-content-type="mathBlock"].ProseMirror-selectednode > *::after,
+.document__content .ProseMirror-selectednode > [data-content-type="mathBlock"] > *::after,
+.document__content [data-content-type="mathBlock"] .ProseMirror-selectednode::after {
+  content: none;
+}
+.document__content [data-content-type="mathBlock"] .bn-preview-placeholder {
+  background: var(--raised-1);
+  color: var(--text-2);
+}
+.document__content [data-content-type="mathBlock"] .bn-preview-placeholder-error {
+  border: 1px solid var(--late);
+  background: var(--late-bg);
+  color: var(--late);
+}
+.document__content [data-content-type="mathBlock"] .bn-code-block-source-error {
+  color: var(--late);
+}
+
+.linked-tasks {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: calc(100dvh - 44px);
+  overflow-y: auto;
+  padding: 28px 0 28px 20px;
+  border-left: 1px solid var(--line);
+}
+.linked-tasks__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.linked-tasks__title {
+  margin: 0;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-3);
+}
+.linked-tasks__hint,
+.linked-tasks__footnote,
+.linked-tasks__empty p {
+  margin: 4px 0 12px;
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+.linked-tasks__empty p:first-child {
+  margin-bottom: 4px;
+  font: var(--type-ui);
+  color: var(--text-2);
+}
+.linked-tasks__toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 4px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--text-3);
+  font: var(--type-meta);
+  cursor: pointer;
+}
+.linked-tasks__toggle[aria-expanded="false"] > svg {
+  transform: rotate(-90deg);
+}
+.linked-tasks__toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.linked-tasks__footnote {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+/* Without room for the side, the panel comes over the page from the right edge. */
+@media (max-width: 1099px) {
+  .document-page[data-tasks] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .linked-tasks {
+    position: fixed;
+    top: 44px;
+    right: 0;
+    bottom: 0;
+    z-index: 80;
+    width: min(300px, 90vw);
+    max-height: none;
+    padding: 20px;
+    border-left: 1px solid var(--line-strong);
+    background: var(--raised-2);
+    box-shadow: var(--shadow-float);
+  }
+}
+@media (max-width: 719px) {
+  .linked-tasks {
+    top: 88px;
+  }
+  .document__content .bn-block-content {
+    font-size: 16px;
+  }
+}

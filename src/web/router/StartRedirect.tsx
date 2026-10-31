@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { queryClient } from '../lib/api';
 import { canvasQuery, documentQuery, useProjects } from '../lib/queries';
 import type { Project } from '../lib/types';
-import { useApp } from '../shell';
+import { PageStatus, useApp } from '../shell';
 import { ErrorNotice, Spinner } from '../ui';
 import { loadNavState } from './nav-store';
 import { parseProjectPath, paths } from './paths';
@@ -49,12 +49,12 @@ export function StartRedirect() {
     };
   }, [projects.data, installationId, navigate]);
   return (
-    <div className="page">
+    <PageStatus>
       {projects.error ? (
         <ErrorNotice error={projects.error} retry={() => void projects.refetch()} />
       ) : (
         <Spinner label="Abrindo seu espaço…" />
       )}
-    </div>
+    </PageStatus>
   );
 }

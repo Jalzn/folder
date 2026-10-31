@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useParams } from '@tanstack/react-router';
 import { useProjects } from '../../lib/queries';
 import { parseProjectPath } from '../../router/paths';
+import { PageStatus } from '../../shell';
 import { ErrorNotice, Spinner } from '../../ui';
 import { NotFoundPage } from './NotFoundPage';
 
@@ -15,15 +16,15 @@ export function ProjectRoute() {
   if (parseProjectPath(pathname)?.item) return <Outlet />;
   if (projects.isPending)
     return (
-      <div className="page">
+      <PageStatus>
         <Spinner />
-      </div>
+      </PageStatus>
     );
   if (projects.error)
     return (
-      <div className="page">
+      <PageStatus>
         <ErrorNotice error={projects.error} retry={() => void projects.refetch()} />
-      </div>
+      </PageStatus>
     );
   if (!projects.data.some((project) => project.id === projectId))
     return <NotFoundPage title="Este projeto não existe" description="Escolha outro projeto no seletor." />;

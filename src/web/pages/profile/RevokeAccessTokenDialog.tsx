@@ -1,9 +1,10 @@
 import type { AccessToken } from '@tinyfold/auth';
 import { useState } from 'react';
 import { api, errorMessage, reportSessionError } from '../../lib/api';
-import { Dialog, useToast } from '../../ui';
+import { AlertDialog, useToast } from '../../ui';
 import { reloadAccessTokens } from './access-tokens';
 
+/** "Revogar “Claude Code”?": the token stops working at once. */
 export function RevokeAccessTokenDialog({
   token,
   onClose,
@@ -30,16 +31,15 @@ export function RevokeAccessTokenDialog({
     }
   }
   return (
-    <Dialog title={`Revogar “${token.name}”?`} open onClose={onClose}>
-      <p className="muted">O Claude Code que usa este token perde o acesso na hora.</p>
-      <div className="dialog-actions">
-        <button type="button" className="button secondary" onClick={onClose}>
-          Cancelar
-        </button>
-        <button type="button" className="button danger" disabled={busy} onClick={() => void revoke()}>
-          Revogar token
-        </button>
-      </div>
-    </Dialog>
+    <AlertDialog
+      open
+      title={`Revogar “${token.name}”?`}
+      confirmLabel="Revogar token"
+      isPending={busy}
+      onClose={onClose}
+      onConfirm={() => void revoke()}
+    >
+      <p>O Claude Code que usa este token perde o acesso na hora.</p>
+    </AlertDialog>
   );
 }

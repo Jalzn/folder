@@ -28,7 +28,7 @@ export async function newTask(page: Page, title: string) {
 export async function moveToTrash(page: Page, type: 'documento' | 'desenho') {
   await page.getByRole('button', { name: `Opções do ${type}`, exact: true }).click();
   await page.getByRole('menuitem', { name: 'Mover para a lixeira', exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Mover para a lixeira', exact: true }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Mover para a lixeira', exact: true }).click();
 }
 
 /** The row of an item in the current project's trash. */

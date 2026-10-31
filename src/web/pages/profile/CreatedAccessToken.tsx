@@ -2,6 +2,7 @@ import { Copy } from 'lucide-react';
 import { type RefObject, useId, useRef, useState } from 'react';
 import { copyText, selectContents } from '../../lib/clipboard';
 import { mcpAddCommand } from '../../lib/mcp-command';
+import { Button, DialogActions } from '../../ui';
 
 /** The only time the secret is shown: the token, the Claude Code command and how to copy both. */
 export function CreatedAccessToken({ token, onDone }: { token: string; onDone: () => void }) {
@@ -19,15 +20,17 @@ export function CreatedAccessToken({ token, onDone }: { token: string; onDone: (
     setStatus('Selecione e copie manualmente.');
   }
   return (
-    <>
-      <p className="muted">Copie agora. Por segurança, ele não será mostrado de novo.</p>
-      <div className="field">
-        <label htmlFor={tokenId}>Token</label>
-        <div className="access-token-copy">
+    <div className="created-token">
+      <p className="created-token__lead">Copie agora. Por segurança, ele não será mostrado de novo.</p>
+      <div className="text-field">
+        <label className="text-field__label" htmlFor={tokenId}>
+          Token
+        </label>
+        <div className="created-token__copy">
           <input
             id={tokenId}
             ref={tokenField}
-            className="access-token-secret"
+            className="input profile-mono"
             value={token}
             readOnly
             // biome-ignore lint/a11y/noAutofocus: The new secret takes the focus, selected, ready to copy.
@@ -35,44 +38,34 @@ export function CreatedAccessToken({ token, onDone }: { token: string; onDone: (
             spellCheck={false}
             onFocus={(event) => event.currentTarget.select()}
           />
-          <button
-            type="button"
-            className="button secondary"
-            onClick={() => void copy(token, tokenField, 'Token copiado.')}
-          >
-            <Copy size={15} />
+          <Button icon={<Copy size={16} />} onPress={() => void copy(token, tokenField, 'Token copiado.')}>
             Copiar token
-          </button>
+          </Button>
         </div>
       </div>
-      <div className="access-token-command">
-        <figure>
-          <figcaption>Comando para o Claude Code</figcaption>
-          <pre ref={commandBlock}>
-            <code>{command}</code>
-          </pre>
-        </figure>
-        <button
-          type="button"
-          className="button secondary"
-          onClick={() => void copy(command, commandBlock, 'Comando copiado.')}
-        >
-          <Copy size={15} />
+      <figure className="created-token__command">
+        <figcaption className="text-field__label">Comando para o Claude Code</figcaption>
+        <pre ref={commandBlock} className="profile-mono">
+          <code>{command}</code>
+        </pre>
+      </figure>
+      <div>
+        <Button icon={<Copy size={16} />} onPress={() => void copy(command, commandBlock, 'Comando copiado.')}>
           Copiar comando
-        </button>
-        <p className="field-hint">
+        </Button>
+        <p className="profile-hint">
           O Claude Code guarda o cabeçalho na configuração local. Para o token não ficar no histórico do terminal,
           comece o comando com um espaço.
         </p>
       </div>
-      <p className="access-token-status" role="status">
+      <p className="created-token__status" role="status">
         {status}
       </p>
-      <div className="dialog-actions">
-        <button type="button" className="button primary" onClick={onDone}>
+      <DialogActions>
+        <Button variant="primary" onPress={onDone}>
           Concluir
-        </button>
-      </div>
-    </>
+        </Button>
+      </DialogActions>
+    </div>
   );
 }

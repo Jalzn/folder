@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { errorCode } from '../lib/api';
 import { useCanvas, useDocument, useProjects } from '../lib/queries';
 import { ItemNotFound } from '../pages/project/NotFoundPage';
-import { useApp } from '../shell';
+import { PageStatus, useApp } from '../shell';
 import { ErrorNotice, Spinner } from '../ui';
 import { loadNavState } from './nav-store';
 import {
@@ -19,7 +19,7 @@ function Redirecting({ to, error, retry }: { to: string | null; error?: unknown;
   useEffect(() => {
     if (to) void navigate({ href: to, replace: true });
   }, [to, navigate]);
-  return <div className="page">{error ? <ErrorNotice error={error} retry={retry} /> : <Spinner />}</div>;
+  return <PageStatus>{error ? <ErrorNotice error={error} retry={retry} /> : <Spinner />}</PageStatus>;
 }
 
 function ListRedirect({ target }: { target: Extract<LegacyAddress, { kind: 'list' }>['target'] }) {

@@ -1,89 +1,174 @@
-/* "Acesso pelo Claude Code" in the Perfil. The list rows reuse .session-row from styles.css. */
-.access-token-list {
-  list-style: none;
-  padding: 0;
-  margin-bottom: 0;
+/*
+ * The Perfil (docs/etapas/08-fundacao.md, "Perfil"): the 720 px column, a label over each section and a
+ * hairline between them. Prefix, token and command in --font-mono (JetBrains Mono).
+ */
+.profile-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 0 120px;
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  color: var(--text);
 }
-.access-token-meta {
+.profile-page__hair {
+  height: 1px;
+  margin: 20px 0 0;
+  border: 0;
+  background: var(--line);
+}
+.profile-section {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 0 22px;
+  border-top: 1px solid var(--line);
 }
-.access-token-prefix,
-.access-token-copy input,
-.access-token-command code {
-  font-family: var(--font-mono);
+.profile-page__hair + .profile-section {
+  border-top: 0;
 }
-.access-token-prefix {
+.profile-section__label {
+  margin: 0;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-3);
+}
+.profile-section__lead {
+  margin: 0;
   color: var(--text-2);
 }
-.access-token-empty {
-  margin-top: 21px;
-  font-size: 12px;
-  color: var(--muted);
+.profile-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.access-token-limit {
-  margin-top: 10px;
+.profile-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.profile-error {
+  margin: 0;
+  font: var(--type-meta);
+  color: var(--late);
+}
+.profile-form > .profile-error,
+.profile-form__actions {
+  grid-column: 1 / -1;
+}
+.dialog .profile-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+.profile-hint,
+.profile-empty {
+  margin: 6px 0 0;
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+.profile-empty {
+  margin: 0;
+  font: var(--type-ui);
+}
+.profile-mono {
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-mono);
+}
+.profile-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.profile-row > svg {
+  flex: none;
+  color: var(--icon);
+}
+.profile-row__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.profile-row__title {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.profile-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+.profile-row__meta code {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.profile-row__current {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--type-meta);
+  color: var(--ok);
+  white-space: nowrap;
 }
 
-.access-token-dialog {
-  max-width: 540px;
+.created-token {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-.access-token-dialog .field {
-  margin-bottom: 18px;
+.created-token__lead {
+  margin: 0;
+  color: var(--text-2);
 }
-.access-token-copy {
+.created-token__copy {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
 }
-.access-token-copy input {
-  font-size: 13px;
-}
-.access-token-command figure {
+.created-token__command {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   margin: 0;
 }
-.access-token-command figcaption {
-  font-size: 12px;
-  font-weight: 550;
-  color: var(--text-2);
-  margin-bottom: 8px;
-}
-.access-token-command pre {
+.created-token__command pre {
   margin: 0;
-  padding: 11px 12px;
-  background: var(--raised-1);
+  padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
+  background: var(--raised-1);
   color: var(--text);
-  font-size: 12px;
-  line-height: 1.6;
+  font: var(--type-mono);
   /* The command wraps instead of scrolling, so it stays readable on a phone. */
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.access-token-command .button {
-  margin-top: 10px;
+.created-token__status {
+  min-height: 16px;
+  margin: 0;
+  font: var(--type-meta);
+  color: var(--text-3);
 }
-.access-token-command .field-hint {
-  display: block;
-  margin-top: 12px;
-  line-height: 1.6;
-}
-.access-token-status {
-  min-height: 20px;
-  margin-top: 14px;
-  font-size: 12px;
-  color: var(--muted);
+.access-token-dialog {
+  width: min(560px, 100%);
 }
 
 @media (max-width: 600px) {
-  /* Keep the 16px that stops iOS from zooming into a focused field. */
-  .access-token-copy input {
-    font-size: 16px;
+  .profile-form {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .access-token-command pre {
-    font-size: 11px;
+  /* Keep the 16px that stops iOS from zooming into a focused field. */
+  .created-token__copy .input {
+    font-size: 16px;
   }
 }

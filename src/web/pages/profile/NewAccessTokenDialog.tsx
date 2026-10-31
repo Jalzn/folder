@@ -1,7 +1,7 @@
 import { DEFAULT_ACCESS_TOKEN_NAME } from '@tinyfold/auth/domain';
 import { type FormEvent, useRef, useState } from 'react';
 import { api, errorMessage, reportSessionError } from '../../lib/api';
-import { Dialog } from '../../ui';
+import { Button, Dialog, DialogActions, TextField } from '../../ui';
 import { reloadAccessTokens } from './access-tokens';
 import { CreatedAccessToken } from './CreatedAccessToken';
 
@@ -58,38 +58,35 @@ function NewAccessTokenForm({ onCreated, onCancel }: { onCreated: (token: string
     }
   }
   return (
-    <form onSubmit={create}>
-      <label className="field">
-        Nome
-        <input
-          // biome-ignore lint/a11y/noAutofocus: Opening the dialog moves focus to its only field.
-          autoFocus
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          required
-          maxLength={100}
-          // A label for the token, not a person's name or a credential: no autofill or password managers.
-          autoComplete="off"
-          data-1p-ignore
-          data-lpignore="true"
-          data-bwignore
-          data-form-type="other"
-        />
-        <span className="field-hint">Ajuda a reconhecer onde o token é usado</span>
-      </label>
+    <form className="profile-form" onSubmit={create}>
+      <TextField
+        label="Nome"
+        description="Ajuda a reconhecer onde o token é usado"
+        autoFocus
+        value={name}
+        onChange={setName}
+        isRequired
+        maxLength={100}
+        // A label for the token, not a person's name or a credential: no autofill or password managers.
+        autoComplete="off"
+        inputProps={{
+          'data-1p-ignore': true,
+          'data-lpignore': 'true',
+          'data-bwignore': true,
+          'data-form-type': 'other',
+        }}
+      />
       {error && (
-        <p className="form-error" role="alert">
+        <p className="profile-error" role="alert">
           {error}
         </p>
       )}
-      <div className="dialog-actions">
-        <button type="button" className="button secondary" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button type="submit" className="button primary" disabled={busy}>
-          {busy ? 'Gerando…' : 'Gerar'}
-        </button>
-      </div>
+      <DialogActions>
+        <Button onPress={onCancel}>Cancelar</Button>
+        <Button type="submit" variant="primary" isPending={busy}>
+          Gerar
+        </Button>
+      </DialogActions>
     </form>
   );
 }

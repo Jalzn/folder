@@ -7,6 +7,7 @@ import {
   readCanvasScene,
 } from '@tinyfold/workspace/domain';
 import type { DraftStorage, SavedDraft, SaveInput } from './autosave';
+import { fileNameFrom } from './download';
 
 export interface CanvasSnapshot {
   title: string;
@@ -160,20 +161,4 @@ export function canvasFile(snapshot: CanvasSnapshot): string {
   );
 }
 
-export function downloadCanvasFile(blob: Blob, name: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = name;
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-export function canvasFileName(title: string, extension: string) {
-  const name = Array.from(title || 'desenho')
-    .map((character) => (character.charCodeAt(0) < 32 ? '-' : character))
-    .join('')
-    .replace(/[<>:"/\\|?*]/g, '-')
-    .slice(0, 100);
-  return `${name}.${extension}`;
-}
+export const canvasFileName = (title: string, extension: string) => fileNameFrom(title, 'desenho', extension);

@@ -1,17 +1,17 @@
 import { Download } from 'lucide-react';
 import { useState } from 'react';
-import { downloadCanvasFile } from '../../lib/canvas-autosave';
+import { downloadFile } from '../../lib/download';
 import { draftDownload, localDrafts } from '../../lib/local-drafts';
 import type { ItemType } from '../../lib/types';
-import { useApp } from '../../shell';
+import { PageStatus, useApp } from '../../shell';
 import { Button, PageHeader } from '../../ui';
 
 /** A missing address inside the shell: an item deleted for good, or a project that does not exist. */
 export function NotFoundPage({ title, description }: { title: string; description: string }) {
   return (
-    <div className="page">
+    <PageStatus>
       <PageHeader title={title} description={description} />
-    </div>
+    </PageStatus>
   );
 }
 
@@ -28,10 +28,10 @@ export function ItemNotFound({ type, id }: { type: ItemType; id: string }) {
   function download() {
     if (!draft) return;
     const { blob, fileName } = draftDownload(type, id, draft);
-    downloadCanvasFile(blob, fileName);
+    downloadFile(blob, fileName);
   }
   return (
-    <div className="page">
+    <PageStatus>
       <PageHeader
         title="Este item não existe mais"
         description={
@@ -46,6 +46,6 @@ export function ItemNotFound({ type, id }: { type: ItemType; id: string }) {
           </Button>
         )}
       </PageHeader>
-    </div>
+    </PageStatus>
   );
 }

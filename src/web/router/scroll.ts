@@ -1,6 +1,6 @@
 /**
- * The element that scrolls the page, marked `data-scroll-key`: a page frame's body inside the shell's main
- * region, or the main region itself for a page outside a frame, or else the document.
+ * The element that scrolls the page: the body of its PageFrame, marked `data-scroll-key`. The drawing
+ * editor fills the page without scrolling, and the document stands in.
  */
 export function pageScroller(): HTMLElement {
   const marked = document.querySelectorAll<HTMLElement>('[data-scroll-key]');
