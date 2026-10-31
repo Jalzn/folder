@@ -5,8 +5,16 @@ export interface PngInfo {
   height: number;
   /** The concatenated IDAT data: one zlib stream. */
   imageData: Uint8Array;
+  /** The rows that stream inflates to, by interlace pass; an image without interlacing has one. */
+  passes: readonly ImagePass[];
   /** The exact size that stream must inflate to: every row of every pass with its filter byte. */
   inflatedSize: number;
+}
+
+export interface ImagePass {
+  rows: number;
+  /** The length of each row, its filter byte included. */
+  rowBytes: number;
 }
 
 interface Header {
@@ -35,9 +43,10 @@ const ancillaryChunks = new Set(['tRNS', 'sRGB', 'gAMA', 'cHRM', 'pHYs']);
 /**
  * The dimensions and image data of a well-formed PNG file, or undefined for anything else. Every
  * chunk must fit the file and match its CRC. The IHDR comes first with a valid format, ancillary
- * chunks and the palette (only for colour images, required for indexed ones) come before the image
- * data, the IDAT chunks are consecutive, and IEND ends the file. The image data is not inflated
- * here: the domain stays pure, and the server inflates it with `inflatedSize` as the bound.
+ * chunks and the palette (only for colour images, required for indexed ones, with whole entries
+ * the bit depth can index) come before the image data, the IDAT chunks are consecutive, and IEND
+ * ends the file. The image data is not inflated here: the domain stays pure, and the server
+ * inflates it with `inflatedSize` as the bound, then checks it with hasValidRowFilters.
  */
 export function readPngInfo(bytes: Uint8Array): PngInfo | undefined {
   if (bytes.byteLength < signature.length || signature.some((value, index) => bytes[index] !== value)) return undefined;
@@ -59,11 +68,13 @@ export function readPngInfo(bytes: Uint8Array): PngInfo | undefined {
       if (!header) return undefined;
     } else if (type === 'IEND') {
       if (length !== 0 || !imageChunks.length || end !== bytes.byteLength) return undefined;
+      const passes = imagePasses(header);
       return {
         width: header.width,
         height: header.height,
         imageData: concat(imageChunks),
-        inflatedSize: inflatedSize(header),
+        passes,
+        inflatedSize: passes.reduce((total, pass) => total + pass.rows * pass.rowBytes, 0),
       };
     } else if (type === 'IDAT') {
       if (header.colourType === 3 && !palette) return undefined;
@@ -72,7 +83,7 @@ export function readPngInfo(bytes: Uint8Array): PngInfo | undefined {
       // Only more image data or the end may follow the image data.
       return undefined;
     } else if (type === 'PLTE') {
-      if (palette || header.colourType === 0 || header.colourType === 4) return undefined;
+      if (palette || !paletteFits(header, data.byteLength)) return undefined;
       palette = true;
     } else if (!ancillaryChunks.has(type)) return undefined;
   }
@@ -106,16 +117,29 @@ const adam7 = [
   [0, 1, 1, 2],
 ] as const;
 
-function inflatedSize({ width, height, bitDepth, colourType, interlaced }: Header): number {
+/** Grey images have no palette; an indexed one needs 1 to 2^bitDepth entries, a colour one at most 256. */
+function paletteFits({ colourType, bitDepth }: Header, byteLength: number): boolean {
+  if (colourType === 0 || colourType === 4) return false;
+  const entries = byteLength / 3;
+  return Number.isInteger(entries) && entries >= 1 && entries <= (colourType === 3 ? 2 ** bitDepth : 256);
+}
+
+function imagePasses({ width, height, bitDepth, colourType, interlaced }: Header): ImagePass[] {
   const bitsPerPixel = bitDepth * (colourTypes[colourType]?.channels ?? 1);
-  const rowsOf = (columns: number, rows: number) =>
-    columns && rows ? rows * (1 + Math.ceil((columns * bitsPerPixel) / 8)) : 0;
-  if (!interlaced) return rowsOf(width, height);
-  return adam7.reduce(
-    (total, [startX, startY, stepX, stepY]) =>
-      total + rowsOf(Math.ceil(Math.max(0, width - startX) / stepX), Math.ceil(Math.max(0, height - startY) / stepY)),
-    0,
+  const pass = (columns: number, rows: number): ImagePass =>
+    columns && rows ? { rows, rowBytes: 1 + Math.ceil((columns * bitsPerPixel) / 8) } : { rows: 0, rowBytes: 0 };
+  if (!interlaced) return [pass(width, height)];
+  return adam7.map(([startX, startY, stepX, stepY]) =>
+    pass(Math.ceil(Math.max(0, width - startX) / stepX), Math.ceil(Math.max(0, height - startY) / stepY)),
   );
+}
+
+/** Whether every row of the inflated image data starts with one of the five PNG filter types. */
+export function hasValidRowFilters(info: Pick<PngInfo, 'passes'>, inflated: Uint8Array): boolean {
+  let offset = 0;
+  for (const { rows, rowBytes } of info.passes)
+    for (let row = 0; row < rows; row += 1, offset += rowBytes) if ((inflated[offset] ?? 255) > 4) return false;
+  return offset === inflated.byteLength;
 }
 
 function concat(parts: readonly Uint8Array[]): Uint8Array {

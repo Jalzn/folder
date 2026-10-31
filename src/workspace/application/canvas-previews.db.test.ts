@@ -89,15 +89,22 @@ describe('drawing previews', () => {
       ...pngImage(1568, 1568).subarray(0, 33),
       ...new TextEncoder().encode('<html><script>alert(document.domain)</script></html>'),
     ]);
+    // Ten rows of a 10-pixel, 1-bit image: a filter byte and two bytes of pixels each.
     const blackRows = (count: number) => storedZlib(new Uint8Array(count));
     const grey = (idat: Uint8Array) =>
       pngFrom([pngHeaderChunk(10, 10, { bitDepth: 1, colourType: 0 }), pngChunk('IDAT', idat), pngChunk('IEND')]);
+    const unknownFilter = new Uint8Array(30);
+    unknownFilter[3] = 5;
+    const other = await service.createCanvas({ ...request(), scene: drawingFixture() });
+    const valid = await service.saveCanvasPreview({ id: other.id, version: 1, png: grey(blackRows(30)) });
+    expect(valid.stored).toBe(true);
     const invalid = [
       new Uint8Array(64),
       headerThenHtml,
       pngFile(10, 10, 200),
-      grey(blackRows(19)),
-      grey(new Uint8Array([...blackRows(20), ...new TextEncoder().encode('<html>')])),
+      grey(blackRows(29)),
+      grey(new Uint8Array([...blackRows(30), ...new TextEncoder().encode('<html>')])),
+      grey(storedZlib(unknownFilter)),
       pngImage(1569, 10),
       pngFile(100, 100, 256 * 1024 + 1),
     ];

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { pngChunk, pngFile, pngFrom, pngHeaderChunk, pngImage } from '../testing/png.js';
-import { crc32, readPngInfo } from './png.js';
+import { crc32, hasValidRowFilters, readPngInfo } from './png.js';
 
 const concat = (...parts: Uint8Array[]) => new Uint8Array(parts.flatMap((part) => [...part]));
 
@@ -56,6 +56,10 @@ describe('drawing preview PNG', () => {
     const palette = pngChunk('PLTE', new Uint8Array(3));
     const indexed = (...chunks: Uint8Array[]) => pngFrom([pngHeaderChunk(4, 4, { colourType: 3 }), ...chunks]);
     expect(readPngInfo(indexed(palette, idat, end))).toBeDefined();
+    const twoColours = pngChunk('PLTE', new Uint8Array(6));
+    expect(
+      readPngInfo(pngFrom([pngHeaderChunk(4, 4, { colourType: 3, bitDepth: 1 }), twoColours, idat, end])),
+    ).toBeDefined();
     for (const [label, bytes] of [
       ['unknown critical chunk', pngFrom([header, pngChunk('ABCD', new Uint8Array(4)), idat, end])],
       ['compressed text', pngFrom([header, pngChunk('zTXt', new Uint8Array(8)), idat, end])],
@@ -66,6 +70,17 @@ describe('drawing preview PNG', () => {
       ['palette after the image data', indexed(idat, palette, end)],
       ['two palettes', indexed(palette, palette, idat, end)],
       ['palette in a grey image', pngFrom([pngHeaderChunk(4, 4, { colourType: 0 }), palette, idat, end])],
+      ['palette of a partial entry', indexed(pngChunk('PLTE', new Uint8Array(4)), idat, end)],
+      ['empty palette', indexed(pngChunk('PLTE'), idat, end)],
+      ['palette over 256 entries', indexed(pngChunk('PLTE', new Uint8Array(3 * 1000)), idat, end)],
+      [
+        'palette a 1-bit image cannot index',
+        pngFrom([pngHeaderChunk(4, 4, { colourType: 3, bitDepth: 1 }), pngChunk('PLTE', new Uint8Array(9)), idat, end]),
+      ],
+      [
+        'suggested palette over 256 entries',
+        pngFrom([pngHeaderChunk(4, 4, { colourType: 2 }), pngChunk('PLTE', new Uint8Array(3 * 257)), idat, end]),
+      ],
       ['second IHDR', pngFrom([header, header, idat, end])],
     ] as const)
       expect(readPngInfo(bytes), label).toBeUndefined();
@@ -79,5 +94,24 @@ describe('drawing preview PNG', () => {
     // Adam7: seven passes of rows, each with its filter byte.
     expect(sizeOf(pngFile(8, 8, 64, { interlace: 1 }))).toBe(1 * 5 + 1 * 5 + 1 * 9 + 2 * 9 + 2 * 17 + 4 * 17 + 4 * 33);
     expect(readPngInfo(pngImage(16, 2))?.imageData.byteLength).toBeGreaterThan(0);
+  });
+
+  it('accepts only the five filter types at the start of every row of every pass', () => {
+    const plain = readPngInfo(pngFile(10, 2, 64, { colourType: 0, bitDepth: 1 }));
+    expect(plain?.passes).toEqual([{ rows: 2, rowBytes: 3 }]);
+    const rows = Uint8Array.of(4, 0xff, 0xff, 0, 0, 0);
+    expect(hasValidRowFilters({ passes: [{ rows: 2, rowBytes: 3 }] }, rows)).toBe(true);
+    expect(hasValidRowFilters({ passes: [{ rows: 2, rowBytes: 3 }] }, Uint8Array.of(0, 0, 0, 5, 0, 0))).toBe(false);
+    expect(hasValidRowFilters({ passes: [{ rows: 2, rowBytes: 3 }] }, rows.subarray(0, 5))).toBe(false);
+    // Interlaced: the filter bytes start each row of each of the seven passes.
+    const interlaced = readPngInfo(pngFile(2, 2, 64, { colourType: 0, bitDepth: 8, interlace: 1 }));
+    expect(interlaced?.passes.filter((pass) => pass.rows)).toEqual([
+      { rows: 1, rowBytes: 2 },
+      { rows: 1, rowBytes: 2 },
+      { rows: 1, rowBytes: 3 },
+    ]);
+    const passes = interlaced?.passes ?? [];
+    expect(hasValidRowFilters({ passes }, Uint8Array.of(1, 9, 2, 9, 3, 9, 9))).toBe(true);
+    expect(hasValidRowFilters({ passes }, Uint8Array.of(1, 9, 2, 9, 7, 9, 9))).toBe(false);
   });
 });
