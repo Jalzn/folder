@@ -17,6 +17,8 @@ export {
   RECOVERY_DOCUMENT_LIMITS,
   readDocumentContent,
 } from './document.js';
+export { documentToMarkdown } from './markdown.js';
+export { displayMathLines, inlineMath, MATH_SEPARATOR, mathFence, needsMathSeparator } from './markdown-math.js';
 export type {
   Document,
   DocumentAck,

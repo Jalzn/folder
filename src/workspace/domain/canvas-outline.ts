@@ -1,0 +1,277 @@
+import type { CanvasElement, CanvasScene } from './canvas.js';
+
+/**
+ * A token-light description of a drawing for agents: what is drawn, where, and what connects to
+ * what. Short aliases replace Excalidraw IDs; coordinates are integers relative to the occupied area.
+ */
+export interface CanvasOutline {
+  /** Every active element, including those omitted from the lists below. */
+  total: number;
+  counts: Partial<Record<OutlineCountKind, number>>;
+  area: { width: number; height: number } | null;
+  frames: OutlineFrame[];
+  /** Shapes and texts outside any frame. */
+  loose: OutlineNode[];
+  connections: OutlineConnection[];
+  groups: { alias: string; members: string[] }[];
+  freehand: { count: number; box: OutlineBox } | null;
+  links: { alias: string; url: string }[];
+  /** Frames, shapes, texts and connections left out by the element limit. */
+  omitted: number;
+}
+
+export type OutlineNodeKind = 'rectangle' | 'diamond' | 'ellipse' | 'text';
+export type OutlineCountKind = OutlineNodeKind | 'frame' | 'arrow' | 'line' | 'label' | 'freedraw';
+export interface OutlineBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+export interface OutlineNode {
+  alias: string;
+  kind: OutlineNodeKind;
+  label: string | null;
+  box: OutlineBox;
+}
+export interface OutlineFrame {
+  alias: string;
+  name: string | null;
+  box: OutlineBox;
+  children: OutlineNode[];
+}
+export type OutlineEndpoint = { alias: string } | { point: [number, number] };
+export interface OutlineConnection {
+  alias: string;
+  kind: 'arrow' | 'line';
+  label: string | null;
+  start: OutlineEndpoint;
+  end: OutlineEndpoint;
+  startArrowhead: boolean;
+  endArrowhead: boolean;
+}
+
+export const OUTLINE_LIMITS = { maxElements: 800, maxTextLength: 500 } as const;
+
+const emptyOutline: CanvasOutline = {
+  total: 0,
+  counts: {},
+  area: null,
+  frames: [],
+  loose: [],
+  connections: [],
+  groups: [],
+  freehand: null,
+  links: [],
+  omitted: 0,
+};
+
+export function outlineCanvasScene(
+  scene: CanvasScene,
+  limits: { maxElements: number; maxTextLength: number } = OUTLINE_LIMITS,
+): CanvasOutline {
+  const active = scene.elements.filter((element) => !element.isDeleted);
+  if (!active.length) return emptyOutline;
+  const view = sceneView(active, limits.maxTextLength);
+  const budget = elementBudget(limits.maxElements);
+  const frames = view.ordered
+    .filter((element) => element.type === 'frame')
+    .flatMap((frame) => {
+      const children = view.ordered.filter((element) => view.isNode(element) && view.frameOf(element) === frame.id);
+      if (!budget.take([frame]).length) {
+        budget.skip(children.length);
+        return [];
+      }
+      return [
+        {
+          alias: view.alias(frame),
+          name: view.frameName(frame),
+          box: view.box(frame),
+          children: budget.take(children).map(view.node),
+        },
+      ];
+    });
+  const loose = budget.take(view.ordered.filter((element) => view.isNode(element) && !view.frameOf(element)));
+  const connections = budget.take(
+    view.ordered.filter((element) => element.type === 'arrow' || element.type === 'line'),
+  );
+  const strokes = view.ordered.filter((element) => element.type === 'freedraw');
+  return {
+    total: active.length,
+    counts: view.counts,
+    area: view.area,
+    frames,
+    loose: loose.map(view.node),
+    connections: connections.map(view.connection),
+    groups: view.groups(),
+    freehand: strokes.length ? { count: strokes.length, box: view.box(...strokes) } : null,
+    links: view.ordered.flatMap((element) => {
+      const url = typeof element.link === 'string' ? element.link : '';
+      return url && view.hasAlias(element) ? [{ alias: view.alias(element), url: view.cut(url) }] : [];
+    }),
+    omitted: budget.omitted(),
+  };
+}
+
+function elementBudget(limit: number) {
+  let remaining = limit;
+  let omitted = 0;
+  return {
+    take<T>(items: T[]): T[] {
+      const kept = items.slice(0, Math.max(0, remaining));
+      remaining -= kept.length;
+      omitted += items.length - kept.length;
+      return kept;
+    },
+    skip(count: number) {
+      omitted += count;
+    },
+    omitted: () => omitted,
+  };
+}
+
+interface Extent {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+const linearTypes = new Set(['line', 'arrow', 'freedraw']);
+const nodeTypes = new Set(['rectangle', 'diamond', 'ellipse', 'text']);
+/** q for frames, e for shapes, t for free text and s for arrows and lines. Labels and strokes get none. */
+const aliasPrefixes: Partial<Record<OutlineCountKind, string>> = {
+  frame: 'q',
+  rectangle: 'e',
+  diamond: 'e',
+  ellipse: 'e',
+  text: 't',
+  arrow: 's',
+  line: 's',
+};
+
+const reference = (value: unknown) => (typeof value === 'string' ? value : undefined);
+const bindingTarget = (binding: unknown) =>
+  binding !== null && typeof binding === 'object'
+    ? reference((binding as { elementId?: unknown }).elementId)
+    : undefined;
+const textOf = (element: CanvasElement) =>
+  typeof element.originalText === 'string' ? element.originalText : String(element.text ?? '');
+
+function absolutePoints(element: CanvasElement): [number, number][] {
+  if (!Array.isArray(element.points)) return [];
+  const x = element.x as number;
+  const y = element.y as number;
+  return (element.points as number[][]).map(([px = 0, py = 0]) => [x + px, y + py]);
+}
+
+function extentOf(element: CanvasElement): Extent {
+  const points = linearTypes.has(element.type) ? absolutePoints(element) : [];
+  if (points.length) {
+    const xs = points.map(([x]) => x);
+    const ys = points.map(([, y]) => y);
+    return { left: Math.min(...xs), top: Math.min(...ys), right: Math.max(...xs), bottom: Math.max(...ys) };
+  }
+  const left = element.x as number;
+  const top = element.y as number;
+  return { left, top, right: left + (element.width as number), bottom: top + (element.height as number) };
+}
+
+/** Lookups shared by the outline lists: labels, reading order, aliases and relative geometry. */
+function sceneView(active: CanvasElement[], maxTextLength: number) {
+  const cut = (text: string) => (text.length > maxTextLength ? `${text.slice(0, maxTextLength)}…` : text);
+  const byId = new Map(active.map((element) => [element.id, element]));
+  const labels = new Map<string, string>();
+  for (const element of active) {
+    const container = reference(element.containerId);
+    if (element.type === 'text' && container && byId.has(container)) labels.set(container, cut(textOf(element)));
+  }
+  const isLabel = (element: CanvasElement) => element.type === 'text' && byId.has(reference(element.containerId) ?? '');
+
+  const extents = new Map(active.map((element) => [element.id, extentOf(element)]));
+  const all = [...extents.values()];
+  const originX = Math.min(...all.map((extent) => extent.left));
+  const originY = Math.min(...all.map((extent) => extent.top));
+  const relative = (x: number, y: number): [number, number] => [Math.round(x - originX), Math.round(y - originY)];
+
+  // Reading order: top to bottom, then left to right; the ID keeps ties stable.
+  const ordered = [...active].sort((a, b) => {
+    const first = extents.get(a.id) as Extent;
+    const second = extents.get(b.id) as Extent;
+    return first.top - second.top || first.left - second.left || (a.id < b.id ? -1 : 1);
+  });
+  const aliases = new Map<string, string>();
+  const counts: CanvasOutline['counts'] = {};
+  const perPrefix = new Map<string, number>();
+  for (const element of ordered) {
+    const kind = isLabel(element) ? 'label' : (element.type as OutlineCountKind);
+    counts[kind] = (counts[kind] ?? 0) + 1;
+    const prefix = aliasPrefixes[kind];
+    if (!prefix) continue;
+    perPrefix.set(prefix, (perPrefix.get(prefix) ?? 0) + 1);
+    aliases.set(element.id, `${prefix}${perPrefix.get(prefix)}`);
+  }
+
+  const alias = (element: CanvasElement) => aliases.get(element.id) ?? '';
+  const box = (...elements: CanvasElement[]): OutlineBox => {
+    const covered = elements.map((element) => extents.get(element.id) as Extent);
+    const left = Math.min(...covered.map((extent) => extent.left));
+    const top = Math.min(...covered.map((extent) => extent.top));
+    const [x, y] = relative(left, top);
+    const width = Math.round(Math.max(...covered.map((extent) => extent.right)) - left);
+    const height = Math.round(Math.max(...covered.map((extent) => extent.bottom)) - top);
+    return { x, y, width, height };
+  };
+  const endpoint = (target: string | undefined, point: [number, number] | undefined): OutlineEndpoint => {
+    const targetAlias = target && aliases.get(target);
+    return targetAlias ? { alias: targetAlias } : { point: point ? relative(...point) : [0, 0] };
+  };
+
+  return {
+    ordered,
+    counts,
+    cut,
+    alias,
+    box,
+    area: {
+      width: Math.round(Math.max(...all.map((extent) => extent.right)) - originX),
+      height: Math.round(Math.max(...all.map((extent) => extent.bottom)) - originY),
+    },
+    hasAlias: (element: CanvasElement) => aliases.has(element.id),
+    isNode: (element: CanvasElement) => nodeTypes.has(element.type) && !isLabel(element),
+    frameOf: (element: CanvasElement) => {
+      const frameId = reference(element.frameId);
+      return frameId && byId.get(frameId)?.type === 'frame' ? frameId : undefined;
+    },
+    frameName: (frame: CanvasElement) => (typeof frame.name === 'string' && frame.name ? cut(frame.name) : null),
+    node: (element: CanvasElement): OutlineNode => ({
+      alias: alias(element),
+      kind: element.type as OutlineNodeKind,
+      label: element.type === 'text' ? cut(textOf(element)) : (labels.get(element.id) ?? null),
+      box: box(element),
+    }),
+    connection: (element: CanvasElement): OutlineConnection => {
+      const points = absolutePoints(element);
+      return {
+        alias: alias(element),
+        kind: element.type as 'arrow' | 'line',
+        label: labels.get(element.id) ?? null,
+        start: endpoint(bindingTarget(element.startBinding), points[0]),
+        end: endpoint(bindingTarget(element.endBinding), points.at(-1)),
+        startArrowhead: typeof element.startArrowhead === 'string',
+        endArrowhead: typeof element.endArrowhead === 'string',
+      };
+    },
+    /** Groups in order of first appearance, with every aliased member, nested groups included. */
+    groups: () => {
+      const members = new Map<string, string[]>();
+      for (const element of ordered) {
+        const elementAlias = aliases.get(element.id);
+        if (!elementAlias || !Array.isArray(element.groupIds)) continue;
+        for (const group of element.groupIds)
+          if (typeof group === 'string') members.set(group, [...(members.get(group) ?? []), elementAlias]);
+      }
+      return [...members.values()].map((list, index) => ({ alias: `g${index + 1}`, members: list }));
+    },
+  };
+}
