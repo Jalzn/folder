@@ -26,9 +26,13 @@ export function fitItems<T>(items: readonly T[], render: (shown: readonly T[]) =
   return text;
 }
 
+/** User text placed in a header line: a line break inside it could forge more header lines. */
+export const singleLine = (text: string) => text.replace(/\s+/gu, ' ').trim();
+
 /** The project's name, flagged when archived; null for an item outside any project. */
 export function projectName(reference: ProjectReference): string | null {
-  return reference.projectName && `${reference.projectName}${reference.projectArchived ? ' (arquivado)' : ''}`;
+  if (!reference.projectName) return null;
+  return `${singleLine(reference.projectName)}${reference.projectArchived ? ' (arquivado)' : ''}`;
 }
 
 const shortTitle = (title: string, max = READING_LIMITS.document.originTaskTitleChars) =>
@@ -36,7 +40,7 @@ const shortTitle = (title: string, max = READING_LIMITS.document.originTaskTitle
 
 /**
  * Metadata that opens the first page of read_document, within its own budget: origin tasks that do
- * not fit are counted. Titles are quoted, not parsed as Markdown.
+ * not fit are counted. Titles stay on their line; task titles are quoted.
  */
 export function documentHeader(input: {
   document: ProjectReference & { id: string; title: string; version: number; updatedAt: string };
@@ -46,7 +50,7 @@ export function documentHeader(input: {
 }): string {
   const { document } = input;
   const lines = [
-    `# ${document.title}`,
+    `# ${singleLine(document.title)}`,
     '',
     `- Projeto: ${projectName(document) ?? 'nenhum'}`,
     `- Atualizado: ${document.updatedAt} · versão ${document.version}`,
