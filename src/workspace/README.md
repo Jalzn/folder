@@ -25,7 +25,7 @@ Projetos, documentos, desenhos, tarefas e seus vínculos no mesmo módulo. A int
 `createWorkspaceTools(db)` devolve as ferramentas somente leitura que o servidor expõe por MCP: `list_projects`, `search`, `read_document`, `read_drawing`, `list_tasks` e `read_task`. Elas não dependem do SDK MCP; cada uma tem esquema Zod em `application/reading/schemas.ts`, um caso de uso sobre a porta `WorkspaceReader` e a formatação em `infra/mcp/`.
 
 - Itens na lixeira não aparecem: ler um deles responde como um ID inexistente, e um documento de origem na lixeira vem sem título e com `available: false`.
-- A busca usa `searchText` do domínio, a mesma normalização das colunas `search_text`. Títulos de tarefas são comparados na aplicação, porque não têm coluna de busca.
+- A busca usa `searchText` do domínio, a mesma normalização das colunas `search_text`. Títulos de tarefas não têm coluna de busca: o leitor compara a forma normalizada em JavaScript, depois da consulta.
 - `documentToMarkdown` serializa o conteúdo persistido no servidor, num formato que o parser do BlockNote lê de volta. Itálico usa `_`, ou `*` dentro de palavras; `$` no texto sai como `\$`. Filhos de parágrafos, títulos, citações e código vêm logo depois do bloco, porque Markdown não os aninha.
 - Documentos são paginados em 60.000 caracteres com cursor `<versão>:<deslocamento>`; listas usam `o:<deslocamento>`. Respostas em JSON perdem itens do fim, com o cursor ajustado, quando passariam de 70.000 caracteres.
 - `outlineCanvasScene` descreve a cena atual com apelidos curtos, coordenadas relativas e ligações das setas, até 800 elementos.
