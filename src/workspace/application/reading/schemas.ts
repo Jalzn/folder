@@ -1,62 +1,80 @@
 import { z } from 'zod';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 
-/** Inputs of the agent read tools. The descriptions reach the agent through the tool schemas. */
+/**
+ * Inputs of the agent read tools. The descriptions reach the agent through the tool schemas, and so
+ * do the validation messages, which are Portuguese here without changing Zod's process-wide locale.
+ */
+const pt = { error: z.locales.ptBR().localeError };
 
-const id = z.uuid();
-const cursor = z.string().max(100).describe('O nextCursor da página anterior.');
-const query = z.string().trim().min(1).max(300);
+const id = z.uuid(pt);
+const cursor = z.string(pt).max(100).describe('O nextCursor da página anterior.');
+const query = z.string(pt).trim().min(1).max(300);
+const flag = () => z.boolean(pt);
+const pageSize = (max: number, fallback: number) => z.number(pt).int().min(1).max(max).default(fallback);
 
-export const ListProjectsInput = z.object({
-  includeArchived: z.boolean().default(false).describe('Inclui projetos arquivados.'),
-  cursor: cursor.optional(),
-});
+export const ListProjectsInput = z.object(
+  {
+    includeArchived: flag().default(false).describe('Inclui projetos arquivados.'),
+    cursor: cursor.optional(),
+  },
+  pt,
+);
 
-export const SearchInput = z.object({
-  query: query
-    .optional()
-    .describe(
-      'Palavras a buscar, todas obrigatórias, sem diferenciar caixa e acentos. Sem ela, lista os itens recentes.',
-    ),
-  projectId: id.optional().describe('Limita a busca a um projeto.'),
-  types: z
-    .array(z.enum(['document', 'drawing', 'task']))
-    .min(1)
-    .max(3)
-    .optional()
-    .describe('Tipos de item. O padrão é todos.'),
-  limit: z.number().int().min(1).max(READING_LIMITS.search.maxPageSize).default(READING_LIMITS.search.defaultPageSize),
-  cursor: cursor.optional(),
-});
+export const SearchInput = z.object(
+  {
+    query: query
+      .optional()
+      .describe(
+        'Palavras a buscar, todas obrigatórias, sem diferenciar caixa e acentos. Sem ela, lista os itens recentes.',
+      ),
+    projectId: id.optional().describe('Limita a busca a um projeto.'),
+    types: z
+      .array(z.enum(['document', 'drawing', 'task'], pt), pt)
+      .min(1)
+      .max(3)
+      .optional()
+      .describe('Tipos de item. O padrão é todos.'),
+    limit: pageSize(READING_LIMITS.search.maxPageSize, READING_LIMITS.search.defaultPageSize),
+    cursor: cursor.optional(),
+  },
+  pt,
+);
 
-export const ReadDocumentInput = z.object({
-  id,
-  cursor: cursor.optional().describe('O cursor indicado no fim da página anterior.'),
-});
+export const ReadDocumentInput = z.object(
+  { id, cursor: cursor.optional().describe('O cursor indicado no fim da página anterior.') },
+  pt,
+);
 
 export const ReadDrawingInput = z
-  .object({
-    id,
-    image: z.boolean().default(true).describe('Inclui a imagem PNG do desenho.'),
-    structure: z.boolean().default(true).describe('Inclui a lista de elementos e ligações.'),
-  })
+  .object(
+    {
+      id,
+      image: flag().default(true).describe('Inclui a imagem PNG do desenho.'),
+      structure: flag().default(true).describe('Inclui a lista de elementos e ligações.'),
+    },
+    pt,
+  )
   .refine((input) => input.image || input.structure, 'Peça a imagem, a estrutura ou as duas.');
 
-export const ListTasksInput = z.object({
-  projectId: id.optional().describe('Limita a um projeto.'),
-  documentId: id.optional().describe('Só as tarefas criadas a partir deste documento.'),
-  status: z
-    .array(z.enum(['todo', 'doing', 'done']))
-    .min(1)
-    .max(3)
-    .optional()
-    .describe('Colunas: todo (A fazer), doing (Em andamento) e done (Concluído).'),
-  query: query.optional().describe('Palavras que precisam aparecer no título, em qualquer ordem.'),
-  limit: z.number().int().min(1).max(READING_LIMITS.tasks.maxPageSize).default(READING_LIMITS.tasks.defaultPageSize),
-  cursor: cursor.optional(),
-});
+export const ListTasksInput = z.object(
+  {
+    projectId: id.optional().describe('Limita a um projeto.'),
+    documentId: id.optional().describe('Só as tarefas criadas a partir deste documento.'),
+    status: z
+      .array(z.enum(['todo', 'doing', 'done'], pt), pt)
+      .min(1)
+      .max(3)
+      .optional()
+      .describe('Colunas: todo (A fazer), doing (Em andamento) e done (Concluído).'),
+    query: query.optional().describe('Palavras que precisam aparecer no título, em qualquer ordem.'),
+    limit: pageSize(READING_LIMITS.tasks.maxPageSize, READING_LIMITS.tasks.defaultPageSize),
+    cursor: cursor.optional(),
+  },
+  pt,
+);
 
-export const ReadTaskInput = z.object({ id });
+export const ReadTaskInput = z.object({ id }, pt);
 
 export type ListProjectsInput = z.infer<typeof ListProjectsInput>;
 export type SearchInput = z.infer<typeof SearchInput>;

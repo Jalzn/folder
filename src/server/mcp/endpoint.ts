@@ -3,7 +3,6 @@ import type { AccessTokenService } from '@tinyfold/auth';
 import { createSlidingWindow } from '@tinyfold/core/infra';
 import type { AgentTool } from '@tinyfold/workspace';
 import type { Hono } from 'hono';
-import { z } from 'zod';
 import { clientIp } from '../client-ip.js';
 import type { Config } from '../config.js';
 import { readBearer } from './bearer.js';
@@ -59,9 +58,6 @@ function withNoStore(response: Response): Response {
  * access tokens only (cookies are ignored). Must be mounted before the SPA fallback.
  */
 export function mountMcp(app: Hono, deps: McpDependencies): void {
-  // The SDK passes Zod's messages to the agent after its own English prefix
-  // ("Input validation error: Invalid arguments for tool …"), which it does not let us change.
-  z.config(z.locales.ptBR());
   const handler = createMcpHandler(mcpServerFactory(deps.tools), {
     legacy: 'stateless',
     responseMode: 'json',

@@ -7,6 +7,7 @@ import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { createWorkspaceService } from '@tinyfold/workspace';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 import { drawingFixture } from '../workspace/testing/canvas-scenes.js';
 import { pngFile } from '../workspace/testing/png.js';
 import { createApp } from './app.js';
@@ -161,6 +162,8 @@ describe('MCP protocol', () => {
     expect(invalid.isError).toBe(true);
     expect(textOf(invalid)).toContain('Formato do UUID inválido');
     expect(textOf(await call('search', { limit: 99 }))).toContain('Grande demais');
+    // Only the tool schemas speak Portuguese: Zod's process-wide locale is untouched.
+    expect(z.number().safeParse('x').error?.issues[0]?.message).toContain('expected number');
   });
 
   it('announces a fixed tool list and refuses subscription streams', async () => {
