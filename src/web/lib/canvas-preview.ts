@@ -1,22 +1,41 @@
-import { type CanvasScene, exceedsPreviewLimits, MAX_PREVIEW_BYTES, readPngInfo } from '@tinyfold/workspace/domain';
+import {
+  type CanvasScene,
+  exceedsPreviewLimits,
+  MAX_PREVIEW_BYTES,
+  MAX_PREVIEW_SIDE,
+  readPngInfo,
+} from '@tinyfold/workspace/domain';
 
-/** Longest sides tried in order. Claude scales down anything above 1,568 px. */
-export const PREVIEW_SIDES = [1568, 1280, 1024, 768];
 /** Every side but the last must fit this; the last one may use up to MAX_PREVIEW_BYTES. */
 export const PREVIEW_TARGET_BYTES = 200 * 1024;
 /** Wait after a confirmed save, so continuous drawing produces one preview. */
 export const PREVIEW_DELAY_MS = 1_500;
 
+/**
+ * Longest sides to try, largest first: the server's limit, the side above which Claude scales
+ * images down, then smaller steps for drawings whose PNG is too heavy.
+ */
+export function previewSides(maxSide = MAX_PREVIEW_SIDE): number[] {
+  return [...new Set([maxSide, 1280, 1024, 768].filter((side) => side <= maxSide))];
+}
+
 export type RenderPng = (scene: CanvasScene, maxSide: number) => Promise<Blob>;
 
-/** The sharpest rendering within the preview limits, or undefined when even the smallest is too heavy. */
-export async function renderPreview(scene: CanvasScene, render: RenderPng): Promise<Blob | undefined> {
-  for (const [index, side] of PREVIEW_SIDES.entries()) {
+/**
+ * The sharpest rendering within the preview limits, or undefined when even the smallest is too
+ * heavy. A rendering the server would refuse moves on to the next side.
+ */
+export async function renderPreview(
+  scene: CanvasScene,
+  render: RenderPng,
+  sides = previewSides(),
+): Promise<Blob | undefined> {
+  for (const [index, side] of sides.entries()) {
     const png = await render(scene, side);
-    const budget = index === PREVIEW_SIDES.length - 1 ? MAX_PREVIEW_BYTES : PREVIEW_TARGET_BYTES;
+    const budget = index === sides.length - 1 ? MAX_PREVIEW_BYTES : PREVIEW_TARGET_BYTES;
     if (png.size > budget) continue;
     const info = readPngInfo(new Uint8Array(await png.arrayBuffer()));
-    return info && !exceedsPreviewLimits(info, png.size) ? png : undefined;
+    if (info && !exceedsPreviewLimits(info, png.size)) return png;
   }
   return undefined;
 }

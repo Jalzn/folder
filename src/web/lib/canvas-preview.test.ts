@@ -1,10 +1,11 @@
-import type { CanvasScene } from '@tinyfold/workspace/domain';
+import { type CanvasScene, MAX_PREVIEW_SIDE } from '@tinyfold/workspace/domain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pngFile } from '../../workspace/testing/png';
 import {
   type CanvasPreviewOptions,
   CanvasPreviewUploader,
   PREVIEW_DELAY_MS,
+  previewSides,
   type RenderPng,
   renderPreview,
 } from './canvas-preview';
@@ -41,8 +42,24 @@ describe('renderPreview', () => {
     expect(await renderPreview(scene(), rendererBySide({ ...heavy, 768: 257 * KiB }))).toBeUndefined();
   });
 
-  it('refuses a rendering larger than the preview side', async () => {
+  it('refuses a rendering larger than the preview side and tries the next one', async () => {
     expect(await renderPreview(scene(), async () => png(2000, 10 * KiB))).toBeUndefined();
+    const render = vi.fn(async (_scene: CanvasScene, side: number) => png(side === 1568 ? 1600 : side, 10 * KiB));
+    expect(await renderPreview(scene(), render)).toBeDefined();
+    expect(render.mock.calls.map(([, side]) => side)).toEqual([1568, 1280]);
+  });
+
+  it('never asks for a side above the server limit', () => {
+    expect(previewSides()).toEqual([MAX_PREVIEW_SIDE, 1280, 1024, 768]);
+    expect(previewSides(1280)).toEqual([1280, 1024, 768]);
+    expect(previewSides(1000)).toEqual([1000, 768]);
+    expect(previewSides(600)).toEqual([600]);
+  });
+
+  it('walks the sides it is given', async () => {
+    const render = rendererBySide({ 1000: 300 * KiB, 768: 120 * KiB });
+    expect((await renderPreview(scene(), render, previewSides(1000)))?.size).toBe(120 * KiB);
+    expect(render.sides).toEqual([1000, 768]);
   });
 });
 
