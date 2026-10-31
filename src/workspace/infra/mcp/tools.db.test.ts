@@ -311,6 +311,20 @@ describe('agent read tools', () => {
     });
   });
 
+  it('keeps the space at a mid-line page cut', async () => {
+    const document = await service.createDocument({
+      ...request(),
+      title: 'Corte',
+      content: [paragraph('ab '.repeat(30_000))],
+    });
+    const first = await call('read_document', { id: document.id });
+    const cursor = /"cursor":"(1:\d+)"/u.exec(first.text)?.[1];
+    const body = first.text.split('\n\n---\n\n')[1]?.split('\n\n---\nPágina')[0] ?? '';
+    expect(body.endsWith(' ')).toBe(true);
+    const second = await call('read_document', { id: document.id, cursor });
+    expect(second.text.startsWith('ab ')).toBe(true);
+  });
+
   it('describes the current scene of a drawing', async () => {
     const canvas = await service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
     const { text } = await call('read_drawing', { id: canvas.id });

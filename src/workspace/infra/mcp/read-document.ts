@@ -18,7 +18,8 @@ export const readDocumentTool = (reading: ReadingContext) =>
       const parts: string[] = [];
       if (page.number === 1)
         parts.push(documentHeader({ document, originTasks, originTaskCount, empty: !page.text.trim() }), '---');
-      if (page.text.trim()) parts.push(page.text.trimEnd());
+      // Only line breaks are trimmed: a page cut mid-line keeps the space at its end.
+      if (page.text.trim()) parts.push(page.text.replace(/\n+$/u, ''));
       if (page.count > 1) {
         const next =
           nextCursor && ` Continue com read_document ${JSON.stringify({ id: document.id, cursor: nextCursor })}.`;

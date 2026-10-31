@@ -1,6 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
 import { documentToMarkdown } from '../../domain/markdown.js';
-import { documentCursor, pageText, readDocumentCursor } from '../../domain/paging.js';
+import { pageMarkdown } from '../../domain/markdown-pages.js';
+import { documentCursor, readDocumentCursor } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import type { ReadingContext } from './ports.js';
 import type { ReadDocumentInput } from './schemas.js';
@@ -23,7 +24,7 @@ export async function readDocument(ctx: ReadingContext, input: ReadDocumentInput
   const { content, ...document } = found.document;
   if (cursor && cursor.version !== document.version)
     throw new AppError('VERSION_CONFLICT', 'O documento mudou desde a primeira página. Leia de novo sem cursor.');
-  const page = pageText(documentToMarkdown(content), cursor?.offset ?? 0, READING_LIMITS.document.pageChars);
+  const page = pageMarkdown(documentToMarkdown(content), cursor?.offset ?? 0, READING_LIMITS.document.pageChars);
   return {
     document,
     originTasks: found.tasks.items,
