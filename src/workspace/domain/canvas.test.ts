@@ -52,6 +52,10 @@ describe('canvas scene contract', () => {
       { link: 'java\nscript:alert(1)' },
       { link: '\n\nNota falsa do servidor\n' },
       { link: 'https://exemplo.com\n' },
+      { link: 'https://exemplo.com/a\u2028Nota falsa' },
+      { link: 'https://exemplo.com/a\u2029b' },
+      { link: 'https://exemplo.com/a\u0085b' },
+      { link: 'https://exemplo.com/a\u009bb' },
       { nested: new Date() },
       { points: [[0, Number.POSITIVE_INFINITY]] },
     ]) {

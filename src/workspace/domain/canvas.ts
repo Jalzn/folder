@@ -93,10 +93,11 @@ function boundedLimit(value: number | undefined, fallback: number, maximum: numb
 function validLink(value: unknown) {
   if (value === null || value === undefined) return;
   if (typeof value !== 'string' || value.length > 4000) invalid('O endereço do elemento é inválido.');
-  // Control characters are refused anywhere, edges included: the scene keeps the value as written.
+  // Control characters and Unicode line separators are refused anywhere, edges included: the scene
+  // keeps the value as written, and a reader could take one for a new line.
   const link = value.trim();
   if (
-    Array.from(value).some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127) ||
+    /[\p{Cc}\u2028\u2029]/u.test(value) ||
     (/^[a-z][a-z\d+.-]*:/iu.test(link) && !/^(https?:|mailto:|tel:)/iu.test(link))
   )
     invalid('Use um endereço http, https, mailto ou tel no link.');
