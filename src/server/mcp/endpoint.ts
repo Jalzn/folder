@@ -41,16 +41,12 @@ const rateLimited = (waitMs: number) =>
 const tooLarge = () =>
   errorResponse(413, 'request_too_large', `A solicitação passa de ${MCP_LIMITS.bodyBytes / 1024} KiB.`);
 
-/** One message per request keeps the per-token limit and the output budget meaningful. */
-const batchRefused = () =>
-  new Response(
-    JSON.stringify({
-      jsonrpc: '2.0',
-      id: null,
-      error: { code: -32600, message: 'Lotes de mensagens não são aceitos. Envie uma mensagem por requisição.' },
-    }),
-    { status: 400, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } },
-  );
+/** A JSON-RPC error answered by the endpoint itself, before the SDK sees the request. */
+const jsonRpcError = (code: number, message: string) =>
+  new Response(JSON.stringify({ jsonrpc: '2.0', id: null, error: { code, message } }), {
+    status: 400,
+    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
+  });
 
 function withNoStore(response: Response): Response {
   const headers = new Headers(response.headers);
@@ -118,10 +114,14 @@ export function mountMcp(app: Hono, deps: McpDependencies): void {
     // A body without a declared length is bounded here too. The SDK would serve up to 100 batched calls.
     const text = await readBodyText(c.req.raw, MCP_LIMITS.bodyBytes);
     if (text === undefined) return tooLarge();
+    // The SDK only ever gets the body parsed here: parsing again, it would strip another byte order
+    // mark and could find a batch this check never saw.
     const message = parseJson(text);
-    if (Array.isArray(message)) return batchRefused();
+    if (!message.ok) return jsonRpcError(-32700, 'O corpo da solicitação não é JSON válido.');
+    // One message per request keeps the per-token limit and the output budget meaningful.
+    if (Array.isArray(message.value))
+      return jsonRpcError(-32600, 'Lotes de mensagens não são aceitos. Envie uma mensagem por requisição.');
     const request = new Request(c.req.raw, { body: text });
-    const parsed = message === undefined ? {} : { parsedBody: message };
-    return withNoStore(await handler.fetch(request, { authInfo, ...parsed }));
+    return withNoStore(await handler.fetch(request, { authInfo, parsedBody: message.value }));
   });
 }

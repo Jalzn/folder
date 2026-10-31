@@ -286,6 +286,29 @@ describe('MCP origin, size and rate limits', () => {
     expect((await post('{"jsonrpc":')).status).toBe(400);
   });
 
+  it('answers the parse error itself, so byte order marks cannot hide a batch from the check', async () => {
+    const { post } = await fixture();
+    const batch = JSON.stringify(
+      [1, 2].map((id) => ({ ...rpc('tools/call', { name: 'list_projects', arguments: {} }), id })),
+    );
+    for (const prefix of ['\uFEFF\uFEFF', '\uFEFF \uFEFF', '']) {
+      const response = await post(`${prefix}{"jsonrpc":`);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32700, message: 'O corpo da solicitação não é JSON válido.' },
+      });
+    }
+    for (const prefix of ['\uFEFF\uFEFF', '\uFEFF \uFEFF']) {
+      const response = await post(`${prefix}${batch}`);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ error: { code: -32700 } });
+    }
+    const single = await post(`\uFEFF${batch}`);
+    expect(await single.json()).toMatchObject({ error: { code: -32600 } });
+  });
+
   it('limits authentication failures per proxied IP without ever blocking a valid token', async () => {
     const { post } = await fixture({ trustProxy: true });
     const from = (ip: string, authorization = '') =>

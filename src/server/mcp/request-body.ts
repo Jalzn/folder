@@ -16,11 +16,12 @@ export async function readBodyText(request: Request, maxBytes: number): Promise<
   return text + decoder.decode();
 }
 
-/** The parsed JSON, or undefined for text that is not JSON (the MCP handler then answers a parse error). */
-export function parseJson(text: string): unknown {
+export type ParsedJson = { ok: true; value: unknown } | { ok: false };
+
+export function parseJson(text: string): ParsedJson {
   try {
-    return JSON.parse(text);
+    return { ok: true, value: JSON.parse(text) };
   } catch {
-    return undefined;
+    return { ok: false };
   }
 }
