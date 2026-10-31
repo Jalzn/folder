@@ -1,11 +1,9 @@
 import type { OriginTask, ProjectReference } from '../../application/reading/ports.js';
 import type { TaskStatus } from '../../domain/models.js';
 import { offsetCursor } from '../../domain/paging.js';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { taskStatusLabels } from '../../domain/task-status.js';
 import type { AgentToolResult } from './types.js';
-
-/** Well below the 25,000-token default limit of Claude Code for one tool result. */
-export const MAX_TOOL_TEXT = 70_000;
 
 export const textResult = (text: string): AgentToolResult => ({ content: [{ type: 'text', text }] });
 
@@ -21,8 +19,9 @@ export const statusFields = (status: TaskStatus) => ({ status, statusLabel: task
 export function fitItems<T>(items: readonly T[], render: (shown: readonly T[]) => string): string {
   let count = items.length;
   let text = render(items);
-  while (text.length > MAX_TOOL_TEXT && count > 1) {
-    count = Math.max(1, Math.min(count - 1, Math.floor((count * MAX_TOOL_TEXT) / text.length)));
+  const budget = READING_LIMITS.toolTextChars;
+  while (text.length > budget && count > 1) {
+    count = Math.max(1, Math.min(count - 1, Math.floor((count * budget) / text.length)));
     text = render(items.slice(0, count));
   }
   return text;
@@ -39,7 +38,8 @@ export function projectName(reference: ProjectReference): string | null {
   return reference.projectName && `${reference.projectName}${reference.projectArchived ? ' (arquivado)' : ''}`;
 }
 
-const shortTitle = (title: string) => (title.length > 100 ? `${title.slice(0, 100)}…` : title);
+const shortTitle = (title: string, max = READING_LIMITS.document.originTaskTitleChars) =>
+  title.length > max ? `${title.slice(0, max)}…` : title;
 
 /** Metadata that opens the first page of read_document. Titles are quoted, not parsed as Markdown. */
 export function documentHeader(input: {

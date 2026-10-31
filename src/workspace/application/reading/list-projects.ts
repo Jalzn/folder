@@ -1,4 +1,4 @@
-import { READING_LIMITS } from './limits.js';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 import type { ReadingContext } from './ports.js';
 import type { ListProjectsInput } from './schemas.js';
 

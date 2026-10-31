@@ -107,7 +107,7 @@ describe('canvas outline', () => {
   it('cuts long texts and lists, keeping the counts complete', () => {
     const many = scene();
     many.elements.push(shape('long', 'text', { x: 0, y: 900, text: 'x'.repeat(600) }));
-    const outline = outlineCanvasScene(many, { maxElements: 3, maxTextLength: 10 });
+    const outline = outlineCanvasScene(many, { maxElements: 3, maxTextChars: 10 });
     expect(outline.total).toBe(10);
     expect(outline.frames[0]?.children.map((child) => child.label)).toEqual(['Fluxo de a…']);
     expect(outline.loose.map((node) => node.alias)).toEqual(['e2']);

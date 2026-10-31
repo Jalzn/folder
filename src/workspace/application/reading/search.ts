@@ -1,12 +1,12 @@
 import { readOffsetCursor } from '../../domain/paging.js';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { searchText } from '../../domain/search-text.js';
-import { READING_LIMITS } from './limits.js';
 import type { ReadingContext } from './ports.js';
 import type { SearchInput } from './schemas.js';
 
 /** Finds or lists documents, drawings and tasks, most recently edited first. */
 export async function search(ctx: ReadingContext, input: SearchInput) {
-  const offset = readOffsetCursor(input.cursor, READING_LIMITS.searchOffset);
+  const offset = readOffsetCursor(input.cursor, READING_LIMITS.search.maxOffset);
   const page = await ctx.read((reader) =>
     reader.searchItems({
       text: input.query === undefined ? undefined : searchText(input.query),

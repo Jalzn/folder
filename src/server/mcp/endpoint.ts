@@ -37,7 +37,8 @@ const rateLimited = (waitMs: number) =>
     'retry-after': String(Math.ceil(waitMs / 1000)),
   });
 
-const tooLarge = () => errorResponse(413, 'request_too_large', 'A solicitação passa de 64 KiB.');
+const tooLarge = () =>
+  errorResponse(413, 'request_too_large', `A solicitação passa de ${MCP_LIMITS.bodyBytes / 1024} KiB.`);
 
 /** One message per request keeps the per-token limit and the output budget meaningful. */
 const batchRefused = () =>

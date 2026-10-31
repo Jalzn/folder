@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CanvasOutline } from '../../domain/canvas-outline.js';
-import { compactJson, documentHeader, fitItems, MAX_TOOL_TEXT, nextPageCursor } from './format.js';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
+import { compactJson, documentHeader, fitItems, nextPageCursor } from './format.js';
 import { formatCanvasOutline } from './format-outline.js';
 
 const outline: CanvasOutline = {
@@ -130,7 +131,7 @@ describe('tool text helpers', () => {
       compactJson({ items: shown, nextCursor: nextPageCursor(page, shown.length, items.length) }),
     );
     const parsed = JSON.parse(text) as { items: unknown[]; nextCursor: string };
-    expect(text.length).toBeLessThanOrEqual(MAX_TOOL_TEXT);
+    expect(text.length).toBeLessThanOrEqual(READING_LIMITS.toolTextChars);
     expect(parsed.nextCursor).toBe(`o:${20 + parsed.items.length}`);
     expect(nextPageCursor(page, 50, 50)).toBe('o:70');
     expect(nextPageCursor({ offset: 0, nextOffset: null }, 3, 3)).toBeNull();

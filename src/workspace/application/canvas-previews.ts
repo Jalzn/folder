@@ -1,5 +1,5 @@
 import { AppError } from '@tinyfold/core/application';
-import { exceedsPreviewLimits, readPngInfo } from '../domain/canvas-preview.js';
+import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE, readPngInfo } from '../domain/canvas-preview.js';
 import type { WorkspaceContext } from './ports.js';
 import type { SaveCanvasPreviewInput } from './schemas.js';
 
@@ -20,7 +20,10 @@ export async function saveCanvasPreview(
   const info = readPngInfo(input.png);
   if (!info) throw new AppError('VALIDATION', 'A prévia precisa ser uma imagem PNG.');
   if (exceedsPreviewLimits(info, input.png.byteLength))
-    throw new AppError('VALIDATION', 'A prévia passa de 1.568 px no lado maior ou de 256 KiB.');
+    throw new AppError(
+      'VALIDATION',
+      `A prévia passa de ${MAX_PREVIEW_SIDE.toLocaleString('pt-BR')} px no lado maior ou de ${MAX_PREVIEW_BYTES / 1024} KiB.`,
+    );
   return ctx.repeatableWrite(async (repo) => {
     const canvas = await repo.canvasState(input.id);
     if (!canvas || canvas.deletedAt) throw new AppError('NOT_FOUND', 'O desenho não está disponível.');

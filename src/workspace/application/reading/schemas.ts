@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 
 /** Inputs of the agent read tools. The descriptions reach the agent through the tool schemas. */
 
@@ -21,7 +22,7 @@ export const SearchInput = z.object({
     .max(3)
     .optional()
     .describe('Tipos de item. O padrão é todos.'),
-  limit: z.number().int().min(1).max(50).default(20),
+  limit: z.number().int().min(1).max(READING_LIMITS.search.maxPageSize).default(READING_LIMITS.search.defaultPageSize),
   cursor: cursor.optional(),
 });
 
@@ -47,7 +48,7 @@ export const ListTasksInput = z.object({
     .optional()
     .describe('Colunas: todo (A fazer), doing (Em andamento) e done (Concluído).'),
   query: query.optional().describe('Texto a buscar no título.'),
-  limit: z.number().int().min(1).max(100).default(50),
+  limit: z.number().int().min(1).max(READING_LIMITS.tasks.maxPageSize).default(READING_LIMITS.tasks.defaultPageSize),
   cursor: cursor.optional(),
 });
 

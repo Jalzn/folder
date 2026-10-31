@@ -1,6 +1,5 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import { type RawBuilder, sql } from 'kysely';
-import { READING_LIMITS } from '../application/reading/limits.js';
 import type {
   ItemCounts,
   ProjectReference,
@@ -12,6 +11,7 @@ import type {
 } from '../application/reading/ports.js';
 import type { CanvasScene } from '../domain/canvas.js';
 import type { DocumentBlock, TaskStatus } from '../domain/models.js';
+import { READING_LIMITS } from '../domain/reading-limits.js';
 import { searchText } from '../domain/search-text.js';
 import type { TaskRow, WorkspaceTables } from './db.js';
 import { hydrateTasks } from './repository/tasks.js';
@@ -33,8 +33,6 @@ const byProject = (projectId: string | undefined) => (projectId ? sql`and item.p
 const boardOrder = sql`case item.status when 'todo' then 0 when 'doing' then 1 else 2 end, item.position, item.id`;
 const textTables = { document: 'workspace_documents', drawing: 'workspace_canvases' } as const;
 const typeOrder: Record<SearchItemType, number> = { document: 0, drawing: 1, task: 2 };
-/** Characters of context kept before the first match in an excerpt. */
-const excerptLead = 60;
 
 interface CountsRow {
   documents: number;
@@ -57,7 +55,7 @@ export function workspaceReader(db: Database): WorkspaceReader {
     const start =
       query.text === undefined
         ? sql`1`
-        : sql`max(1, instr(item.search_text, ${query.text}) - length(item.title) - 1 - ${excerptLead})`;
+        : sql`max(1, instr(item.search_text, ${query.text}) - length(item.title) - 1 - ${READING_LIMITS.search.excerptLeadChars})`;
     const { rows } = await sql<
       ProjectReferenceRow & {
         id: string;
@@ -69,9 +67,9 @@ export function workspaceReader(db: Database): WorkspaceReader {
       }
     >`
       select item.id, item.title, item.updated_at, ${projectColumns},
-        substr(item.plain_text, ${start}, ${READING_LIMITS.excerptLength}) as excerpt,
+        substr(item.plain_text, ${start}, ${READING_LIMITS.search.excerptChars}) as excerpt,
         ${start} > 1 as cut_before,
-        length(item.plain_text) >= ${start} + ${READING_LIMITS.excerptLength} as cut_after
+        length(item.plain_text) >= ${start} + ${READING_LIMITS.search.excerptChars} as cut_after
       from ${sql.table(textTables[type])} as item ${projectJoin}
       where item.deleted_at is null ${byProject(query.projectId)}
         ${query.text === undefined ? sql`` : sql`and instr(item.search_text, ${query.text}) > 0`}

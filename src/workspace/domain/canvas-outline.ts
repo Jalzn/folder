@@ -1,4 +1,5 @@
 import type { CanvasElement, CanvasScene } from './canvas.js';
+import { READING_LIMITS } from './reading-limits.js';
 
 /**
  * A token-light description of a drawing for agents: what is drawn, where, and what connects to
@@ -51,8 +52,6 @@ export interface OutlineConnection {
   endArrowhead: boolean;
 }
 
-export const OUTLINE_LIMITS = { maxElements: 800, maxTextLength: 500 } as const;
-
 const emptyOutline: CanvasOutline = {
   total: 0,
   counts: {},
@@ -68,11 +67,11 @@ const emptyOutline: CanvasOutline = {
 
 export function outlineCanvasScene(
   scene: CanvasScene,
-  limits: { maxElements: number; maxTextLength: number } = OUTLINE_LIMITS,
+  limits: { maxElements: number; maxTextChars: number } = READING_LIMITS.outline,
 ): CanvasOutline {
   const active = scene.elements.filter((element) => !element.isDeleted);
   if (!active.length) return emptyOutline;
-  const view = sceneView(active, limits.maxTextLength);
+  const view = sceneView(active, limits.maxTextChars);
   const budget = elementBudget(limits.maxElements);
   const frames = view.ordered
     .filter((element) => element.type === 'frame')

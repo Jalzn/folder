@@ -7,6 +7,7 @@ import type {
   OutlineNode,
   OutlineNodeKind,
 } from '../../domain/canvas-outline.js';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 
 const nodeNames: Record<OutlineNodeKind, string> = {
   rectangle: 'retângulo',
@@ -50,7 +51,10 @@ function connectionLine(connection: OutlineConnection): string {
  * The outline as indented text, for example `e3 retângulo "Validar versão" (960, 80, 220×90)` and
  * `s1 seta "salva": e1 → e3`. Lines stop before `maxChars`; the last line then counts what was left out.
  */
-export function formatCanvasOutline(outline: CanvasOutline, maxChars = 60_000): string {
+export function formatCanvasOutline(
+  outline: CanvasOutline,
+  maxChars: number = READING_LIMITS.outline.maxChars,
+): string {
   const counts = countNames.flatMap(([kind, singular, plural]) => {
     const value = outline.counts[kind] ?? 0;
     return value ? [`${count(value)} ${value === 1 ? singular : plural}`] : [];

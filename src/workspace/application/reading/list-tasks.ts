@@ -1,12 +1,12 @@
 import { readOffsetCursor } from '../../domain/paging.js';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { searchText } from '../../domain/search-text.js';
-import { READING_LIMITS } from './limits.js';
 import type { ReadingContext } from './ports.js';
 import type { ListTasksInput } from './schemas.js';
 
 /** Tasks in board order: column, then position. */
 export async function listTasks(ctx: ReadingContext, input: ListTasksInput) {
-  const offset = readOffsetCursor(input.cursor, READING_LIMITS.taskOffset);
+  const offset = readOffsetCursor(input.cursor, READING_LIMITS.tasks.maxOffset);
   const page = await ctx.read((reader) =>
     reader.tasks({
       projectId: input.projectId,
