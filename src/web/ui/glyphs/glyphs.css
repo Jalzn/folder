@@ -1,0 +1,76 @@
+/* Tinyfold's own glyphs; common icons come from Lucide. */
+.column-ring {
+  display: block;
+  flex: none;
+}
+.column-ring[data-state="start"] {
+  color: var(--icon);
+}
+.column-ring[data-state="progress"] {
+  color: var(--accent);
+}
+.column-ring[data-state="done"] {
+  color: var(--ok);
+}
+.column-ring__check {
+  stroke: var(--bg);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.project-mark {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: var(--radius-sm);
+  font: 600 11px / 1 var(--font-sans);
+  letter-spacing: 0;
+  font-feature-settings: "cv05", "ss03", "case";
+}
+.project-mark[data-size="16"] {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-xs);
+  font-size: 10px;
+}
+.project-mark[data-color="violet"] {
+  background: var(--mark-violet-bg);
+  color: var(--mark-violet-fg);
+}
+.project-mark[data-color="ochre"] {
+  background: var(--mark-ochre-bg);
+  color: var(--mark-ochre-fg);
+}
+.project-mark[data-color="gray"] {
+  background: var(--mark-gray-bg);
+  color: var(--mark-gray-fg);
+}
+.project-mark[data-color="green"] {
+  background: var(--mark-green-bg);
+  color: var(--mark-green-fg);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.logo__mark {
+  flex: none;
+}
+.logo__fold {
+  fill: var(--accent-solid);
+}
+.logo__lines {
+  stroke: var(--bg);
+}
+.logo__name {
+  font: 600 18px / 24px var(--font-sans);
+  letter-spacing: -0.02em;
+}
+.logo__period {
+  color: var(--accent);
+}

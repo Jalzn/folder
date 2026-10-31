@@ -1,0 +1,69 @@
+/* Menu rows, docs/interface/visual.md §6: 30 px, radius 6, the shortcut at the end in kbd. */
+.menu {
+  outline: none;
+}
+.menu-item {
+  min-height: var(--height-menu-item);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  cursor: default;
+  outline: none;
+}
+.menu-item > svg {
+  flex: none;
+  color: var(--icon);
+}
+.menu-item[data-focused],
+.menu-item[data-open] {
+  background: var(--hover-raised);
+}
+.menu-item[data-focused] > svg {
+  color: var(--text);
+}
+.menu-item[data-danger],
+.menu-item[data-danger] > svg {
+  color: var(--late);
+}
+.menu-item[data-disabled] {
+  opacity: 0.45;
+}
+.menu-item__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-item__detail {
+  font: var(--type-meta);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.menu-item__check {
+  width: 16px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--accent);
+}
+.menu-item__chevron {
+  margin-right: -2px;
+}
+.menu-section__header {
+  padding: 8px 8px 4px;
+  font: var(--type-micro);
+  letter-spacing: var(--tracking-micro);
+  color: var(--text-3);
+}
+.menu-separator {
+  height: 1px;
+  margin: 4px;
+  border: 0;
+  background: var(--line);
+}

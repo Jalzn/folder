@@ -3,8 +3,7 @@ import { LogOut, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { api, errorMessage, queryClient, reportSessionError } from '../../lib/api';
 import { useApp } from '../../shell';
-import { useToast } from '../../ui';
-import { PageHeader } from '../Library';
+import { PageHeader, useToast } from '../../ui';
 import { AccessTokensSection } from './AccessTokensSection';
 import { PasswordSection } from './PasswordSection';
 import { SessionsSection } from './SessionsSection';
@@ -13,7 +12,7 @@ export function ProfilePage() {
   const app = useApp();
   return (
     <div className="page profile-page">
-      <PageHeader eyebrow="MEU ESPAÇO" title="Perfil" description="Seu espaço, seus dispositivos." />
+      <PageHeader title="Perfil" description="Seu espaço, seus dispositivos." />
       <div className="profile-owner">
         <span className="avatar large">{app.owner.name.slice(0, 1).toUpperCase()}</span>
         <div>

@@ -1,0 +1,44 @@
+/* Bands, docs/interface/visual.md §6: at least 36 px, radius 8, the state's background, no side border. */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 6px 6px 6px 12px;
+  border-radius: var(--radius-md);
+  background: var(--hover);
+  color: var(--text);
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+}
+.banner > svg {
+  flex: none;
+  color: var(--icon);
+}
+.banner__text {
+  flex: 1;
+  min-width: 0;
+}
+.banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.banner[data-tone="failure"] {
+  background: var(--late-bg);
+}
+.banner[data-tone="failure"] > svg {
+  color: var(--late);
+}
+.banner[data-tone="conflict"] {
+  background: var(--conflict-bg);
+}
+.banner[data-tone="conflict"] > svg {
+  color: var(--conflict);
+}
+.banner[data-tone="draft"] {
+  background: var(--warn-bg);
+}
+.banner[data-tone="draft"] > svg {
+  color: var(--warn);
+}

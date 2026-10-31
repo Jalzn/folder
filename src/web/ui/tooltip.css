@@ -1,0 +1,24 @@
+.tooltip {
+  max-width: 280px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--toast);
+  color: var(--on-toast);
+  box-shadow: var(--shadow-float);
+  font: var(--type-meta);
+  letter-spacing: var(--tracking-meta);
+  pointer-events: none;
+}
+.tooltip[data-entering] {
+  animation: tooltip-in var(--duration-popover) var(--ease-standard);
+}
+.tooltip .tooltip__keys {
+  margin-left: 8px;
+  font-weight: 600;
+  font-feature-settings: "cv05", "ss03", "case";
+}
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,76 @@
+/* Dialogs, docs/interface/visual.md §6: level 3 on the scrim, radius 12, floating shadow and top light. */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--scrim);
+}
+.modal-overlay[data-entering] {
+  animation: dialog-fade var(--duration-scrim) var(--ease-out);
+}
+.modal {
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 64px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--raised-3);
+  box-shadow: var(--shadow-float), var(--top-light);
+  color: var(--text);
+}
+.modal[data-entering] {
+  animation: dialog-in var(--duration-palette) var(--ease-standard);
+}
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 20px 16px;
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  outline: none;
+}
+.dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dialog__title {
+  margin: 0;
+  font: 600 16px / 24px var(--font-sans);
+  letter-spacing: var(--tracking-h3);
+  color: var(--text);
+}
+.dialog__header .btn-icon {
+  margin: -2px -6px 0 0;
+}
+.dialog__body {
+  color: var(--text-2);
+}
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+@keyframes dialog-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal[data-entering] {
+    animation-name: dialog-fade;
+  }
+}

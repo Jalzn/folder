@@ -10,7 +10,6 @@ import {
   Folder,
   Link2,
   LoaderCircle,
-  MoreHorizontal,
   Plus,
   Trash2,
 } from 'lucide-react';
@@ -18,7 +17,9 @@ import { useEffect, useRef, useState } from 'react';
 import { api, errorMessage, refreshWorkspace, reportSessionError } from '../lib/api';
 import { useProjects, useTasks } from '../lib/queries';
 import { TASK_STATUSES, type Task, type TaskStatus, taskStatusLabels } from '../lib/types';
-import { Dialog, ErrorNotice, Menu, Spinner, useAction, useRequest, useToast } from '../ui';
+import { useAction } from '../lib/use-action';
+import { useRequest } from '../lib/use-request';
+import { ActionMenu, Dialog, ErrorNotice, PageHeader, Spinner, useToast } from '../ui';
 
 export type TaskOrigin = { documentId: string; blockId?: string | null; excerpt: string; expectedVersion?: number };
 
@@ -250,12 +251,7 @@ export function BoardPage() {
   const projects = useProjects(true);
   return (
     <div className="page board-page">
-      <header className="page-header">
-        <div>
-          <span className="eyebrow">DO PENSAMENTO À AÇÃO</span>
-          <h1>Kanban</h1>
-          <p>Pequenos passos. Projetos em movimento.</p>
-        </div>
+      <PageHeader title="Kanban" description="Pequenos passos. Projetos em movimento.">
         <select
           className="filter-select"
           aria-label="Filtrar quadro por projeto"
@@ -271,7 +267,7 @@ export function BoardPage() {
             </option>
           ))}
         </select>
-      </header>
+      </PageHeader>
       <Kanban {...(filter === 'all' ? {} : { projectId: filter === 'none' ? null : filter })} />
     </div>
   );
@@ -422,9 +418,8 @@ export function Kanban({ projectId, archived = false }: { projectId?: string | n
                       <button type="button" className="task-title" onClick={() => setSelectedId(task.id)}>
                         {task.title}
                       </button>
-                      <Menu
+                      <ActionMenu
                         label={`Opções de ${task.title}`}
-                        trigger={<MoreHorizontal size={16} />}
                         items={[
                           { label: 'Editar tarefa', action: () => setSelectedId(task.id) },
                           ...TASK_STATUSES.filter((s) => s !== status).map((s) => ({

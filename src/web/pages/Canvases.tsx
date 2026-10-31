@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useCanvases, useProjects } from '../lib/queries';
 import { type CanvasSummary, type DocumentSummary, type Project, relativeDate } from '../lib/types';
 import { useApp } from '../shell';
-import { EmptyState, ErrorNotice, Spinner } from '../ui';
+import { EmptyState, ErrorNotice, PageHeader, Spinner } from '../ui';
 
 export type ContentSummary = { kind: 'document'; item: DocumentSummary } | { kind: 'canvas'; item: CanvasSummary };
 
@@ -110,24 +110,17 @@ export function CanvasesPage() {
   const filtered = Boolean(query.trim()) || filter !== 'all';
   return (
     <div className="page">
-      <header className="page-header">
-        <div>
-          <span className="eyebrow">BIBLIOTECA</span>
-          <h1>Desenhos</h1>
-          <p>Rascunhe um fluxo, conecte ideias ou comece por um traço.</p>
-        </div>
-        <div className="page-actions">
-          <button
-            type="button"
-            className="button primary"
-            disabled={app.creatingCanvas || archivedProject}
-            onClick={() => void create()}
-          >
-            <Plus size={17} />
-            Novo desenho
-          </button>
-        </div>
-      </header>
+      <PageHeader title="Desenhos" description="Rascunhe um fluxo, conecte ideias ou comece por um traço.">
+        <button
+          type="button"
+          className="button primary"
+          disabled={app.creatingCanvas || archivedProject}
+          onClick={() => void create()}
+        >
+          <Plus size={17} />
+          Novo desenho
+        </button>
+      </PageHeader>
       <div className="list-toolbar">
         <label className="search-field">
           <Search size={17} />

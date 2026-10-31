@@ -10,7 +10,6 @@ import {
   Folder,
   FolderPlus,
   LayoutGrid,
-  MoreHorizontal,
   PenTool,
   Plus,
   RotateCcw,
@@ -21,33 +20,12 @@ import { type KeyboardEvent, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useCanvases, useDocuments, useProjects } from '../lib/queries';
 import { type DocumentSummary, type Project, relativeDate } from '../lib/types';
+import { useAction } from '../lib/use-action';
+import { useRequest } from '../lib/use-request';
 import { useApp } from '../shell';
-import { Dialog, EmptyState, ErrorNotice, Menu, Spinner, useAction, useRequest } from '../ui';
+import { ActionMenu, Dialog, EmptyState, ErrorNotice, PageHeader, Spinner } from '../ui';
 import { Kanban } from './Board';
 import { CanvasRows, ContentRows, type ContentSummary } from './Canvases';
-
-export function PageHeader({
-  eyebrow,
-  title,
-  description,
-  children,
-}: {
-  eyebrow?: string;
-  title: string;
-  description?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <header className="page-header">
-      <div>
-        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
-        <h1>{title}</h1>
-        {description && <p>{description}</p>}
-      </div>
-      {children && <div className="page-actions">{children}</div>}
-    </header>
-  );
-}
 
 export function DocumentRows({
   documents,
@@ -235,11 +213,7 @@ export function DocumentsPage() {
   });
   return (
     <div className="page">
-      <PageHeader
-        eyebrow="BIBLIOTECA"
-        title="Documentos"
-        description="Um lugar para cada ideia, inclusive as que ainda estão soltas."
-      >
+      <PageHeader title="Documentos" description="Um lugar para cada ideia, inclusive as que ainda estão soltas.">
         <button
           type="button"
           className="button primary"
@@ -395,9 +369,8 @@ export function ProjectPage() {
             : 'Suas ideias e próximos passos, juntos.'
         }
       >
-        <Menu
+        <ActionMenu
           label="Opções do projeto"
-          trigger={<MoreHorizontal size={20} />}
           items={[
             {
               label: 'Renomear projeto',
@@ -586,11 +559,7 @@ export function TrashPage() {
   }
   return (
     <div className="page">
-      <PageHeader
-        eyebrow="SEU ESPAÇO"
-        title="Lixeira"
-        description="Ideias podem mudar de lugar. Seus documentos e desenhos podem voltar."
-      />
+      <PageHeader title="Lixeira" description="Ideias podem mudar de lugar. Seus documentos e desenhos podem voltar." />
       {documents.isPending || canvases.isPending ? (
         <Spinner />
       ) : documents.error || canvases.error ? (

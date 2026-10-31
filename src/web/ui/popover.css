@@ -1,0 +1,44 @@
+/* Menus and popovers, docs/interface/visual.md §6: level 2, radius 10, floating shadow and a top light. */
+.popover {
+  min-width: 220px;
+  max-width: min(360px, calc(100vw - 24px));
+  max-height: min(480px, calc(100vh - 48px));
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--raised-2);
+  box-shadow: var(--shadow-float), var(--top-light);
+  color: var(--text);
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  outline: none;
+}
+.popover[data-entering] {
+  animation: popover-in var(--duration-popover) var(--ease-standard);
+}
+.popover[data-placement="bottom"] {
+  transform-origin: top;
+}
+.popover[data-placement="top"] {
+  transform-origin: bottom;
+}
+.popover__dialog {
+  outline: none;
+}
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .popover[data-entering] {
+    animation-name: popover-fade;
+  }
+}
+@keyframes popover-fade {
+  from {
+    opacity: 0;
+  }
+}

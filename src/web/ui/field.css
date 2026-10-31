@@ -1,0 +1,92 @@
+/* Text fields, docs/interface/visual.md §6: 32 px in forms, 28 px in dense places. */
+.text-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.text-field__label {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-2);
+}
+.text-field__description {
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+.text-field__error {
+  font: var(--type-meta);
+  color: var(--late);
+}
+.input {
+  width: 100%;
+  height: var(--height-field);
+  padding: 0 10px;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  background: var(--raised-1);
+  color: var(--text);
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  transition:
+    border-color var(--duration-hover) var(--ease-out),
+    box-shadow var(--duration-hover) var(--ease-out);
+}
+.input[data-size="sm"] {
+  height: var(--height-field-dense);
+}
+.input::placeholder {
+  color: var(--text-3);
+}
+.input[data-hovered] {
+  border-color: var(--text-3);
+}
+.input[data-focused] {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-25);
+}
+.input[data-invalid] {
+  border-color: var(--late);
+}
+.input[data-disabled] {
+  opacity: 0.45;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.search-box__icon {
+  position: absolute;
+  left: 10px;
+  color: var(--icon);
+  pointer-events: none;
+}
+.search-box .input {
+  padding: 0 30px;
+}
+.search-box .input::-webkit-search-cancel-button {
+  display: none;
+}
+.search-box__clear {
+  position: absolute;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--icon);
+  cursor: pointer;
+}
+.search-box__clear[data-hovered] {
+  background: var(--hover);
+  color: var(--text);
+}
+.search-box[data-empty] .search-box__clear {
+  display: none;
+}

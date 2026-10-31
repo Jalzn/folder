@@ -1,0 +1,21 @@
+/* The rounded square shared by project marks, label squares and checkboxes, with a key's relief. */
+.kbd {
+  display: inline-grid;
+  place-items: center;
+  height: 18px;
+  min-width: 18px;
+  padding: 0 4px;
+  border-radius: var(--radius-xs);
+  background: var(--raised-1);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 -1px 0 var(--line-strong);
+  font: var(--type-micro);
+  letter-spacing: var(--tracking-micro);
+  font-feature-settings: "cv05", "ss03", "case", "tnum";
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.shortcut {
+  display: inline-flex;
+  gap: 4px;
+}

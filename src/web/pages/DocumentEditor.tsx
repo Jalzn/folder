@@ -40,7 +40,6 @@ import {
   Folder,
   ListTodo,
   LoaderCircle,
-  MoreHorizontal,
   Plus,
   RotateCcw,
   Trash2,
@@ -53,9 +52,11 @@ import { AutosaveController, type Snapshot } from '../lib/autosave';
 import { exportMarkdownWithMath, importMarkdownWithMath } from '../lib/markdown';
 import { useDocument, useProjects, useTasks } from '../lib/queries';
 import type { Document, DocumentContent } from '../lib/types';
+import { useAction } from '../lib/use-action';
+import { useRequest } from '../lib/use-request';
 import { useApp } from '../shell';
 import { useTheme } from '../shell/theme';
-import { Dialog, EmptyState, ErrorNotice, Menu, Spinner, useAction, useRequest, useToast } from '../ui';
+import { ActionMenu, Dialog, EmptyState, ErrorNotice, Spinner, useToast } from '../ui';
 import { LinkedTask, TaskDialog, type TaskOrigin } from './Board';
 
 const schema = BlockNoteSchema.create({
@@ -573,9 +574,8 @@ function DocumentEditor({ document }: { document: Document }) {
             <span>Tarefas</span>
             <span className="count-badge">{openTasks.length}</span>
           </button>
-          <Menu
+          <ActionMenu
             label="Opções do documento"
-            trigger={<MoreHorizontal size={20} />}
             items={[
               {
                 label: 'Importar Markdown',

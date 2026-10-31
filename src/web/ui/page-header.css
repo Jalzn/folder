@@ -1,0 +1,26 @@
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.page-header__text {
+  min-width: 0;
+}
+.page-header__title {
+  margin: 0;
+  color: var(--text);
+  text-wrap: balance;
+}
+.page-header__description {
+  margin: 8px 0 0;
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  color: var(--text-2);
+}
+.page-header__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}

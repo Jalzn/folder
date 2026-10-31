@@ -22,7 +22,6 @@ import {
   Folder,
   ImageDown,
   LoaderCircle,
-  MoreHorizontal,
   PencilRuler,
   RotateCcw,
   Trash2,
@@ -43,9 +42,11 @@ import {
 import { renderCanvasPng } from '../lib/canvas-png';
 import { CanvasPreviewUploader } from '../lib/canvas-preview';
 import { useCanvas, useProjects } from '../lib/queries';
+import { useAction } from '../lib/use-action';
+import { useRequest } from '../lib/use-request';
 import { useApp } from '../shell';
 import { useTheme } from '../shell/theme';
-import { Dialog, EmptyState, ErrorNotice, Menu, Spinner, useAction, useRequest, useToast } from '../ui';
+import { ActionMenu, Dialog, EmptyState, ErrorNotice, Spinner, useToast } from '../ui';
 
 /** The canvas as getCanvas returns it, including whether the stored PNG preview shows its scene. */
 type EditableCanvas = Awaited<ReturnType<typeof api.workspace.getCanvas>>;
@@ -488,9 +489,8 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
             )}
             <span>{statusText}</span>
           </span>
-          <Menu
+          <ActionMenu
             label="Opções do desenho"
-            trigger={<MoreHorizontal size={20} />}
             items={[
               {
                 label: 'Importar desenho',

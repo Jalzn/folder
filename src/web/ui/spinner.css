@@ -1,0 +1,23 @@
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  color: var(--text-3);
+}
+.spinner-icon {
+  flex: none;
+  animation: spinner-turn 0.9s linear infinite;
+}
+@keyframes spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner-icon {
+    animation: none;
+  }
+}
