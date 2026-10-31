@@ -5,15 +5,12 @@ import { excerptAround } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
 import type { WorkspaceTables } from '../db.js';
-import { titleLengthInSearchText } from './searchable.js';
+import { searchableItems, type TextType, titleLengthInSearchText } from './searchable.js';
 import { projectColumns, projectReference } from './shared.js';
 
 type SearchReads = Pick<WorkspaceReader, 'searchItems'>;
-type TextType = 'document' | 'drawing';
 type WithoutExcerpt<Hit> = Hit extends unknown ? Omit<Hit, 'excerpt'> : never;
 type RankedHit = WithoutExcerpt<SearchHit>;
-
-const tables = { document: 'workspace_documents', drawing: 'workspace_canvases' } as const;
 
 /**
  * Rows of one item type that sort after the cursor key: a higher title rank, or the same rank and an
@@ -28,15 +25,13 @@ function afterKey(query: SearchQuery, typeRank: number, titleRank: RawBuilder<nu
 
 export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
   async function textHits(type: TextType, query: SearchQuery, limit: number): Promise<RankedHit[]> {
-    // Documents and drawings share every column read here.
-    const table = tables[type] as 'workspace_documents';
     // search_text starts with the title, so a term first found within the title's length is in the title.
     const missingFromTitle = query.terms.map(
       (term) => sql<number>`(instr(item.search_text, ${term}) not between 1 and ${titleLengthInSearchText})`,
     );
     const titleRank = missingFromTitle.length ? sql<number>`${sql.join(missingFromTitle, sql` + `)}` : sql<number>`0`;
     let select = db
-      .selectFrom(`${table} as item`)
+      .selectFrom(searchableItems(db, type))
       .leftJoin('workspace_projects as project', 'project.id', 'item.project_id')
       .select(['item.id', 'item.title', 'item.updated_at', titleRank.as('title_rank')])
       .select(projectColumns)
@@ -88,8 +83,11 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
   /** The full text of the shown documents and drawings, read only for their excerpts. */
   async function plainTexts(type: TextType, ids: string[]): Promise<Map<string, string>> {
     if (!ids.length) return new Map();
-    const table = tables[type] as 'workspace_documents';
-    const rows = await db.selectFrom(table).select(['id', 'plain_text']).where('id', 'in', ids).execute();
+    const rows = await db
+      .selectFrom(searchableItems(db, type))
+      .select(['item.id', 'item.plain_text'])
+      .where('item.id', 'in', ids)
+      .execute();
     return new Map(rows.map((row) => [row.id, row.plain_text]));
   }
 
