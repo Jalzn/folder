@@ -18,6 +18,7 @@
     "test": "vitest run --project unit",
     "test:db": "vitest run --project db",
     "e2e": "playwright test",
+    "tokens": "tsx src/web/styles/tokens/write.ts",
     "db:migrate": "tsx --env-file-if-exists=.env src/server/cli/migrate.ts",
     "reset-password": "tsx --env-file-if-exists=.env src/server/cli/reset-password.ts",
     "backup:create": "tsx --env-file-if-exists=.env scripts/backup.ts",

@@ -18,8 +18,8 @@ export function Logo({ compact = false }: { compact?: boolean }) {
     <span className="brand">
       <svg width="29" height="29" viewBox="0 0 40 40" fill="none" aria-hidden="true">
         <path d="M8 7h16l9 9v17H8V7Z" fill="currentColor" />
-        <path d="M24 7v9h9" fill="#435F8C" />
-        <path d="M14 23h13M14 28h8" stroke="#17191D" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M24 7v9h9" style={{ fill: 'var(--accent-solid)' }} />
+        <path d="M14 23h13M14 28h8" style={{ stroke: 'var(--bg)' }} strokeWidth="2.5" strokeLinecap="round" />
       </svg>
       {!compact && (
         <span>

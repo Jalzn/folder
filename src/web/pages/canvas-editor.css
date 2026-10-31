@@ -35,20 +35,21 @@
   position: relative;
 }
 .canvas-editor .excalidraw {
-  --color-primary: #8da9d1;
-  --color-primary-darker: #7394c3;
-  --color-primary-darkest: #607da5;
-  --color-primary-light: #33435b;
-  --color-surface-low: #25282e;
-  --color-surface-mid: #2b2f36;
-  --color-surface-high: #343943;
-  --color-surface-lowest: #1b1d22;
-  --color-on-surface: #e4e7ed;
-  --default-bg-color: #202329;
-  --island-bg-color: #25282e;
-  --sidebar-bg-color: #202329;
-  --popup-bg-color: #25282e;
+  --color-primary: var(--accent);
   --border-radius-lg: 10px;
+}
+/* Excalidraw's dark surfaces follow the Sumário elevation; the light theme keeps its own. */
+.canvas-editor .excalidraw.theme--dark {
+  --color-primary-light: var(--selected);
+  --color-surface-low: var(--raised-1);
+  --color-surface-mid: var(--raised-2);
+  --color-surface-high: var(--raised-3);
+  --color-surface-lowest: var(--bg);
+  --color-on-surface: var(--text);
+  --default-bg-color: var(--bg);
+  --island-bg-color: var(--raised-2);
+  --sidebar-bg-color: var(--bg);
+  --popup-bg-color: var(--raised-2);
 }
 .canvas-editor .excalidraw button {
   min-height: unset;

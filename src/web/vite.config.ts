@@ -17,11 +17,35 @@ function excalidrawFonts(): Plugin {
   };
 }
 
+/** Preloads the regular Inter file, which every screen needs before its first text, in the built index.html. */
+function preloadInter(): Plugin {
+  return {
+    name: 'tinyfold-preload-inter',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, { bundle }) {
+        const inter = Object.values(bundle ?? {}).find(
+          (output) => output.type === 'asset' && output.names.includes('InterVariable.woff2'),
+        );
+        if (!inter) throw new Error('InterVariable.woff2 não foi emitida no build.');
+        return [
+          {
+            tag: 'link',
+            attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: `/${inter.fileName}`, crossorigin: '' },
+            injectTo: 'head',
+          },
+        ];
+      },
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = { ...loadEnv(mode, '../..', ''), ...process.env };
   const server = `http://127.0.0.1:${env.PORT ?? 3370}`;
   return {
-    plugins: [react(), excalidrawFonts()],
+    plugins: [react(), excalidrawFonts(), preloadInter()],
     server: {
       host: 'localhost',
       port: Number(env.WEB_PORT ?? 5170),

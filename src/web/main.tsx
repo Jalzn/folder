@@ -1,4 +1,7 @@
-import '@fontsource-variable/inter';
+import './styles/tokens.css';
+import './styles/fonts.css';
+import './styles/base.css';
+import './styles/compat.css';
 import '@blocknote/mantine/style.css';
 import './styles.css';
 import { QueryClientProvider } from '@tanstack/react-query';

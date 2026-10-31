@@ -1,0 +1,122 @@
+/* Elements and text roles of the Sumário system (docs/interface/visual.md §3). Components style themselves. */
+:root {
+  font-family: var(--font-sans);
+  font-feature-settings: "cv05", "ss03", "calt";
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+::selection {
+  background: var(--text-selection);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+h1[tabindex="-1"]:focus {
+  outline: none;
+}
+/* The CSS property wins over the components' stroke-width attribute. */
+svg.lucide {
+  stroke-width: 1.5;
+}
+
+/* Overlay scrollbars: a 6 px thumb in --line-strong, only on hover. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.t-title {
+  font: var(--type-title);
+  letter-spacing: var(--tracking-title);
+  font-optical-sizing: auto;
+}
+.t-task-title {
+  font: var(--type-task-title);
+  letter-spacing: var(--tracking-task-title);
+  font-optical-sizing: auto;
+}
+.t-h1 {
+  font: var(--type-h1);
+  letter-spacing: var(--tracking-h1);
+  font-optical-sizing: auto;
+}
+.t-h2 {
+  font: var(--type-h2);
+  letter-spacing: var(--tracking-h2);
+  font-optical-sizing: auto;
+}
+.t-h3 {
+  font: var(--type-h3);
+  letter-spacing: var(--tracking-h3);
+}
+.t-body {
+  font: var(--type-body);
+  letter-spacing: var(--tracking-body);
+}
+.t-desc {
+  font: var(--type-desc);
+  letter-spacing: var(--tracking-desc);
+}
+.t-ui {
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+}
+.t-card {
+  font: var(--type-card);
+  letter-spacing: var(--tracking-card);
+}
+.t-label {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-3);
+}
+.t-meta {
+  font: var(--type-meta);
+  letter-spacing: var(--tracking-meta);
+  font-variant-numeric: tabular-nums;
+}
+.t-micro {
+  font: var(--type-micro);
+  letter-spacing: var(--tracking-micro);
+  font-feature-settings: "cv05", "ss03", "case", "tnum";
+}
+.t-mono {
+  font: var(--type-mono);
+  letter-spacing: var(--tracking-mono);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Reduced motion: no translation or scaling, only fades of up to 80 ms; components swap their keyframes. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: The motion preference must override component rules. */
+    animation-duration: var(--duration-reduced) !important;
+    /* biome-ignore lint/complexity/noImportantStyles: The motion preference must override component rules. */
+    transition-duration: 1ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: The motion preference must override component rules. */
+    scroll-behavior: auto !important;
+  }
+}

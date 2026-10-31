@@ -54,6 +54,7 @@ import { exportMarkdownWithMath, importMarkdownWithMath } from '../lib/markdown'
 import { useDocument, useProjects, useTasks } from '../lib/queries';
 import type { Document, DocumentContent } from '../lib/types';
 import { useApp } from '../shell';
+import { useTheme } from '../shell/theme';
 import { Dialog, EmptyState, ErrorNotice, Menu, Spinner, useAction, useRequest, useToast } from '../ui';
 import { LinkedTask, TaskDialog, type TaskOrigin } from './Board';
 
@@ -266,6 +267,7 @@ function DocumentTitle({
 
 function DocumentEditor({ document }: { document: Document }) {
   const app = useApp();
+  const theme = useTheme();
   const [controller] = useState(() => controllerFor(document, app.owner.installationId));
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   const projects = useProjects(true);
@@ -703,7 +705,7 @@ function DocumentEditor({ document }: { document: Document }) {
           <div className="document-editor">
             <BlockNoteView
               editor={editor}
-              theme="dark"
+              theme={theme.resolved}
               formattingToolbar={false}
               slashMenu={false}
               onChange={() => update({ content: editor.document as unknown as DocumentContent })}

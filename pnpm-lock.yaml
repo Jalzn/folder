@@ -130,7 +130,7 @@ importers:
       '@excalidraw/excalidraw':
         specifier: 0.18.1
         version: 0.18.1(patch_hash=f2fc2e87b3a69b0d86b5e4c99233ed53e801b55bc9a2f92ada1e16a8990043b6)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@fontsource-variable/inter':
+      '@fontsource-variable/jetbrains-mono':
         specifier: 5.3.0
         version: 5.3.0
       '@mantine/core':
@@ -148,6 +148,9 @@ importers:
       '@tanstack/react-router':
         specifier: 1.170.46
         version: 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      inter-ui:
+        specifier: 4.1.1
+        version: 4.1.1
       lucide-react:
         specifier: 1.61.0
         version: 1.61.0(@types/react@19.3.0)(react@19.3.1)
@@ -585,8 +588,8 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@fontsource-variable/inter@5.3.0':
-    resolution: {integrity: sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA==}
+  '@fontsource-variable/jetbrains-mono@5.3.0':
+    resolution: {integrity: sha512-F32xpS2NsGYoQi2ADSkKTgpJj7ozajsGgDJ8woTnqjmIB+dxDIqImjl4pXZVEExu8UFZ2ndhmX18EBS/hdz3Lw==}
 
   '@handlewithcare/prosemirror-inputrules@0.1.4':
     resolution: {integrity: sha512-GMqlBeG2MKM+tXEFd2N+wIv5z4VvJTg8JtfJUrdjvFq2W6v+AW8oTgiWyFw8L3iEQwvtQcVJxU873iB0LXUNNw==}
@@ -2097,6 +2100,10 @@ packages:
     resolution: {integrity: sha512-QQnnxNyfvmHFIsj7gkPcYymR8Jdw/o7mp5ZFihxn6h8Ci6fh3Dx4E1gPjpQEpIuPo9XVNY/ZUwh4BPMjGyL01g==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
+  inter-ui@4.1.1:
+    resolution: {integrity: sha512-451h0J29HyOmA+JXgSi/6M12tL7ZCZ8arYKZUXiOXTJpJbAKqJvFh3k5SiV3x7tKe0C0KyrKUUiQIvvZ2PQDcA==}
+    engines: {node: '>=16.0.0'}
+
   internmap@1.0.1:
     resolution: {integrity: sha512-lDB5YccMydFBtasVtxnZ3MRBHuaoE8GKsppq+EchKL2U4nK/DmEpPHNH8MZe5HkMtpSiTSOZwfN0tzYjO/lJEw==}
 
@@ -3399,7 +3406,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@fontsource-variable/inter@5.3.0': {}
+  '@fontsource-variable/jetbrains-mono@5.3.0': {}
 
   '@handlewithcare/prosemirror-inputrules@0.1.4(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.8)':
     dependencies:
@@ -4859,6 +4866,8 @@ snapshots:
   inherits@2.0.4: {}
 
   ini@4.1.1: {}
+
+  inter-ui@4.1.1: {}
 
   internmap@1.0.1: {}
 

@@ -44,6 +44,7 @@ import { renderCanvasPng } from '../lib/canvas-png';
 import { CanvasPreviewUploader } from '../lib/canvas-preview';
 import { useCanvas, useProjects } from '../lib/queries';
 import { useApp } from '../shell';
+import { useTheme } from '../shell/theme';
 import { Dialog, EmptyState, ErrorNotice, Menu, Spinner, useAction, useRequest, useToast } from '../ui';
 
 /** The canvas as getCanvas returns it, including whether the stored PNG preview shows its scene. */
@@ -186,6 +187,7 @@ export function CanvasPage() {
 
 function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const app = useApp();
+  const theme = useTheme();
   const [{ controller, previews }] = useState(() => sessionFor(canvas, app.owner.installationId));
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   const projects = useProjects(true);
@@ -314,7 +316,7 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
     }
     setExporting(true);
     try {
-      const blob = await renderCanvasPng(current.scene, { maxSide: 4096, darkMode: true });
+      const blob = await renderCanvasPng(current.scene, { maxSide: 4096, darkMode: theme.resolved === 'dark' });
       downloadCanvasFile(blob, canvasFileName(current.title, 'png'));
       toast('Imagem PNG exportada.');
     } catch (error) {
@@ -654,7 +656,7 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
             files: {},
           }}
           langCode="pt-BR"
-          theme="dark"
+          theme={theme.resolved}
           name={state.snapshot.title || 'Sem título'}
           handleKeyboardGlobally={false}
           aiEnabled={false}

@@ -21,13 +21,13 @@
 
 .inline-math-preview:hover,
 .inline-math-preview:focus-visible {
-  background: rgb(127 166 232 / 12%);
-  outline: 1px solid rgb(127 166 232 / 45%);
+  background: var(--selected);
+  outline: 1px solid var(--accent-35);
 }
 
 .inline-math-placeholder,
 .inline-math-invalid {
-  color: var(--text-muted, #acb5c3);
+  color: var(--text-2);
   font-size: 0.9em;
 }
 
@@ -42,7 +42,7 @@
 .inline-math-input {
   min-height: 112px;
   resize: vertical;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -50,7 +50,7 @@
 .inline-math-help,
 .inline-math-error {
   margin: 8px 0 16px;
-  color: var(--text-muted, #acb5c3);
+  color: var(--text-2);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -63,15 +63,15 @@
   justify-content: center;
   overflow: auto;
   padding: 20px;
-  border: 1px solid var(--border, #3c434e);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--surface, #202329);
-  color: var(--text-muted, #acb5c3);
+  background: var(--raised-1);
+  color: var(--text-2);
   font-size: 14px;
 }
 
 .inline-math-dialog-preview .katex {
-  color: var(--text, #eceff4);
+  color: var(--text);
   font-size: 1.3em;
 }
 
