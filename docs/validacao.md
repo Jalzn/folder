@@ -95,7 +95,27 @@ Executada em 2026-10-31 sobre o commit `2b4fbb0` (fim das entregas, antes das ro
    - **Revogação:** depois de revogar, o servidor aparece como `failed`, com a mensagem em português "Token inválido ou revogado…", e o Claude Code informa que o fallback OAuth fica desligado quando há `Authorization`. Uma chamada direta recebeu 401 com `error="invalid_token"`.
    - **Vazamento:** nenhuma ocorrência do token no log do servidor, nas transcrições nem nos logs de depuração.
 
-Essa validação não foi repetida depois das rodadas adversariais. As saídas que mudaram desde então (busca, cursores, cabeçalho de documento, estrutura de desenho e validação do PNG) estão cobertas pelos testes de servidor e pelo E2E com o cliente oficial.
+#### Repetição sobre `709da1d`, depois das rodadas adversariais
+
+Repetida em 2026-10-31, nas mesmas condições: banco temporário, portas 3471 e 5271, `--mcp-config` temporário com `--strict-mcp-config` e a configuração do usuário intacta. O log confirmou `Banco: …/tinyfold-mcp.EJNfAkd7ek/tinyfold.sqlite`.
+
+1. **Google Chrome:**
+   - Conteúdo criado pelo `/rpc` da própria página: um projeto, o documento "MCP somente leitura" com uma seção longa (mais de 60.000 caracteres em Markdown), duas tarefas originadas dele e uma tarefa solta.
+   - Um desenho com duas caixas ligadas por uma seta e um texto: abri-lo no editor enviou uma prévia (`previewCurrent: true`). Renomeá-lo salvou a versão 2 sem novo envio de prévia, e a prévia continuou atual.
+   - No Perfil:
+     - o campo do nome não mostrou mais o ícone do 1Password;
+     - o token "Validação HEAD" foi mostrado uma vez, e a área de transferência continha exatamente o comando;
+     - a lista mostrou prefixo, criação e "Nunca usado", depois "Último uso agora";
+     - nem a página nem o armazenamento do navegador continham o segredo;
+     - a revogação mostrou "Token revogado." e devolveu o foco a "Gerar token".
+2. **Claude Code 2.1.310**, modelo `claude-opus-5-5`, revisão negociada 2026-07-28, seis ferramentas:
+   - `list_projects`.
+   - `search` com "MCP ideia", palavras fora da ordem do texto ("a ideia do MCP"), achou o documento.
+   - `read_drawing` trouxe a imagem da versão atual depois da renomeação (cerca de 15 KiB). O modelo respondeu que a seta liga Editor a Servidor.
+   - `list_tasks` com `documentId` trouxe só as duas tarefas originadas do documento.
+   - `read_document` paginou em duas páginas. **O Claude Code não manteve a primeira página na conversa:** com 58,9 KB, ela foi gravada num arquivo local ("Output too large"), e o modelo recebeu só uma prévia de 2.332 caracteres. Sem permissão para ler esse arquivo na sessão não interativa, ele não chegou ao cursor da página seguinte. Numa segunda sessão com a ferramenta Read permitida, leu o arquivo, seguiu o cursor `1:59569` e recebeu a página 2 (10.307 caracteres) inline, até a última linha do documento.
+   - Depois da revogação, o servidor apareceu como `failed`, com "Token inválido ou revogado…", e uma chamada direta recebeu 401 com `error="invalid_token"`.
+   - Nenhuma ocorrência do token no log do servidor, nas transcrições nem nos logs de depuração. Banco, token e configuração temporária foram removidos.
 
 ### Rodadas adversariais
 
@@ -127,6 +147,7 @@ Nenhum achado crítico ou alto. Corrigidos e retestados:
 - Acesso de dois aparelhos físicos na origem pública.
 - `headersHelper` e a variável de ambiente no `.mcp.json`, documentados em [operação](implantacao.md#claude-code), não foram exercitados.
 - O registro pelo próprio `claude mcp add` e `claude mcp list` não foram executados, para não alterar a configuração do usuário. A conexão usou o mesmo endereço e cabeçalho.
+- Tamanho da página de `read_document`: com 60.000 caracteres, o Claude Code 2.1.310 grava a página num arquivo e mostra uma prévia, e o agente precisa de permissão para ler esse arquivo. Falta decidir se a página diminui para caber inline.
 
 ## Canvas e regressão no worktree
 
