@@ -6,6 +6,7 @@ import { coreModule, createDatabase, type Database, migrate, tables } from '@tin
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Project } from '../domain/models.js';
+import { sceneFingerprint } from '../domain/scene-fingerprint.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
@@ -85,6 +86,42 @@ describe('drawing previews', () => {
       await service.saveCanvasPreview({ id: created.id, version: saved.version, png: pngImage(200, 120) }),
     ).toEqual({ stored: true, previewVersion: 2 });
     expect(await storedPreview(created.id)).toMatchObject({ scene_version: 2, width: 200 });
+  });
+
+  it('stores a preview rendered before a move when its fingerprint is the current scene', async () => {
+    const destination = await testProject(service, 'Destino');
+    const created = await service.createCanvas({ ...request(), projectId: project.id, scene: drawingFixture() });
+    const scene = drawingFixture();
+    scene.elements.pop();
+    const saved = await service.saveCanvas({ ...request(), id: created.id, expectedVersion: 1, title: 'Fluxo', scene });
+    // The preview of the saved scene is still rendering when the drawing moves.
+    const moved = await service.moveItem({
+      ...request(),
+      type: 'drawing',
+      id: created.id,
+      projectId: destination.id,
+      expectedVersion: saved.version,
+    });
+    const upload = (sceneOf: typeof scene | undefined) => ({
+      id: created.id,
+      version: saved.version,
+      png: pngImage(40, 30),
+      ...(sceneOf ? { sceneFingerprint: sceneFingerprint(sceneOf) } : {}),
+    });
+    expect(await service.saveCanvasPreview(upload(undefined))).toEqual({ stored: false, previewVersion: null });
+    expect(await service.saveCanvasPreview(upload(drawingFixture()))).toEqual({ stored: false, previewVersion: null });
+    expect(await service.saveCanvasPreview(upload(scene))).toEqual({ stored: true, previewVersion: saved.version });
+    expect(await service.getCanvas({ id: created.id })).toMatchObject({
+      version: moved.version,
+      previewVersion: saved.version,
+      previewCurrent: true,
+    });
+    // An older upload never replaces it, even of the same scene.
+    expect(await service.saveCanvasPreview({ ...upload(scene), version: 1, png: pngImage(20, 20) })).toEqual({
+      stored: false,
+      previewVersion: saved.version,
+    });
+    expect(await storedPreview(created.id)).toMatchObject({ scene_version: saved.version, width: 40 });
   });
 
   it('refuses a future version, a trashed drawing and invalid images', async () => {

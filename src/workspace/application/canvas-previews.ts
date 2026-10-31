@@ -14,6 +14,11 @@ export interface CanvasPreviewAck {
  * Stores the PNG the browser rendered for a saved scene version. A preview is derived data: it
  * never changes the drawing's version or dates, an outdated upload is ignored without error, and
  * repeating an upload is safe, so it keeps no request record.
+ *
+ * An upload is current when it shows the current scene. With `sceneFingerprint`, that is what it
+ * says, whatever the version: a move, a rename or a trip to the trash raise the version without
+ * changing the scene. Without it, only an upload for the current version is. Either way, a preview
+ * never replaces one stored for a later version.
  */
 export async function saveCanvasPreview(
   ctx: WorkspaceContext,
@@ -38,12 +43,15 @@ export async function saveCanvasPreview(
     if (input.version > canvas.version)
       throw new AppError('VALIDATION', 'A prévia é de uma versão que o desenho ainda não tem.');
     const previewVersion = (await repo.canvasPreview(input.id))?.sceneVersion ?? null;
-    if (input.version < canvas.version || (previewVersion !== null && previewVersion > input.version))
+    const fingerprint = sceneFingerprint(canvas.scene);
+    const showsCurrentScene =
+      input.sceneFingerprint === undefined ? input.version === canvas.version : input.sceneFingerprint === fingerprint;
+    if (!showsCurrentScene || (previewVersion !== null && previewVersion > input.version))
       return { stored: false, previewVersion };
     await repo.saveCanvasPreview({
       canvasId: input.id,
       sceneVersion: input.version,
-      sceneFingerprint: sceneFingerprint(canvas.scene),
+      sceneFingerprint: fingerprint,
       png: input.png,
       width: info.width,
       height: info.height,

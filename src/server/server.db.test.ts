@@ -8,6 +8,7 @@ import { RPCLink } from '@orpc/client/fetch';
 import { isProcedure, type RouterClient } from '@orpc/server';
 import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import { emptyCanvasScene, sceneFingerprint } from '@tinyfold/workspace/domain';
 import { afterEach, describe, expect, it } from 'vitest';
 import { pngImage } from '../workspace/testing/png.js';
 import { createApp } from './app.js';
@@ -227,6 +228,18 @@ describe('server boundaries', () => {
       previewVersion: 1,
     });
     expect(await client.workspace.getCanvas({ id: created.id })).toMatchObject({ version: 1, previewVersion: 1 });
+    // With the fingerprint of the scene it shows, a preview of another scene is not stored.
+    expect(
+      await client.workspace.saveCanvasPreview({ id: created.id, version: 1, sceneFingerprint: 'abc', png }),
+    ).toEqual({ stored: false, previewVersion: 1 });
+    expect(
+      await client.workspace.saveCanvasPreview({
+        id: created.id,
+        version: 1,
+        sceneFingerprint: sceneFingerprint(emptyCanvasScene()),
+        png,
+      }),
+    ).toEqual({ stored: true, previewVersion: 1 });
     const notPng = new File(['<svg/>'], 'preview.png', { type: 'image/png' });
     await expect(client.workspace.saveCanvasPreview({ id: created.id, version: 1, png: notPng })).rejects.toMatchObject(
       { status: 400, data: { code: 'VALIDATION' } },
