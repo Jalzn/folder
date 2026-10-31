@@ -77,4 +77,4 @@ O navegador gera uma prévia PNG depois de salvar e a envia por `workspace.saveC
 
 `domain/canvas.test.ts` verifica cenas e compactação sem mutação; `application/canvases.db.test.ts` cobre os contratos de desenhos, concorrência, reinício e migração de uma base anterior. `scripts/canvas-backup.db.test.ts` verifica backup e restauração independente com cena e projeto, e `scripts/projects-backup.db.test.ts`, com cor e ordem dos projetos, fixados e origens com título guardado.
 
-`pnpm seed:sample` preenche um banco temporário (`DATABASE_PATH`) com os dados de exemplo de `docs/interface/brief.md`, para validação visual e capturas. Recusa o banco principal e um banco que já tenha documentos.
+`pnpm seed:sample` preenche um banco temporário (`DATABASE_PATH`) com os dados de exemplo de `docs/interface/brief.md`, para validação visual e capturas. Antes de migrar qualquer coisa, recusa o banco principal (`data/tinyfold.sqlite`), o de produção (`/data/tinyfold.sqlite`), `NODE_ENV=production` e qualquer arquivo que já tenha uma tabela: só aceita um arquivo novo ou um banco vazio (`scripts/seed-target.ts`).

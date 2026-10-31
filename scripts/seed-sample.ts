@@ -6,11 +6,10 @@
  *
  *   DATABASE_PATH=/tmp/tinyfold-08/tinyfold.sqlite pnpm seed:sample
  *
- * Refuses the main database, data/tinyfold.sqlite, and any database that already has documents.
+ * Refuses, before migrating anything, the main database (data/tinyfold.sqlite), the production one
+ * (/data/tinyfold.sqlite), NODE_ENV=production and any file that already holds a table.
  */
 import { randomUUID } from 'node:crypto';
-import { existsSync, realpathSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { createDatabase, migrate } from '../src/core/infra/index.js';
 import { readConfig, repositoryRoot } from '../src/server/config.js';
 import { modules } from '../src/server/modules.js';
@@ -22,6 +21,7 @@ import type {
   TaskStatus,
 } from '../src/workspace/domain/index.js';
 import { createWorkspaceService, type WorkspaceService } from '../src/workspace/index.js';
+import { assertSeedTarget } from './seed-target.js';
 
 const request = () => ({ requestId: randomUUID() });
 
@@ -174,20 +174,6 @@ function flow(labels: string[], caption?: string): CanvasScene {
   return { appState: { viewBackgroundColor: '#ffffff' }, elements };
 }
 
-/** The main database never gets the sample, nor does one in memory, which would keep nothing. */
-function assertTemporaryPath(path: string) {
-  const main = resolve(repositoryRoot, 'data/tinyfold.sqlite');
-  const real = (file: string) => (existsSync(file) ? realpathSync(file) : resolve(file));
-  if (path === ':memory:' || real(path) === real(main))
-    throw new Error('Defina DATABASE_PATH com um banco temporário. O banco principal nunca recebe o exemplo.');
-}
-
-/** Nothing real is mixed with the sample. */
-async function assertNoDocuments(workspace: WorkspaceService) {
-  const documents = [...(await workspace.listDocuments()), ...(await workspace.listDocuments({ deleted: true }))];
-  if (documents.length) throw new Error('O banco já tem documentos. Use um banco novo para o exemplo.');
-}
-
 async function seed(workspace: WorkspaceService) {
   const project = (name: string, color: 'violet' | 'ochre' | 'gray' | 'green') =>
     workspace.createProject({ ...request(), name, color });
@@ -305,13 +291,11 @@ function sampleClock() {
 
 async function main() {
   const { databasePath } = readConfig();
-  assertTemporaryPath(databasePath);
+  assertSeedTarget(databasePath, { repositoryRoot, production: process.env.NODE_ENV === 'production' });
   const db = createDatabase(databasePath);
   try {
     await migrate(db, modules);
-    const workspace = createWorkspaceService(db, sampleClock());
-    await assertNoDocuments(workspace);
-    const projects = await seed(workspace);
+    const projects = await seed(createWorkspaceService(db, sampleClock()));
     console.info(`Exemplo criado em ${databasePath}: ${projects.map((project) => project.name).join(', ')}.`);
   } finally {
     await db.destroy();
