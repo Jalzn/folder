@@ -26,22 +26,21 @@ import { createWorkspaceService, type WorkspaceService } from '../src/workspace/
 const request = () => ({ requestId: randomUUID() });
 
 const text = (value: string): JsonValue => [{ type: 'text', text: value, styles: {} }];
-const paragraph = (value: string, id?: string): DocumentBlock => ({
-  ...(id ? { id } : {}),
-  type: 'paragraph',
+/**
+ * A block with an id of its own, as the editor saves it. Without one, the editor would make up an id
+ * each time it opens the document, and a task from a selection in a document nobody has edited yet
+ * would point at a block the server does not have.
+ */
+const block = (type: string, value: string, props?: Record<string, JsonValue>): DocumentBlock & { id: string } => ({
+  id: randomUUID(),
+  type,
+  ...(props ? { props } : {}),
   content: text(value),
 });
-const heading = (value: string, level = 2): DocumentBlock => ({
-  type: 'heading',
-  props: { level },
-  content: text(value),
-});
-const bullet = (value: string): DocumentBlock => ({ type: 'bulletListItem', content: text(value) });
-const check = (value: string, checked = false): DocumentBlock => ({
-  type: 'checkListItem',
-  props: { checked },
-  content: text(value),
-});
+const paragraph = (value: string) => block('paragraph', value);
+const heading = (value: string, level = 2) => block('heading', value, { level });
+const bullet = (value: string) => block('bulletListItem', value);
+const check = (value: string, checked = false) => block('checkListItem', value, { checked });
 
 /** Excalidraw elements with the properties its editor writes, so the editor opens them unchanged. */
 function sceneBuilder() {
@@ -233,9 +232,10 @@ async function seed(workspace: WorkspaceService) {
   ] as const)
     await task(reforma.id, title, status);
 
+  const token = paragraph('Gerar token pessoal no Perfil, mostrado uma única vez, com o comando pronto para copiar.');
   const mcp = await document(tinyfold.id, 'MCP somente leitura', [
     paragraph('O Claude Code consulta documentos, desenhos e tarefas por MCP, sem escrever nada.'),
-    paragraph('Gerar token pessoal no Perfil, mostrado uma única vez, com o comando pronto para copiar.', 'token'),
+    token,
     paragraph('Cada resposta cabe em 45.000 caracteres; documentos longos vêm em páginas.'),
   ]);
   await document(tinyfold.id, 'Notas de arquitetura', [
@@ -254,7 +254,7 @@ async function seed(workspace: WorkspaceService) {
     ...request(),
     title: 'Gerar token pessoal no Perfil',
     status: 'doing',
-    source: { documentId: mcp.id, blockId: 'token', excerpt: 'Gerar token pessoal no Perfil' },
+    source: { documentId: mcp.id, blockId: token.id, excerpt: 'Gerar token pessoal no Perfil' },
   });
   for (const [title, status] of [
     ['Expor documentos em Markdown pelo MCP', 'todo'],
