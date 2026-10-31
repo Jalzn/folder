@@ -344,10 +344,15 @@ export function readCanvasScene(value: unknown, limits: CanvasSceneLimits = {}):
   return value as unknown as CanvasScene;
 }
 
+/** The searchable text of a scene: its active texts and frame names, in scene order. */
 export function canvasPlainText(scene: CanvasScene): string {
   return scene.elements
-    .filter((element) => element.type === 'text' && !element.isDeleted)
-    .map((element) => (typeof element.originalText === 'string' ? element.originalText : String(element.text ?? '')))
+    .filter((element) => !element.isDeleted)
+    .flatMap((element) => {
+      if (element.type === 'frame') return typeof element.name === 'string' && element.name ? [element.name] : [];
+      if (element.type !== 'text') return [];
+      return [typeof element.originalText === 'string' ? element.originalText : String(element.text ?? '')];
+    })
     .join('\n');
 }
 

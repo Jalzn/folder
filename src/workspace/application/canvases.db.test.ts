@@ -43,7 +43,7 @@ describe('canvas persistence and concurrency', () => {
     service = createWorkspaceService(db);
     expect(await service.getCanvas({ id: created.id })).toMatchObject({
       scene,
-      plainText: 'Fluxo de ação',
+      plainText: 'Ideia\nFluxo de ação',
       version: 2,
     });
     expect((await service.listCanvases())[0]).not.toHaveProperty('scene');

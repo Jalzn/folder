@@ -325,6 +325,17 @@ describe('agent read tools', () => {
     expect(second.text.startsWith('ab ')).toBe(true);
   });
 
+  it('finds drawings by the names of their frames', async () => {
+    const scene = drawingFixture();
+    scene.elements = scene.elements.map((element) =>
+      element.type === 'frame' ? { ...element, name: 'Zebulonserver' } : element,
+    );
+    const canvas = await service.createCanvas({ ...request(), title: 'Arquitetura', scene });
+    const { items } = await json<{ items: { id: string; excerpt: string }[] }>('search', { query: 'zebulonserver' });
+    expect(items.map((item) => item.id)).toEqual([canvas.id]);
+    expect(items[0]?.excerpt).toContain('Zebulonserver');
+  });
+
   it('describes the current scene of a drawing', async () => {
     const canvas = await service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
     const { text } = await call('read_drawing', { id: canvas.id });

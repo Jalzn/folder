@@ -13,12 +13,14 @@ describe('canvas scene contract', () => {
   it('round trips text, groups, frames, bound arrows and pressure-sensitive freehand without losing properties', () => {
     const scene = drawingFixture();
     expect(readCanvasScene(JSON.parse(JSON.stringify(scene)))).toEqual(scene);
-    expect(canvasPlainText(scene)).toBe('Fluxo de ação');
+    expect(canvasPlainText(scene)).toBe('Ideia\nFluxo de ação');
   });
-  it('extracts unwrapped text and excludes deleted text from search', () => {
+  it('extracts unwrapped text and frame names and excludes deleted elements from search', () => {
     const scene = drawingFixture();
     scene.elements.push(shape('deleted-text', 'text', { text: 'Removido', originalText: 'Removido', isDeleted: true }));
-    expect(canvasPlainText(scene)).toBe('Fluxo de ação');
+    scene.elements.push(shape('deleted-frame', 'frame', { name: 'Apagado', isDeleted: true }));
+    scene.elements.push(shape('unnamed-frame', 'frame', { name: null }));
+    expect(canvasPlainText(scene)).toBe('Ideia\nFluxo de ação');
   });
   it('rejects unsupported media and duplicate or broken element references', () => {
     for (const type of ['image', 'embeddable', 'iframe']) {
