@@ -7,7 +7,7 @@ import { useProjects } from '../../lib/queries';
 import { registerOpenEditor } from '../../lib/save-registry';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
-import { ItemMenu, PageFrame, useApp, usePageCommands } from '../../shell';
+import { ItemMenu, type ItemMenuAction, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
 import { AlertDialog } from '../../ui';
 import { CanvasBanners } from './CanvasBanners';
@@ -30,8 +30,6 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
     () => registerOpenEditor('drawing', canvas.id, { moveTo: (move) => moveThroughController(controller, move) }),
     [controller, canvas.id],
   );
-  // ⌘S saves now and, after a failure, tries again.
-  usePageCommands({ saveNow: () => void controller.flush() });
   useAutosaveLifecycle(controller, { persistDraft: true });
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   usePageTitle(state.snapshot.title);
@@ -44,6 +42,35 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const [trashOpen, setTrashOpen] = useState(false);
   const [reloadOpen, setReloadOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const openImport = () => fileInput.current?.click();
+  const fileActions: ItemMenuAction[] = [
+    {
+      id: 'import',
+      label: 'Importar desenho',
+      icon: <ArrowUpFromLine size={16} />,
+      action: openImport,
+      disabled: files.importing,
+    },
+    {
+      id: 'export',
+      label: 'Exportar desenho editável',
+      icon: <ArrowDownToLine size={16} />,
+      action: files.exportEditable,
+    },
+    {
+      id: 'png',
+      label: 'Exportar PNG',
+      icon: <ImageDown size={16} />,
+      action: () => void files.exportPNG(),
+      disabled: files.exporting,
+    },
+  ];
+  // ⌘S saves now and, after a failure, tries again; ⌘K lists the item's actions under "Neste item".
+  usePageCommands({
+    saveNow: () => void controller.flush(),
+    files: fileActions.map(({ id, label, icon, action }) => ({ id, label, icon, run: action })),
+    trash: () => setTrashOpen(true),
+  });
 
   useEffect(() => controller.receiveRemote(canvasSnapshot(canvas), canvas.version), [controller, canvas]);
   // Each opening and refetch checks the stored preview: drawings saved before previews existed, imported,
@@ -69,7 +96,6 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
     );
   const projectId = state.snapshot.projectId ?? canvas.projectId ?? '';
   const title = state.snapshot.title === 'Sem título' ? '' : state.snapshot.title;
-  const openImport = () => fileInput.current?.click();
   return (
     <PageFrame
       fill
@@ -82,28 +108,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
             projectId={projectId}
             pinned={Boolean(canvas.pinnedAt)}
             onTrash={() => setTrashOpen(true)}
-            actions={[
-              {
-                id: 'import',
-                label: 'Importar desenho',
-                icon: <ArrowUpFromLine size={16} />,
-                action: openImport,
-                disabled: files.importing,
-              },
-              {
-                id: 'export',
-                label: 'Exportar desenho editável',
-                icon: <ArrowDownToLine size={16} />,
-                action: files.exportEditable,
-              },
-              {
-                id: 'png',
-                label: 'Exportar PNG',
-                icon: <ImageDown size={16} />,
-                action: () => void files.exportPNG(),
-                disabled: files.exporting,
-              },
-            ]}
+            actions={fileActions}
           />
         </>
       }

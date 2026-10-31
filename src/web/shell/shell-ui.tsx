@@ -4,9 +4,22 @@ import { createLayerStack, type LayerStack } from './keyboard/layers';
 /** Where the project switcher opens: the sidebar, the rail, the narrow top bar or the sidebar over the page. */
 export type SwitcherPlace = 'sidebar' | 'rail' | 'top-bar' | 'overlay';
 
-/** What the page offers the shell: ⌘S and the palette's "Neste item" actions. */
+/** An action of the open item that the palette lists under "Neste item". */
+export interface PageAction {
+  id: string;
+  label: string;
+  icon?: ReactNode;
+  run: () => void;
+}
+
+/**
+ * What the page offers the shell: ⌘S, and for the palette's "Neste item" the item's file actions (export,
+ * import) and moving it to the trash. Fixar and Mover para projeto… come from the shell itself.
+ */
 export interface PageCommands {
   saveNow?: () => void;
+  files?: PageAction[] | undefined;
+  trash?: (() => void) | undefined;
 }
 
 interface ShellUi {

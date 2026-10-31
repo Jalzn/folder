@@ -1,6 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ChevronDown, ChevronUp, FileText, Shapes } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import { Cell, Column, Row, Table, TableBody, TableHeader } from 'react-aria-components';
 import { cx } from '../../../lib/cx';
 import { shortDate } from '../../../lib/dates';
@@ -9,6 +9,21 @@ import { paths } from '../../../router/paths';
 import type { IndexColumn, IndexRow, IndexSort } from './index-rows';
 
 const icons: Record<ItemType, typeof FileText> = { document: FileText, drawing: Shapes };
+
+/**
+ * The table's type-to-select would take single letters, so N, G V and the other shortcuts would not work
+ * on a focused row. The letter goes to the shortcuts instead, as if pressed on the page; arrows, Enter and
+ * Space stay with the table.
+ */
+function letShortcutsWin(event: ReactKeyboardEvent<HTMLDivElement>) {
+  const letter = event.key.length === 1 && event.key !== ' ';
+  if (!letter || event.ctrlKey || event.metaKey || event.altKey || event.nativeEvent.isComposing) return;
+  event.stopPropagation();
+  event.preventDefault();
+  document.body.dispatchEvent(
+    new KeyboardEvent('keydown', { key: event.key, shiftKey: event.shiftKey, bubbles: true }),
+  );
+}
 
 function SortableColumn({ id, end, children }: { id: IndexColumn; end?: boolean; children: ReactNode }) {
   return (
@@ -48,7 +63,7 @@ export function IndexTable({
 }) {
   const navigate = useNavigate();
   return (
-    <div className="index-table-scroll">
+    <div className="index-table-scroll" onKeyDownCapture={letShortcutsWin}>
       <Table
         aria-label={label}
         className="index-table"

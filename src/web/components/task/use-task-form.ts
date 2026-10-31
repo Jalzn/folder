@@ -101,7 +101,14 @@ export function useTaskForm({
     await write(() => api.workspace.deleteTask({ ...input, requestId: request.for(input) }), 'Tarefa excluída.');
   }
 
+  // Changed from what the dialog opened with: closing without saving then asks first.
+  const dirty =
+    title !== (task?.title ?? initialTitle) ||
+    status !== (task?.status ?? initialStatus) ||
+    projectId !== (task?.projectId ?? initialProjectId);
+
   return {
+    dirty,
     title,
     setTitle,
     projectId,

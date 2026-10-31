@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { usesCommandKey } from '../../lib/platform';
 import { useShellUi } from '../shell-ui';
 import { createChords } from './chords';
-import { acceptsPalette, acceptsPlainKey, commandKey, describeTarget } from './guards';
+import { acceptsPalette, acceptsPlainKey, commandKey, describeTarget, isComposing } from './guards';
 import { escapeAction } from './layers';
 import type { useShortcutActions } from './use-shortcut-actions';
 
@@ -26,9 +26,13 @@ export function useShortcuts(actions: Actions) {
   useEffect(() => {
     const chords = createChords();
     const onKeyDown = (event: KeyboardEvent) => {
+      // Keys that confirm or cancel an IME composition belong to it, Esc included.
+      if (isComposing(event)) return;
       const run = latest.current;
       const target = describeTarget(event.target);
       if (event.key === 'Escape') {
+        // A held Esc repeats; one press closes at most one layer.
+        if (event.repeat) return;
         const action = escapeAction(layers, {
           handled: event.defaultPrevented,
           editable: target.editable,
@@ -73,7 +77,7 @@ export function useShortcuts(actions: Actions) {
       const chord = chords.press(event.key);
       if (chord) {
         event.preventDefault();
-        if (chord !== 'pending') run.chord(chord);
+        if (chord !== 'pending' && chord !== 'discarded') run.chord(chord);
         return;
       }
       const single: Record<string, () => void> = {

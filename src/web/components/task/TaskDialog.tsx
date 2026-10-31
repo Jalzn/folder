@@ -1,9 +1,10 @@
 import './task-dialog.css';
 import { Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { Label, TextArea, TextField } from 'react-aria-components';
 import { useProjects } from '../../lib/queries';
 import { TASK_STATUSES, type Task, type TaskStatus, taskStatusLabels } from '../../lib/types';
-import { Button, Dialog, DialogActions, IconButton, ProjectMark, Select } from '../../ui';
+import { AlertDialog, Button, Dialog, DialogActions, IconButton, ProjectMark, Select } from '../../ui';
 import { TaskSource } from './TaskSource';
 import { type TaskFormInput, useTaskForm } from './use-task-form';
 
@@ -28,10 +29,13 @@ function useProjectOptions(current: string | null) {
 export function TaskDialog(props: TaskFormInput & { task?: Task | undefined }) {
   const { open, onClose, task, source } = props;
   const form = useTaskForm(props);
+  const [discarding, setDiscarding] = useState(false);
+  // Esc, the close button and a click outside never throw away what was typed without asking.
+  const requestClose = () => (form.dirty && !form.busy ? setDiscarding(true) : onClose());
   const projectOptions = useProjectOptions(form.projectId);
   const excerpt = task?.source?.excerpt ?? source?.excerpt;
   return (
-    <Dialog title={task ? 'Detalhes da tarefa' : 'Um próximo passo'} open={open} onClose={onClose}>
+    <Dialog title={task ? 'Detalhes da tarefa' : 'Um próximo passo'} open={open} onClose={requestClose}>
       <form
         className="task-dialog"
         onSubmit={(event) => {
@@ -94,6 +98,19 @@ export function TaskDialog(props: TaskFormInput & { task?: Task | undefined }) {
           </DialogActions>
         )}
       </form>
+      <AlertDialog
+        open={discarding}
+        title="Descartar alterações?"
+        confirmLabel="Descartar"
+        cancelLabel="Continuar editando"
+        onClose={() => setDiscarding(false)}
+        onConfirm={() => {
+          setDiscarding(false);
+          onClose();
+        }}
+      >
+        <p>O que você mudou nesta tarefa não foi salvo.</p>
+      </AlertDialog>
     </Dialog>
   );
 }

@@ -4,6 +4,7 @@ import { FileText, PinOff, Shapes } from 'lucide-react';
 import { type KeyboardEvent, useRef, useState } from 'react';
 import type { ItemType } from '../../lib/types';
 import { paths } from '../../router/paths';
+import { focusPageTitle } from '../../ui';
 import { MoveToProjectMenu } from '../project/MoveToProjectMenu';
 
 const icons: Record<ItemType, typeof FileText> = { document: FileText, drawing: Shapes };
@@ -32,6 +33,8 @@ export function SidebarItem({
 }) {
   const row = useRef<HTMLAnchorElement>(null);
   const [moving, setMoving] = useState(false);
+  // The row that takes the focus when this one leaves the list: the next, or the previous for the last.
+  const neighbour = useRef<HTMLElement | null>(null);
   const Icon = icons[type];
   const pinned = item.pinnedAt !== null;
   function keyDown(event: KeyboardEvent<HTMLAnchorElement>) {
@@ -43,6 +46,9 @@ export function SidebarItem({
       else onPin();
     } else if (key === 'm') {
       event.preventDefault();
+      const rows = [...(event.currentTarget.closest('ul')?.querySelectorAll<HTMLElement>('[data-roving]') ?? [])];
+      const at = rows.indexOf(event.currentTarget);
+      neighbour.current = rows[at + 1] ?? rows[at - 1] ?? null;
       setMoving(true);
     }
   }
@@ -83,6 +89,13 @@ export function SidebarItem({
           triggerRef={row}
           isOpen={moving}
           onOpenChange={setMoving}
+          onMoved={() => {
+            const next = neighbour.current;
+            if (next?.isConnected) {
+              next.tabIndex = 0;
+              next.focus();
+            } else focusPageTitle();
+          }}
         />
       )}
     </li>

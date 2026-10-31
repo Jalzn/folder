@@ -1,11 +1,12 @@
 import { Search } from 'lucide-react';
-import { type KeyboardEvent, type RefObject, useCallback, useEffect } from 'react';
+import { type KeyboardEvent, type RefObject, useEffect } from 'react';
 import { Kbd } from '../../ui';
-import { useLayer } from '../keyboard/use-layer';
+import { isComposing } from '../keyboard/guards';
 
 /**
  * Buscar: a row of the navigation that turns into a field in place when clicked or with `/`. With text it
- * filters the project; the first Esc clears it, the second returns focus to the page.
+ * filters the project; in the field, the first Esc clears it and nothing else (not even the sidebar over
+ * the page), the second returns focus to the page. An Esc elsewhere leaves the text alone.
  */
 export function SidebarSearch({
   projectName,
@@ -20,14 +21,12 @@ export function SidebarSearch({
   onOpenFirst: () => void;
   inputRef: RefObject<HTMLInputElement | null>;
 }) {
-  const clear = useCallback(() => {
-    onQueryChange('');
-    inputRef.current?.focus();
-  }, [onQueryChange, inputRef]);
-  useLayer('sidebar-search', query !== '', clear);
   function keyDown(event: KeyboardEvent<HTMLInputElement>) {
+    // Keys that confirm or cancel an IME composition belong to it.
+    if (isComposing(event.nativeEvent)) return;
     if (event.key === 'Escape' && query) {
       event.preventDefault();
+      event.stopPropagation();
       onQueryChange('');
     } else if (event.key === 'Enter') {
       event.preventDefault();

@@ -1,14 +1,16 @@
 import { useLocation } from '@tanstack/react-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * After each navigation, moves focus to the page's `h1` (focusable with tabindex -1), as the prototype does,
- * unless the new page already put it in a field, an editor or a dialog. Returns the title for the live region.
+ * unless the new page already put it in a field, an editor or a dialog. `announce` reads the new page's
+ * title out, every navigation.
  */
-export function useRouteFocus() {
+export function useRouteFocus(announce: (text: string) => void) {
   const pathname = useLocation({ select: (location) => location.pathname });
   const previous = useRef(pathname);
-  const [announcement, setAnnouncement] = useState('');
+  const latest = useRef(announce);
+  latest.current = announce;
   useEffect(() => {
     // The first page keeps the browser's own focus; only navigations move it.
     if (previous.current === pathname) return;
@@ -26,10 +28,9 @@ export function useRouteFocus() {
       const placed =
         active && active !== document.body && (active.closest('main') || active.closest('[role="dialog"]'));
       if (heading && !placed) heading.focus({ preventScroll: true });
-      setAnnouncement(heading?.textContent ?? document.title);
+      latest.current(heading?.textContent ?? document.title);
     };
     frame = requestAnimationFrame(settle);
     return () => cancelAnimationFrame(frame);
   }, [pathname]);
-  return announcement;
 }

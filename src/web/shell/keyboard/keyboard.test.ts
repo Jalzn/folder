@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHORD_TIMEOUT_MS, createChords } from './chords';
-import { acceptsPalette, acceptsPlainKey, commandKey, type KeyPress } from './guards';
+import { acceptsPalette, acceptsPlainKey, commandKey, isComposing, type KeyPress } from './guards';
 import { createLayerStack, escapeAction } from './layers';
 
 const press = (key: string, modifiers: Partial<KeyPress> = {}): KeyPress => ({
@@ -23,6 +23,14 @@ describe('guards', () => {
     expect(acceptsPlainKey(press('n', { ctrlKey: true }), outside)).toBe(false);
     expect(acceptsPlainKey(press('n', { altKey: true }), outside)).toBe(false);
     expect(acceptsPlainKey(press('?', { shiftKey: true }), outside)).toBe(true);
+    expect(acceptsPlainKey(press('N', { shiftKey: true }), outside)).toBe(false);
+    expect(acceptsPlainKey(press('M', { shiftKey: true }), outside)).toBe(false);
+  });
+
+  it('leaves the keys of an IME composition alone', () => {
+    expect(isComposing({ isComposing: true, keyCode: 27 })).toBe(true);
+    expect(isComposing({ isComposing: false, keyCode: 229 })).toBe(true);
+    expect(isComposing({ isComposing: false, keyCode: 27 })).toBe(false);
   });
 
   it('opens the palette from fields but never inside the drawing editor', () => {
@@ -70,15 +78,17 @@ describe('G chords', () => {
     expect(chords.press('v')).toBeNull();
   });
 
-  it('ignores keys without a G before, and a G followed by another key starts nothing', () => {
+  it('ignores keys without a G before, and discards a key after G that completes nothing', () => {
     const chords = createChords(clock().now);
     expect(chords.press('v')).toBeNull();
     expect(chords.press('1')).toBeNull();
     chords.press('g');
-    expect(chords.press('x')).toBeNull();
+    expect(chords.press('n')).toBe('discarded');
     expect(chords.press('v')).toBeNull();
     chords.press('g');
-    expect(chords.press('0')).toBeNull();
+    expect(chords.press('0')).toBe('discarded');
+    chords.press('g');
+    expect(chords.press('g')).toBe('discarded');
   });
 });
 

@@ -24,6 +24,10 @@ export function BoardPage() {
   const list = tasks.data?.tasks;
   const { openTask } = app;
   const opened = useRef<string | null>(null);
+  // Once the address drops ?tarefa=, the same task can be asked for again, as from ⌘K.
+  useEffect(() => {
+    if (!tarefa) opened.current = null;
+  }, [tarefa]);
   useEffect(() => {
     // Once per address: the dialog's own state changes must not open it again.
     if (!tarefa || !list || opened.current === tarefa) return;

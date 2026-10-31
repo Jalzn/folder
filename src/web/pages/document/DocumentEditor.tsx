@@ -8,7 +8,7 @@ import { registerOpenEditor } from '../../lib/save-registry';
 import type { Document, DocumentContent } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
-import { ItemMenu, PageFrame, useApp, usePageCommands } from '../../shell';
+import { ItemMenu, type ItemMenuAction, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
 import { AlertDialog, Button } from '../../ui';
 import { DocumentBanners } from './DocumentBanners';
@@ -32,8 +32,6 @@ export function DocumentEditor({ document }: { document: Document }) {
     () => registerOpenEditor('document', document.id, { moveTo: (move) => moveThroughController(controller, move) }),
     [controller, document.id],
   );
-  // ⌘S saves now and, after a failure, tries again.
-  usePageCommands({ saveNow: () => void controller.flush() });
   useAutosaveLifecycle(controller);
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   usePageTitle(state.snapshot.title);
@@ -48,6 +46,26 @@ export function DocumentEditor({ document }: { document: Document }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const files = useDocumentFiles(editor, controller, document.id);
   const actions = useDocumentActions(editor, controller, document, () => setTasksOpen(true));
+  const fileActions: ItemMenuAction[] = [
+    {
+      id: 'import',
+      label: 'Importar Markdown',
+      icon: <ArrowUpFromLine size={16} />,
+      action: () => fileInput.current?.click(),
+    },
+    {
+      id: 'export',
+      label: 'Exportar Markdown',
+      icon: <ArrowDownToLine size={16} />,
+      action: () => void files.exportMarkdown(),
+    },
+  ];
+  // ⌘S saves now and, after a failure, tries again; ⌘K lists the item's actions under "Neste item".
+  usePageCommands({
+    saveNow: () => void controller.flush(),
+    files: fileActions.map(({ id, label, icon, action }) => ({ id, label, icon, run: action })),
+    trash: () => setTrashOpen(true),
+  });
 
   const update = (patch: Partial<Snapshot>) => controller.change({ ...controller.getState().snapshot, ...patch });
   const linked = tasks.data?.tasks ?? [];
@@ -75,20 +93,7 @@ export function DocumentEditor({ document }: { document: Document }) {
             projectId={projectId}
             pinned={Boolean(document.pinnedAt)}
             onTrash={() => setTrashOpen(true)}
-            actions={[
-              {
-                id: 'import',
-                label: 'Importar Markdown',
-                icon: <ArrowUpFromLine size={16} />,
-                action: () => fileInput.current?.click(),
-              },
-              {
-                id: 'export',
-                label: 'Exportar Markdown',
-                icon: <ArrowDownToLine size={16} />,
-                action: () => void files.exportMarkdown(),
-              },
-            ]}
+            actions={fileActions}
           />
         </>
       }

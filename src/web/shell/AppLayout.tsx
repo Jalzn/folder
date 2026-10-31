@@ -34,7 +34,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { project, projects } = useCurrentProject();
   const pathname = useLocation({ select: (location) => location.pathname });
   const anchor = useRef<HTMLSpanElement>(null);
-  const routeAnnouncement = useRouteFocus();
+  useRouteFocus(ui.announce);
   useLastLocation(app.owner.installationId);
   const { setOverlay } = ui;
   // biome-ignore lint/correctness/useExhaustiveDependencies: A new page closes the overlay.
@@ -82,10 +82,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
         ))}
       <main id="main-content" className="app-layout__main" data-region="page" tabIndex={-1}>
         {children}
-        <p className="sr-only" aria-live="polite">
-          {ui.announcement || routeAnnouncement}
-        </p>
       </main>
+      {/* Outside main and marked as top layer, so a modal or the sidebar over the page does not hide it. */}
+      <p className="sr-only" aria-live="polite" data-react-aria-top-layer="true">
+        {ui.announcement}
+      </p>
       <span ref={anchor} className="app-layout__anchor" aria-hidden="true" />
       <ModalOverlay
         className="sidebar-overlay"

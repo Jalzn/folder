@@ -120,25 +120,43 @@ function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & {
   const words = queryWords(query);
   const matches = (text: string) => words.every((word) => searchText(text).includes(word));
 
-  const here =
-    item && project && !project.archivedAt
-      ? [
-          {
-            id: 'here:pin',
-            label: pinned ? 'Desafixar' : 'Fixar',
-            icon: pinned ? <PinOff size={16} /> : <Pin size={16} />,
-            shortcut: ['P'],
-            run: () => void (pinned ? pins.unpin(item.type, item.id) : pins.pin(item.type, item.id)),
-          },
-          {
-            id: 'here:move',
-            label: 'Mover para projeto…',
-            icon: <ArrowRightLeft size={16} />,
-            shortcut: ['M'],
-            run: () => ui.setMoveOpen(true),
-          },
-        ].filter((action) => matches(action.label))
-      : [];
+  // "Neste item": the item's files, then Fixar and Mover (not in an archived project), then the trash.
+  const page = ui.page.current;
+  const active = item && project && !project.archivedAt;
+  const here = item
+    ? [
+        ...(page.files ?? []).map((action) => ({ ...action, id: `here:${action.id}`, shortcut: undefined })),
+        ...(active
+          ? [
+              {
+                id: 'here:pin',
+                label: pinned ? 'Desafixar' : 'Fixar',
+                icon: pinned ? <PinOff size={16} /> : <Pin size={16} />,
+                shortcut: ['P'],
+                run: () => void (pinned ? pins.unpin(item.type, item.id) : pins.pin(item.type, item.id)),
+              },
+              {
+                id: 'here:move',
+                label: 'Mover para projeto…',
+                icon: <ArrowRightLeft size={16} />,
+                shortcut: ['M'],
+                run: () => ui.setMoveOpen(true),
+              },
+            ]
+          : []),
+        ...(page.trash
+          ? [
+              {
+                id: 'here:trash',
+                label: 'Mover para a lixeira',
+                icon: <Trash2 size={16} />,
+                shortcut: undefined,
+                run: page.trash,
+              },
+            ]
+          : []),
+      ].filter((action) => matches(action.label))
+    : [];
   for (const action of here) handlers.set(action.id, later(action.run));
 
   const items = results.data?.items ?? [];

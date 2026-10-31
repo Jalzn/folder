@@ -16,10 +16,11 @@ export function useMoveItem() {
   const toast = useToast();
   // A retried move sends the same request, so the server replays it instead of refusing a stale version.
   const request = useRequest();
+  /** Resolves true once the item moved. */
   async function move(type: ItemType, id: string, from: string, to: string) {
-    if (to === from) return;
+    if (to === from) return false;
     const moved = await action.run(() => moveItem(type, id, to, request.for));
-    if (!moved) return;
+    if (!moved) return false;
     request.clear();
     void queryClient.invalidateQueries({ queryKey: ['workspace', type === 'document' ? 'document' : 'canvas', id] });
     const destination = projects.find((project) => project.id === to)?.name ?? 'outro projeto';
@@ -35,6 +36,7 @@ export function useMoveItem() {
           }),
       },
     });
+    return true;
   }
   return { busy: action.busy, move };
 }
