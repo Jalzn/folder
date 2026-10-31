@@ -68,6 +68,12 @@ function NewAccessTokenForm({ onCreated, onCancel }: { onCreated: (token: string
           onChange={(event) => setName(event.target.value)}
           required
           maxLength={100}
+          // A label for the token, not a person's name or a credential: no autofill or password managers.
+          autoComplete="off"
+          data-1p-ignore
+          data-lpignore="true"
+          data-bwignore
+          data-form-type="other"
         />
         <span className="field-hint">Ajuda a reconhecer onde o token é usado</span>
       </label>

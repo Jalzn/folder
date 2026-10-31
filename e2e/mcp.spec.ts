@@ -13,6 +13,8 @@ async function generateToken(page: Page, name: string) {
   const dialog = page.getByRole('dialog', { name: 'Novo token' });
   await expect(dialog.getByRole('textbox', { name: /^Nome/ })).toBeFocused();
   await expect(dialog.getByRole('textbox', { name: /^Nome/ })).toHaveValue('Claude Code');
+  await expect(dialog.getByRole('textbox', { name: /^Nome/ })).toHaveAttribute('autocomplete', 'off');
+  await expect(dialog.getByRole('textbox', { name: /^Nome/ })).toHaveAttribute('data-1p-ignore', 'true');
   await dialog.getByRole('textbox', { name: /^Nome/ }).fill(name);
   const created = page.waitForResponse((response) => answers(response, 'auth/createAccessToken'));
   await dialog.getByRole('button', { name: 'Gerar', exact: true }).click();
