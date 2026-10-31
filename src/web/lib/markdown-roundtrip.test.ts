@@ -124,6 +124,8 @@ describe('server Markdown read back by the BlockNote parser', () => {
       paragraph(text('- não é lista')),
       paragraph(text('2026. não é lista numerada')),
       paragraph(text('> não é citação')),
+      paragraph(text('===')),
+      paragraph(text(':--|:--')),
       paragraph(
         link('https://example.com/a(b) c', text('link '), text('forte', { bold: true })),
         text(' e '),
@@ -221,11 +223,13 @@ describe('server Markdown read back by the BlockNote parser', () => {
       expect(
         await readBack([
           paragraph(text('primeira linha\n# segunda linha\n- terceira')),
+          paragraph(text('a | b\n:--|:--')),
           { type: 'quote', content: [text('citação\nsegunda')] },
         ]),
       ).toEqual(
         shape([
           paragraph(text('primeira linha\n # segunda linha\n - terceira')),
+          paragraph(text('a | b\n :--|:--')),
           { type: 'quote', content: [text('citação\n segunda')] },
         ]),
       );
@@ -237,8 +241,8 @@ describe('server Markdown read back by the BlockNote parser', () => {
       );
     });
 
-    it('keeps the backslash of an escaped = line', async () => {
-      expect(await readBack([paragraph(text('==='))])).toEqual(shape([paragraph(text('\\==='))]));
+    it('keeps the backslash of an escaped = line after a hard break', async () => {
+      expect(await readBack([paragraph(text('título\n==='))])).toEqual(shape([paragraph(text('título\n \\==='))]));
     });
 
     it('keeps escapes in link addresses with unbalanced parentheses, angle brackets or backslashes', async () => {

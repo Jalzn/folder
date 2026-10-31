@@ -149,6 +149,8 @@ describe('document to Markdown', () => {
 
   it('keeps setext underlines, indentation and odd list numbers from changing the structure', () => {
     expect(markdown(paragraph(text('título falso\n===')))).toBe('título falso\\\n\\===\n');
+    // A block's first line has no paragraph line above it to underline.
+    expect(markdown(paragraph(text('===')), block('bulletListItem', [text('==')]))).toBe('===\n\n- ==\n');
     expect(markdown(paragraph(text('    quatro espaços')), block('quote', [text('\tcom tab')]))).toBe(
       'quatro espaços\n\n> com tab\n',
     );
@@ -160,6 +162,14 @@ describe('document to Markdown', () => {
         block('numberedListItem', [text('enorme')], { props: { start: 12_345_678_901 } }),
       ),
     ).toBe('0. negativo\n\nentre\n\n999999999. enorme\n');
+  });
+
+  it('keeps a delimiter row after a hard break from turning the line above into a table', () => {
+    expect(markdown(paragraph(text('a | b\n:--|:--\n|---|\n--: | :-:')))).toBe(
+      'a | b\\\n:\\--|:--\\\n\\|\\---|\\\n\\--: | :-:\n',
+    );
+    expect(markdown(paragraph(text(':--|:--')))).toBe(':--|:--\n');
+    expect(markdown(paragraph(text(`a\n-${' '.repeat(50_000)}x`))).length).toBeGreaterThan(50_000);
   });
 
   it('stays linear in the pieces of one block', () => {
