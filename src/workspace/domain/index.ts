@@ -11,6 +11,7 @@ export {
 export { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from './canvas-preview.js';
 export type { DocumentContentLimits } from './document.js';
 export {
+  documentLead,
   documentPlainText,
   findBlock,
   MAX_DOCUMENT_BLOCKS,
@@ -18,6 +19,7 @@ export {
   RECOVERY_DOCUMENT_LIMITS,
   readDocumentContent,
 } from './document.js';
+export { excerptAround, excerptFromStart, type TextCut } from './excerpt.js';
 export { documentToMarkdown } from './markdown.js';
 export { displayMathLines, inlineMath, MATH_SEPARATOR, needsMathSeparator } from './markdown-math.js';
 export type {
@@ -34,6 +36,7 @@ export type {
   TaskStatus,
 } from './models.js';
 export { NAV_SORTS, type NavItem, type NavSection, type NavSort } from './navigation.js';
+export { NAVIGATION_LIMITS } from './navigation-limits.js';
 export { type PngInfo, readPngInfo } from './png.js';
 export { defaultProjectColor, MAX_PINNED, PROJECT_COLORS, type ProjectColor, projectInitial } from './project.js';
 export { sceneFingerprint } from './scene-fingerprint.js';

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { excerptAround, excerptFromStart } from './excerpt.js';
+import * as domain from './index.js';
 import { searchTerms } from './search-text.js';
 
 const excerpt = (text: string, query = '') => excerptAround(text, searchTerms(query), 40, 10);
@@ -52,5 +53,17 @@ describe('search excerpt', () => {
       expect(value.isWellFormed()).toBe(true);
       expect(Array.from(value).length).toBeLessThanOrEqual(40);
     }
+  });
+  it('gives, through the public entry, the overview excerpt of a document and a drawing', () => {
+    const text = (value: string) => [{ type: 'text', text: value, styles: {} }];
+    const blocks = [
+      { type: 'heading', content: text('Por que existe') },
+      { type: 'paragraph', content: text('Espaço pessoal e minimalista.') },
+    ];
+    const { excerptChars } = domain.NAVIGATION_LIMITS.overview;
+    expect(domain.excerptFromStart(domain.documentLead(blocks), excerptChars)).toBe('Espaço pessoal e minimalista.');
+    expect(domain.excerptFromStart('Edição\nRascunho local\nServidor', excerptChars)).toBe(
+      'Edição, Rascunho local, Servidor',
+    );
   });
 });
