@@ -1,5 +1,11 @@
 import { AppError } from '@tinyfold/core/application';
-import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE, readPngInfo } from '../domain/canvas-preview.js';
+import {
+  exceedsPreviewLimits,
+  MAX_PREVIEW_BYTES,
+  MAX_PREVIEW_SIDE,
+  readPngInfo,
+  sceneFingerprint,
+} from '../domain/canvas-preview.js';
 import type { WorkspaceContext } from './ports.js';
 import type { SaveCanvasPreviewInput } from './schemas.js';
 
@@ -25,16 +31,17 @@ export async function saveCanvasPreview(
       `A prévia passa de ${MAX_PREVIEW_SIDE.toLocaleString('pt-BR')} px no lado maior ou de ${MAX_PREVIEW_BYTES / 1024} KiB.`,
     );
   return ctx.repeatableWrite(async (repo) => {
-    const canvas = await repo.canvasState(input.id);
+    const canvas = await repo.findCanvas(input.id);
     if (!canvas || canvas.deletedAt) throw new AppError('NOT_FOUND', 'O desenho não está disponível.');
     if (input.version > canvas.version)
       throw new AppError('VALIDATION', 'A prévia é de uma versão que o desenho ainda não tem.');
-    const previewVersion = await repo.canvasPreviewVersion(input.id);
+    const previewVersion = (await repo.canvasPreview(input.id))?.sceneVersion ?? null;
     if (input.version < canvas.version || (previewVersion !== null && previewVersion > input.version))
       return { stored: false, previewVersion };
     await repo.saveCanvasPreview({
       canvasId: input.id,
       sceneVersion: input.version,
+      sceneFingerprint: sceneFingerprint(canvas.scene),
       png: input.png,
       width: info.width,
       height: info.height,

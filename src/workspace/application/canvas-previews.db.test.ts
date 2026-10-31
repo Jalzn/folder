@@ -50,7 +50,7 @@ describe('drawing previews', () => {
       previewVersion: 1,
     });
     const after = await service.getCanvas({ id: created.id });
-    expect(after).toEqual({ ...before, previewVersion: 1 });
+    expect(after).toEqual({ ...before, previewVersion: 1, previewCurrent: true });
     const row = await storedPreview(created.id);
     expect(row).toMatchObject({ scene_version: 1, width: 1568 });
     expect(Buffer.from(row?.png ?? []).equals(Buffer.from(png))).toBe(true);
@@ -125,6 +125,7 @@ describe('drawing previews', () => {
     });
     expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
       { module: 'workspace', version: 3, name: 'canvas_previews' },
+      { module: 'workspace', version: 4, name: 'canvas_preview_fingerprint' },
     ]);
     service = createWorkspaceService(db);
     expect(await service.getCanvas({ id: canvas.id })).toMatchObject({
@@ -133,5 +134,55 @@ describe('drawing previews', () => {
       previewVersion: null,
     });
     expect((await service.saveCanvasPreview({ id: canvas.id, version: 1, png: pngFile(10, 10) })).stored).toBe(true);
+  });
+
+  it('keeps a preview current through rename, project moves and the trash, until the scene changes', async () => {
+    const project = await service.createProject({ ...request(), name: 'Destino' });
+    const created = await service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
+    await service.saveCanvasPreview({ id: created.id, version: 1, png: pngFile(10, 10) });
+    const renamed = await service.saveCanvas({
+      ...request(),
+      id: created.id,
+      expectedVersion: 1,
+      title: 'Outro nome',
+      projectId: project.id,
+      scene: drawingFixture(),
+    });
+    const trashed = await service.deleteCanvas({ ...request(), id: created.id, expectedVersion: renamed.version });
+    const restored = await service.restoreCanvas({ ...request(), id: created.id, expectedVersion: trashed.version });
+    expect(await service.getCanvas({ id: created.id })).toMatchObject({
+      version: 4,
+      previewVersion: 1,
+      previewCurrent: true,
+    });
+    const scene = drawingFixture();
+    scene.elements.pop();
+    await service.saveCanvas({
+      ...request(),
+      id: created.id,
+      expectedVersion: restored.version,
+      title: 'Outro nome',
+      scene,
+    });
+    expect(await service.getCanvas({ id: created.id })).toMatchObject({ previewVersion: 1, previewCurrent: false });
+  });
+
+  it('adds fingerprints to existing previews, which fall back to the version until replaced', async () => {
+    await db.destroy();
+    const oldMigrations = join(directory, 'before-fingerprints');
+    await mkdir(oldMigrations);
+    for (const name of ['001_workspace.sql', '002_canvases.sql', '003_canvas_previews.sql'])
+      await copyFile(new URL(`../infra/migrations/${name}`, import.meta.url), join(oldMigrations, name));
+    db = createDatabase(join(directory, 'fingerprints.sqlite'));
+    await migrate(db, [coreModule, { ...workspaceModule, migrations: pathToFileURL(`${oldMigrations}/`) }]);
+    const old = createWorkspaceService(db);
+    const canvas = await old.createCanvas({ ...request(), title: 'Antigo', scene: drawingFixture() });
+    await sql`insert into workspace_canvas_previews (canvas_id, scene_version, png, width, height, created_at)
+      values (${canvas.id}, 1, ${Buffer.from(pngFile(10, 10))}, 10, 10, ${canvas.updatedAt})`.execute(db);
+    expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
+      { module: 'workspace', version: 4, name: 'canvas_preview_fingerprint' },
+    ]);
+    service = createWorkspaceService(db);
+    expect(await service.getCanvas({ id: canvas.id })).toMatchObject({ previewVersion: 1, previewCurrent: true });
   });
 });

@@ -1,3 +1,5 @@
+import type { CanvasScene } from './canvas.js';
+
 /**
  * The PNG preview of a drawing, rendered by the browser after a save. 1,568 px is the side above
  * which Claude scales images down; the byte cap protects the agent's output limit.
@@ -69,6 +71,35 @@ function readHeader(data: DataView): PngInfo | undefined {
     filter === 0 &&
     (interlace === 0 || interlace === 1);
   return valid ? { width, height } : undefined;
+}
+
+/**
+ * A short fingerprint of a scene's content. Renaming, moving or trashing a drawing changes its
+ * version but not its scene, so the preview stays current.
+ */
+export function sceneFingerprint(scene: CanvasScene): string {
+  // cyrb53: a fast 53-bit string hash; collisions only cost a stale image label.
+  const text = JSON.stringify(scene);
+  let first = 0xdeadbeef;
+  let second = 0x41c6ce57;
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    first = Math.imul(first ^ code, 2654435761);
+    second = Math.imul(second ^ code, 1597334677);
+  }
+  first = Math.imul(first ^ (first >>> 16), 2246822507) ^ Math.imul(second ^ (second >>> 13), 3266489909);
+  second = Math.imul(second ^ (second >>> 16), 2246822507) ^ Math.imul(first ^ (first >>> 13), 3266489909);
+  return (4294967296 * (2097151 & second) + (first >>> 0)).toString(16);
+}
+
+/** Whether a stored preview shows the current scene; previews saved before fingerprints compare versions. */
+export function previewShowsScene(
+  preview: { sceneVersion: number; sceneFingerprint: string | null },
+  canvas: { version: number; scene: CanvasScene },
+): boolean {
+  return preview.sceneFingerprint === null
+    ? preview.sceneVersion === canvas.version
+    : preview.sceneFingerprint === sceneFingerprint(canvas.scene);
 }
 
 export function exceedsPreviewLimits(info: PngInfo, byteLength: number): boolean {

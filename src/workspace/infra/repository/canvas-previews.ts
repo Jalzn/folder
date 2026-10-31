@@ -5,25 +5,18 @@ import type { WorkspaceTables } from '../db.js';
 export function canvasPreviewRepository(connection: Database): CanvasPreviewRepository {
   const db = tables<WorkspaceTables>(connection);
   return {
-    async canvasState(id) {
-      const row = await db
-        .selectFrom('workspace_canvases')
-        .select(['version', 'deleted_at'])
-        .where('id', '=', id)
-        .executeTakeFirst();
-      return row && { version: row.version, deletedAt: row.deleted_at };
-    },
-    async canvasPreviewVersion(canvasId) {
+    async canvasPreview(canvasId) {
       const row = await db
         .selectFrom('workspace_canvas_previews')
-        .select('scene_version')
+        .select(['scene_version', 'scene_fingerprint'])
         .where('canvas_id', '=', canvasId)
         .executeTakeFirst();
-      return row?.scene_version ?? null;
+      return row && { sceneVersion: row.scene_version, sceneFingerprint: row.scene_fingerprint };
     },
     async saveCanvasPreview(preview) {
       const values = {
         scene_version: preview.sceneVersion,
+        scene_fingerprint: preview.sceneFingerprint,
         png: preview.png,
         width: preview.width,
         height: preview.height,

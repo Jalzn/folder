@@ -45,6 +45,7 @@ export interface SourceRow {
 export interface CanvasPreviewRow {
   canvas_id: string;
   scene_version: number;
+  scene_fingerprint: string | null;
   png: Uint8Array;
   width: number;
   height: number;

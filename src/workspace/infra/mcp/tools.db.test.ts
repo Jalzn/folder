@@ -355,17 +355,29 @@ describe('agent read tools', () => {
       data: Buffer.from(png).toString('base64'),
       mimeType: 'image/png',
     });
-    await service.saveCanvas({
+    const renamed = await service.saveCanvas({
       ...request(),
       id: canvas.id,
       expectedVersion: 1,
-      title: 'Fluxo',
+      title: 'Fluxo renomeado',
       scene: drawingFixture(),
+    });
+    expect((await read({ id: canvas.id }))?.content[0]).toMatchObject({
+      text: expect.stringContaining('Imagem: versão 2 (atual), 1200×800 px'),
+    });
+    const changed = drawingFixture();
+    changed.elements.pop();
+    await service.saveCanvas({
+      ...request(),
+      id: canvas.id,
+      expectedVersion: renamed.version,
+      title: 'Fluxo renomeado',
+      scene: changed,
     });
     const stale = await read({ id: canvas.id });
     expect(stale?.content[0]).toMatchObject({
       text: expect.stringContaining(
-        'Imagem: versão 1, 1200×800 px; a cena atual é a 2. A estrutura abaixo está atualizada',
+        'Imagem: versão 1, 1200×800 px; a cena atual é a 3. A estrutura abaixo está atualizada',
       ),
     });
     expect(stale?.content).toHaveLength(2);

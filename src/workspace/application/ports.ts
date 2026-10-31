@@ -40,6 +40,7 @@ export interface TaskRepository {
 export interface CanvasPreviewRecord {
   canvasId: string;
   sceneVersion: number;
+  sceneFingerprint: string;
   png: Uint8Array;
   width: number;
   height: number;
@@ -47,9 +48,8 @@ export interface CanvasPreviewRecord {
 }
 
 export interface CanvasPreviewRepository {
-  /** Version and trash state only, without reading the scene. */
-  canvasState(id: string): Promise<{ version: number; deletedAt: string | null } | undefined>;
-  canvasPreviewVersion(canvasId: string): Promise<number | null>;
+  /** The scene the stored preview shows, without the image; null fingerprints predate them. */
+  canvasPreview(canvasId: string): Promise<{ sceneVersion: number; sceneFingerprint: string | null } | undefined>;
   /** Replaces the drawing's preview. */
   saveCanvasPreview(preview: CanvasPreviewRecord): Promise<void>;
 }

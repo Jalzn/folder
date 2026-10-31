@@ -102,6 +102,8 @@ export interface CanvasForReading extends ProjectReference {
 
 export interface StoredPreview {
   sceneVersion: number;
+  /** Null for previews saved before fingerprints. */
+  sceneFingerprint: string | null;
   width: number;
   height: number;
   png: Uint8Array;

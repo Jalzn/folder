@@ -17,6 +17,7 @@ export function canvasReads(db: Kysely<WorkspaceTables>): CanvasReads {
         .select(projectColumns)
         .select([
           'preview.scene_version as preview_version',
+          'preview.scene_fingerprint as preview_fingerprint',
           'preview.width as preview_width',
           'preview.height as preview_height',
           'preview.png as preview_png',
@@ -25,7 +26,8 @@ export function canvasReads(db: Kysely<WorkspaceTables>): CanvasReads {
         .where('item.deleted_at', 'is', null)
         .executeTakeFirst();
       if (!row) return undefined;
-      const { preview_version: sceneVersion, preview_width: width, preview_height: height, preview_png: png } = row;
+      const { preview_version: sceneVersion, preview_fingerprint: sceneFingerprint } = row;
+      const { preview_width: width, preview_height: height, preview_png: png } = row;
       return {
         id: row.id,
         title: row.title,
@@ -35,7 +37,7 @@ export function canvasReads(db: Kysely<WorkspaceTables>): CanvasReads {
         updatedAt: row.updated_at,
         preview:
           sceneVersion !== null && width !== null && height !== null && png !== null
-            ? { sceneVersion, width, height, png: bytes(png) }
+            ? { sceneVersion, sceneFingerprint, width, height, png: bytes(png) }
             : null,
       };
     },

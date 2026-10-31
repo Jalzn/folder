@@ -1,5 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
 import { type Canvas, type CanvasAck, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
+import { previewShowsScene } from '../domain/canvas-preview.js';
 import { assertProjectAssignment, assertVersion } from './helpers.js';
 import type { WorkspaceContext, WorkspaceRepository } from './ports.js';
 import type {
@@ -22,13 +23,19 @@ export function listCanvases(ctx: WorkspaceContext, input: ListCanvasesInput) {
 }
 /**
  * Reading a trashed scene lets the editor recover a local draft or save it as a copy.
- * `previewVersion` tells the editor whether the stored PNG preview matches the scene.
+ * `previewVersion` is the scene version of the stored PNG preview, and `previewCurrent` says whether
+ * it still shows the scene, which a rename or a trip to the trash does not change.
  */
 export function getCanvas(ctx: WorkspaceContext, input: GetCanvasInput) {
-  return ctx.read(async (repo) => ({
-    ...(await requireCanvas(repo, input.id, true)),
-    previewVersion: await repo.canvasPreviewVersion(input.id),
-  }));
+  return ctx.read(async (repo) => {
+    const canvas = await requireCanvas(repo, input.id, true);
+    const preview = await repo.canvasPreview(input.id);
+    return {
+      ...canvas,
+      previewVersion: preview?.sceneVersion ?? null,
+      previewCurrent: preview ? previewShowsScene(preview, canvas) : false,
+    };
+  });
 }
 export function createCanvas(ctx: WorkspaceContext, input: CreateCanvasInput): Promise<CanvasAck> {
   return ctx.write('workspace.createCanvas', input, async (repo) => {

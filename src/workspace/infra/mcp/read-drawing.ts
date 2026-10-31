@@ -9,7 +9,8 @@ function imageLine(image: DrawingImage, version: number, withStructure: boolean)
   if (image.state === 'empty') return 'Imagem: o desenho está vazio';
   if (image.state === 'missing') return 'Imagem: indisponível. Abra o desenho no Tinyfold para gerá-la';
   const size = `${image.width}×${image.height} px`;
-  if (image.current) return `Imagem: versão ${image.sceneVersion} (atual), ${size}`;
+  // A rename or a trip to the trash bumps the version without changing what the image shows.
+  if (image.current) return `Imagem: versão ${version} (atual), ${size}`;
   const note = withStructure ? '. A estrutura abaixo está atualizada' : '';
   return `Imagem: versão ${image.sceneVersion}, ${size}; a cena atual é a ${version}${note}`;
 }

@@ -1,5 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
 import { outlineCanvasScene } from '../../domain/canvas-outline.js';
+import { previewShowsScene } from '../../domain/canvas-preview.js';
 import type { ReadingContext, StoredPreview } from './ports.js';
 import type { ReadDrawingInput } from './schemas.js';
 
@@ -21,7 +22,7 @@ export async function readDrawing(ctx: ReadingContext, input: ReadDrawingInput) 
   const image: DrawingImage = empty
     ? { state: 'empty' }
     : preview
-      ? { state: 'stored', current: preview.sceneVersion === drawing.version, ...preview }
+      ? { state: 'stored', current: previewShowsScene(preview, { version: drawing.version, scene }), ...preview }
       : { state: 'missing' };
   return {
     drawing,
