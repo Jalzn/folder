@@ -1,27 +1,18 @@
-import { registerHooks } from 'node:module';
-import { BlockNoteEditor, BlockNoteSchema } from '@blocknote/core';
-import {
-  type DocumentContent,
-  documentPlainText,
-  type JsonValue,
-  readDocumentContent,
-} from '@tinyfold/workspace/domain';
-import { Window } from 'happy-dom';
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { type DocumentContent, documentPlainText, type JsonValue } from '@tinyfold/workspace/domain';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { setupBlockNoteEditor } from './blocknote-test-editor';
 import { exportMarkdownWithMath, importMarkdownWithMath } from './markdown';
 
-// The package imports KaTeX CSS at runtime. Node validates its real schema/parser without needing stylesheets.
-const cssModules = registerHooks({
-  load(url, context, nextLoad) {
-    return url.endsWith('.css')
-      ? { format: 'module', source: 'export default {}', shortCircuit: true }
-      : nextLoad(url, context);
-  },
-});
+const blockNote = setupBlockNoteEditor();
+const parse = blockNote.parse;
+afterEach(() => vi.restoreAllMocks());
+
+async function imported(markdown: string) {
+  return blockNote.reload(await importMarkdownWithMath(markdown, parse));
+}
 
 describe('Markdown export preserves raw equations', () => {
-  const exportBlocks = (blocks: DocumentContent) =>
-    editor.blocksToMarkdownLossy(blocks as unknown as typeof editor.document);
+  const exportBlocks = blockNote.exportMarkdown;
   async function roundTrip(blocks: DocumentContent) {
     const markdown = await exportMarkdownWithMath(blocks, exportBlocks);
     const restored = await imported(markdown);
@@ -149,56 +140,6 @@ describe('Markdown export preserves raw equations', () => {
     },
   );
 });
-const { createReactInlineMathSpec, createReactMathBlockSpec } = await import('@blocknote/math-block');
-cssModules.deregister();
-
-const schema = BlockNoteSchema.create().extend({
-  blockSpecs: { mathBlock: createReactMathBlockSpec() },
-  inlineContentSpecs: { math: createReactInlineMathSpec() },
-});
-const createEditor = () => BlockNoteEditor.create({ schema });
-let editor: ReturnType<typeof createEditor>;
-let window: Window;
-
-beforeAll(() => {
-  window = new Window();
-  window.document.write('<!doctype html><html><head></head><body></body></html>');
-  for (const key of [
-    'window',
-    'document',
-    'navigator',
-    'HTMLElement',
-    'Element',
-    'Node',
-    'DOMParser',
-    'MutationObserver',
-    'DocumentFragment',
-  ] as const) {
-    vi.stubGlobal(key, key === 'window' ? window : window[key]);
-  }
-  editor = createEditor();
-});
-afterEach(() => vi.restoreAllMocks());
-afterAll(async () => {
-  editor?._tiptapEditor.destroy();
-  await window.happyDOM.close();
-  vi.unstubAllGlobals();
-});
-
-const parse = (source: string) => editor.tryParseMarkdownToBlocks(source) as unknown as DocumentContent;
-async function imported(markdown: string) {
-  const blocks = await importMarkdownWithMath(markdown, parse);
-  readDocumentContent(blocks);
-  const reload = BlockNoteEditor.create({
-    schema,
-    initialContent: blocks as unknown as typeof editor.document,
-  });
-  const result = reload.document as unknown as DocumentContent;
-  readDocumentContent(result);
-  reload._tiptapEditor.destroy();
-  return result;
-}
-
 function formulas(value: unknown, type: 'mathBlock' | 'math'): string[] {
   if (Array.isArray(value)) return value.flatMap((entry) => formulas(entry, type));
   if (value === null || typeof value !== 'object') return [];
@@ -297,12 +238,26 @@ $$
     expect(formulas(blocks, 'math')).toEqual(['yes']);
   });
 
-  it('keeps existing Markdown behavior exactly when no formulas are recognized', async () => {
+  it('hands Markdown without formulas to BlockNote unchanged except for dollar escapes', async () => {
     const markdown = '# Heading\n\n`$literal$`\n\n\\$escaped\\$ and an unmatched $ sign.';
     const callback = vi.fn(async () => [{ id: 'existing', type: 'paragraph', content: 'parsed' }]);
     const result = await importMarkdownWithMath(markdown, callback);
-    expect(callback).toHaveBeenCalledExactlyOnceWith(markdown);
+    expect(callback).toHaveBeenCalledExactlyOnceWith('# Heading\n\n`$literal$`\n\n$escaped$ and an unmatched $ sign.');
     expect(result).toBe(await callback.mock.results[0]?.value);
+  });
+
+  it('reads escaped dollars as dollars in text, emphasis and links, but not in code', async () => {
+    const blocks = await imported(
+      'Custa R\\$ 10, **R\\$ 20** e [R\\$ 30](https://example.com), código `R\\$` e barra a\\\\$b.\n\n```\nR\\$ 40\n```',
+    );
+    expect(documentPlainText(blocks)).toBe('Custa R$ 10, R$ 20 e R$ 30, código R\\$ e barra a\\$b.\nR\\$ 40');
+    expect(blocks[0]?.content).toContainEqual({ type: 'text', text: 'R$ 20', styles: { bold: true } });
+  });
+
+  it('resolves an escaped dollar next to a formula', async () => {
+    const blocks = await imported('Preço \\$$x$ e $y$\\$.');
+    expect(formulas(blocks, 'math')).toEqual(['x', 'y']);
+    expect(documentPlainText(blocks)).toBe('Preço $x e y$.');
   });
 
   it('understands repeated dollar delimiters, adjacent formulas and CRLF', async () => {

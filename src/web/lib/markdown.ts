@@ -1,4 +1,12 @@
-import type { DocumentBlock, DocumentContent, JsonValue } from '@tinyfold/workspace/domain';
+import {
+  type DocumentBlock,
+  type DocumentContent,
+  displayMathLines,
+  inlineMath,
+  type JsonValue,
+  MATH_SEPARATOR,
+  needsMathSeparator,
+} from '@tinyfold/workspace/domain';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { mathFromMarkdown } from 'mdast-util-math';
 import { math } from 'micromark-extension-math';
@@ -18,7 +26,11 @@ interface Equation {
   token: string;
 }
 
-const excludedNodes = new Set(['link', 'linkReference', 'image', 'imageReference', 'code', 'inlineCode', 'html']);
+/** Literal text, or text BlockNote reads from HTML: no formulas and no escapes to resolve. */
+const literalNodes = new Set(['image', 'imageReference', 'code', 'inlineCode', 'html']);
+/** Link labels show their dollars as text, but their escapes are still resolved. */
+const linkNodes = new Set(['link', 'linkReference']);
+const asciiPunctuation = /[!-/:-@[-`{-~]/u;
 const voidTags = new Set([
   'area',
   'base',
@@ -48,6 +60,34 @@ function continuationPrefix(prefix: string): string {
   return prefix.replace(/(?:[-+*]|\d+[.)])[ \t]+/gu, (marker) => ' '.repeat(marker.length));
 }
 
+/**
+ * Offsets of the backslashes that escape a `$` in a text node. Dollars are escaped so they are not
+ * read as math, but BlockNote has no math syntax and would keep the backslash as text.
+ */
+function dollarEscapes(markdown: string, text: SyntaxNode): number[] {
+  const start = text.position?.start.offset ?? 0;
+  const end = text.position?.end.offset ?? start;
+  const offsets: number[] = [];
+  for (let index = start; index < end - 1; index += 1) {
+    if (markdown[index] !== '\\' || !asciiPunctuation.test(markdown.charAt(index + 1))) continue;
+    if (markdown[index + 1] === '$') offsets.push(index);
+    // The escaped character cannot start another escape.
+    index += 1;
+  }
+  return offsets;
+}
+
+/** Replaces non-overlapping ranges of the source. */
+function replaceRanges(source: string, ranges: { start: number; end: number; text: string }[]): string {
+  let result = '';
+  let offset = 0;
+  for (const range of ranges.toSorted((a, b) => a.start - b.start)) {
+    result += source.slice(offset, range.start) + range.text;
+    offset = range.end;
+  }
+  return result + source.slice(offset);
+}
+
 function tokenPrefix(source: string): string {
   let prefix: string;
   do {
@@ -56,16 +96,24 @@ function tokenPrefix(source: string): string {
   return prefix;
 }
 
-/** The Markdown AST identifies math; BlockNote remains responsible for every other Markdown feature. */
+/**
+ * The Markdown AST identifies math and dollar escapes; BlockNote remains responsible for every other
+ * Markdown feature.
+ */
 export async function importMarkdownWithMath(
   markdown: string,
   parseMarkdown: (source: string) => DocumentContent | Promise<DocumentContent>,
 ): Promise<DocumentContent> {
   const prefix = tokenPrefix(markdown);
   const equations: Equation[] = [];
-  const collect = (node: SyntaxNode): void => {
-    if (excludedNodes.has(node.type)) return;
-    if (node.type === 'math' || node.type === 'inlineMath') {
+  const escapes: number[] = [];
+  const collect = (node: SyntaxNode, inLink = false): void => {
+    if (literalNodes.has(node.type)) return;
+    if (node.type === 'text') {
+      escapes.push(...dollarEscapes(markdown, node));
+      return;
+    }
+    if (!inLink && (node.type === 'math' || node.type === 'inlineMath')) {
       const start = node.position?.start.offset;
       const end = node.position?.end.offset;
       if (start === undefined || end === undefined || node.value === undefined) failedImport();
@@ -82,29 +130,25 @@ export async function importMarkdownWithMath(
           }
         }
       } else if (htmlDepth === 0) {
-        collect(child);
+        collect(child, inLink || linkNodes.has(node.type));
       }
     }
   };
   collect(fromMarkdown(markdown, { extensions: [math()], mdastExtensions: [mathFromMarkdown()] }));
-  if (equations.length === 0) return parseMarkdown(markdown);
 
-  let masked = '';
-  let offset = 0;
-  for (const equation of equations) {
-    masked += markdown.slice(offset, equation.start);
-    if (equation.kind === 'math') {
-      const lineStart =
-        Math.max(markdown.lastIndexOf('\n', equation.start - 1), markdown.lastIndexOf('\r', equation.start - 1)) + 1;
-      const container = continuationPrefix(markdown.slice(lineStart, equation.start));
-      // Blank lines prevent a display formula from merging with adjacent paragraphs. Keep quote/list indentation.
-      masked += `\n${container}${equation.token}\n${container}\n${container}`;
-    } else {
-      masked += equation.token;
-    }
-    offset = equation.end;
-  }
-  masked += markdown.slice(offset);
+  const placeholder = (equation: Equation) => {
+    if (equation.kind === 'inlineMath') return equation.token;
+    const lineStart =
+      Math.max(markdown.lastIndexOf('\n', equation.start - 1), markdown.lastIndexOf('\r', equation.start - 1)) + 1;
+    const container = continuationPrefix(markdown.slice(lineStart, equation.start));
+    // Blank lines prevent a display formula from merging with adjacent paragraphs. Keep quote/list indentation.
+    return `\n${container}${equation.token}\n${container}\n${container}`;
+  };
+  const masked = replaceRanges(markdown, [
+    ...escapes.map((offset) => ({ start: offset, end: offset + 1, text: '' })),
+    ...equations.map((equation) => ({ start: equation.start, end: equation.end, text: placeholder(equation) })),
+  ]);
+  if (equations.length === 0) return parseMarkdown(masked);
 
   const parsed = await parseMarkdown(masked);
   const byToken = new Map(equations.map((equation) => [equation.token, equation]));
@@ -245,35 +289,24 @@ export async function exportMarkdownWithMath(
   const tokens = new RegExp(`${prefix}\\d+END`, 'gu');
   let result = '';
   let offset = 0;
-  let previousInline = false;
   for (const match of markdown.matchAll(tokens)) {
     const equation = equations.get(match[0]);
     if (!equation || restored.has(match[0])) return failedExport();
     restored.add(match[0]);
     result += markdown.slice(offset, match.index);
-    const source = equation.source.replace(/\r\n?/gu, '\n');
-    let longestRun = 0;
-    for (const run of source.matchAll(/\$+/gu)) longestRun = Math.max(longestRun, run[0].length);
-    const fence = '$'.repeat(Math.max(equation.kind === 'block' ? 2 : 1, longestRun + 1));
+    offset = match.index + match[0].length;
     if (equation.kind === 'block') {
       const lineStart = markdown.lastIndexOf('\n', match.index - 1) + 1;
       const container = continuationPrefix(markdown.slice(lineStart, match.index));
       if (!/^[\s>]*$/u.test(container)) return failedExport();
-      result += `${fence}\n${container}${source.replaceAll('\n', `\n${container}`)}\n${container}${fence}`;
+      result += displayMathLines(equation.source).join(`\n${container}`);
     } else {
-      // Markdown normalizes inline line endings to spaces; display equations retain multiline sources.
-      let inline = source.replaceAll('\n', ' ');
-      if (!inline) inline = ' ';
-      if (/^\$|\$$/u.test(inline) || (/[^ ]/u.test(inline) && inline.startsWith(' ') && inline.endsWith(' '))) {
-        inline = ` ${inline} `;
-      }
-      // A comment separates adjacent dollar fences without adding visible spaces to the document.
-      if ((previousInline && offset === match.index) || markdown[match.index - 1] === '$') result += '<!-- -->';
-      result += `${fence}${inline}${fence}`;
-      if (markdown[match.index + match[0].length] === '$') result += '<!-- -->';
+      // The fences and separators are the server serializer's, so both exports read back the same way.
+      const formula = inlineMath(equation.source);
+      if (needsMathSeparator(result, formula)) result += MATH_SEPARATOR;
+      result += formula;
+      if (needsMathSeparator(formula, markdown.charAt(offset))) result += MATH_SEPARATOR;
     }
-    previousInline = equation.kind === 'inline';
-    offset = match.index + match[0].length;
   }
   result += markdown.slice(offset);
   if (restored.size !== equations.size || result.includes(prefix)) return failedExport();
