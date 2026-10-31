@@ -1,6 +1,20 @@
 // Dependency rules from docs/arquitetura.md ("Regras de dependência").
 // A module is any folder in src/ except server and web.
 
+const { existsSync, readdirSync, readFileSync } = require('node:fs');
+const { join } = require('node:path');
+
+/** The files each module's package.json exports, as path patterns: the only way into a module. */
+const moduleEntryPoints = readdirSync(join(__dirname, 'src'), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && !['server', 'web'].includes(entry.name))
+  .filter((entry) => existsSync(join(__dirname, 'src', entry.name, 'package.json')))
+  .flatMap((entry) => {
+    const { exports = {} } = JSON.parse(readFileSync(join(__dirname, 'src', entry.name, 'package.json'), 'utf8'));
+    return Object.values(exports)
+      .filter((target) => typeof target === 'string')
+      .map((target) => `^src/${entry.name}/${target.replace(/^\.\//u, '').replaceAll('.', '\\.')}$`);
+  });
+
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
   forbidden: [
@@ -44,10 +58,7 @@ module.exports = {
       comment: 'server and web reach a module only through its package entry points, never through its internals.',
       severity: 'error',
       from: { path: '^src/(server|web)/', pathNot: '\\.test\\.tsx?$' },
-      to: {
-        path: '^src/[^/]+/',
-        pathNot: ['^src/(server|web)/', '^src/[^/]+/((domain|application|infra)/)?index\\.ts$'],
-      },
+      to: { path: '^src/[^/]+/', pathNot: ['^src/(server|web)/', ...moduleEntryPoints] },
     },
     {
       name: 'mcp-sdk-stays-in-server-mcp',
