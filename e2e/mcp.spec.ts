@@ -251,7 +251,8 @@ test('Claude Code reads what the interface created, never the trash, until the t
   // The Perfil shows the use, and revoking cuts the next call.
   await page.goto('/perfil');
   const row = page.getByRole('listitem').filter({ hasText: name });
-  await expect(row).toContainText('Último uso agora');
+  // The last use is recorded at most once a minute.
+  await expect(row).toContainText(/Último uso (agora|há 1 minuto)/);
   await row.getByRole('button', { name: /^Revogar/ }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Revogar token' }).click();
   await expect(row).toHaveCount(0);
