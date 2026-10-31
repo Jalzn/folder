@@ -1,6 +1,6 @@
 import type { CanvasScene } from '../../domain/canvas.js';
 import type { DocumentBlock, TaskSource, TaskStatus } from '../../domain/models.js';
-import type { BoardKey, ProjectKey, SearchKey } from '../../domain/paging.js';
+import type { BoardKey, ProjectKey, SearchItemType, SearchKey } from '../../domain/paging.js';
 
 /**
  * Queries of the agent read model. Nothing in the trash is ever returned: a trashed item reads as
@@ -55,8 +55,6 @@ export interface ProjectReference {
   projectName: string | null;
   projectArchived: boolean;
 }
-
-export type SearchItemType = 'document' | 'drawing' | 'task';
 
 export interface SearchQuery {
   /** Normalized words from searchTerms, all required; none lists recent items. */

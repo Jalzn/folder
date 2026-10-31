@@ -1,3 +1,5 @@
+import type { TaskStatus } from './task-status.js';
+
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 export interface DocumentBlock {
@@ -35,7 +37,7 @@ export interface Document extends DocumentSummary {
   content: DocumentBlock[];
 }
 
-export type TaskStatus = 'todo' | 'doing' | 'done';
+export type { TaskStatus };
 
 export interface TaskSource {
   documentId: string;

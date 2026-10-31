@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { readCanvasScene } from '../domain/canvas.js';
 import { readDocumentContent } from '../domain/document.js';
+import { TASK_STATUSES } from '../domain/task-status.js';
 
 const id = z.string().uuid();
 const version = z.number().int().positive();
@@ -8,7 +9,7 @@ const request = { requestId: id };
 const edit = { ...request, id, expectedVersion: version };
 const title = z.string().trim().min(1, 'Escreva um título.').max(300);
 const projectId = id.nullable();
-const status = z.enum(['todo', 'doing', 'done']);
+const status = z.enum(TASK_STATUSES);
 
 const content = z.unknown().transform((value, ctx) => {
   try {

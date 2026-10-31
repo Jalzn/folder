@@ -1,7 +1,7 @@
-import type { TaskStatus } from './models.js';
+/** The board columns in order, which every task listing follows. */
+export const TASK_STATUSES = ['todo', 'doing', 'done'] as const;
 
-/** Board column order. */
-export const TASK_STATUSES: readonly TaskStatus[] = ['todo', 'doing', 'done'];
+export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 export const taskStatusLabels: Record<TaskStatus, string> = {
   todo: 'A fazer',

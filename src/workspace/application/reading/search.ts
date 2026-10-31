@@ -1,4 +1,4 @@
-import { readSearchCursor, searchCursor } from '../../domain/paging.js';
+import { readSearchCursor, SEARCH_ITEM_TYPES, searchCursor } from '../../domain/paging.js';
 import { searchKey } from './list-order.js';
 import type { ReadingContext } from './ports.js';
 import { queryTerms } from './query-terms.js';
@@ -15,7 +15,7 @@ export async function search(ctx: ReadingContext, input: SearchInput) {
     reader.searchItems({
       terms,
       projectId: input.projectId,
-      types: input.types ?? ['document', 'drawing', 'task'],
+      types: input.types ?? SEARCH_ITEM_TYPES,
       limit: input.limit,
       after,
     }),

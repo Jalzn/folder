@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import type { ProjectReference } from '../../application/reading/ports.js';
+import { TASK_STATUSES } from '../../domain/task-status.js';
 
 /** The project columns every read query selects, from `item` left-joined to `project`. */
 export const projectColumns = [
@@ -18,8 +19,11 @@ export const projectReference = (row: {
   projectArchived: row.project_archived_at !== null,
 });
 
-/** The board columns in order: todo, doing, done. */
-export const columnRank = sql<number>`case item.status when 'todo' then 0 when 'doing' then 1 else 2 end`;
+/** The board column of `item.status`, as its index in TASK_STATUSES. */
+export const columnRank = sql<number>`case item.status ${sql.join(
+  TASK_STATUSES.map((status, index) => sql`when ${sql.lit(status)} then ${sql.lit(index)}`),
+  sql` `,
+)} end`;
 
 /** A trashed source document is unavailable and keeps no title. */
 export const sourceDocument = (title: string | null, deletedAt: string | null) =>

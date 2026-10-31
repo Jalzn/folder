@@ -1,4 +1,5 @@
 import { DomainError } from '@tinyfold/core/domain';
+import { TASK_STATUSES } from './task-status.js';
 
 const invalidCursor = () => new DomainError('Cursor inválido. Repita a consulta sem cursor.');
 
@@ -47,6 +48,11 @@ export function readDocumentCursor(cursor: string): { version: number; offset: n
   return { version: Number(match[1]), offset: Number(match[2]) };
 }
 
+/** Item types in the order search lists them when the title rank and the edit time tie. */
+export const SEARCH_ITEM_TYPES = ['document', 'drawing', 'task'] as const;
+
+export type SearchItemType = (typeof SEARCH_ITEM_TYPES)[number];
+
 /**
  * Lists page by keyset: a cursor holds the sort key of the last item shown, so edits elsewhere in
  * the list never repeat or skip the items that follow it.
@@ -55,6 +61,7 @@ export interface SearchKey {
   /** How many query words the title lacks; title matches come first. */
   titleRank: number;
   updatedAt: string;
+  /** The index of the item's type in SEARCH_ITEM_TYPES. */
   typeRank: number;
   id: string;
 }
@@ -65,6 +72,7 @@ export interface ProjectKey {
 }
 
 export interface BoardKey {
+  /** The index of the task's column in TASK_STATUSES. */
   columnRank: number;
   position: number;
   id: string;
@@ -72,8 +80,15 @@ export interface BoardKey {
 
 const isoDate = String.raw`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z`;
 const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-const searchCursorPattern = new RegExp(`^s~(\\d{1,3})~(${isoDate})~([0-2])~(${uuid})$`, 'u');
-const boardCursorPattern = new RegExp(`^t~([0-2])~(\\d{1,15})~(${uuid})$`, 'u');
+const searchCursorPattern = new RegExp(`^s~(\\d{1,3})~(${isoDate})~(\\d{1,2})~(${uuid})$`, 'u');
+const boardCursorPattern = new RegExp(`^t~(\\d{1,2})~(\\d{1,15})~(${uuid})$`, 'u');
+
+/** A rank read from a cursor, which must index one of `count` values. */
+function rankIn(text: string | undefined, count: number): number {
+  const rank = Number(text);
+  if (!(rank < count)) throw invalidCursor();
+  return rank;
+}
 const projectCursorPattern = new RegExp(`^p~(${isoDate})~(${uuid})$`, 'u');
 
 export function searchCursor(key: SearchKey): string {
@@ -86,7 +101,7 @@ export function readSearchCursor(cursor: string): SearchKey {
   return {
     titleRank: Number(match[1]),
     updatedAt: match[2] as string,
-    typeRank: Number(match[3]),
+    typeRank: rankIn(match[3], SEARCH_ITEM_TYPES.length),
     id: match[4] as string,
   };
 }
@@ -98,7 +113,7 @@ export function boardCursor(key: BoardKey): string {
 export function readBoardCursor(cursor: string): BoardKey {
   const match = boardCursorPattern.exec(cursor);
   if (!match) throw invalidCursor();
-  return { columnRank: Number(match[1]), position: Number(match[2]), id: match[3] as string };
+  return { columnRank: rankIn(match[1], TASK_STATUSES.length), position: Number(match[2]), id: match[3] as string };
 }
 
 export function projectCursor(key: ProjectKey): string {

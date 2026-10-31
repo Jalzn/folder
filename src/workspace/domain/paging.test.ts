@@ -47,6 +47,7 @@ describe('cursors', () => {
     for (const cursor of ['', '12', 'a:1', '1:-2']) expect(() => readDocumentCursor(cursor)).toThrow('Cursor inválido');
     for (const cursor of ['o:40', `t~1~7~${id}`, `s~1~2026-10-31~0~${id}`, `s~1~2026-10-31T06:41:25.403Z~3~${id}`])
       expect(() => readSearchCursor(cursor)).toThrow('Cursor inválido');
-    expect(() => readBoardCursor(`s~0~2026-10-31T06:41:25.403Z~0~${id}`)).toThrow('Cursor inválido');
+    for (const cursor of [`s~0~2026-10-31T06:41:25.403Z~0~${id}`, `t~3~7~${id}`])
+      expect(() => readBoardCursor(cursor)).toThrow('Cursor inválido');
   });
 });

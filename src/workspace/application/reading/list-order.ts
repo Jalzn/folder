@@ -1,14 +1,14 @@
-import type { BoardKey, SearchKey } from '../../domain/paging.js';
+import { type BoardKey, SEARCH_ITEM_TYPES, type SearchItemType, type SearchKey } from '../../domain/paging.js';
 import { TASK_STATUSES } from '../../domain/task-status.js';
-import type { SearchHit, SearchItemType, TaskListing } from './ports.js';
+import type { SearchHit, TaskListing } from './ports.js';
+
+export const searchTypeRankOf = (type: SearchItemType) => SEARCH_ITEM_TYPES.indexOf(type);
 
 /** Search results: more query words in the title first, then the most recent; type and ID break ties. */
-const searchTypeRank: Record<SearchItemType, number> = { document: 0, drawing: 1, task: 2 };
-
 export const searchKey = (hit: Pick<SearchHit, 'titleRank' | 'updatedAt' | 'type' | 'id'>): SearchKey => ({
   titleRank: hit.titleRank,
   updatedAt: hit.updatedAt,
-  typeRank: searchTypeRank[hit.type],
+  typeRank: searchTypeRankOf(hit.type),
   id: hit.id,
 });
 
@@ -22,8 +22,6 @@ export function compareSearchKeys(a: SearchKey, b: SearchKey): number {
     compareText(a.id, b.id)
   );
 }
-
-export const searchTypeRankOf = (type: SearchItemType) => searchTypeRank[type];
 
 /** Tasks in board order: the column, then the position within it. */
 export const boardKey = (task: Pick<TaskListing, 'status' | 'position' | 'id'>): BoardKey => ({
