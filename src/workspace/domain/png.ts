@@ -3,30 +3,48 @@
 export interface PngInfo {
   width: number;
   height: number;
+  /** The concatenated IDAT data: one zlib stream. */
+  imageData: Uint8Array;
+  /** The exact size that stream must inflate to: every row of every pass with its filter byte. */
+  inflatedSize: number;
+}
+
+interface Header {
+  width: number;
+  height: number;
+  bitDepth: number;
+  colourType: number;
+  interlaced: boolean;
 }
 
 const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-/** Bit depths allowed for each colour type (PNG specification, IHDR). */
-const bitDepths: Record<number, readonly number[]> = {
-  0: [1, 2, 4, 8, 16],
-  2: [8, 16],
-  3: [1, 2, 4, 8],
-  4: [8, 16],
-  6: [8, 16],
+/** Samples per pixel and allowed bit depths for each colour type (PNG specification, IHDR). */
+const colourTypes: Record<number, { channels: number; bitDepths: readonly number[] }> = {
+  0: { channels: 1, bitDepths: [1, 2, 4, 8, 16] },
+  2: { channels: 3, bitDepths: [8, 16] },
+  3: { channels: 1, bitDepths: [1, 2, 4, 8] },
+  4: { channels: 2, bitDepths: [8, 16] },
+  6: { channels: 4, bitDepths: [8, 16] },
 };
+/**
+ * The ancillary chunks a browser's canvas encoder may write, all before the image data. Anything
+ * else is refused, compressed text and colour profiles included, which a decoder would inflate.
+ */
+const ancillaryChunks = new Set(['tRNS', 'sRGB', 'gAMA', 'cHRM', 'pHYs']);
 
 /**
- * The dimensions of a well-formed PNG file, or undefined for anything else. Every chunk must fit the
- * file and match its CRC; the IHDR must come first with a valid format, image data must follow (after
- * the palette when there is one), and the file must end with IEND. The pixels are not decoded.
+ * The dimensions and image data of a well-formed PNG file, or undefined for anything else. Every
+ * chunk must fit the file and match its CRC. The IHDR comes first with a valid format, ancillary
+ * chunks and the palette (only for colour images, required for indexed ones) come before the image
+ * data, the IDAT chunks are consecutive, and IEND ends the file. The image data is not inflated
+ * here: the domain stays pure, and the server inflates it with `inflatedSize` as the bound.
  */
 export function readPngInfo(bytes: Uint8Array): PngInfo | undefined {
   if (bytes.byteLength < signature.length || signature.some((value, index) => bytes[index] !== value)) return undefined;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let info: PngInfo | undefined;
-  let colourType = -1;
+  let header: Header | undefined;
   let palette = false;
-  let imageData = false;
+  const imageChunks: Uint8Array[] = [];
   for (let offset = signature.length; offset + 12 <= bytes.byteLength; ) {
     const length = view.getUint32(offset);
     const end = offset + 12 + length;
@@ -34,36 +52,80 @@ export function readPngInfo(bytes: Uint8Array): PngInfo | undefined {
     const typeAndData = bytes.subarray(offset + 4, offset + 8 + length);
     if (crc32(typeAndData) !== view.getUint32(offset + 8 + length)) return undefined;
     const type = String.fromCharCode(...typeAndData.subarray(0, 4));
-    const data = new DataView(bytes.buffer, bytes.byteOffset + offset + 8, length);
-    if (!info) {
-      if (type !== 'IHDR') return undefined;
-      info = readHeader(data);
-      if (!info) return undefined;
-      colourType = data.getUint8(9);
-    } else if (type === 'PLTE') palette = true;
-    else if (type === 'IDAT') {
-      if (colourType === 3 && !palette) return undefined;
-      imageData = true;
-    } else if (type === 'IEND') return length === 0 && imageData && end === bytes.byteLength ? info : undefined;
-    else if (type === 'IHDR') return undefined;
+    const data = typeAndData.subarray(4);
     offset = end;
+    if (!header) {
+      header = type === 'IHDR' ? readHeader(data) : undefined;
+      if (!header) return undefined;
+    } else if (type === 'IEND') {
+      if (length !== 0 || !imageChunks.length || end !== bytes.byteLength) return undefined;
+      return {
+        width: header.width,
+        height: header.height,
+        imageData: concat(imageChunks),
+        inflatedSize: inflatedSize(header),
+      };
+    } else if (type === 'IDAT') {
+      if (header.colourType === 3 && !palette) return undefined;
+      imageChunks.push(data);
+    } else if (imageChunks.length) {
+      // Only more image data or the end may follow the image data.
+      return undefined;
+    } else if (type === 'PLTE') {
+      if (palette || header.colourType === 0 || header.colourType === 4) return undefined;
+      palette = true;
+    } else if (!ancillaryChunks.has(type)) return undefined;
   }
   return undefined;
 }
 
-function readHeader(data: DataView): PngInfo | undefined {
+function readHeader(data: Uint8Array): Header | undefined {
   if (data.byteLength !== 13) return undefined;
-  const width = data.getUint32(0);
-  const height = data.getUint32(4);
-  const [bitDepth, colourType, compression, filter, interlace] = [8, 9, 10, 11, 12].map((at) => data.getUint8(at));
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const width = view.getUint32(0);
+  const height = view.getUint32(4);
+  const [bitDepth = 0, colourType = 0, compression, filter, interlace] = data.subarray(8);
   const valid =
     width > 0 &&
     height > 0 &&
-    (bitDepths[colourType as number] ?? []).includes(bitDepth as number) &&
+    (colourTypes[colourType]?.bitDepths ?? []).includes(bitDepth) &&
     compression === 0 &&
     filter === 0 &&
     (interlace === 0 || interlace === 1);
-  return valid ? { width, height } : undefined;
+  return valid ? { width, height, bitDepth, colourType, interlaced: interlace === 1 } : undefined;
+}
+
+/** Adam7 passes as start column, start row, column step and row step. */
+const adam7 = [
+  [0, 0, 8, 8],
+  [4, 0, 8, 8],
+  [0, 4, 4, 8],
+  [2, 0, 4, 4],
+  [0, 2, 2, 4],
+  [1, 0, 2, 2],
+  [0, 1, 1, 2],
+] as const;
+
+function inflatedSize({ width, height, bitDepth, colourType, interlaced }: Header): number {
+  const bitsPerPixel = bitDepth * (colourTypes[colourType]?.channels ?? 1);
+  const rowsOf = (columns: number, rows: number) =>
+    columns && rows ? rows * (1 + Math.ceil((columns * bitsPerPixel) / 8)) : 0;
+  if (!interlaced) return rowsOf(width, height);
+  return adam7.reduce(
+    (total, [startX, startY, stepX, stepY]) =>
+      total + rowsOf(Math.ceil(Math.max(0, width - startX) / stepX), Math.ceil(Math.max(0, height - startY) / stepY)),
+    0,
+  );
+}
+
+function concat(parts: readonly Uint8Array[]): Uint8Array {
+  const joined = new Uint8Array(parts.reduce((total, part) => total + part.byteLength, 0));
+  let offset = 0;
+  for (const part of parts) {
+    joined.set(part, offset);
+    offset += part.byteLength;
+  }
+  return joined;
 }
 
 let crcTable: Uint32Array | undefined;

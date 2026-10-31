@@ -2,7 +2,7 @@ import { AppError } from '@tinyfold/core/application';
 import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas-preview.js';
 import { readPngInfo } from '../domain/png.js';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
-import type { WorkspaceContext } from './ports.js';
+import type { PngImageData, WorkspaceContext } from './ports.js';
 import type { SaveCanvasPreviewInput } from './schemas.js';
 
 export interface CanvasPreviewAck {
@@ -17,15 +17,20 @@ export interface CanvasPreviewAck {
  */
 export async function saveCanvasPreview(
   ctx: WorkspaceContext,
+  imageData: PngImageData,
   input: SaveCanvasPreviewInput,
 ): Promise<CanvasPreviewAck> {
+  const tooLarge = new AppError(
+    'VALIDATION',
+    `A prévia passa de ${MAX_PREVIEW_SIDE.toLocaleString('pt-BR')} px no lado maior ou de ${MAX_PREVIEW_BYTES / 1024} KiB.`,
+  );
+  // Cheapest checks first: the size, the container, the sides, and only then the image data.
+  if (input.png.byteLength > MAX_PREVIEW_BYTES) throw tooLarge;
   const info = readPngInfo(input.png);
   if (!info) throw new AppError('VALIDATION', 'A prévia precisa ser uma imagem PNG.');
-  if (exceedsPreviewLimits(info, input.png.byteLength))
-    throw new AppError(
-      'VALIDATION',
-      `A prévia passa de ${MAX_PREVIEW_SIDE.toLocaleString('pt-BR')} px no lado maior ou de ${MAX_PREVIEW_BYTES / 1024} KiB.`,
-    );
+  if (exceedsPreviewLimits(info, input.png.byteLength)) throw tooLarge;
+  if (!imageData.inflatesTo(info.imageData, info.inflatedSize))
+    throw new AppError('VALIDATION', 'A prévia precisa ser uma imagem PNG.');
   return ctx.writeWithoutRequestRecord(async (repo) => {
     const canvas = await repo.findCanvas(input.id);
     if (!canvas || canvas.deletedAt) throw new AppError('NOT_FOUND', 'O desenho não está disponível.');

@@ -54,6 +54,12 @@ export interface CanvasPreviewRepository {
   saveCanvasPreview(preview: CanvasPreviewRecord): Promise<void>;
 }
 
+/** Inflates PNG image data, which the pure domain cannot do. */
+export interface PngImageData {
+  /** Whether `compressed` is one zlib stream inflating to exactly `size` bytes, never reading more. */
+  inflatesTo(compressed: Uint8Array, size: number): boolean;
+}
+
 /** The board revision orders concurrent task moves across devices. */
 export interface BoardRepository {
   revision(): Promise<number>;

@@ -9,7 +9,7 @@ import { createWorkspaceService } from '@tinyfold/workspace';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { drawingFixture } from '../workspace/testing/canvas-scenes.js';
-import { pngFile } from '../workspace/testing/png.js';
+import { pngImage } from '../workspace/testing/png.js';
 import { createApp } from './app.js';
 import { modules } from './modules.js';
 
@@ -132,7 +132,7 @@ describe('MCP protocol', () => {
       source: { documentId: document.id, blockId: 'b', excerpt: 'Gerar token' },
     });
     const canvas = await workspace.createCanvas({ requestId: randomUUID(), title: 'Fluxo', scene: drawingFixture() });
-    await workspace.saveCanvasPreview({ id: canvas.id, version: 1, png: pngFile(800, 600, 1024) });
+    await workspace.saveCanvasPreview({ id: canvas.id, version: 1, png: pngImage(800, 600) });
     const client = await connect();
     const call = (name: string, args: Record<string, unknown> = {}) => client.callTool({ name, arguments: args });
 

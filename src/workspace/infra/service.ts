@@ -6,6 +6,7 @@ import * as projects from '../application/projects.js';
 import * as schemas from '../application/schemas.js';
 import * as tasks from '../application/tasks.js';
 import { workspaceContext } from './context.js';
+import { zlibImageData } from './png-image-data.js';
 
 /** Also used by seed/QA and persistence tests; input is validated at every public entry point. */
 export function createWorkspaceService(db: Database, clock = () => new Date()) {
@@ -22,7 +23,7 @@ export function createWorkspaceService(db: Database, clock = () => new Date()) {
     restoreCanvas: (input: schemas.RestoreCanvasInput) =>
       canvases.restoreCanvas(ctx, schemas.RestoreCanvasInput.parse(input)),
     saveCanvasPreview: (input: schemas.SaveCanvasPreviewInput) =>
-      canvasPreviews.saveCanvasPreview(ctx, schemas.SaveCanvasPreviewInput.parse(input)),
+      canvasPreviews.saveCanvasPreview(ctx, zlibImageData, schemas.SaveCanvasPreviewInput.parse(input)),
     listProjects: (input: schemas.ListProjectsInput = {}) =>
       projects.listProjects(ctx, schemas.ListProjectsInput.parse(input)),
     createProject: (input: schemas.CreateProjectInput) =>

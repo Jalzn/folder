@@ -9,7 +9,7 @@ import { isProcedure, type RouterClient } from '@orpc/server';
 import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { afterEach, describe, expect, it } from 'vitest';
-import { pngFile } from '../workspace/testing/png.js';
+import { pngImage } from '../workspace/testing/png.js';
 import { createApp } from './app.js';
 import { readConfig } from './config.js';
 import { modules } from './modules.js';
@@ -169,7 +169,7 @@ describe('server boundaries', () => {
     const { client } = browser();
     await client.auth.login({ password });
     const created = await client.workspace.createCanvas({ requestId: randomUUID(), title: 'Fluxo' });
-    const png = new File([pngFile(800, 600, 4096).slice()], 'preview.png', { type: 'image/png' });
+    const png = new File([pngImage(800, 600).slice()], 'preview.png', { type: 'image/png' });
     expect(await client.workspace.saveCanvasPreview({ id: created.id, version: created.version, png })).toEqual({
       stored: true,
       previewVersion: 1,

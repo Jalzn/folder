@@ -19,6 +19,6 @@ export function previewShowsScene(
     : preview.sceneFingerprint === sceneFingerprint(canvas.scene);
 }
 
-export function exceedsPreviewLimits(info: PngInfo, byteLength: number): boolean {
+export function exceedsPreviewLimits(info: Pick<PngInfo, 'width' | 'height'>, byteLength: number): boolean {
   return byteLength > MAX_PREVIEW_BYTES || Math.max(info.width, info.height) > MAX_PREVIEW_SIDE;
 }

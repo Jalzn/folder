@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
-import { pngFile } from '../testing/png.js';
+import { pngChunk, pngFile, pngFrom, pngHeaderChunk, pngImage, storedZlib } from '../testing/png.js';
 
 const request = () => ({ requestId: randomUUID() });
 
@@ -40,7 +40,7 @@ describe('drawing previews', () => {
     const created = await service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
     const before = await service.getCanvas({ id: created.id });
     expect(before.previewVersion).toBeNull();
-    const png = pngFile(1568, 940, 2048);
+    const png = pngImage(1568, 940);
     expect(await service.saveCanvasPreview({ id: created.id, version: 1, png })).toEqual({
       stored: true,
       previewVersion: 1,
@@ -60,7 +60,7 @@ describe('drawing previews', () => {
 
   it('ignores an outdated preview and replaces an older one with a newer one', async () => {
     const created = await service.createCanvas({ ...request(), scene: drawingFixture() });
-    await service.saveCanvasPreview({ id: created.id, version: 1, png: pngFile(100, 100) });
+    await service.saveCanvasPreview({ id: created.id, version: 1, png: pngImage(100, 100) });
     const saved = await service.saveCanvas({
       ...request(),
       id: created.id,
@@ -68,44 +68,56 @@ describe('drawing previews', () => {
       title: 'Alterado',
       scene: drawingFixture(),
     });
-    expect(await service.saveCanvasPreview({ id: created.id, version: 1, png: pngFile(50, 50) })).toEqual({
+    expect(await service.saveCanvasPreview({ id: created.id, version: 1, png: pngImage(50, 50) })).toEqual({
       stored: false,
       previewVersion: 1,
     });
-    expect(await service.saveCanvasPreview({ id: created.id, version: saved.version, png: pngFile(200, 120) })).toEqual(
-      { stored: true, previewVersion: 2 },
-    );
+    expect(
+      await service.saveCanvasPreview({ id: created.id, version: saved.version, png: pngImage(200, 120) }),
+    ).toEqual({ stored: true, previewVersion: 2 });
     expect(await storedPreview(created.id)).toMatchObject({ scene_version: 2, width: 200 });
   });
 
   it('refuses a future version, a trashed drawing and invalid images', async () => {
     const created = await service.createCanvas({ ...request(), scene: drawingFixture() });
-    await expect(service.saveCanvasPreview({ id: created.id, version: 2, png: pngFile(10, 10) })).rejects.toMatchObject(
-      {
-        code: 'VALIDATION',
-      },
-    );
+    await expect(
+      service.saveCanvasPreview({ id: created.id, version: 2, png: pngImage(10, 10) }),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION',
+    });
     const headerThenHtml = new Uint8Array([
-      ...pngFile(1568, 1568).subarray(0, 33),
+      ...pngImage(1568, 1568).subarray(0, 33),
       ...new TextEncoder().encode('<html><script>alert(document.domain)</script></html>'),
     ]);
-    for (const png of [new Uint8Array(64), headerThenHtml, pngFile(1569, 10), pngFile(100, 100, 256 * 1024 + 1)])
+    const blackRows = (count: number) => storedZlib(new Uint8Array(count));
+    const grey = (idat: Uint8Array) =>
+      pngFrom([pngHeaderChunk(10, 10, { bitDepth: 1, colourType: 0 }), pngChunk('IDAT', idat), pngChunk('IEND')]);
+    const invalid = [
+      new Uint8Array(64),
+      headerThenHtml,
+      pngFile(10, 10, 200),
+      grey(blackRows(19)),
+      grey(new Uint8Array([...blackRows(20), ...new TextEncoder().encode('<html>')])),
+      pngImage(1569, 10),
+      pngFile(100, 100, 256 * 1024 + 1),
+    ];
+    for (const png of invalid)
       await expect(service.saveCanvasPreview({ id: created.id, version: 1, png })).rejects.toMatchObject({
         code: 'VALIDATION',
       });
     const deleted = await service.deleteCanvas({ ...request(), id: created.id, expectedVersion: 1 });
     await expect(
-      service.saveCanvasPreview({ id: created.id, version: deleted.version, png: pngFile(10, 10) }),
+      service.saveCanvasPreview({ id: created.id, version: deleted.version, png: pngImage(10, 10) }),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
     await expect(
-      service.saveCanvasPreview({ id: randomUUID(), version: 1, png: pngFile(10, 10) }),
+      service.saveCanvasPreview({ id: randomUUID(), version: 1, png: pngImage(10, 10) }),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
     expect(await storedPreview(created.id)).toBeUndefined();
   });
 
   it('deletes the preview with its drawing', async () => {
     const created = await service.createCanvas({ ...request(), scene: drawingFixture() });
-    await service.saveCanvasPreview({ id: created.id, version: 1, png: pngFile(10, 10) });
+    await service.saveCanvasPreview({ id: created.id, version: 1, png: pngImage(10, 10) });
     await sql`delete from workspace_canvases where id = ${created.id}`.execute(db);
     expect(await storedPreview(created.id)).toBeUndefined();
   });
@@ -133,13 +145,13 @@ describe('drawing previews', () => {
       version: 1,
       previewVersion: null,
     });
-    expect((await service.saveCanvasPreview({ id: canvas.id, version: 1, png: pngFile(10, 10) })).stored).toBe(true);
+    expect((await service.saveCanvasPreview({ id: canvas.id, version: 1, png: pngImage(10, 10) })).stored).toBe(true);
   });
 
   it('keeps a preview current through rename, project moves and the trash, until the scene changes', async () => {
     const project = await service.createProject({ ...request(), name: 'Destino' });
     const created = await service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
-    await service.saveCanvasPreview({ id: created.id, version: 1, png: pngFile(10, 10) });
+    await service.saveCanvasPreview({ id: created.id, version: 1, png: pngImage(10, 10) });
     const renamed = await service.saveCanvas({
       ...request(),
       id: created.id,
@@ -178,7 +190,7 @@ describe('drawing previews', () => {
     const old = createWorkspaceService(db);
     const canvas = await old.createCanvas({ ...request(), title: 'Antigo', scene: drawingFixture() });
     await sql`insert into workspace_canvas_previews (canvas_id, scene_version, png, width, height, created_at)
-      values (${canvas.id}, 1, ${Buffer.from(pngFile(10, 10))}, 10, 10, ${canvas.updatedAt})`.execute(db);
+      values (${canvas.id}, 1, ${Buffer.from(pngImage(10, 10))}, 10, 10, ${canvas.updatedAt})`.execute(db);
     expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
       { module: 'workspace', version: 4, name: 'canvas_preview_fingerprint' },
     ]);
