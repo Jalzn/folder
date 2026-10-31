@@ -99,24 +99,26 @@ export function canvasDraftStorage(installationId: string, canvasId: string): Dr
   };
 }
 
-const edgeSpaceOrControl = /^[\s\p{Cc}]+|[\s\p{Cc}]+$/gu;
+/** Control characters and the Unicode line separators, which the server refuses anywhere in a link. */
+const breakingCharacters = /[\p{Cc}\u2028\u2029]/gu;
 
-/** An element with its link trimmed of the spaces and control characters around it; anything else unchanged. */
-function trimLink(element: unknown): unknown {
+/** An element whose link loses those characters and its surrounding spaces; anything else unchanged. */
+function cleanLink(element: unknown): unknown {
   if (!element || typeof element !== 'object') return element;
   const { link } = element as { link?: unknown };
   if (typeof link !== 'string') return element;
-  const trimmed = link.replace(edgeSpaceOrControl, '');
-  return trimmed === link ? element : { ...element, link: trimmed || null };
+  const cleaned = link.replace(breakingCharacters, '').trim();
+  return cleaned === link ? element : { ...element, link: cleaned || null };
 }
 
 /**
- * The server refuses control characters anywhere in a link. Excalidraw files and pasted content can
- * carry line breaks around one, so they are trimmed where a scene enters the editor; a control
- * character inside a link still makes the scene invalid.
+ * Excalidraw files, pasted content and older scenes can carry line breaks or other control
+ * characters in a link, which the server refuses. They are removed where a scene enters the editor,
+ * as a browser drops tabs and line breaks from an address, so one link never blocks the import or
+ * every later save.
  */
-export function withTrimmedLinks(scene: CanvasScene): CanvasScene {
-  const elements = scene.elements.map(trimLink) as CanvasElement[];
+export function withCleanLinks(scene: CanvasScene): CanvasScene {
+  const elements = scene.elements.map(cleanLink) as CanvasElement[];
   return elements.every((element, index) => element === scene.elements[index]) ? scene : { ...scene, elements };
 }
 
@@ -131,7 +133,7 @@ export function readCanvasImport(raw: string): CanvasScene {
     compactCanvasScene(
       readCanvasScene(
         {
-          elements: Array.isArray(value.elements) ? value.elements.map(trimLink) : value.elements,
+          elements: Array.isArray(value.elements) ? value.elements.map(cleanLink) : value.elements,
           appState: {
             viewBackgroundColor: appState?.viewBackgroundColor ?? emptyCanvasScene().appState.viewBackgroundColor,
           },

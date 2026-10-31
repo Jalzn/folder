@@ -7,13 +7,7 @@ import {
 } from '@tinyfold/workspace/domain';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AutosaveController, type SaveInput } from './autosave';
-import {
-  type CanvasSnapshot,
-  canvasFile,
-  parseCanvasDraft,
-  readCanvasImport,
-  withTrimmedLinks,
-} from './canvas-autosave';
+import { type CanvasSnapshot, canvasFile, parseCanvasDraft, readCanvasImport, withCleanLinks } from './canvas-autosave';
 
 const element = {
   id: 'rectangle',
@@ -192,28 +186,33 @@ describe('editable canvas interchange', () => {
     expect(() => readCanvasImport(JSON.stringify(file))).toThrow('Imagens');
     expect(edited.scene).toEqual(drawing);
   });
-  it('trims line breaks and control characters around links instead of refusing the file', () => {
+  it('removes line breaks, control characters and line separators from links instead of refusing the file', () => {
     const file = JSON.parse(canvasFile(edited));
     file.elements = [
-      { ...element, id: 'link', link: '\n https://tinyfold.dev/a \t\u0000' },
-      { ...element, id: 'blank', link: ' \r\n ' },
+      { ...element, id: 'edges', link: '\n https://tinyfold.dev/a \t\u0000' },
+      { ...element, id: 'inside', link: 'https://tinyfold.dev/b\nc\u2028d\u2029e\u0085f' },
+      { ...element, id: 'blank', link: ' \r\n\u2028 ' },
       { ...element, id: 'plain', link: 'mailto:eu@exemplo.com' },
     ];
     expect(readCanvasImport(JSON.stringify(file)).elements.map(({ link }) => link)).toEqual([
       'https://tinyfold.dev/a',
+      'https://tinyfold.dev/bcdef',
       null,
       'mailto:eu@exemplo.com',
     ]);
   });
-  it('still refuses a control character inside a link', () => {
+  it('still refuses a link with a scheme other than http, https, mailto or tel', () => {
     const file = JSON.parse(canvasFile(edited));
-    file.elements = [{ ...element, link: 'https://tinyfold.dev/a\nb' }];
+    file.elements = [{ ...element, link: 'javascript:alert(1)' }];
     expect(() => readCanvasImport(JSON.stringify(file))).toThrow('Use um endereço');
   });
-  it('trims links of a scene entering the editor and keeps a clean scene as it is', () => {
-    const pasted = { ...drawing, elements: [{ ...element, link: 'https://tinyfold.dev\n' }] };
-    expect(withTrimmedLinks(pasted).elements[0]?.link).toBe('https://tinyfold.dev');
-    expect(withTrimmedLinks(drawing)).toBe(drawing);
+  it('cleans the links of a scene entering the editor so it saves, and keeps a clean scene as it is', () => {
+    const pasted = { ...drawing, elements: [{ ...element, link: 'https://tinyfold.dev/\u2028x\n' }] };
+    const cleaned = withCleanLinks(pasted);
+    expect(cleaned.elements[0]?.link).toBe('https://tinyfold.dev/x');
+    expect(() => readCanvasScene(cleaned)).not.toThrow();
+    expect(() => readCanvasScene(pasted)).toThrow();
+    expect(withCleanLinks(drawing)).toBe(drawing);
   });
   it('rejects embedded content even if disguised as a normal editable file', () => {
     const file = JSON.parse(canvasFile(edited));

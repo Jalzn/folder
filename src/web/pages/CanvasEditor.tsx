@@ -38,7 +38,7 @@ import {
   downloadCanvasFile,
   parseCanvasDraft,
   readCanvasImport,
-  withTrimmedLinks,
+  withCleanLinks,
 } from '../lib/canvas-autosave';
 import { renderCanvasPng } from '../lib/canvas-png';
 import { CanvasPreviewUploader } from '../lib/canvas-preview';
@@ -58,8 +58,8 @@ const unsupportedTools = new Set(['image', 'embeddable', 'iframe', 'magicframe']
 const snapshot = (canvas: Canvas): CanvasSnapshot => ({
   title: canvas.title,
   projectId: canvas.projectId,
-  // Older imports may have stored links the server now refuses; the next save cleans them.
-  scene: withTrimmedLinks(canvas.scene),
+  // Older scenes may hold links the server now refuses; the next save cleans them.
+  scene: withCleanLinks(canvas.scene),
 });
 const revision = (scene: CanvasScene) =>
   `${scene.appState.viewBackgroundColor}|${scene.elements
@@ -292,8 +292,8 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
     if (nextRevision === latestRevision.current) return;
     latestRevision.current = nextRevision;
     // The controller copies immutable content immediately, before a refetch can replace it.
-    // Pasted content can bring links with line breaks around them, which the server refuses.
-    update({ scene: compactCanvasScene(withTrimmedLinks(scene)) });
+    // Pasted content can bring links with line breaks or separators, which the server refuses.
+    update({ scene: compactCanvasScene(withCleanLinks(scene)) });
     acceptedScene.current = scene;
   };
 
