@@ -11,6 +11,17 @@ const block = (type: string, content: JsonValue[] | string, extra: Partial<Docum
 const paragraph = (...content: JsonValue[]) => block('paragraph', content);
 const markdown = (...blocks: DocumentBlock[]) => documentToMarkdown(blocks);
 
+/** The fastest of three runs in milliseconds, so a pause from the scheduler or the collector does not count. */
+function fastestRun(run: () => unknown): number {
+  let fastest = Number.POSITIVE_INFINITY;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const started = performance.now();
+    run();
+    fastest = Math.min(fastest, performance.now() - started);
+  }
+  return fastest;
+}
+
 describe('document to Markdown', () => {
   it('returns an empty string for an empty document and skips empty blocks', () => {
     expect(markdown()).toBe('');
@@ -181,11 +192,12 @@ describe('document to Markdown', () => {
 
   it('stays linear in the pieces of one block', () => {
     const math = { type: 'math', props: {}, content: 'x' };
-    const started = performance.now();
-    const breaks = markdown(paragraph(text('a\n'.repeat(100_000))));
-    const formulas = markdown(paragraph(...Array.from({ length: 100_000 }, () => math)));
-    expect(performance.now() - started).toBeLessThan(1000);
-    expect(breaks.split('\n')).toHaveLength(100_001);
-    expect(formulas.startsWith('$x$<!-- -->$x$')).toBe(true);
+    const breaks = (count: number) => markdown(paragraph(text('a\n'.repeat(count))));
+    const formulas = (count: number) => markdown(paragraph(...Array.from({ length: count }, () => math)));
+    expect(breaks(3)).toBe('a\\\na\\\na\n');
+    expect(formulas(3)).toBe('$x$<!-- -->$x$<!-- -->$x$\n');
+    // Four times the pieces take about four times as long; a quadratic step would take sixteen.
+    for (const write of [breaks, formulas])
+      expect(fastestRun(() => write(80_000)) / fastestRun(() => write(20_000))).toBeLessThan(10);
   });
 });
