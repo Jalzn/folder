@@ -1,11 +1,11 @@
 import { createRootRoute, createRoute, lazyRouteComponent, redirect } from '@tanstack/react-router';
 import { BoardPage } from '../pages/Board';
-import { IndexPage } from '../pages/project/IndexPage';
 import { DocumentRoute, DrawingRoute } from '../pages/project/ItemRoute';
+import { IndexPage } from '../pages/project/item-index';
 import { NoActiveProjectPage } from '../pages/project/NoActiveProjectPage';
-import { OverviewPage } from '../pages/project/OverviewPage';
+import { OverviewPage } from '../pages/project/overview';
 import { ProjectRoute } from '../pages/project/ProjectRoute';
-import { TrashPage } from '../pages/project/TrashPage';
+import { TrashPage } from '../pages/project/trash';
 import { AppRoot } from '../shell';
 import { Spinner } from '../ui';
 import { LegacyRedirect } from './LegacyRedirect';
@@ -54,14 +54,8 @@ const indexRoute = createRoute({
   getParentRoute: () => projectRoute,
   path: 'indice',
   component: IndexPage,
-  // `q` serves the lists this address shows until the Índice arrives; the old lists' `q` is dropped.
-  validateSearch: (search): { tipo?: IndexType; q?: string } => {
-    const q = text(search.q);
-    return {
-      ...(search.tipo === 'documentos' || search.tipo === 'desenhos' ? { tipo: search.tipo } : {}),
-      ...(q ? { q } : {}),
-    };
-  },
+  validateSearch: (search): { tipo?: IndexType } =>
+    search.tipo === 'documentos' || search.tipo === 'desenhos' ? { tipo: search.tipo } : {},
 });
 const trashRoute = createRoute({ getParentRoute: () => projectRoute, path: 'lixeira', component: TrashPage });
 const documentRoute = createRoute({

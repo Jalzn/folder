@@ -1,30 +1,49 @@
 /*
- * The column pages of a project (Visão geral, Índice, Lixeira, the empty state): 720 px, a label over each
- * section and a line between sections (docs/interface/refino.md §8).
+ * The column pages of a project (Visão geral, Índice, Lixeira, the empty state) inside a PageFrame: 720 px,
+ * a summary under the title, a hairline, then sections with a label over each and a line between them
+ * (docs/interface/refino.md §8).
  */
 .project-page {
   width: 100%;
-  max-width: 784px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 28px 32px 120px;
+  padding: 28px 0 120px;
   font: var(--type-ui);
   letter-spacing: var(--tracking-ui);
   color: var(--text);
 }
-.project-page > .page-header {
-  margin-bottom: 20px;
-}
 .project-page > .banner {
-  margin-bottom: 16px;
+  margin-top: 14px;
+}
+.project-summary {
+  margin: 8px 0 0;
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  color: var(--text-2);
+}
+.project-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.project-filters > .project-summary {
+  flex: 1;
+  margin: 0;
+}
+.project-hair {
+  height: 1px;
+  margin: 20px 0 0;
+  border: 0;
+  background: var(--line);
 }
 .project-section {
   padding: 20px 0;
   border-top: 1px solid var(--line);
 }
-.project-page > .page-header + .project-section,
-.project-page > .banner + .project-section {
+.project-hair + .project-section {
   border-top: 0;
-  padding-top: 0;
 }
 .project-section__label {
   margin: 0 0 6px;
@@ -32,55 +51,23 @@
   letter-spacing: var(--tracking-label);
   color: var(--text-3);
 }
-.project-section__empty {
+.project-empty {
   margin: 0;
   padding: 8px 0;
   color: var(--text-3);
 }
-.project-toolbar {
+.project-actions {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.project-toolbar .search-box {
-  flex: 1;
-  max-width: 360px;
-}
-@media (max-width: 760px) {
-  .project-page {
-    padding: 20px 16px 96px;
-  }
-}
-
-.trash-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.trash-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: var(--height-list-row);
-  border-bottom: 1px solid var(--line);
-}
-.trash-row__title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-}
-.trash-row__meta {
-  margin-right: auto;
-  font: var(--type-meta);
-  color: var(--text-3);
-  white-space: nowrap;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
 }
 
 .empty-projects {
   padding-top: 72px;
+}
+.empty-projects > .btn {
+  margin-top: 20px;
 }
 .empty-projects__archived {
   margin-top: 32px;

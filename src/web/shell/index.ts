@@ -1,6 +1,7 @@
 export { useApp } from './AppProvider';
 export { AppRoot } from './AppRoot';
 export type { Owner } from './LoginScreen';
+export { PageFrame } from './PageFrame';
 export { usePageCommands } from './page-commands';
 export { NewItemMenu } from './project/NewItemMenu';
 export { ProjectMenu } from './project/ProjectMenu';

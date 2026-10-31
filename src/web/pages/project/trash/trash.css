@@ -1,0 +1,32 @@
+/* The project's trash (docs/etapas/08-fundacao.md, "Lixeira"): 36 px rows on `--line`. */
+.trash-filters > .filter-menu {
+  margin-right: -8px;
+}
+.trash-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.trash-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  min-height: var(--height-list-row);
+  border-bottom: 1px solid var(--line);
+}
+.trash-row__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trash-row__title {
+  font-weight: 500;
+}
+.trash-row__type {
+  margin-left: 8px;
+  font: var(--type-meta);
+  letter-spacing: var(--tracking-meta);
+  color: var(--text-3);
+}

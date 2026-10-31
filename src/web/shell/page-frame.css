@@ -1,0 +1,30 @@
+/* A page's frame (docs/etapas/08-fundacao.md, "Páginas existentes no shell"). */
+.page-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.page-frame__bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 44px;
+  padding: 0 12px 0 32px;
+}
+.page-frame__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 32px;
+}
+@media (max-width: 760px) {
+  .page-frame__bar {
+    padding: 0 8px 0 16px;
+  }
+  .page-frame__body {
+    padding: 0 16px;
+  }
+}

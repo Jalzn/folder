@@ -148,7 +148,7 @@ function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & {
       later(() =>
         go(
           result.type === 'task'
-            ? `${paths.board(result.projectId)}?tarefa=${encodeURIComponent(result.id)}`
+            ? paths.task(result.projectId, result.id)
             : paths.item(result.projectId, result.type, result.id),
         ),
       ),

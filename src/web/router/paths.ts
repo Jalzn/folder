@@ -19,6 +19,8 @@ export const paths = {
   document: (projectId: string, documentId: string, block?: string) =>
     `/projetos/${encode(projectId)}/documentos/${encode(documentId)}${block ? `?bloco=${encode(block)}` : ''}`,
   drawing: (projectId: string, canvasId: string) => `/projetos/${encode(projectId)}/desenhos/${encode(canvasId)}`,
+  /** The board with a task's dialog open. */
+  task: (projectId: string, taskId: string) => `/projetos/${encode(projectId)}/quadro?tarefa=${encode(taskId)}`,
   item: (projectId: string, type: ItemType, id: string) =>
     type === 'document' ? paths.document(projectId, id) : paths.drawing(projectId, id),
 } as const;

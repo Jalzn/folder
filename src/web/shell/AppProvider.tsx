@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { createContext, type ReactNode, useContext, useState } from 'react';
 import { api } from '../lib/api';
-import type { Project } from '../lib/types';
+import type { Project, Task } from '../lib/types';
 import { useAction } from '../lib/use-action';
 import { useRequest } from '../lib/use-request';
 import { TaskDialog } from '../pages/Board';
@@ -17,6 +17,8 @@ interface AppContextValue {
   newCanvas: (projectId: string) => Promise<void>;
   /** Opens the dialog of a new task in the project. */
   newTask: (projectId: string) => void;
+  /** Opens a task's dialog over the current page. */
+  openTask: (task: Task) => void;
   /** Opens "Novo projeto", or "Renomear projeto" for a project. */
   openProjectDialog: (project?: Project) => void;
   creatingDocument: boolean;
@@ -31,7 +33,7 @@ export function useApp() {
   return value;
 }
 
-/** What every screen can ask of the app: who is signed in, creating items and the project dialog. */
+/** What every screen can ask of the app: who is signed in, creating items, the task and project dialogs. */
 export function AppProvider({ owner, children }: { owner: Owner; children: ReactNode }) {
   const navigate = useNavigate();
   const documentAction = useAction();
@@ -39,7 +41,8 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
   const documentRequest = useRequest();
   const canvasRequest = useRequest();
   const [projectDialog, setProjectDialog] = useState<{ project?: Project } | null>(null);
-  const [taskProjectId, setTaskProjectId] = useState<string | null>(null);
+  // Closing keeps the task, so the dialog does not change its title while it leaves.
+  const [taskDialog, setTaskDialog] = useState<{ open: boolean; task?: Task; projectId?: string }>({ open: false });
 
   async function newDocument(projectId: string) {
     const input = { projectId };
@@ -65,7 +68,8 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
     owner,
     newDocument,
     newCanvas,
-    newTask: setTaskProjectId,
+    newTask: (projectId) => setTaskDialog({ open: true, projectId }),
+    openTask: (task) => setTaskDialog({ open: true, task }),
     openProjectDialog: (project) => setProjectDialog(project ? { project } : {}),
     creatingDocument: documentAction.busy,
     creatingCanvas: canvasAction.busy,
@@ -75,9 +79,10 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
       {children}
       {projectDialog && <ProjectDialog project={projectDialog.project} onClose={() => setProjectDialog(null)} />}
       <TaskDialog
-        open={taskProjectId !== null}
-        onClose={() => setTaskProjectId(null)}
-        initialProjectId={taskProjectId}
+        open={taskDialog.open}
+        onClose={() => setTaskDialog((current) => ({ ...current, open: false }))}
+        task={taskDialog.task}
+        initialProjectId={taskDialog.projectId ?? null}
       />
     </AppContext.Provider>
   );

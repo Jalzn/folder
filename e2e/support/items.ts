@@ -40,6 +40,6 @@ export async function trashRow(page: Page, title: string) {
 /** Restores an item from the current project's trash. */
 export async function restoreFromTrash(page: Page, title: string) {
   const row = await trashRow(page, title);
-  await row.getByRole('button', { name: 'Restaurar', exact: true }).click();
+  await row.getByRole('button', { name: `Restaurar ${title}`, exact: true }).click();
   await expect(row).toHaveCount(0);
 }

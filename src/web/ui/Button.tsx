@@ -5,7 +5,8 @@ import { cx } from '../lib/cx';
 import { SpinnerIcon } from './Spinner';
 
 export interface ButtonProps extends Omit<AriaButtonProps, 'className' | 'children'> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  /** `ghost-danger` is a ghost with the danger text, for a destructive action outside a dialog. */
+  variant?: 'primary' | 'secondary' | 'ghost' | 'ghost-danger' | 'danger';
   /** 28 px, or 24 px in dense places. */
   size?: 'md' | 'sm';
   /** A 16 px icon before the label; a spinner takes its place while pending. */

@@ -1,0 +1,134 @@
+/* The Índice (docs/etapas/08-fundacao.md, "Índice"): 32 px headers and 36 px rows on `--line`. */
+.index-filters > .filter-menu {
+  margin-left: -8px;
+}
+.index-table-scroll {
+  margin-top: 8px;
+  overflow-x: auto;
+}
+/* Fixed columns, so a long title or excerpt ends in an ellipsis instead of widening the table. */
+.index-table {
+  width: 100%;
+  min-width: 560px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+}
+.index-table__column {
+  height: 32px;
+  padding: 0 8px 0 0;
+  border-bottom: 1px solid var(--line);
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-3);
+  text-align: left;
+  white-space: nowrap;
+  outline: none;
+}
+.index-table__column[data-allows-sorting] {
+  cursor: pointer;
+}
+.index-table__column[data-hovered],
+.index-table__column[aria-sort="ascending"],
+.index-table__column[aria-sort="descending"] {
+  color: var(--text);
+}
+.index-table__column[data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.index-table__column--title {
+  width: 40%;
+}
+.index-table__column--type {
+  width: 96px;
+}
+.index-table__column--updatedAt {
+  width: 72px;
+}
+.index-table__column--end {
+  padding-right: 0;
+  text-align: right;
+}
+.index-table__heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.index-table__row {
+  outline: none;
+  cursor: pointer;
+  transition: background-color var(--duration-hover) var(--ease-out);
+}
+.index-table__row[data-hovered] {
+  background: var(--hover);
+}
+.index-table__row[data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.index-table__cell {
+  height: var(--height-list-row);
+  padding: 0 8px 0 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  outline: none;
+}
+.index-table__cell[data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.index-table__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  border-radius: 4px;
+  color: var(--text);
+  font: 500 13px / 20px var(--font-sans);
+  letter-spacing: var(--tracking-ui);
+  text-decoration: none;
+}
+/* The link is the press target, so a click on it is the link's, not the row's (React Aria skips tabbables). */
+.index-table__link > * {
+  pointer-events: none;
+}
+.index-table__link svg {
+  flex: none;
+  color: var(--icon);
+}
+.index-table__link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.index-table__link:hover {
+  color: var(--accent);
+}
+.index-table__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.index-table__type {
+  font: var(--type-meta);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.index-table__excerpt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+.index-table__date {
+  padding-right: 0;
+  font: var(--type-meta);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.index-table__empty {
+  margin: 0;
+  padding: 8px 0;
+  color: var(--text-3);
+}

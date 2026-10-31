@@ -1,9 +1,10 @@
 /**
- * The element that scrolls the page: the shell's main region, marked `data-scroll-key`, or the document
- * while a page still scrolls the window.
+ * The element that scrolls the page, marked `data-scroll-key`: a page frame's body inside the shell's main
+ * region, or the main region itself for a page outside a frame, or else the document.
  */
 export function pageScroller(): HTMLElement {
-  return document.querySelector<HTMLElement>('[data-scroll-key]') ?? (document.scrollingElement as HTMLElement);
+  const marked = document.querySelectorAll<HTMLElement>('[data-scroll-key]');
+  return marked[marked.length - 1] ?? (document.scrollingElement as HTMLElement);
 }
 
 let pending: { path: string; top: number } | null = null;

@@ -84,6 +84,7 @@
 }
 
 .btn[data-variant="ghost"],
+.btn[data-variant="ghost-danger"],
 .btn[data-variant="icon"] {
   background: transparent;
   border-color: transparent;
@@ -95,7 +96,17 @@
   background: var(--hover);
   color: var(--text);
 }
+/* Danger text is `late`, as in dangerous menu items (docs/interface/visual.md §6). */
+.btn[data-variant="ghost-danger"],
+.btn[data-variant="ghost-danger"] svg,
+.btn[data-variant="ghost-danger"][data-hovered] svg {
+  color: var(--late);
+}
+.btn[data-variant="ghost-danger"][data-hovered] {
+  background: var(--hover);
+}
 .btn[data-variant="ghost"][data-pressed],
+.btn[data-variant="ghost-danger"][data-pressed],
 .btn[data-variant="icon"][data-pressed],
 .btn[data-variant="icon"][aria-expanded="true"] {
   background: var(--pressed);
@@ -108,4 +119,10 @@
 .btn-icon[data-size="sm"] {
   width: var(--height-button-dense);
   padding: 0;
+}
+
+/* A filter's trigger, "Tipo: Todos ⌄": tighter, so its text lines up with the column when pulled by -8 px. */
+.filter-menu {
+  padding: 0 8px;
+  gap: 4px;
 }

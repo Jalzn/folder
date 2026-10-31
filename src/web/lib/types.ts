@@ -14,6 +14,14 @@ export { TASK_STATUSES, taskStatusLabels } from '@tinyfold/workspace/domain';
 
 /** The items a project lists in its sidebar and Índice. */
 export type ItemType = 'document' | 'drawing';
+
+/** Every kind of item, as lists name it. */
+export const itemTypeLabels: Record<ItemType | 'task', string> = {
+  document: 'Documento',
+  drawing: 'Desenho',
+  task: 'Tarefa',
+};
+
 export function relativeDate(value: string) {
   const date = new Date(value);
   const days = Math.floor((Date.now() - date.getTime()) / 86_400_000);

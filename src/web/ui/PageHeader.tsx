@@ -26,3 +26,22 @@ export function PageHeader({
     </header>
   );
 }
+
+/**
+ * Moves focus to the page's title once nothing holds it, as when the row that had it went away, or a dialog
+ * closed over a row that is gone. Gives up after about half a second if focus lands somewhere on its own.
+ */
+export function focusPageTitle() {
+  let attempts = 0;
+  const attempt = () => {
+    const active = document.activeElement;
+    const free = !active || active === document.body || !active.isConnected;
+    const heading = document.querySelector<HTMLElement>('main h1[tabindex="-1"]');
+    if (free && heading && !document.querySelector('.modal-overlay')) {
+      heading.focus({ preventScroll: true });
+      return;
+    }
+    if (attempts++ < 30) requestAnimationFrame(attempt);
+  };
+  requestAnimationFrame(attempt);
+}
