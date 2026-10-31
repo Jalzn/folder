@@ -50,8 +50,8 @@ export interface ProjectReference {
 export type SearchItemType = 'document' | 'drawing' | 'task';
 
 export interface SearchQuery {
-  /** Already normalized with searchText. */
-  text: string | undefined;
+  /** Normalized words from searchTerms, all required; none lists recent items. */
+  terms: readonly string[];
   projectId: string | undefined;
   types: readonly SearchItemType[];
   limit: number;
@@ -97,8 +97,8 @@ export interface StoredPreview {
 export interface TaskQuery {
   projectId: string | undefined;
   statuses: readonly TaskStatus[] | undefined;
-  /** Already normalized with searchText. */
-  text: string | undefined;
+  /** Normalized words from searchTerms, all required in the title. */
+  terms: readonly string[];
   limit: number;
   offset: number;
 }

@@ -32,9 +32,10 @@ export const searchTool = (reading: ReadingContext) =>
     name: 'search',
     title: 'Buscar no Tinyfold',
     description:
-      'Busca documentos, desenhos e tarefas pelo título e pelo texto, sem diferenciar caixa e acentos. ' +
-      'Sem query, lista os itens editados mais recentemente. A ordem é do mais recente ao mais antigo; ' +
-      'passe o nextCursor para ver a próxima página. Leia os itens com read_document, read_drawing ou read_task.',
+      'Busca documentos, desenhos e tarefas por palavras: todas precisam aparecer, em qualquer ordem, no título ' +
+      'ou no texto, sem diferenciar caixa e acentos. Itens com mais palavras no título vêm primeiro e, depois, ' +
+      'os editados mais recentemente. Sem query, lista os itens editados mais recentemente. Passe o nextCursor ' +
+      'para ver a próxima página. Leia os itens com read_document, read_drawing ou read_task.',
     inputSchema: SearchInput,
     annotations: readOnlyAnnotations,
     async handler(input) {

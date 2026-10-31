@@ -78,6 +78,50 @@ describe('agent read tools', () => {
     expect(onlyTasks.items.map((item) => item.type)).toEqual(['task']);
   });
 
+  it('requires every word in any order, ranks title matches first and refuses an empty folded query', async () => {
+    const body = await service.createDocument({
+      ...request(),
+      title: 'Notas de reunião',
+      content: [
+        { type: 'heading', content: [{ type: 'text', text: 'Ideia', styles: {} }] },
+        paragraph('Plano do MCP e do token no Perfil.'),
+      ],
+    });
+    const titled = await service.createDocument({
+      ...request(),
+      title: 'MCP somente leitura',
+      content: [paragraph('Ideia antiga.')],
+    });
+    await service.saveDocument({
+      ...request(),
+      id: body.id,
+      expectedVersion: 1,
+      title: body.title,
+      content: [paragraph('Ideia: plano do MCP e do token no Perfil.')],
+    });
+    const ids = async (query: string) =>
+      (await json<{ items: { id: string }[] }>('search', { query })).items.map((item) => item.id);
+    expect(await ids('MCP ideia')).toEqual([titled.id, body.id]);
+    expect(await ids('token perfil')).toEqual([body.id]);
+    expect(await ids('ideia do mcp')).toEqual([body.id]);
+    expect(await ids('token ausente')).toEqual([]);
+    expect(await call('search', { query: '\u0301' })).toEqual({
+      isError: true,
+      text: 'A busca ficou vazia depois de ignorar acentos. Use outras palavras.',
+    });
+  });
+
+  it('points the excerpt at the match after emoji with variation selectors', async () => {
+    await service.createDocument({
+      ...request(),
+      title: 'Emoji',
+      content: [paragraph(`${'❤️'.repeat(200)} alvo-emoji fim`)],
+    });
+    const { items } = await json<{ items: { excerpt: string }[] }>('search', { query: 'alvo-emoji' });
+    expect(items[0]?.excerpt).toContain('alvo-emoji');
+    expect(items[0]?.excerpt.isWellFormed()).toBe(true);
+  });
+
   it('cuts excerpts around the first match and lists recent items without a query', async () => {
     const text = `${'Começo do texto. '.repeat(20)}O token pessoal aparece aqui.${' Fim.'.repeat(100)}`;
     await service.createDocument({ ...request(), title: 'Longo', content: [paragraph(text)] });

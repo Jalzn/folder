@@ -14,7 +14,9 @@ export const ListProjectsInput = z.object({
 export const SearchInput = z.object({
   query: query
     .optional()
-    .describe('Texto a buscar, sem diferenciar caixa e acentos. Sem ele, lista os itens recentes.'),
+    .describe(
+      'Palavras a buscar, todas obrigatórias, sem diferenciar caixa e acentos. Sem ela, lista os itens recentes.',
+    ),
   projectId: id.optional().describe('Limita a busca a um projeto.'),
   types: z
     .array(z.enum(['document', 'drawing', 'task']))
@@ -47,7 +49,7 @@ export const ListTasksInput = z.object({
     .max(3)
     .optional()
     .describe('Colunas: todo (A fazer), doing (Em andamento) e done (Concluído).'),
-  query: query.optional().describe('Texto a buscar no título.'),
+  query: query.optional().describe('Palavras que precisam aparecer no título, em qualquer ordem.'),
   limit: z.number().int().min(1).max(READING_LIMITS.tasks.maxPageSize).default(READING_LIMITS.tasks.defaultPageSize),
   cursor: cursor.optional(),
 });
