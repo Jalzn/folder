@@ -173,7 +173,7 @@ describe('navigation queries', () => {
         ['document', 'Documento 1'],
       ]);
       const [last] = overview.recent;
-      expect(last?.excerpt.startsWith('Primeira linha segunda linha texto')).toBe(true);
+      expect(last?.excerpt.startsWith('Primeira linha, segunda linha texto')).toBe(true);
       expect(last?.excerpt.endsWith('…')).toBe(true);
       expect(Array.from(last?.excerpt ?? '').length).toBeLessThanOrEqual(240);
       expect(overview.recent[1]).toEqual({
@@ -181,7 +181,7 @@ describe('navigation queries', () => {
         id: drawing.id,
         title: 'Fluxo',
         updatedAt: drawing.updatedAt,
-        excerpt: 'Ideia Fluxo de ação',
+        excerpt: 'Ideia, Fluxo de ação',
       });
       expect(overview.lastEdited).toEqual({
         type: 'document',
@@ -189,6 +189,24 @@ describe('navigation queries', () => {
         title: 'Notas',
         updatedAt: last?.updatedAt,
       });
+    });
+
+    it("shows a document's first text that is not a heading, or its headings when it has only those", async () => {
+      const blocks = (...pieces: [type: string, text: string][]): DocumentBlock[] =>
+        pieces.map(([type, text]) => ({ type, content: [{ type: 'text', text, styles: {} }] }));
+      const create = (title: string, content: DocumentBlock[]) =>
+        service.createDocument({ ...request(), projectId: project.id, title, content });
+      await create('Títulos', blocks(['heading', 'Plano'], ['paragraph', ''], ['heading', 'Etapas']));
+      await create(
+        'Visão',
+        blocks(
+          ['heading', 'Por que existe'],
+          ['paragraph', 'Espaço pessoal e minimalista.'],
+          ['heading', 'Princípios'],
+        ),
+      );
+      const { recent } = await service.projectOverview({ projectId: project.id });
+      expect(recent.map((item) => item.excerpt)).toEqual(['Espaço pessoal e minimalista.', 'Plano, Etapas']);
     });
 
     it('answers an empty project with nothing to show', async () => {

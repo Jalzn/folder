@@ -2,6 +2,9 @@ import { searchText } from './search-text.js';
 
 const ellipsis = '…';
 const chunkCodePoints = 256;
+/** Between two pieces of a text on one line, unless the first ends in punctuation of its own. */
+const pieceSeparator = ', ';
+const endsInPunctuation = /[.,;:!?…]$/u;
 
 /** Whether the text an excerpt is taken from is itself cut out of a longer text. */
 export interface TextCut {
@@ -12,10 +15,31 @@ export interface TextCut {
 const uncut: TextCut = { before: false, after: false };
 
 /**
- * Up to `length` code points of `text` on one line, starting `lead` code points before the first
- * occurrence of any term, or at the start without terms. Cut ends get an ellipsis. Positions are
- * found in the normalized text and mapped back, so stripped accents and variation selectors before
- * the match do not move the excerpt away from it. Without terms nothing is normalized.
+ * A stored text on one line. Each of its lines is a piece: a document stores a line per block, a
+ * drawing a line per text and frame name, and line breaks inside them start lines too. Pieces are
+ * joined with a comma, or with a space after one that ends in punctuation, so that "Por que existe"
+ * and "Um espaço…" do not run together. Spaces collapse, and blank pieces are left out.
+ */
+function oneLine(text: string): string {
+  let line = '';
+  let previous = '';
+  for (const piece of text.split(/\r\n?|\n/u)) {
+    const words = piece.replace(/\s+/gu, ' ').trim();
+    if (!words) continue;
+    if (previous) line += endsInPunctuation.test(previous) ? ' ' : pieceSeparator;
+    line += words;
+    previous = words;
+  }
+  return line;
+}
+
+/**
+ * Up to `length` code points of `text` on one line (see oneLine), starting `lead` code points
+ * before the first occurrence of any term, or at the start without terms. Cut ends get an
+ * ellipsis. Positions are found in the normalized text and mapped back, so stripped accents and
+ * variation selectors before the match do not move the excerpt away from it. Without terms nothing
+ * is normalized. Every excerpt the workspace shows comes from here: search, by RPC and by MCP, and
+ * the overview, through excerptFromStart.
  */
 export function excerptAround(
   text: string,
@@ -24,13 +48,24 @@ export function excerptAround(
   lead: number,
   cut: TextCut = uncut,
 ): string {
-  const match = terms.length ? firstMatch(text, terms) : undefined;
-  const start = match === undefined ? 0 : codePointsBefore(text, match, lead);
-  const window = Array.from(text.slice(start, start + 2 * (length + 1))).slice(0, length + 1);
+  const line = oneLine(text);
+  const match = terms.length ? firstMatch(line, terms) : undefined;
+  const start = match === undefined ? 0 : codePointsBefore(line, match, lead);
+  const window = Array.from(line.slice(start, start + 2 * (length + 1))).slice(0, length + 1);
   let excerpt = window.slice(0, length);
   if (start > 0 || cut.before) excerpt = [ellipsis, ...excerpt.slice(1)];
   if (window.length > length || cut.after) excerpt = [...excerpt.slice(0, length - 1), ellipsis];
-  return excerpt.join('').replace(/\s+/gu, ' ').trim();
+  return excerpt.join('').trim();
+}
+
+/**
+ * The excerpt at the start of a text of any length, which reads only twice the excerpt's length of
+ * it. `cut` says the text itself is the start of a longer one.
+ */
+export function excerptFromStart(text: string, length: number, cut = false): string {
+  const start = codePointsFrom(text, 0, 2 * length);
+  const goesOn = cut || /\S/u.test(text.slice(start.length));
+  return excerptAround(start, [], length, 0, { before: false, after: goesOn });
 }
 
 /** The index in `text` of the first occurrence of any term, matched in the normalized text. */

@@ -29,7 +29,10 @@ export interface RecentItem {
   id: string;
   title: string;
   updatedAt: string;
-  /** The start of the text, on one line. */
+  /**
+   * On one line: a document's first text that is not a heading, or its headings when it has only
+   * those; the start of a drawing's texts, separated by commas.
+   */
   excerpt: string;
 }
 

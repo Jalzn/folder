@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { excerptAround } from './excerpt.js';
+import { excerptAround, excerptFromStart } from './excerpt.js';
 import { searchTerms } from './search-text.js';
 
 const excerpt = (text: string, query = '') => excerptAround(text, searchTerms(query), 40, 10);
+const line = (text: string) => excerptAround(text, [], 240, 0);
 
 describe('search excerpt', () => {
   it('starts a little before the first match and marks both cut ends', () => {
@@ -20,6 +21,30 @@ describe('search excerpt', () => {
     expect(excerptAround('meio do texto', [], 40, 10, { before: true, after: true })).toBe('…eio do texto…');
     expect(excerptAround('meio do texto', [], 40, 10, { before: false, after: true })).toBe('meio do texto…');
     expect(excerptAround('x'.repeat(50), [], 40, 10, { before: false, after: true })).toBe(`${'x'.repeat(39)}…`);
+  });
+  it('puts the lines of a text, as blocks of a document or texts of a drawing, on one line with commas', () => {
+    expect(line('Por que existe\nUm espaço pessoal e minimalista')).toBe(
+      'Por que existe, Um espaço pessoal e minimalista',
+    );
+    expect(line('Edição\nRascunho local\n\n \t\nServidor\r\nConflito?')).toBe(
+      'Edição, Rascunho local, Servidor, Conflito?',
+    );
+    // A piece that ends in punctuation needs no comma after it.
+    expect(line('Fim da frase.\nOutra   frase\nPergunta?\nResposta:\nlista')).toBe(
+      'Fim da frase. Outra frase, Pergunta? Resposta: lista',
+    );
+    expect(line('\n\n  ')).toBe('');
+  });
+  it('looks for the match and counts the lead on the joined line', () => {
+    expect(excerpt(`Título\n${'a'.repeat(20)}\nalvo`, 'alvo')).toBe(`…${'a'.repeat(7)}, alvo`);
+    expect(excerpt('Plano\nalvo no segundo bloco', 'alvo')).toBe('Plano, alvo no segundo bloco');
+  });
+  it('starts an excerpt at the beginning of a text of any length', () => {
+    expect(excerptFromStart('Curto\ntexto', 40)).toBe('Curto, texto');
+    expect(excerptFromStart('x'.repeat(100_000), 40)).toBe(`${'x'.repeat(39)}…`);
+    // Only spaces after the part it reads do not count as more text; a cut source does.
+    expect(excerptFromStart(`Curto${' '.repeat(1_000)}`, 40)).toBe('Curto');
+    expect(excerptFromStart('Curto', 40, true)).toBe('Curto…');
   });
   it('never splits a surrogate pair', () => {
     for (const text of [`${'😀'.repeat(60)} alvo ${'😀'.repeat(60)}`, `x${'😀'.repeat(60)}`]) {

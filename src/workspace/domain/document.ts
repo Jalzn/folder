@@ -200,6 +200,29 @@ export function documentPlainText(blocks: readonly DocumentBlock[]): string {
     .join('\n');
 }
 
+/** Every block in reading order: each one, then its children. */
+function* eachBlock(blocks: readonly DocumentBlock[]): Generator<DocumentBlock> {
+  for (const block of blocks) {
+    yield block;
+    if (block.children) yield* eachBlock(block.children);
+  }
+}
+
+/**
+ * The text a document opens with, for the overview's excerpt: its first block with text that is
+ * not a heading or, in a document of headings only, its headings, a line each.
+ */
+export function documentLead(blocks: readonly DocumentBlock[]): string {
+  const headings: string[] = [];
+  for (const block of eachBlock(blocks)) {
+    const text = inlineText(block.content);
+    if (!text.trim()) continue;
+    if (block.type !== 'heading') return text;
+    headings.push(text);
+  }
+  return headings.join('\n');
+}
+
 export function findBlock(blocks: readonly DocumentBlock[], id: string): DocumentBlock | undefined {
   for (const block of blocks) {
     if (block.id === id) return block;

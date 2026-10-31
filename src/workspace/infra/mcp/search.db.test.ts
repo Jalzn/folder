@@ -36,6 +36,7 @@ describe('search', () => {
       ['drawing', canvas.id],
       ['document', document.id],
     ]);
+    expect(found.items[1]?.excerpt).toBe('Ideia, Fluxo de ação');
     expect(found.items[2]?.excerpt).toBe('Plano de AÇÃO');
     expect(found.nextCursor).toBeNull();
     const onlyTasks = await agent.json<{ items: { type: string }[] }>('search', { query: 'AÇÃO', types: ['task'] });
@@ -143,6 +144,24 @@ describe('search', () => {
     expect(items[0]?.excerpt.length).toBeLessThanOrEqual(240);
     const recent = await agent.json<{ items: { excerpt: string }[] }>('search');
     expect(recent.items[0]?.excerpt.startsWith('Começo do texto.')).toBe(true);
+  });
+
+  it('separates the blocks of a document in excerpts', async () => {
+    await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Visão',
+      content: [
+        { type: 'heading', props: { level: 1 }, content: [{ type: 'text', text: 'Por que existe', styles: {} }] },
+        paragraph('Um espaço pessoal e minimalista.'),
+        paragraph('Reúne escrita e desenho'),
+        paragraph('sem excesso'),
+      ],
+    });
+    const { items } = await agent.json<{ items: { excerpt: string }[] }>('search', { query: 'espaco' });
+    expect(items[0]?.excerpt).toBe(
+      'Por que existe, Um espaço pessoal e minimalista. Reúne escrita e desenho, sem excesso',
+    );
   });
 
   it('takes excerpts from a part of the text around the match, also after decomposed accents', async () => {

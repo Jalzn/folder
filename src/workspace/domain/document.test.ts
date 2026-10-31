@@ -1,11 +1,44 @@
 import { describe, expect, it } from 'vitest';
 import {
+  documentLead,
   documentPlainText,
   findBlock,
   MAX_DOCUMENT_BYTES,
   RECOVERY_DOCUMENT_LIMITS,
   readDocumentContent,
 } from './document.js';
+import type { DocumentBlock } from './models.js';
+
+const text = (value: string) => [{ type: 'text', text: value, styles: {} }];
+const block = (type: string, value: string, children?: DocumentBlock[]): DocumentBlock => ({
+  type,
+  content: text(value),
+  ...(children ? { children } : {}),
+});
+
+describe('document lead', () => {
+  it('is the first text that is not a heading, children included', () => {
+    expect(
+      documentLead([
+        block('heading', 'Por que existe'),
+        block('paragraph', '   '),
+        block('paragraph', 'Espaço pessoal e minimalista.'),
+        block('paragraph', 'Depois.'),
+      ]),
+    ).toBe('Espaço pessoal e minimalista.');
+    expect(documentLead([block('heading', 'Plano', [block('bulletListItem', 'Primeiro passo')])])).toBe(
+      'Primeiro passo',
+    );
+    expect(documentLead([block('codeBlock', 'pnpm check')])).toBe('pnpm check');
+  });
+  it('falls back to the headings, a line each, and is empty without text', () => {
+    expect(documentLead([block('heading', 'Plano'), block('paragraph', ''), block('heading', 'Etapas')])).toBe(
+      'Plano\nEtapas',
+    );
+    expect(documentLead([block('paragraph', '')])).toBe('');
+    expect(documentLead([])).toBe('');
+  });
+});
 
 describe('document format', () => {
   it('preserves supported blocks and extracts nested text and link labels', () => {
