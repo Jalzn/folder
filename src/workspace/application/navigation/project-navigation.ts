@@ -1,7 +1,7 @@
 import { navSection, openTaskCount } from '../../domain/navigation.js';
+import { requireProject } from '../helpers.js';
 import type { ProjectNavigationInput } from '../schemas/navigation.js';
 import type { NavigationContext } from './ports.js';
-import { requireProject } from './require-project.js';
 
 /**
  * What the project's sidebar shows: its documents and drawings, pinned ones first, the number of

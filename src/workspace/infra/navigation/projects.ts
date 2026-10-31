@@ -3,14 +3,15 @@ import type { NavigationReader } from '../../application/navigation/ports.js';
 import { TASK_STATUSES, type TaskStatus } from '../../domain/task-status.js';
 import type { WorkspaceTables } from '../db.js';
 import { itemTable } from '../item-tables.js';
+import { projectModel } from '../repository/mappers.js';
 
-type ProjectReads = Pick<NavigationReader, 'hasProject' | 'navItems' | 'taskCounts'>;
+type ProjectReads = Pick<NavigationReader, 'findProject' | 'navItems' | 'taskCounts'>;
 
 export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
   return {
-    async hasProject(projectId) {
-      const row = await db.selectFrom('workspace_projects').select('id').where('id', '=', projectId).executeTakeFirst();
-      return row !== undefined;
+    async findProject(projectId) {
+      const row = await db.selectFrom('workspace_projects').selectAll().where('id', '=', projectId).executeTakeFirst();
+      return row && projectModel(row);
     },
 
     async navItems(projectId, type) {

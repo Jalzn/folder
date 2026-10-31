@@ -1,8 +1,8 @@
 import { openTaskCount, tasksLeftOut } from '../../domain/navigation.js';
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
+import { requireProject } from '../helpers.js';
 import type { ProjectOverviewInput } from '../schemas/navigation.js';
 import type { NavigationContext } from './ports.js';
-import { requireProject } from './require-project.js';
 
 /**
  * The project at a glance: the tasks in progress, in board order, with what they leave out per

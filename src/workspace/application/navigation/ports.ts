@@ -1,11 +1,11 @@
-import type { Task, TaskStatus } from '../../domain/models.js';
+import type { Project, Task, TaskStatus } from '../../domain/models.js';
 import type { NavItem, NavItemType } from '../../domain/navigation.js';
 import type { TrashItemType } from '../schemas/trash.js';
 
 /** Queries the interface uses to find its way around one project. Archived projects answer too. */
 export interface NavigationReader {
-  /** Whether the project exists, archived or not. */
-  hasProject(projectId: string): Promise<boolean>;
+  /** The project, archived or not. */
+  findProject(projectId: string): Promise<Project | undefined>;
   /** Every live document or drawing of the project: few enough for the sidebar to sort in memory. */
   navItems(projectId: string, type: NavItemType): Promise<NavItem[]>;
   /** The project's live tasks in each column. */

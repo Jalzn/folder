@@ -2,7 +2,7 @@ import { AppError } from '@tinyfold/core/application';
 import type { Canvas } from '../domain/canvas.js';
 import type { Document, Project } from '../domain/models.js';
 import type { NavItemType } from '../domain/navigation.js';
-import type { TaskRecord, WorkspaceRepository } from './ports.js';
+import type { ProjectRepository, TaskRecord, WorkspaceRepository } from './ports.js';
 
 export function assertVersion(actual: number, expected: number): void {
   if (actual !== expected)
@@ -12,8 +12,12 @@ export function assertVersion(actual: number, expected: number): void {
     );
 }
 
-export async function requireProject(repo: WorkspaceRepository, id: string): Promise<Project> {
-  const project = await repo.findProject(id);
+/**
+ * The project, archived or not, or NOT_FOUND. Writes look it up in the repository; navigation
+ * queries in their reader, which finds projects the same way.
+ */
+export async function requireProject(source: Pick<ProjectRepository, 'findProject'>, id: string): Promise<Project> {
+  const project = await source.findProject(id);
   if (!project) throw new AppError('NOT_FOUND', 'O projeto não foi encontrado.');
   return project;
 }
