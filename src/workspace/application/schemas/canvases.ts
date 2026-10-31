@@ -23,10 +23,10 @@ export const CreateCanvasInput = z.object({
   projectId: id,
   scene: scene.optional(),
 });
+/** A save never moves the drawing: moveItem does. A `projectId` sent anyway is dropped, as any unknown key. */
 export const SaveCanvasInput = z.object({
   ...edit,
   title: z.string().trim().max(300),
-  projectId: id.optional(),
   scene,
 });
 export const DeleteCanvasInput = z.object(edit);

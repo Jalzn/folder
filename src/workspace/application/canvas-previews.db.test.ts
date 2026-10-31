@@ -208,13 +208,19 @@ describe('drawing previews', () => {
       id: created.id,
       expectedVersion: 1,
       title: 'Outro nome',
-      projectId: destination.id,
       scene: drawingFixture(),
     });
-    const trashed = await service.deleteCanvas({ ...request(), id: created.id, expectedVersion: renamed.version });
+    const moved = await service.moveItem({
+      ...request(),
+      type: 'drawing',
+      id: created.id,
+      projectId: destination.id,
+      expectedVersion: renamed.version,
+    });
+    const trashed = await service.deleteCanvas({ ...request(), id: created.id, expectedVersion: moved.version });
     const restored = await service.restoreCanvas({ ...request(), id: created.id, expectedVersion: trashed.version });
     expect(await service.getCanvas({ id: created.id })).toMatchObject({
-      version: 4,
+      version: 5,
       previewVersion: 1,
       previewCurrent: true,
     });

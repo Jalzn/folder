@@ -266,9 +266,8 @@ describe('items need a project', () => {
       () => service.createDocument({ ...request(), projectId: none }),
       () => service.createCanvas({ ...request(), projectId: none }),
       () => service.createTask({ ...request(), title: 'Solta', projectId: null }),
-      () => service.saveDocument({ ...edit, id: document.id, title: 'Salvo', content: [] }),
-      () => service.saveCanvas({ ...edit, id: canvas.id, title: 'Salvo', scene: drawingFixture() }),
       () => service.updateTask({ ...edit, id: task.id, title: 'Editada' }),
+      () => service.moveItem({ ...edit, type: 'drawing', id: canvas.id }),
       () => service.listDocuments({ projectId: none }),
       () => service.listCanvases({ projectId: none }),
       () => service.listTasks({ projectId: none }),
@@ -281,6 +280,31 @@ describe('items need a project', () => {
       source: { documentId: document.id, excerpt: 'Ideia' },
     });
     expect(fromExcerpt.projectId).toBe(project.id);
+    // A save never moves an item: a project an older client still sends, null or another one, is dropped.
+    const other = await testProject(service, 'Outro');
+    for (const projectId of [none, other.id]) {
+      const sent = { projectId } as object;
+      const { version } = await service.getDocument({ id: document.id });
+      await service.saveDocument({
+        ...request(),
+        id: document.id,
+        expectedVersion: version,
+        title: 'Salvo',
+        content: [],
+        ...sent,
+      });
+      const drawing = await service.getCanvas({ id: canvas.id });
+      await service.saveCanvas({
+        ...request(),
+        id: canvas.id,
+        expectedVersion: drawing.version,
+        title: 'Salvo',
+        scene: drawing.scene,
+        ...sent,
+      });
+    }
+    expect((await service.getDocument({ id: document.id })).projectId).toBe(project.id);
+    expect((await service.getCanvas({ id: canvas.id })).projectId).toBe(project.id);
   });
 
   it('allows archiving the last active project and then refuses new items in it', async () => {

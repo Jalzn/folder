@@ -648,9 +648,11 @@ A última entrega do backend remove essa tolerância. Uma aba antiga aberta dura
 | `listProjects` | `Project` ganha `color` e `position`. Ativos vêm por `position` e arquivados por `archivedAt` decrescente |
 | `createProject` | Aceita `color` opcional. O padrão é a primeira cor não usada por projetos ativos, ou `violet`. Entra no fim dos ativos |
 | `updateProject` | Aceita `color`. Arquivar continua como hoje, sem restrição ao último ativo |
-| `createDocument`, `createCanvas` | `projectId` obrigatório |
+| `createDocument`, `createCanvas` | `projectId` obrigatório. `createDocument` passa a responder `{ id, version, updatedAt }`, sem título nem conteúdo, como `createCanvas` |
 | `createTask` | `projectId` obrigatório, exceto com `source` |
-| `saveDocument`, `saveCanvas`, `updateTask` | `projectId` opcional, sem `null` |
+| `createTask`, `updateTask`, `moveTask`, `restoreTask` | Respondem `{ id, projectId, version, updatedAt, revision }`, sem título nem trecho: o registro de pedidos guarda a resposta por 30 dias, e a exclusão definitiva não deixa o texto lá |
+| `saveDocument`, `saveCanvas` | Sem `projectId`: salvar nunca move o item, quem move é `moveItem`. Um `projectId` que um cliente antigo ainda envie é descartado, como qualquer chave desconhecida |
+| `updateTask` | `projectId` opcional, sem `null` |
 | `listDocuments`, `listCanvases`, `listTasks` | Filtro `projectId` sem `null`. Resumos de documento e desenho ganham `pinnedAt` |
 | `Task.source` (`domain/models.ts`, hidratado em `infra/repository/tasks.ts`) | `documentId: string \| null` e `documentTitle` sempre presente. `null` significa documento excluído de vez, com o título guardado. `available` e `blockAvailable` ficam falsos. `excerptPresent` (`domain/task-source.ts`) só roda com documento |
 | `getDocument`, `getCanvas` | Ganham `pinnedAt`. `getCanvas` continua com `previewVersion` e `previewCurrent`, da etapa 07 |
@@ -664,7 +666,8 @@ A última entrega do backend remove essa tolerância. Uma aba antiga aberta dura
 | `projectOverview` | `{ projectId }` | `{ openTasks, now: Task[] (até 6, de "Em andamento"), rest: [{ status, count }], recent: [{ type, id, title, updatedAt, excerpt }] (5), lastEdited: { type, id, title, updatedAt } \| null }` |
 | `search` | O `SearchInput` de `application/reading/schemas.ts` (`query`, `projectId`, `types`, `limit` de 1 a 50, `cursor`) | `{ items, nextCursor }` com o cursor por chave `s~…`, como no MCP. É o mesmo caso de uso (`application/reading/search.ts`) exposto por RPC, sem o orçamento de texto da formatação MCP. Os itens ganham `pinned` (seção MCP) |
 | `listTrash` | `{ projectId }` | `{ items: [{ type: 'document'\|'drawing'\|'task', id, title, version, deletedAt }] }`, até 1.000, por `deletedAt` decrescente |
-| `restoreTask` | `{ requestId, id, expectedVersion }` | `{ task, revision }` |
+| `restoreTask` | `{ requestId, id, expectedVersion }` | `{ id, projectId, version, updatedAt, revision }` |
+| `moveItem` | `{ requestId, type: 'document'\|'drawing', id, projectId, expectedVersion }` | `{ id, projectId, version }`. Não é edição: `updatedAt` fica, a versão sobe e o fixado vai embora. Projeto arquivado dá `VALIDATION` |
 | `purgeDocument`, `purgeCanvas`, `purgeTask` | `{ requestId, id, expectedVersion }` | `{ id }` |
 | `emptyTrash` | `{ requestId, projectId, items: [{ type, id, version }] }` | `{ purged, skipped }` |
 | `pinItem`, `unpinItem` | `{ type: 'document'\|'drawing', id }` | `{ pinnedAt: string \| null }`. Repetível, sem `requestId` |

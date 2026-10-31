@@ -87,13 +87,12 @@ describe('pins', () => {
     await service.pinItem({ type: 'document', id: document.id });
     await service.saveDocument({ ...request(), id: document.id, expectedVersion: 1, title: 'Fica', content: [] });
     expect((await service.getDocument({ id: document.id })).pinnedAt).not.toBeNull();
-    await service.saveDocument({
+    await service.moveItem({
       ...request(),
+      type: 'document',
       id: document.id,
-      expectedVersion: 2,
-      title: 'Movido',
-      content: [],
       projectId: other.id,
+      expectedVersion: 2,
     });
     expect((await service.getDocument({ id: document.id })).pinnedAt).toBeNull();
 

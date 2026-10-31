@@ -23,11 +23,11 @@ export const CreateDocumentInput = z.object({
   projectId: id,
   content: content.optional(),
 });
+/** A save never moves the document: moveItem does. A `projectId` sent anyway is dropped, as any unknown key. */
 export const SaveDocumentInput = z.object({
   ...edit,
   title: z.string().trim().max(300),
   content,
-  projectId: id.optional(),
 });
 export const DeleteDocumentInput = z.object(edit);
 export const RestoreDocumentInput = z.object(edit);

@@ -1,7 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
 import { type Canvas, type CanvasAck, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
 import { previewShowsScene } from '../domain/canvas-preview.js';
-import { assertVersion, projectForEditedItem, requireActiveProject } from './helpers.js';
+import { assertVersion, requireActiveProject } from './helpers.js';
 import type { WorkspaceContext, WorkspaceRepository } from './ports.js';
 import type {
   CreateCanvasInput,
@@ -64,15 +64,11 @@ export function saveCanvas(ctx: WorkspaceContext, input: SaveCanvasInput): Promi
   return ctx.write('workspace.saveCanvas', input, async (repo) => {
     const canvas = await requireCanvas(repo, input.id);
     assertVersion(canvas.version, input.expectedVersion);
-    const projectId = await projectForEditedItem(repo, canvas.projectId, input.projectId);
     const updatedAt = ctx.now();
     const version = canvas.version + 1;
     await repo.saveCanvas(
       {
         ...canvas,
-        projectId,
-        // Pins belong to a project's sidebar, so moving the drawing unpins it.
-        pinnedAt: projectId === canvas.projectId ? canvas.pinnedAt : null,
         title: input.title || 'Sem título',
         scene: input.scene,
         plainText,

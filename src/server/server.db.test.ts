@@ -115,13 +115,12 @@ describe('server boundaries', () => {
     for (const call of [
       () => client.workspace.createDocument({ requestId: randomUUID(), projectId: none }),
       () =>
-        client.workspace.saveDocument({
+        client.workspace.moveItem({
           requestId: randomUUID(),
+          type: 'document',
           id: document.id,
-          expectedVersion: 1,
-          title: 'Salvo',
-          content: [],
           projectId: none,
+          expectedVersion: 1,
         }),
       () => client.workspace.listTasks({ projectId: none }),
       () => client.workspace.createTask({ requestId: randomUUID(), title: 'Solta', projectId: null }),
@@ -134,6 +133,20 @@ describe('server boundaries', () => {
       source: { documentId: document.id, blockId: 'b', excerpt: 'Texto' },
     });
     expect(fromExcerpt.projectId).toBe(project.id);
+    // An older client may still send the project with a save: it is dropped, and the document stays put.
+    const other = await newProject(client);
+    await client.workspace.saveDocument({
+      requestId: randomUUID(),
+      id: document.id,
+      expectedVersion: 1,
+      title: 'Salvo',
+      content: [],
+      ...({ projectId: other.id } as object),
+    });
+    expect(await client.workspace.getDocument({ id: document.id })).toMatchObject({
+      projectId: project.id,
+      version: 2,
+    });
   });
   it('saves a document above the old 64KiB limit and rejects excessive request size', async () => {
     const { browser, app } = await fixture();
