@@ -56,7 +56,10 @@ export interface TaskRepository {
   saveTask(task: TaskRecord, expectedVersion: number): Promise<void>;
   insertSource(source: TaskSourceRecord): Promise<void>;
   nextPosition(status: TaskStatus): Promise<number>;
-  tasksInColumn(status: TaskStatus): Promise<TaskRecord[]>;
+  /** One project's live tasks of a column, in board order. */
+  tasksInColumn(status: TaskStatus, projectId: string): Promise<TaskRecord[]>;
+  /** Moves a task within its column. The order is not an edit: version and dates stay. */
+  setTaskPosition(id: string, position: number): Promise<void>;
 }
 
 export interface CanvasPreviewRecord {

@@ -125,19 +125,20 @@ export function moveTask(ctx: WorkspaceContext, input: MoveTaskInput) {
     const task = await requireTask(repo, input.id);
     assertVersion(task.version, input.expectedVersion);
     if (input.beforeTaskId === task.id) throw new AppError('VALIDATION', 'Escolha outra tarefa como referência.');
-    const column = (await repo.tasksInColumn(input.status)).filter((item) => item.id !== task.id);
+    // Boards are per project, so the column renumbered is the task's project's.
+    const column = (await repo.tasksInColumn(input.status, task.projectId)).filter((item) => item.id !== task.id);
     const index = input.beforeTaskId ? column.findIndex((item) => item.id === input.beforeTaskId) : column.length;
     if (index < 0)
       throw new AppError('VERSION_CONFLICT', 'A posição escolhida não está mais disponível. Atualize o quadro.');
     column.splice(index, 0, task);
-    const now = ctx.now();
     for (const [position, item] of column.entries()) {
-      if (item.id === task.id || item.position !== position || item.status !== input.status) {
+      if (item.id === task.id)
         await repo.saveTask(
-          { ...item, status: input.status, position, updatedAt: now, version: item.version + 1 },
+          { ...item, status: input.status, position, updatedAt: ctx.now(), version: item.version + 1 },
           item.version,
         );
-      }
+      // A neighbour that only shifts is not edited: the board revision, not its version, orders moves.
+      else if (item.position !== position) await repo.setTaskPosition(item.id, position);
     }
     return { task: await repo.taskView(task.id), revision: await repo.bumpRevision() };
   });

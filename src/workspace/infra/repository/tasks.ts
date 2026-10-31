@@ -111,17 +111,21 @@ export function taskRepository(connection: Database): TaskRepository {
         .executeTakeFirstOrThrow();
       return (row.position ?? -1) + 1;
     },
-    async tasksInColumn(status) {
+    async tasksInColumn(status, projectId) {
       return (
         await db
           .selectFrom('workspace_tasks')
           .selectAll()
           .where('status', '=', status)
+          .where('project_id', '=', projectId)
           .where('deleted_at', 'is', null)
           .orderBy('position')
           .orderBy('id')
           .execute()
       ).map(taskModel);
+    },
+    async setTaskPosition(id, position) {
+      await db.updateTable('workspace_tasks').set({ position }).where('id', '=', id).execute();
     },
   };
 }

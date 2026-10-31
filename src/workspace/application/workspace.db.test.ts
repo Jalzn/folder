@@ -3,6 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
+import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DocumentBlock, Project } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
@@ -348,6 +349,49 @@ describe('workspace persistence and adversarial cases', () => {
       }),
     ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
     expect((await service.listTasks({})).revision).toBe(4);
+  });
+
+  it("renumbers only the moved task's project column, without editing the neighbours", async () => {
+    const other = await testProject(service, 'Outro');
+    const created: Record<string, { id: string; version: number }> = {};
+    for (const [title, projectId] of [
+      ['a0', project.id],
+      ['b0', other.id],
+      ['a1', project.id],
+      ['b1', other.id],
+      ['a2', project.id],
+      ['b2', other.id],
+    ] as const)
+      created[title] = (await service.createTask({ ...request(), title, projectId })).task;
+    const rows = (projectId: string) =>
+      sql`select * from workspace_tasks where project_id = ${projectId} order by id`.execute(db).then((r) => r.rows);
+    const otherBefore = await rows(other.id);
+    const before = await service.listTasks({ projectId: project.id });
+    const moved = created.a2;
+    await service.moveTask({
+      ...request(),
+      id: moved?.id ?? '',
+      expectedVersion: moved?.version ?? 0,
+      expectedRevision: before.revision,
+      status: 'todo',
+      beforeTaskId: created.a0?.id ?? null,
+    });
+    expect(await rows(other.id)).toEqual(otherBefore);
+    const after = await service.listTasks({ projectId: project.id });
+    expect(after.tasks.map((task) => [task.title, task.position])).toEqual([
+      ['a2', 0],
+      ['a0', 1],
+      ['a1', 2],
+    ]);
+    const unchanged = (title: string) => {
+      const [was, is] = [before, after].map((list) => list.tasks.find((task) => task.title === title));
+      return [is?.version === was?.version, is?.updatedAt === was?.updatedAt];
+    };
+    expect([unchanged('a0'), unchanged('a1'), unchanged('a2')]).toEqual([
+      [true, true],
+      [true, true],
+      [false, false],
+    ]);
   });
 
   it('keeps document text unchanged when the linked task is renamed and completed', async () => {
