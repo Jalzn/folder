@@ -298,5 +298,34 @@ describe('server Markdown read back by the BlockNote parser', () => {
         ]),
       );
     });
+
+    it('returns a paragraph or code child that follows a nested list as an item of the outer list', async () => {
+      const code: DocumentBlock = { type: 'codeBlock', props: { language: 'sh' }, content: 'ls' };
+      expect(
+        await readBack([
+          item('bulletListItem', 'com parágrafo', {
+            children: [item('bulletListItem', 'filho'), paragraph(text('parágrafo depois'))],
+          }),
+          item('bulletListItem', 'com código', {
+            children: [item('checkListItem', 'filho', { props: { checked: false } }), code],
+          }),
+          item('numberedListItem', 'numerado', {
+            children: [item('numberedListItem', 'filho'), paragraph(text('parágrafo depois'))],
+          }),
+        ]),
+      ).toEqual(
+        shape([
+          item('bulletListItem', 'com parágrafo', { children: [item('bulletListItem', 'filho')] }),
+          item('bulletListItem', 'parágrafo depois'),
+          item('bulletListItem', 'com código', {
+            children: [item('checkListItem', 'filho', { props: { checked: false } })],
+          }),
+          // The code becomes the item's text, and its language is lost.
+          item('bulletListItem', 'ls'),
+          item('numberedListItem', 'numerado', { children: [item('numberedListItem', 'filho')] }),
+          item('numberedListItem', 'parágrafo depois'),
+        ]),
+      );
+    });
   });
 });
