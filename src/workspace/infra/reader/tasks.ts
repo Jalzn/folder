@@ -6,7 +6,7 @@ import { excerptPresent } from '../../domain/task-source.js';
 import type { WorkspaceTables } from '../db.js';
 import { columnRank, projectColumns, projectReference, sourceDocument } from './shared.js';
 
-type TaskReads = Pick<WorkspaceReader, 'tasks' | 'task'>;
+type TaskReads = Pick<WorkspaceReader, 'tasks' | 'task' | 'boardRevision'>;
 
 export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
   const withSource = () =>
@@ -27,6 +27,15 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
       .where('item.deleted_at', 'is', null);
 
   return {
+    async boardRevision() {
+      const state = await db
+        .selectFrom('workspace_state')
+        .select('board_revision')
+        .where('id', '=', 1)
+        .executeTakeFirstOrThrow();
+      return state.board_revision;
+    },
+
     async tasks(query) {
       let select = withSource().orderBy(columnRank).orderBy('item.position').orderBy('item.id');
       if (query.projectId) select = select.where('item.project_id', '=', query.projectId);

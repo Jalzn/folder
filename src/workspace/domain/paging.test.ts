@@ -41,13 +41,14 @@ describe('cursors', () => {
     expect(searchCursor(searchKey)).toBe(`s~2~2026-10-31T06:41:25.403Z~1~${id}`);
     expect(readSearchCursor(searchCursor(searchKey))).toEqual(searchKey);
     const boardKey = { columnRank: 1, position: 7, id };
-    expect(readBoardCursor(boardCursor(boardKey))).toEqual(boardKey);
+    expect(boardCursor(42, boardKey)).toBe(`t~42~1~7~${id}`);
+    expect(readBoardCursor(boardCursor(42, boardKey))).toEqual({ revision: 42, key: boardKey });
   });
   it('refuses malformed cursors and cursors of another list', () => {
     for (const cursor of ['', '12', 'a:1', '1:-2']) expect(() => readDocumentCursor(cursor)).toThrow('Cursor inválido');
     for (const cursor of ['o:40', `t~1~7~${id}`, `s~1~2026-10-31~0~${id}`, `s~1~2026-10-31T06:41:25.403Z~3~${id}`])
       expect(() => readSearchCursor(cursor)).toThrow('Cursor inválido');
-    for (const cursor of [`s~0~2026-10-31T06:41:25.403Z~0~${id}`, `t~3~7~${id}`])
+    for (const cursor of [`s~0~2026-10-31T06:41:25.403Z~0~${id}`, `t~1~3~7~${id}`, `t~1~7~${id}`])
       expect(() => readBoardCursor(cursor)).toThrow('Cursor inválido');
   });
 });

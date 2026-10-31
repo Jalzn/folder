@@ -38,7 +38,8 @@ describe('list_tasks and read_task', () => {
       projectId: project.id,
       limit: 2,
     });
-    expect(paged.nextCursor).toBe(`t~0~${first.task.position}~${first.task.id}`);
+    const { revision } = await agent.service.listTasks({});
+    expect(paged.nextCursor).toBe(`t~${revision}~0~${first.task.position}~${first.task.id}`);
     const next = await agent.json<{ tasks: { id: string }[]; nextCursor: null }>('list_tasks', {
       projectId: project.id,
       cursor: paged.nextCursor,
@@ -66,5 +67,29 @@ describe('list_tasks and read_task', () => {
         blockAvailable: false,
       },
     });
+  });
+
+  it('refuses a cursor from before the board changed', async () => {
+    const created = [];
+    for (let index = 0; index < 5; index += 1)
+      created.push((await agent.service.createTask({ ...request(), title: `Tarefa ${index}` })).task);
+    const first = await agent.json<{ tasks: { title: string }[]; nextCursor: string }>('list_tasks', { limit: 2 });
+    expect(first.tasks.map((task) => task.title)).toEqual(['Tarefa 0', 'Tarefa 1']);
+    const moved = created[4];
+    const { revision } = await agent.service.listTasks({});
+    await agent.service.moveTask({
+      ...request(),
+      id: moved?.id ?? '',
+      expectedVersion: moved?.version ?? 0,
+      expectedRevision: revision,
+      status: 'todo',
+      beforeTaskId: created[0]?.id ?? null,
+    });
+    expect(await agent.call('list_tasks', { limit: 2, cursor: first.nextCursor })).toEqual({
+      isError: true,
+      text: 'O quadro mudou desde a primeira página. Liste de novo sem cursor.',
+    });
+    const again = await agent.json<{ tasks: { title: string }[] }>('list_tasks', { limit: 2 });
+    expect(again.tasks.map((task) => task.title)).toEqual(['Tarefa 4', 'Tarefa 0']);
   });
 });

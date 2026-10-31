@@ -16,6 +16,8 @@ export interface WorkspaceReader {
   canvasForReading(id: string): Promise<CanvasForReading | undefined>;
   tasks(query: TaskQuery): Promise<Page<TaskListing>>;
   task(id: string): Promise<TaskDetail | undefined>;
+  /** Counts every change to the board's tasks. */
+  boardRevision(): Promise<number>;
 }
 
 export interface ReadingContext {

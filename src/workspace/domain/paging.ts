@@ -55,7 +55,8 @@ export type SearchItemType = (typeof SEARCH_ITEM_TYPES)[number];
 
 /**
  * Lists page by keyset: a cursor holds the sort key of the last item shown, so edits elsewhere in
- * the list never repeat or skip the items that follow it.
+ * the list never repeat or skip the items that follow it. The board is the exception: moving a
+ * task renumbers the positions around it, so a board cursor also pins the board revision.
  */
 export interface SearchKey {
   /** How many query words the title lacks; title matches come first. */
@@ -81,7 +82,7 @@ export interface BoardKey {
 const isoDate = String.raw`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z`;
 const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const searchCursorPattern = new RegExp(`^s~(\\d{1,3})~(${isoDate})~(\\d{1,2})~(${uuid})$`, 'u');
-const boardCursorPattern = new RegExp(`^t~(\\d{1,2})~(\\d{1,15})~(${uuid})$`, 'u');
+const boardCursorPattern = new RegExp(`^t~(\\d{1,15})~(\\d{1,2})~(\\d{1,15})~(${uuid})$`, 'u');
 
 /** A rank read from a cursor, which must index one of `count` values. */
 function rankIn(text: string | undefined, count: number): number {
@@ -106,14 +107,17 @@ export function readSearchCursor(cursor: string): SearchKey {
   };
 }
 
-export function boardCursor(key: BoardKey): string {
-  return `t~${key.columnRank}~${key.position}~${key.id}`;
+export function boardCursor(revision: number, key: BoardKey): string {
+  return `t~${revision}~${key.columnRank}~${key.position}~${key.id}`;
 }
 
-export function readBoardCursor(cursor: string): BoardKey {
+export function readBoardCursor(cursor: string): { revision: number; key: BoardKey } {
   const match = boardCursorPattern.exec(cursor);
   if (!match) throw invalidCursor();
-  return { columnRank: rankIn(match[1], TASK_STATUSES.length), position: Number(match[2]), id: match[3] as string };
+  return {
+    revision: Number(match[1]),
+    key: { columnRank: rankIn(match[2], TASK_STATUSES.length), position: Number(match[3]), id: match[4] as string },
+  };
 }
 
 export function projectCursor(key: ProjectKey): string {
