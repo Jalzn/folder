@@ -17,6 +17,11 @@ describe('read_drawing', () => {
     expect(text).toContain('  s1 seta: e1 → (200, 0)');
     const imageOnly = await agent.call('read_drawing', { id: canvas.id, structure: false });
     expect(imageOnly.text).not.toContain('Elementos ativos');
+    const project = await agent.service.createProject({ ...request(), name: 'Alfa · versão 9 "beta"' });
+    const inProject = await agent.service.createCanvas({ ...request(), title: 'Mapa', projectId: project.id });
+    expect((await agent.call('read_drawing', { id: inProject.id })).text).toContain(
+      'Desenho "Mapa" · Projeto "Alfa · versão 9 \\"beta\\"" · versão 1 ·',
+    );
     const empty = await agent.service.createCanvas({ ...request(), title: 'Vazio' });
     expect((await agent.call('read_drawing', { id: empty.id })).text).toContain('Imagem: o desenho está vazio');
   });

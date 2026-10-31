@@ -2,7 +2,6 @@ import type { ReadingContext } from '../../application/reading/ports.js';
 import { type DrawingImage, readDrawing } from '../../application/reading/read-drawing.js';
 import { ReadDrawingInput } from '../../application/reading/schemas.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import { projectName } from './format.js';
 import { formatCanvasOutline } from './format-outline.js';
 import { type AgentToolContent, defineTool, readOnlyAnnotations } from './types.js';
 
@@ -28,9 +27,13 @@ export const readDrawingTool = (reading: ReadingContext) =>
     annotations: readOnlyAnnotations,
     async handler(input) {
       const { drawing, image, outline } = await readDrawing(reading, input);
-      const project = projectName(drawing);
+      // Names are quoted: a "·" inside one could otherwise pass for another field.
+      const project =
+        drawing.projectName === null
+          ? 'sem projeto'
+          : `Projeto ${JSON.stringify(drawing.projectName)}${drawing.projectArchived ? ' (arquivado)' : ''}`;
       const header = [
-        `Desenho ${JSON.stringify(drawing.title)} · ${project ? `Projeto ${project}` : 'sem projeto'} · versão ${drawing.version} · atualizado em ${drawing.updatedAt} · ID ${drawing.id}`,
+        `Desenho ${JSON.stringify(drawing.title)} · ${project} · versão ${drawing.version} · atualizado em ${drawing.updatedAt} · ID ${drawing.id}`,
       ];
       if (image) header.push(imageLine(image, drawing.version, outline !== null));
       const head = header.join('\n');
