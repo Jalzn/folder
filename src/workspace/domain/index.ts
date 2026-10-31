@@ -34,5 +34,6 @@ export type {
   TaskStatus,
 } from './models.js';
 export { type PngInfo, readPngInfo } from './png.js';
+export { sceneFingerprint } from './scene-fingerprint.js';
 export { searchText } from './search-text.js';
 export { TASK_STATUSES, taskStatusLabels } from './task-status.js';

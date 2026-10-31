@@ -85,7 +85,7 @@ describe('CanvasPreviewUploader', () => {
     uploads = [];
     upload = vi.fn(async (input) => {
       uploads.push(input);
-      return { previewVersion: input.version };
+      return { stored: true, previewVersion: input.version };
     });
   });
   afterEach(() => vi.useRealTimers());
@@ -108,12 +108,12 @@ describe('CanvasPreviewUploader', () => {
     upload.mockImplementationOnce(async (input) => {
       await first.promise;
       uploads.push(input);
-      return { previewVersion: input.version };
+      return { stored: true, previewVersion: input.version };
     });
     const previews = uploader();
     previews.request(2, scene());
     await elapse();
-    previews.request(3, scene());
+    previews.request(3, scene('Editor'));
     await elapse();
     expect(upload).toHaveBeenCalledTimes(1);
     first.resolve();
@@ -154,7 +154,7 @@ describe('CanvasPreviewUploader', () => {
     upload.mockImplementationOnce(async (input) => {
       await first.promise;
       uploads.push(input);
-      return { previewVersion: input.version };
+      return { stored: true, previewVersion: input.version };
     });
     const previews = uploader();
     previews.request(2, scene());
@@ -179,6 +179,49 @@ describe('CanvasPreviewUploader', () => {
     expect(uploads.map(({ version }) => version)).toEqual([6]);
   });
 
+  it('renders nothing for a scene the stored preview already shows', async () => {
+    const render = vi.fn(async (_scene: CanvasScene, side: number) => png(side, 10 * KiB));
+    const previews = uploader({ render });
+    previews.recordShown(scene('Servidor'));
+    // A rename, a move or a title edit saves a new version of the same scene.
+    previews.request(2, scene('Servidor'));
+    await elapse();
+    expect(render).not.toHaveBeenCalled();
+    previews.request(3, scene('Editor'));
+    await elapse();
+    previews.request(4, scene('Editor'));
+    await elapse();
+    expect(uploads.map(({ version }) => version)).toEqual([3]);
+    expect(render).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops a waiting scene once the newest one is known to be shown', async () => {
+    const previews = uploader();
+    previews.request(2, scene('Editor'));
+    previews.recordShown(scene('Editor'));
+    previews.request(3, scene('Servidor'));
+    previews.request(4, scene('Editor'));
+    await elapse();
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('remembers a scene too heavy for every size until it changes', async () => {
+    const render = rendererBySide({});
+    const heavy = vi.fn(async (drawing: CanvasScene, side: number) =>
+      drawing.elements[0]?.id === 'Pesado' ? png(side, 300 * KiB) : render(drawing, side),
+    );
+    const previews = uploader({ render: heavy });
+    previews.request(2, scene('Pesado'));
+    await elapse();
+    previews.request(3, scene('Pesado'));
+    await elapse();
+    expect(heavy).toHaveBeenCalledTimes(4);
+    expect(upload).not.toHaveBeenCalled();
+    previews.request(4, scene('Leve'));
+    await elapse();
+    expect(uploads.map(({ version }) => version)).toEqual([4]);
+  });
+
   it('stays silent when rendering or uploading fails and tries again on the next save', async () => {
     const previews = uploader();
     upload.mockRejectedValueOnce(new Error('offline'));
@@ -190,7 +233,7 @@ describe('CanvasPreviewUploader', () => {
   });
 
   it('keeps the newer preview the server reports for an outdated upload', async () => {
-    upload.mockResolvedValueOnce({ previewVersion: 9 });
+    upload.mockResolvedValueOnce({ stored: false, previewVersion: 9 });
     const previews = uploader();
     previews.request(2, scene());
     await elapse();

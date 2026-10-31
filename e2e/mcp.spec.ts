@@ -248,7 +248,7 @@ test('Claude Code reads what the interface created, never the trash, until the t
   await mcp.close();
 });
 
-test('a drawing changed on another device gets a new preview when reopened in the same session', async ({
+test('a drawing changed on another device gets a new preview when reopened, and a rename renders none', async ({
   page,
 }, info) => {
   test.setTimeout(90_000);
@@ -298,4 +298,16 @@ test('a drawing changed on another device gets a new preview when reopened in th
       { timeout: 20_000 },
     )
     .toBe(true);
+
+  // A new title keeps the scene, so the stored preview stays current and nothing is rendered again.
+  let uploads = 0;
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/rpc/workspace/saveCanvasPreview') uploads += 1;
+  });
+  const renamed = page.waitForResponse((response) => answers(response, 'workspace/saveCanvas'));
+  await page.getByRole('textbox', { name: 'Título do desenho' }).fill(`${title} renomeado`);
+  await renamed;
+  await page.waitForTimeout(3_000);
+  expect(uploads).toBe(0);
+  expect(await read()).toMatchObject({ version: before.version + 2, previewCurrent: true });
 });

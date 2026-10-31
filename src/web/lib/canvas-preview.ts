@@ -4,6 +4,7 @@ import {
   MAX_PREVIEW_BYTES,
   MAX_PREVIEW_SIDE,
   readPngInfo,
+  sceneFingerprint,
 } from '@tinyfold/workspace/domain';
 
 /** Every side but the last must fit this; the last one may use up to MAX_PREVIEW_BYTES. */
@@ -52,22 +53,37 @@ export interface CanvasPreviewOptions {
   /** The scene version of the preview the server already has. */
   previewVersion: number | null;
   render: RenderPng;
-  upload: (input: { id: string; version: number; png: File }) => Promise<{ previewVersion: number | null }>;
+  upload: (input: {
+    id: string;
+    version: number;
+    png: File;
+  }) => Promise<{ stored: boolean; previewVersion: number | null }>;
   /** False while an edit waits to be saved; that save asks for a newer preview. */
   ready: () => boolean;
   delayMs?: number;
   whenIdle?: (work: () => void) => void;
 }
 
+interface PreviewJob {
+  version: number;
+  scene: CanvasScene;
+  fingerprint: string;
+}
+
 /**
  * Uploads a PNG preview of the saved versions of one drawing, for Claude Code to see. Each request
  * waits for a pause after the save, no pending edit, no pressed pointer and an idle moment. One
- * preview is generated at a time, and a newer version replaces one still waiting. Failures stay
- * silent: the preview is accessory, and the next save or opening the drawing tries again.
+ * preview is generated at a time, and a newer version replaces one still waiting. A scene the
+ * server's preview already shows is skipped, so renames, moves and title edits render nothing, and
+ * so is a scene too heavy for every size, until it changes. Failures stay silent: the preview is
+ * accessory, and the next save or opening the drawing tries again.
  */
 export class CanvasPreviewUploader {
-  private waiting: { version: number; scene: CanvasScene } | null = null;
+  private waiting: PreviewJob | null = null;
   private uploaded: number;
+  /** Fingerprints of the scene the server's preview shows and of one no preview size can hold. */
+  private shown: string | null = null;
+  private unrenderable: string | null = null;
   private running = false;
   private held = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -82,8 +98,20 @@ export class CanvasPreviewUploader {
    */
   request(version: number, scene: CanvasScene) {
     if (version <= this.uploaded || version < (this.waiting?.version ?? 0) || !hasActiveElements(scene)) return;
-    this.waiting = { version, scene };
+    const fingerprint = sceneFingerprint(scene);
+    if (fingerprint === this.shown || fingerprint === this.unrenderable) {
+      // The newest scene needs no preview, so an older one still waiting would be outdated.
+      this.waiting = null;
+      return;
+    }
+    this.waiting = { version, scene, fingerprint };
     this.schedule();
+  }
+
+  /** The server's preview shows this scene, as getCanvas reports with previewCurrent. */
+  recordShown(scene: CanvasScene) {
+    this.shown = sceneFingerprint(scene);
+    if (this.waiting?.fingerprint === this.shown) this.waiting = null;
   }
 
   /** The person is drawing: rendering now would compete with the editor. */
@@ -106,16 +134,19 @@ export class CanvasPreviewUploader {
     const job = this.waiting;
     if (!job || this.running || this.held || !this.options.ready()) return;
     this.waiting = null;
-    // Asked again while the same version was uploading.
-    if (job.version <= this.uploaded) return;
+    // Uploaded, or reported as shown, while this job waited.
+    if (job.version <= this.uploaded || job.fingerprint === this.shown) return;
     this.running = true;
     try {
       const png = await renderPreview(job.scene, this.options.render);
-      if (png) {
-        const file = new File([png], 'preview.png', { type: 'image/png' });
-        const ack = await this.options.upload({ id: this.options.id, version: job.version, png: file });
-        this.uploaded = Math.max(this.uploaded, ack.previewVersion ?? 0);
+      if (!png) {
+        this.unrenderable = job.fingerprint;
+        return;
       }
+      const file = new File([png], 'preview.png', { type: 'image/png' });
+      const ack = await this.options.upload({ id: this.options.id, version: job.version, png: file });
+      this.uploaded = Math.max(this.uploaded, ack.previewVersion ?? 0);
+      if (ack.stored) this.shown = job.fingerprint;
     } catch {
       // Accessory: a newer save or the next opening of the drawing tries again.
     } finally {

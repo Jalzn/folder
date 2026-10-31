@@ -108,18 +108,20 @@ function sessionFor(canvas: EditableCanvas, installationId: string): CanvasSessi
         }
       },
       onSaved: (ack, sent) => {
-        queryClient.setQueryData<Canvas>(['workspace', 'canvas', canvas.id], (previous) =>
-          previous && previous.version > ack.version
-            ? previous
-            : {
-                ...(previous ?? canvas),
-                ...sent,
-                title: sent.title.trim() || 'Sem título',
-                plainText: canvasPlainText(sent.scene),
-                version: ack.version,
-                updatedAt: ack.updatedAt,
-              },
-        );
+        queryClient.setQueryData<EditableCanvas>(['workspace', 'canvas', canvas.id], (previous) => {
+          if (previous && previous.version > ack.version) return previous;
+          const base = previous ?? canvas;
+          return {
+            ...base,
+            ...sent,
+            title: sent.title.trim() || 'Sem título',
+            plainText: canvasPlainText(sent.scene),
+            version: ack.version,
+            updatedAt: ack.updatedAt,
+            // The stored preview still shows the scene only if this save left the scene alone.
+            previewCurrent: base.previewCurrent && revision(base.scene) === revision(sent.scene),
+          };
+        });
         void queryClient.invalidateQueries({ queryKey: ['workspace', 'canvases'] });
         previews.request(ack.version, sent.scene);
       },
@@ -207,9 +209,11 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
 
   useEffect(() => controller.receiveRemote(snapshot(canvas), canvas.version), [controller, canvas]);
   // Each opening and refetch checks the stored preview: drawings saved before previews existed,
-  // imported, copied or changed elsewhere get one.
+  // imported, copied or changed elsewhere get one, and a current one is never rendered again.
   useEffect(() => {
-    if (!canvas.deletedAt && !canvas.previewCurrent) previews.request(canvas.version, canvas.scene);
+    if (canvas.deletedAt) return;
+    if (canvas.previewCurrent) previews.recordShown(canvas.scene);
+    else previews.request(canvas.version, canvas.scene);
   }, [previews, canvas]);
   useEffect(() => {
     if (lastEpoch.current !== state.remoteEpoch) {
