@@ -7,8 +7,8 @@ import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { createWorkspaceService } from '@tinyfold/workspace';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { drawingFixture } from '../workspace/domain/canvas-fixtures.js';
-import { pngHeader } from '../workspace/domain/canvas-preview-fixtures.js';
+import { drawingFixture } from '../workspace/testing/canvas-scenes.js';
+import { pngHeader } from '../workspace/testing/png.js';
 import { createApp } from './app.js';
 import { modules } from './modules.js';
 

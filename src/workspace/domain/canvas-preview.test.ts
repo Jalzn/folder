@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { pngHeader } from '../testing/png.js';
 import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE, readPngInfo } from './canvas-preview.js';
-import { pngHeader } from './canvas-preview-fixtures.js';
 
 describe('drawing preview PNG', () => {
   it('reads the dimensions of a PNG', () => {

@@ -1,4 +1,4 @@
-import type { CanvasElement, CanvasScene } from './canvas.js';
+import type { CanvasElement, CanvasScene } from '../domain/canvas.js';
 
 export function shape(id: string, type = 'rectangle', patch: Partial<CanvasElement> = {}): CanvasElement {
   return {

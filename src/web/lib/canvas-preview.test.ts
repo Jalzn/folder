@@ -1,6 +1,6 @@
 import type { CanvasScene } from '@tinyfold/workspace/domain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { pngHeader } from '../../workspace/domain/canvas-preview-fixtures';
+import { pngHeader } from '../../workspace/testing/png';
 import {
   type CanvasPreviewOptions,
   CanvasPreviewUploader,

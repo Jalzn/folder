@@ -32,12 +32,29 @@ module.exports = {
       name: 'web-runtime-imports',
       comment: 'At runtime the browser only gets web code and pure domain code; server and module APIs are type-only.',
       severity: 'error',
-      from: { path: '^src/web/' },
+      from: { path: '^src/web/', pathNot: '\\.test\\.tsx?$' },
       to: {
         path: '^src/',
         pathNot: ['^src/web/', '^src/[^/]+/domain/'],
         dependencyTypesNot: ['type-only'],
       },
+    },
+    {
+      name: 'compose-through-entry-points',
+      comment: 'server and web reach a module only through its package entry points, never through its internals.',
+      severity: 'error',
+      from: { path: '^src/(server|web)/', pathNot: '\\.test\\.tsx?$' },
+      to: {
+        path: '^src/[^/]+/',
+        pathNot: ['^src/(server|web)/', '^src/[^/]+/((domain|application|infra)/)?index\\.ts$'],
+      },
+    },
+    {
+      name: 'mcp-sdk-stays-in-server-mcp',
+      comment: 'Only src/server/mcp/ adapts tools to the MCP SDK, so replacing the SDK touches only that folder.',
+      severity: 'error',
+      from: { path: '^src/', pathNot: ['^src/server/mcp/', '\\.test\\.tsx?$'] },
+      to: { path: '@modelcontextprotocol/' },
     },
     {
       name: 'no-circular',
@@ -55,8 +72,8 @@ module.exports = {
   options: {
     // npm packages stay in the graph (so rules see them) but are not traversed.
     doNotFollow: { path: 'node_modules' },
-    // Build output is not source.
-    exclude: { path: '(^|/)dist/' },
+    // Build output is not source. Packages' own dist/ folders stay visible to the rules.
+    exclude: { path: '^src/[^/]+/dist/' },
     // swc parses the TypeScript source directly and already marks `import type` as type-only.
     // tsPreCompilationDeps would demand the tsc API, which TypeScript 7 does not publish yet.
     parser: 'swc',

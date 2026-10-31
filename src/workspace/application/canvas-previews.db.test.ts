@@ -6,10 +6,10 @@ import { pathToFileURL } from 'node:url';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { drawingFixture } from '../domain/canvas-fixtures.js';
-import { pngHeader } from '../domain/canvas-preview-fixtures.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
+import { drawingFixture } from '../testing/canvas-scenes.js';
+import { pngHeader } from '../testing/png.js';
 
 const request = () => ({ requestId: randomUUID() });
 

@@ -9,7 +9,7 @@ import { isProcedure, type RouterClient } from '@orpc/server';
 import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { afterEach, describe, expect, it } from 'vitest';
-import { pngHeader } from '../workspace/domain/canvas-preview-fixtures.js';
+import { pngHeader } from '../workspace/testing/png.js';
 import { createApp } from './app.js';
 import { readConfig } from './config.js';
 import { modules } from './modules.js';

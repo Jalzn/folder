@@ -6,9 +6,9 @@ import { expect, test } from 'vitest';
 import { createAccessTokens } from '../src/auth/index.js';
 import { createDatabase, migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
-import { drawingFixture } from '../src/workspace/domain/canvas-fixtures.js';
-import { pngHeader } from '../src/workspace/domain/canvas-preview-fixtures.js';
 import { createWorkspaceService } from '../src/workspace/index.js';
+import { drawingFixture } from '../src/workspace/testing/canvas-scenes.js';
+import { pngHeader } from '../src/workspace/testing/png.js';
 import { snapshot } from './storage.js';
 
 test('restores access tokens and drawing previews from a live SQLite backup', async () => {
