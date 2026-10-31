@@ -36,7 +36,7 @@ describe('text pages', () => {
 describe('cursors', () => {
   const id = '3f9e2c1a-0b4d-4e5f-8a6b-7c8d9e0f1a2b';
   it('round trips document, search and board cursors', () => {
-    expect(readDocumentCursor(documentCursor(12, 60_000))).toEqual({ version: 12, offset: 60_000 });
+    expect(readDocumentCursor(documentCursor('1f3a9c', 60_000))).toEqual({ textPrint: '1f3a9c', offset: 60_000 });
     const searchKey = { titleRank: 2, updatedAt: '2026-10-31T06:41:25.403Z', typeRank: 1, id };
     expect(searchCursor(searchKey)).toBe(`s~2~2026-10-31T06:41:25.403Z~1~${id}`);
     expect(readSearchCursor(searchCursor(searchKey))).toEqual(searchKey);
@@ -45,7 +45,8 @@ describe('cursors', () => {
     expect(readBoardCursor(boardCursor(42, boardKey))).toEqual({ revision: 42, key: boardKey });
   });
   it('refuses malformed cursors and cursors of another list', () => {
-    for (const cursor of ['', '12', 'a:1', '1:-2']) expect(() => readDocumentCursor(cursor)).toThrow('Cursor inválido');
+    for (const cursor of ['', '12', 'g:1', 'A1:1', '1:-2', `${'f'.repeat(17)}:1`])
+      expect(() => readDocumentCursor(cursor)).toThrow('Cursor inválido');
     for (const cursor of ['o:40', `t~1~7~${id}`, `s~1~2026-10-31~0~${id}`, `s~1~2026-10-31T06:41:25.403Z~3~${id}`])
       expect(() => readSearchCursor(cursor)).toThrow('Cursor inválido');
     for (const cursor of [`s~0~2026-10-31T06:41:25.403Z~0~${id}`, `t~1~3~7~${id}`, `t~1~7~${id}`])

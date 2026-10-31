@@ -1,20 +1,10 @@
 import type { CanvasScene } from './canvas.js';
+import { textFingerprint } from './fingerprint.js';
 
 /**
  * A short fingerprint of a scene's content. Renaming, moving or trashing a drawing changes its
  * version but not its scene, so the preview stays current.
  */
 export function sceneFingerprint(scene: CanvasScene): string {
-  // cyrb53: a fast 53-bit string hash; collisions only cost a stale image label.
-  const text = JSON.stringify(scene);
-  let first = 0xdeadbeef;
-  let second = 0x41c6ce57;
-  for (let index = 0; index < text.length; index += 1) {
-    const code = text.charCodeAt(index);
-    first = Math.imul(first ^ code, 2654435761);
-    second = Math.imul(second ^ code, 1597334677);
-  }
-  first = Math.imul(first ^ (first >>> 16), 2246822507) ^ Math.imul(second ^ (second >>> 13), 3266489909);
-  second = Math.imul(second ^ (second >>> 16), 2246822507) ^ Math.imul(first ^ (first >>> 13), 3266489909);
-  return (4294967296 * (2097151 & second) + (first >>> 0)).toString(16);
+  return textFingerprint(JSON.stringify(scene));
 }

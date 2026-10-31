@@ -55,7 +55,7 @@ describe('read_document', () => {
     );
   });
 
-  it('pages a long document and refuses a cursor once the document changed', async () => {
+  it('pages a long document and refuses a cursor once its text changed, not after a move', async () => {
     const blocks = Array.from({ length: 15 }, (_, index) => paragraph(`${index} ${'palavra '.repeat(400)}`));
     const document = await agent.service.createDocument({
       ...request(),
@@ -64,18 +64,35 @@ describe('read_document', () => {
       content: blocks,
     });
     const first = await agent.call('read_document', { id: document.id });
-    const cursor = /"cursor":"(1:\d+)"/u.exec(first.text)?.[1];
+    const cursor = /"cursor":"([0-9a-f]+:\d+)"/u.exec(first.text)?.[1];
     expect(first.text).toContain('Página 1 de 2.');
     expect(first.text.length).toBeLessThan(READING_LIMITS.toolTextChars);
     const second = await agent.call('read_document', { id: document.id, cursor });
     expect(second.text.startsWith('# Longo')).toBe(false);
     expect(second.text.endsWith('Página 2 de 2.')).toBe(true);
+    // A move and a save of the same text change the version, not the pages.
+    const other = await agent.service.createProject({ ...request(), name: 'Outro' });
+    await agent.service.moveItem({
+      ...request(),
+      type: 'document',
+      id: document.id,
+      projectId: other.id,
+      expectedVersion: 1,
+    });
     await agent.service.saveDocument({
       ...request(),
       id: document.id,
-      expectedVersion: 1,
+      expectedVersion: 2,
       title: 'Longo',
       content: blocks,
+    });
+    expect((await agent.call('read_document', { id: document.id, cursor })).text).toBe(second.text);
+    await agent.service.saveDocument({
+      ...request(),
+      id: document.id,
+      expectedVersion: 3,
+      title: 'Longo',
+      content: [...blocks, paragraph('Um parágrafo novo.')],
     });
     expect(await agent.call('read_document', { id: document.id, cursor })).toEqual({
       isError: true,
@@ -91,7 +108,7 @@ describe('read_document', () => {
       content: [paragraph('ab '.repeat(30_000))],
     });
     const first = await agent.call('read_document', { id: document.id });
-    const cursor = /"cursor":"(1:\d+)"/u.exec(first.text)?.[1];
+    const cursor = /"cursor":"([0-9a-f]+:\d+)"/u.exec(first.text)?.[1];
     const body = first.text.split('\n\n---\n\n')[1]?.split('\n\n---\nPágina')[0] ?? '';
     expect(body.endsWith(' ')).toBe(true);
     const second = await agent.call('read_document', { id: document.id, cursor });

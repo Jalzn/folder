@@ -136,9 +136,9 @@ describe('agent read tools', () => {
 
     const first = await record('read_document', { id: document.id });
     expect(first.text).toMatch(/… e mais \d+ tarefas\. Use list_tasks com documentId/u);
-    for (let cursor = /"cursor":"(\d+:\d+)"/u.exec(first.text)?.[1]; cursor; ) {
+    for (let cursor = /"cursor":"([0-9a-f]+:\d+)"/u.exec(first.text)?.[1]; cursor; ) {
       const next = await record('read_document', { id: document.id, cursor });
-      cursor = /"cursor":"(\d+:\d+)"/u.exec(next.text)?.[1];
+      cursor = /"cursor":"([0-9a-f]+:\d+)"/u.exec(next.text)?.[1];
     }
     await record('search', { query: 'alvo', limit: 50 });
     expect((await record('search', { limit: 50 })).text).toContain('"pinned":true');

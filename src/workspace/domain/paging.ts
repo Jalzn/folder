@@ -37,15 +37,18 @@ export function pageText(text: string, offset: number, maxChars: number): TextPa
   };
 }
 
-/** A document page cursor pins the version, so a later page never mixes two versions. */
-export function documentCursor(version: number, offset: number): string {
-  return `${version}:${offset}`;
+/**
+ * A document page cursor pins the text it pages, by its fingerprint, so a later page never mixes
+ * two texts. A move, a rename or a pin change the version, not the text, and leave it valid.
+ */
+export function documentCursor(textPrint: string, offset: number): string {
+  return `${textPrint}:${offset}`;
 }
 
-export function readDocumentCursor(cursor: string): { version: number; offset: number } {
-  const match = /^(\d{1,15}):(\d{1,15})$/u.exec(cursor);
-  if (!match) throw invalidCursor();
-  return { version: Number(match[1]), offset: Number(match[2]) };
+export function readDocumentCursor(cursor: string): { textPrint: string; offset: number } {
+  const match = /^([0-9a-f]{1,16}):(\d{1,15})$/u.exec(cursor);
+  if (!match?.[1]) throw invalidCursor();
+  return { textPrint: match[1], offset: Number(match[2]) };
 }
 
 /** Item types in the order search lists them when the title rank and the edit time tie. */
