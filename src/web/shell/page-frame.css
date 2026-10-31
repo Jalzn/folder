@@ -19,6 +19,8 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  /* A pull at the top or bottom stays in the page: no reload or bounce of the shell while writing. */
+  overscroll-behavior: contain;
   padding: 0 32px;
 }
 .page-frame__body[data-fill] {

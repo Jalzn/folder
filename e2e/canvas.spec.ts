@@ -148,7 +148,9 @@ test('draw, reload, export PNG and round-trip an editable drawing with local fon
   await expect(page).not.toHaveURL(original);
   await expect(titleField(page)).toHaveValue(importedTitle);
   const titleBounds = await titleField(page).boundingBox();
-  const toolbarBounds = await page.locator('.page-frame__bar').boundingBox();
+  // Below 720 px the page's actions live in the top bar, the page's only bar.
+  const bar = info.project.name === 'chrome-mobile' ? '.top-bar' : '.page-frame__bar';
+  const toolbarBounds = await page.locator(bar).boundingBox();
   expect(titleBounds).not.toBeNull();
   expect(toolbarBounds).not.toBeNull();
   expect(titleBounds?.y ?? 0).toBeGreaterThanOrEqual((toolbarBounds?.y ?? 0) + (toolbarBounds?.height ?? 0));

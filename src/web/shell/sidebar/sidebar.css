@@ -545,3 +545,16 @@ button.sidebar-row {
   border-top: 1px solid var(--line);
   border-radius: 0 0 var(--radius-sm) var(--radius-sm);
 }
+
+/* Touch screens have no hover: the controls that hover reveals stay visible. */
+@media (hover: none) {
+  .sidebar-header__collapse,
+  .sidebar-section__chevron,
+  .sidebar-section__tools,
+  .sidebar-item__unpin {
+    opacity: 1;
+  }
+  .sidebar-item[data-pinned] .sidebar-row__pending {
+    visibility: hidden;
+  }
+}

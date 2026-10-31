@@ -44,6 +44,9 @@ interface ShellUi {
   announcement: string;
   announce: (text: string) => void;
   page: { current: PageCommands };
+  /** Below 720 px, the place in the top bar where the page's actions go, so there is one 44 px bar. */
+  topBarActions: HTMLElement | null;
+  setTopBarActions: (element: HTMLElement | null) => void;
 }
 
 const ShellUiContext = createContext<ShellUi | null>(null);
@@ -71,6 +74,7 @@ export function ShellUiProvider({ children }: { children: ReactNode }) {
       setOverlayState({ open, search: open && Boolean(options.search) }),
     [],
   );
+  const [topBarActions, setTopBarActions] = useState<HTMLElement | null>(null);
   const announce = useCallback((text: string) => {
     // A repeated message must still be read: clear first, then set.
     setAnnouncement('');
@@ -97,6 +101,8 @@ export function ShellUiProvider({ children }: { children: ReactNode }) {
       announcement,
       announce,
       page,
+      topBarActions,
+      setTopBarActions,
     }),
     [
       layers,
@@ -110,6 +116,7 @@ export function ShellUiProvider({ children }: { children: ReactNode }) {
       searchRequest,
       announcement,
       announce,
+      topBarActions,
     ],
   );
   return <ShellUiContext.Provider value={value}>{children}</ShellUiContext.Provider>;

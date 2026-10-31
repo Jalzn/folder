@@ -19,4 +19,8 @@
   };
   apply();
   media.addEventListener('change', apply);
+  // A choice made in another tab reaches this one too, the login screen included.
+  addEventListener('storage', (event) => {
+    if (event.key === 'tinyfold:theme' || event.key === null) apply();
+  });
 })();

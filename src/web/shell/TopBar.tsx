@@ -7,7 +7,10 @@ import { ProjectSwitcher } from './project/ProjectSwitcher';
 import { switcherLabel } from './project/switcher-label';
 import { useShellUi } from './shell-ui';
 
-/** Below 720 px: the menu that opens the sidebar over the page, and the current project, which opens the switcher. */
+/**
+ * Below 720 px, the one bar of the page: the menu that opens the sidebar over the page, the current project,
+ * which opens the switcher, the page's own actions, and ⌘K.
+ */
 export function TopBar({ project, onMenu }: { project: Project | null; onMenu: () => void }) {
   const label = switcherLabel(project, useProjects(true).data ?? []);
   const ui = useShellUi();
@@ -26,6 +29,8 @@ export function TopBar({ project, onMenu }: { project: Project | null; onMenu: (
           </AriaButton>
         }
       />
+      {/* The page's actions come here (PageFrame), instead of a second bar. */}
+      <div ref={ui.setTopBarActions} className="top-bar__actions" />
       <IconButton
         label="Buscar e comandar"
         shortcut={['mod', 'K']}
