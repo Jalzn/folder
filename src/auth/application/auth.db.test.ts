@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, describe, expect, it } from 'vitest';
+import { createAccessTokens } from '../infra/access-tokens.js';
 import { createAuthService } from '../infra/context.js';
 import { authModule } from '../infra/module.js';
 
@@ -91,5 +92,31 @@ describe('owner authentication', () => {
     expect(await auth.authenticate(second.token)).toBeUndefined();
     await auth.logout(first.sessionId);
     expect(await auth.authenticate(first.token)).toBeUndefined();
+  });
+  it('resets the password from the terminal and revokes every session and access token together', async () => {
+    const { db, auth } = await fixture();
+    const session = await auth.login({ password }, { ip: 'test' });
+    const tokens = createAccessTokens(db);
+    const first = await tokens.create({ name: 'Claude Code' });
+    const second = await tokens.create({ name: 'Claude Code — notebook' });
+    await auth.resetPassword('tinyfold-new-password');
+    expect(await auth.authenticate(session.token)).toBeUndefined();
+    expect(await tokens.authenticate(first.token)).toBeUndefined();
+    expect(await tokens.authenticate(second.token)).toBeUndefined();
+    expect(await tokens.list()).toEqual([]);
+  });
+
+  it('leaves password, sessions and tokens unchanged when the reset fails midway', async () => {
+    const { db, auth } = await fixture();
+    const session = await auth.login({ password }, { ip: 'test' });
+    const tokens = createAccessTokens(db);
+    const created = await tokens.create({ name: 'Claude Code' });
+    await sql`create trigger refuse_revocation before delete on auth_access_tokens begin select raise(abort, 'disk full'); end`.execute(
+      db,
+    );
+    await expect(auth.resetPassword('tinyfold-new-password')).rejects.toThrow('disk full');
+    expect(await auth.authenticate(session.token)).toBeDefined();
+    expect(await tokens.authenticate(created.token)).toBeDefined();
+    await expect(auth.login({ password }, { ip: 'test' })).resolves.toHaveProperty('token');
   });
 });

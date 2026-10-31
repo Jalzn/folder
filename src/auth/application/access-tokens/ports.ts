@@ -21,6 +21,7 @@ export interface AccessTokenRepository {
   countActive(): Promise<number>;
   touch(id: string, usedAt: string): Promise<void>;
   delete(id: string): Promise<void>;
+  /** Used by the terminal password reset, in its own transaction. */
   deleteAll(): Promise<void>;
 }
 

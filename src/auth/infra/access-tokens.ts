@@ -6,7 +6,6 @@ import {
   createAccessToken,
   listAccessTokens,
   revokeAccessToken,
-  revokeAllAccessTokens,
 } from '../application/access-tokens/index.js';
 import { accessTokenRepository } from './access-token-repository.js';
 import { accessTokenSecrets } from './access-token-secrets.js';
@@ -30,7 +29,6 @@ export function createAccessTokens(db: Database, options: AccessTokenOptions = {
     list: () => listAccessTokens(deps),
     create: (input: { name: string }) => createAccessToken(deps, input),
     revoke: (input: { id: string }) => revokeAccessToken(deps, input),
-    revokeAll: () => revokeAllAccessTokens(deps),
     authenticate: (token: string | undefined) => authenticateAccessToken(deps, token),
   };
 }

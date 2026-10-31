@@ -23,6 +23,8 @@ export interface AuthRepository {
   deleteSessionsExcept(id?: string): Promise<void>;
   listSessions(now: string): Promise<StoredSession[]>;
   deleteExpiredSessions(now: string): Promise<void>;
+  /** Revokes every personal access token, as recovering a compromised account requires. */
+  deleteAccessTokens(): Promise<void>;
 }
 export interface LoginThrottle {
   check(ip: string, now: number): void;

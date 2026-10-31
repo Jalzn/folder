@@ -1,5 +1,6 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import type { AuthRepository, StoredOwner, StoredSession } from '../application/ports.js';
+import { accessTokenRepository } from './access-token-repository.js';
 
 interface OwnerRow {
   id: number;
@@ -103,5 +104,6 @@ export function authRepository(db: Database): AuthRepository {
     async deleteExpiredSessions(now) {
       await store.deleteFrom('auth_sessions').where('expires_at', '<=', now).execute();
     },
+    deleteAccessTokens: () => accessTokenRepository(db).deleteAll(),
   };
 }

@@ -95,6 +95,7 @@ export function authService(deps: AuthDependencies) {
     return { ok: true as const };
   }
 
+  /** Terminal recovery: a new password, and no session or access token survives, all in one transaction. */
   async function resetPassword(password: string) {
     validatePassword(password);
     const hash = await deps.password.hash(password);
@@ -102,6 +103,7 @@ export function authService(deps: AuthDependencies) {
       if (!(await repo.owner())) throw new AppError('NOT_FOUND', 'A conta ainda não foi criada.');
       await repo.updatePassword(hash, deps.now().toISOString());
       await repo.deleteSessionsExcept();
+      await repo.deleteAccessTokens();
     });
   }
 
