@@ -75,6 +75,19 @@ export interface TaskList {
   revision: number;
 }
 
+/**
+ * What a task write answers. Like every item write, it leaves out the title and the excerpt: the
+ * request record keeps the answer for 30 days, and a permanent delete must not leave them there.
+ */
+export interface TaskAck {
+  id: string;
+  projectId: string;
+  version: number;
+  updatedAt: string;
+  /** The board revision after the write. */
+  revision: number;
+}
+
 export interface DocumentAck {
   id: string;
   version: number;

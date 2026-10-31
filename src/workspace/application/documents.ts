@@ -19,7 +19,8 @@ export function getDocument(ctx: WorkspaceContext, input: GetDocumentInput) {
   return ctx.read((repo) => requireDocument(repo, input.id));
 }
 
-export function createDocument(ctx: WorkspaceContext, input: CreateDocumentInput) {
+/** Answers, as saving does, only the new document's id, version and date, never its title or content. */
+export function createDocument(ctx: WorkspaceContext, input: CreateDocumentInput): Promise<DocumentAck> {
   return ctx.write('workspace.createDocument', input, async (repo) => {
     const project = await requireActiveProject(repo, input.projectId);
     const now = ctx.now();
@@ -38,7 +39,7 @@ export function createDocument(ctx: WorkspaceContext, input: CreateDocumentInput
       pinnedAt: null,
     };
     await repo.insertDocument(document);
-    return document;
+    return { id: document.id, version: document.version, updatedAt: document.updatedAt };
   });
 }
 

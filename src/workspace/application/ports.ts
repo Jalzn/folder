@@ -51,7 +51,6 @@ export interface CanvasRepository {
 export interface TaskRepository {
   listTasks(query: TaskListQuery): Promise<Task[]>;
   findTask(id: string): Promise<TaskRecord | undefined>;
-  taskView(id: string): Promise<Task>;
   insertTask(task: TaskRecord): Promise<void>;
   saveTask(task: TaskRecord, expectedVersion: number): Promise<void>;
   insertSource(source: TaskSourceRecord): Promise<void>;

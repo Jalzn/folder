@@ -242,11 +242,11 @@ describe('items need a project', () => {
     const source = { documentId: document.id, blockId: 'b', excerpt: 'Revisar' };
     const fromExcerpt = await service.createTask({ ...request(), title: 'Revisar', source });
     const elsewhere = await service.createTask({ ...request(), title: 'Em outro', projectId: other.id, source });
-    expect([document.projectId, (await service.getCanvas({ id: canvas.id })).projectId]).toEqual([
-      project.id,
-      other.id,
-    ]);
-    expect([fromExcerpt.task.projectId, elsewhere.task.projectId]).toEqual([project.id, other.id]);
+    expect([
+      (await service.getDocument({ id: document.id })).projectId,
+      (await service.getCanvas({ id: canvas.id })).projectId,
+    ]).toEqual([project.id, other.id]);
+    expect([fromExcerpt.projectId, elsewhere.projectId]).toEqual([project.id, other.id]);
     expect(() => service.createTask({ ...request(), title: 'Sem projeto' })).toThrow('Escolha o projeto da tarefa.');
   });
 
@@ -268,7 +268,7 @@ describe('items need a project', () => {
       () => service.createTask({ ...request(), title: 'Solta', projectId: null }),
       () => service.saveDocument({ ...edit, id: document.id, title: 'Salvo', content: [] }),
       () => service.saveCanvas({ ...edit, id: canvas.id, title: 'Salvo', scene: drawingFixture() }),
-      () => service.updateTask({ ...edit, id: task.task.id, title: 'Editada' }),
+      () => service.updateTask({ ...edit, id: task.id, title: 'Editada' }),
       () => service.listDocuments({ projectId: none }),
       () => service.listCanvases({ projectId: none }),
       () => service.listTasks({ projectId: none }),
@@ -280,7 +280,7 @@ describe('items need a project', () => {
       projectId: null,
       source: { documentId: document.id, excerpt: 'Ideia' },
     });
-    expect(fromExcerpt.task.projectId).toBe(project.id);
+    expect(fromExcerpt.projectId).toBe(project.id);
   });
 
   it('allows archiving the last active project and then refuses new items in it', async () => {

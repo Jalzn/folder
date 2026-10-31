@@ -53,6 +53,8 @@ O comando recusa substituir um destino existente, verifica a cópia e mantém o 
 
 A restauração traz as sessões e os tokens de acesso existentes no momento do snapshot, **inclusive tokens revogados depois dele**. Depois de restaurar, revogue no Perfil os tokens que não devem valer, ou use a redefinição de senha, que encerra as sessões e revoga todos os tokens.
 
+Excluir de vez apaga o item do banco, mas não dos snapshots: um backup feito antes da exclusão guarda o título e o conteúdo do item, e uma restauração dele traz o item de volta. Para que um texto excluído de vez desapareça também dos backups, é preciso apagar ou deixar expirar os snapshots anteriores à exclusão.
+
 O snapshot inclui as prévias PNG dos desenhos, de 50 a 200 KiB cada, com teto de 256 KiB: cem desenhos somam no máximo 25 MiB. São dados derivados; uma base sem elas, ou com elas defasadas, gera de novo a prévia de cada desenho quando ele é aberto.
 
 ## Senha

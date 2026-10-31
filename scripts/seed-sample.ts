@@ -253,7 +253,7 @@ async function seed(workspace: WorkspaceService) {
     await task(tinyfold.id, title, status);
   // The brief's document embeds a task that was deleted; here it waits in the trash.
   const deleted = await task(tinyfold.id, 'Revisar textos do onboarding', 'todo');
-  await workspace.deleteTask({ ...request(), id: deleted.task.id, expectedVersion: deleted.task.version });
+  await workspace.deleteTask({ ...request(), id: deleted.id, expectedVersion: deleted.version });
   // Written last, so the overview names it as the last text edited.
   const vision = await document(tinyfold.id, 'Visão do produto', [
     heading('Por que existe', 1),

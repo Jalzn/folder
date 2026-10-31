@@ -38,7 +38,12 @@ describe('workspace persistence and adversarial cases', () => {
 
   it('creates a document in its project, persists edits and reopens after server restart', async () => {
     const document = await service.createDocument({ ...request(), projectId: project.id });
-    expect(document).toMatchObject({ title: 'Sem título', projectId: project.id, version: 1, content: [] });
+    expect(document).toEqual({ id: expect.any(String), version: 1, updatedAt: expect.any(String) });
+    expect(await service.getDocument({ id: document.id })).toMatchObject({
+      title: 'Sem título',
+      projectId: project.id,
+      content: [],
+    });
     const ack = await service.saveDocument({
       ...request(),
       id: document.id,
@@ -96,7 +101,7 @@ describe('workspace persistence and adversarial cases', () => {
       ...request(),
       id: document.id,
       expectedVersion: document.version,
-      title: document.title,
+      title: 'Equações do projeto',
       content: unfinished,
     });
     expect((await service.getDocument({ id: document.id })).content).toEqual(unfinished);
@@ -301,16 +306,16 @@ describe('workspace persistence and adversarial cases', () => {
     };
     const document = await service.createDocument({ ...request(), projectId: project.id, content: [quote] });
     const stored = await service.getDocument({ id: document.id });
-    expect(stored.content).toEqual(document.content);
     expect(stored.content[0]?.id).toBe('quote');
     const after = stored.content[0]?.children?.[1];
     expect(after?.id).toEqual(expect.any(String));
-    const task = await service.createTask({
+    await service.createTask({
       ...request(),
       title: 'Depois',
       source: { documentId: document.id, blockId: after?.id ?? null, excerpt: 'Depois da fórmula', expectedVersion: 1 },
     });
-    expect(task.task.source?.blockAvailable).toBe(true);
+    const [task] = (await service.listTasks({ documentId: document.id })).tasks;
+    expect(task?.source?.blockAvailable).toBe(true);
     // A save without ids, from a script or another client, gets them too.
     await service.saveDocument({
       ...request(),
@@ -328,11 +333,11 @@ describe('workspace persistence and adversarial cases', () => {
     const c = await service.createTask({ ...request(), title: 'C', projectId: project.id });
     const move = {
       ...request(),
-      id: c.task.id,
-      expectedVersion: c.task.version,
+      id: c.id,
+      expectedVersion: c.version,
       expectedRevision: c.revision,
       status: 'todo' as const,
-      beforeTaskId: a.task.id,
+      beforeTaskId: a.id,
     };
     const moved = await service.moveTask(move);
     expect(await service.moveTask(move)).toEqual(moved);
@@ -342,8 +347,8 @@ describe('workspace persistence and adversarial cases', () => {
     await expect(
       service.moveTask({
         ...request(),
-        id: b.task.id,
-        expectedVersion: b.task.version,
+        id: b.id,
+        expectedVersion: b.version,
         expectedRevision: c.revision,
         status: 'doing',
       }),
@@ -362,7 +367,7 @@ describe('workspace persistence and adversarial cases', () => {
       ['a2', project.id],
       ['b2', other.id],
     ] as const)
-      created[title] = (await service.createTask({ ...request(), title, projectId })).task;
+      created[title] = await service.createTask({ ...request(), title, projectId });
     const rows = (projectId: string) =>
       sql`select * from workspace_tasks where project_id = ${projectId} order by id`.execute(db).then((r) => r.rows);
     const otherBefore = await rows(other.id);
@@ -407,15 +412,16 @@ describe('workspace persistence and adversarial cases', () => {
     });
     const result = await service.updateTask({
       ...request(),
-      id: created.task.id,
+      id: created.id,
       expectedVersion: 1,
       title: 'Publicar apresentação',
       status: 'done',
     });
-    expect(result.task.status).toBe('done');
+    expect(result.version).toBe(2);
+    expect((await service.listTasks({})).tasks.find((task) => task.id === created.id)?.status).toBe('done');
     expect((await service.getDocument({ id: document.id })).plainText).toBe('Escrever apresentação');
     await expect(
-      service.updateTask({ ...request(), id: created.task.id, expectedVersion: 1, title: 'Edição antiga' }),
+      service.updateTask({ ...request(), id: created.id, expectedVersion: 1, title: 'Edição antiga' }),
     ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
   });
 
@@ -424,9 +430,9 @@ describe('workspace persistence and adversarial cases', () => {
     const first = await service.createTask({ ...request(), title: 'Primeira', projectId: project.id });
     await service.createTask({ ...request(), title: 'Organizada', projectId: other.id });
     expect((await service.listTasks({})).tasks).toHaveLength(2);
-    expect((await service.listTasks({ projectId: project.id })).tasks.map((task) => task.id)).toEqual([first.task.id]);
+    expect((await service.listTasks({ projectId: project.id })).tasks.map((task) => task.id)).toEqual([first.id]);
     expect((await service.listTasks({ projectId: other.id })).tasks).toHaveLength(1);
-    const deletion = { ...request(), id: first.task.id, expectedVersion: 1 };
+    const deletion = { ...request(), id: first.id, expectedVersion: 1 };
     expect(await service.deleteTask(deletion)).toEqual(await service.deleteTask(deletion));
     expect((await service.listTasks({})).tasks).toHaveLength(1);
   });

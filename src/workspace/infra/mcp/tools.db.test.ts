@@ -19,7 +19,7 @@ describe('agent read tools', () => {
     const open = await agent.service.createTask({ ...request(), title: 'Aberta', projectId: archived.id });
     const removed = await agent.service.createTask({ ...request(), title: 'Removida', projectId: archived.id });
     await agent.service.deleteDocument({ ...request(), id: trashed.id, expectedVersion: trashed.version });
-    await agent.service.deleteTask({ ...request(), id: removed.task.id, expectedVersion: removed.task.version });
+    await agent.service.deleteTask({ ...request(), id: removed.id, expectedVersion: removed.version });
     await agent.service.updateProject({
       ...request(),
       id: archived.id,
@@ -54,12 +54,12 @@ describe('agent read tools', () => {
     const { items } = await agent.json<{ items: { id: string; projectArchived: boolean }[] }>('search', {
       projectId: archived.id,
     });
-    expect(items.map((item) => item.id)).toEqual([open.task.id, done.task.id, kept.id]);
+    expect(items.map((item) => item.id)).toEqual([open.id, done.id, kept.id]);
     expect(items.every((item) => item.projectArchived)).toBe(true);
     for (const [name, id] of [
       ['read_document', trashed.id],
       ['read_document', missingId],
-      ['read_task', removed.task.id],
+      ['read_task', removed.id],
     ] as const)
       expect(await agent.call(name, { id })).toMatchObject({
         isError: true,

@@ -33,26 +33,27 @@ describe('list_tasks and read_task', () => {
       status: ['todo', 'doing'],
       query: 'PRIMEIRA',
     });
-    expect(filtered.tasks.map((task) => task.id)).toEqual([first.task.id]);
+    expect(filtered.tasks.map((task) => task.id)).toEqual([first.id]);
     const paged = await agent.json<{ tasks: { id: string }[]; nextCursor: string }>('list_tasks', {
       projectId: project.id,
       limit: 2,
     });
-    const { revision } = await agent.service.listTasks({});
-    expect(paged.nextCursor).toBe(`t~${revision}~0~${first.task.position}~${first.task.id}`);
+    const { revision, tasks } = await agent.service.listTasks({});
+    const position = tasks.find((task) => task.id === first.id)?.position;
+    expect(paged.nextCursor).toBe(`t~${revision}~0~${position}~${first.id}`);
     const next = await agent.json<{ tasks: { id: string }[]; nextCursor: null }>('list_tasks', {
       projectId: project.id,
       cursor: paged.nextCursor,
     });
-    expect(next.tasks.map((task) => task.id)[0]).toBe(doing.task.id);
+    expect(next.tasks.map((task) => task.id)[0]).toBe(doing.id);
     expect(next.nextCursor).toBeNull();
 
     const fromDocument = await agent.json<{ tasks: { id: string }[] }>('list_tasks', { documentId: document.id });
-    expect(fromDocument.tasks.map((task) => task.id)).toEqual([fromText.task.id]);
+    expect(fromDocument.tasks.map((task) => task.id)).toEqual([fromText.id]);
     await agent.service.deleteDocument({ ...request(), id: document.id, expectedVersion: document.version });
     const listed = await agent.json<{ tasks: { id: string; source: unknown }[] }>('list_tasks', { query: 'trecho' });
     expect(listed.tasks[0]?.source).toEqual({ documentId: document.id, documentTitle: null, available: false });
-    expect(await agent.json('read_task', { id: fromText.task.id })).toMatchObject({
+    expect(await agent.json('read_task', { id: fromText.id })).toMatchObject({
       title: 'Nasceu do trecho',
       status: 'todo',
       statusLabel: 'A fazer',
@@ -76,7 +77,7 @@ describe('list_tasks and read_task', () => {
       title: 'Plano antigo',
       content: [paragraph('Revisar o orçamento', 'b')],
     });
-    const { task } = await agent.service.createTask({
+    const task = await agent.service.createTask({
       ...request(),
       title: 'Revisar',
       source: { documentId: document.id, blockId: 'b', excerpt: 'Revisar o orçamento' },
@@ -103,7 +104,7 @@ describe('list_tasks and read_task', () => {
     const created = [];
     for (let index = 0; index < 5; index += 1)
       created.push(
-        (await agent.service.createTask({ ...request(), title: `Tarefa ${index}`, projectId: agent.project.id })).task,
+        await agent.service.createTask({ ...request(), title: `Tarefa ${index}`, projectId: agent.project.id }),
       );
     const first = await agent.json<{ tasks: { title: string }[]; nextCursor: string }>('list_tasks', { limit: 2 });
     expect(first.tasks.map((task) => task.title)).toEqual(['Tarefa 0', 'Tarefa 1']);

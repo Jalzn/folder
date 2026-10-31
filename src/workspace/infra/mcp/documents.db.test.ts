@@ -42,7 +42,7 @@ describe('read_document', () => {
         `- Atualizado: ${document.updatedAt} · versão 1`,
         `- ID: ${document.id}`,
         '- Tarefas originadas aqui:',
-        `  - "Gerar token" (Em andamento, id ${task.task.id})`,
+        `  - "Gerar token" (Em andamento, id ${task.id})`,
         '',
         '---',
         '',

@@ -32,7 +32,7 @@ describe('search', () => {
       },
     );
     expect(found.items.map((item) => [item.type, item.id])).toEqual([
-      ['task', task.task.id],
+      ['task', task.id],
       ['drawing', canvas.id],
       ['document', document.id],
     ]);
@@ -76,7 +76,7 @@ describe('search', () => {
       ...request(),
       id: body.id,
       expectedVersion: 1,
-      title: body.title,
+      title: 'Notas de reunião',
       content: [paragraph('Ideia: plano do MCP e do token no Perfil.')],
     });
     const ids = async (query: string) =>

@@ -1,4 +1,3 @@
-import { AppError } from '@tinyfold/core/application';
 import { type Database, tables } from '@tinyfold/core/infra';
 import type { Kysely } from 'kysely';
 import type { TaskRepository } from '../../application/ports.js';
@@ -66,17 +65,6 @@ export function taskRepository(connection: Database): TaskRepository {
     async findTask(id) {
       const row = await db.selectFrom('workspace_tasks').selectAll().where('id', '=', id).executeTakeFirst();
       return row && taskModel(row);
-    },
-    async taskView(id) {
-      const row = await db
-        .selectFrom('workspace_tasks')
-        .selectAll()
-        .where('id', '=', id)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirstOrThrow();
-      const [task] = await hydrateTasks(db, [row]);
-      if (!task) throw new AppError('NOT_FOUND', 'A tarefa não foi encontrada.');
-      return task;
     },
     async insertTask(task) {
       await db.insertInto('workspace_tasks').values(taskRow(task)).execute();

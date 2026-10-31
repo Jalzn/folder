@@ -53,7 +53,7 @@ describe('project trash and permanent delete', () => {
     return service.deleteCanvas({ ...request(), id: canvas.id, expectedVersion: canvas.version });
   };
   const trashTask = async (title: string) => {
-    const { task } = await service.createTask({ ...request(), projectId: project.id, title });
+    const task = await service.createTask({ ...request(), projectId: project.id, title });
     await service.deleteTask({ ...request(), id: task.id, expectedVersion: task.version });
     return { id: task.id, version: task.version + 1 };
   };
@@ -89,18 +89,25 @@ describe('project trash and permanent delete', () => {
 
   it('restores a task to the end of its column with a new version and board revision', async () => {
     const trashed = await trashTask('De volta');
-    const { task: kept } = await service.createTask({ ...request(), projectId: project.id, title: 'Ficou' });
+    const kept = await service.createTask({ ...request(), projectId: project.id, title: 'Ficou' });
     const before = (await service.listTasks()).revision;
     const restoration = { ...request(), id: trashed.id, expectedVersion: trashed.version };
     const restored = await service.restoreTask(restoration);
     expect(restored).toEqual({
-      task: expect.objectContaining({ id: trashed.id, version: trashed.version + 1, position: kept.position + 1 }),
+      id: trashed.id,
+      projectId: project.id,
+      version: trashed.version + 1,
+      updatedAt: expect.any(String),
       revision: before + 1,
     });
     expect(await service.restoreTask(restoration)).toEqual(restored);
-    expect((await service.listTasks()).tasks.map((task) => task.title)).toEqual(['Ficou', 'De volta']);
+    const { tasks } = await service.listTasks();
+    expect(tasks.map((task) => [task.title, task.position])).toEqual([
+      ['Ficou', tasks[0]?.position],
+      ['De volta', (tasks.find((task) => task.id === kept.id)?.position ?? 0) + 1],
+    ]);
     await expect(
-      service.restoreTask({ ...request(), id: trashed.id, expectedVersion: restored.task.version }),
+      service.restoreTask({ ...request(), id: trashed.id, expectedVersion: restored.version }),
     ).rejects.toMatchObject({ code: 'DOMAIN_RULE' });
     await expect(service.restoreTask({ ...request(), id: randomUUID(), expectedVersion: 1 })).rejects.toMatchObject({
       code: 'NOT_FOUND',
@@ -114,7 +121,7 @@ describe('project trash and permanent delete', () => {
       title: 'Plano',
       content: content('Publicar o portfólio'),
     });
-    const { task } = await service.createTask({
+    const task = await service.createTask({
       ...request(),
       title: 'Publicar',
       source: { documentId: document.id, blockId: 'b', excerpt: 'Publicar o portfólio' },
@@ -159,7 +166,7 @@ describe('project trash and permanent delete', () => {
     expect(await rowCount('workspace_canvas_previews')).toBe(0);
 
     const document = await service.createDocument({ ...request(), projectId: project.id, content: content('Trecho') });
-    const { task } = await service.createTask({
+    const task = await service.createTask({
       ...request(),
       title: 'Do trecho',
       source: { documentId: document.id, excerpt: 'Trecho' },
@@ -175,7 +182,7 @@ describe('project trash and permanent delete', () => {
   it('refuses to delete for good what is not in the trash, at another version, or missing', async () => {
     const document = await service.createDocument({ ...request(), projectId: project.id });
     const canvas = await service.createCanvas({ ...request(), projectId: project.id });
-    const { task } = await service.createTask({ ...request(), projectId: project.id, title: 'Viva' });
+    const task = await service.createTask({ ...request(), projectId: project.id, title: 'Viva' });
     const outside = {
       code: 'DOMAIN_RULE',
       message: 'Mova o item para a lixeira antes de excluir de vez.',
@@ -220,6 +227,75 @@ describe('project trash and permanent delete', () => {
     expect((await service.listTrash({ projectId: project.id })).items).toEqual([]);
     expect((await service.getDocument({ id: restored.id })).deletedAt).toBeNull();
     expect((await service.listTrash({ projectId: other.id })).items.map((item) => item.id)).toEqual([elsewhere.id]);
+  });
+
+  it('leaves no trace of the items deleted for good in any table, the request record included', async () => {
+    // Lowercase, so the normalized search columns would hold the same strings.
+    const mark = (name: string) => `${name}-${randomUUID()}`;
+    const documentTitle = mark('titulo-doc');
+    const renamed = mark('doc-renomeado');
+    const excerpt = mark('trecho');
+    const text = mark('texto-doc');
+    const taskTitle = mark('titulo-tarefa');
+    const retitled = mark('tarefa-renomeada');
+    const canvasTitle = mark('titulo-desenho');
+    const label = mark('rotulo-desenho');
+    const document = await service.createDocument({
+      ...request(),
+      projectId: project.id,
+      title: documentTitle,
+      content: content(`${excerpt} ${text}`),
+    });
+    const saved = await service.saveDocument({
+      ...request(),
+      id: document.id,
+      expectedVersion: 1,
+      title: renamed,
+      content: content(`${excerpt} ${text} ${text}`),
+    });
+    const task = await service.createTask({
+      ...request(),
+      title: taskTitle,
+      source: { documentId: document.id, excerpt },
+    });
+    const updated = await service.updateTask({ ...request(), id: task.id, expectedVersion: 1, title: retitled });
+    const moved = await service.moveTask({
+      ...request(),
+      id: task.id,
+      expectedVersion: updated.version,
+      expectedRevision: updated.revision,
+      status: 'doing',
+    });
+    const trashedTask = await service.deleteTask({ ...request(), id: task.id, expectedVersion: moved.version });
+    const restoredTask = await service.restoreTask({ ...request(), id: task.id, expectedVersion: moved.version + 1 });
+    await service.deleteTask({ ...request(), id: trashedTask.id, expectedVersion: restoredTask.version });
+    await service.purgeTask({ ...request(), id: task.id, expectedVersion: restoredTask.version + 1 });
+    const trashedDocument = await service.deleteDocument({
+      ...request(),
+      id: document.id,
+      expectedVersion: saved.version,
+    });
+    await service.purgeDocument({ ...request(), id: document.id, expectedVersion: trashedDocument.version });
+    const scene = drawingFixture();
+    for (const element of scene.elements)
+      if (element.type === 'text') Object.assign(element, { text: label, originalText: label });
+    const canvas = await service.createCanvas({ ...request(), projectId: project.id, title: canvasTitle, scene });
+    const trashedCanvas = await service.deleteCanvas({ ...request(), id: canvas.id, expectedVersion: 1 });
+    await service.purgeCanvas({ ...request(), id: canvas.id, expectedVersion: trashedCanvas.version });
+
+    expect(await rowCount('core_mutations')).toBeGreaterThan(10);
+    const tableNames = await sql<{ name: string }>`select name from sqlite_master where type = 'table'`.execute(db);
+    const traces: string[] = [];
+    for (const { name } of tableNames.rows) {
+      const columns = await sql<{ name: string }>`select name from pragma_table_info(${name})`.execute(db);
+      for (const column of columns.rows)
+        for (const needle of [documentTitle, renamed, excerpt, text, taskTitle, retitled, canvasTitle, label]) {
+          const found = await sql<{ count: number }>`select count(*) as count from ${sql.table(name)}
+            where instr(cast(${sql.ref(column.name)} as text), ${needle}) > 0`.execute(db);
+          if (found.rows[0]?.count) traces.push(`${name}.${column.name}: ${needle}`);
+        }
+    }
+    expect(traces).toEqual([]);
   });
 
   it('lists and empties up to 1,000 items at once, and counts them all', async () => {

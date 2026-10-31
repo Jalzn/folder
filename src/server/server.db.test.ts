@@ -132,7 +132,7 @@ describe('server boundaries', () => {
       projectId: null,
       source: { documentId: document.id, blockId: 'b', excerpt: 'Texto' },
     });
-    expect(fromExcerpt.task.projectId).toBe(project.id);
+    expect(fromExcerpt.projectId).toBe(project.id);
   });
   it('saves a document above the old 64KiB limit and rejects excessive request size', async () => {
     const { browser, app } = await fixture();

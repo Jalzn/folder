@@ -1,4 +1,5 @@
 import { AppError } from '@tinyfold/core/application';
+import type { TaskAck } from '../domain/models.js';
 import { excerptPresent } from '../domain/task-source.js';
 import { assertVersion, projectForEditedItem, requireActiveProject, requireDocument, requireTask } from './helpers.js';
 import type { TaskRecord, TaskSourceRecord, WorkspaceContext } from './ports.js';
@@ -11,11 +12,20 @@ import type {
   UpdateTaskInput,
 } from './schemas/tasks.js';
 
+/** The answer of a task write, without its title (see TaskAck). */
+const taskAck = (task: TaskRecord, revision: number): TaskAck => ({
+  id: task.id,
+  projectId: task.projectId,
+  version: task.version,
+  updatedAt: task.updatedAt,
+  revision,
+});
+
 export function listTasks(ctx: WorkspaceContext, input: ListTasksInput) {
   return ctx.read(async (repo) => ({ tasks: await repo.listTasks(input), revision: await repo.revision() }));
 }
 
-export function createTask(ctx: WorkspaceContext, input: CreateTaskInput) {
+export function createTask(ctx: WorkspaceContext, input: CreateTaskInput): Promise<TaskAck> {
   return ctx.write('workspace.createTask', input, async (repo) => {
     const id = ctx.newId();
     let projectId = input.projectId ?? undefined;
@@ -57,31 +67,27 @@ export function createTask(ctx: WorkspaceContext, input: CreateTaskInput) {
     };
     await repo.insertTask(task);
     if (source) await repo.insertSource(source);
-    const revision = await repo.bumpRevision();
-    return { task: await repo.taskView(id), revision };
+    return taskAck(task, await repo.bumpRevision());
   });
 }
 
-export function updateTask(ctx: WorkspaceContext, input: UpdateTaskInput) {
+export function updateTask(ctx: WorkspaceContext, input: UpdateTaskInput): Promise<TaskAck> {
   return ctx.write('workspace.updateTask', input, async (repo) => {
     const task = await requireTask(repo, input.id);
     assertVersion(task.version, input.expectedVersion);
     const projectId = await projectForEditedItem(repo, task.projectId, input.projectId);
     const status = input.status ?? task.status;
-    await repo.saveTask(
-      {
-        ...task,
-        title: input.title ?? task.title,
-        projectId,
-        status,
-        position: status === task.status ? task.position : await repo.nextPosition(status),
-        version: task.version + 1,
-        updatedAt: ctx.now(),
-      },
-      task.version,
-    );
-    const revision = await repo.bumpRevision();
-    return { task: await repo.taskView(task.id), revision };
+    const saved = {
+      ...task,
+      title: input.title ?? task.title,
+      projectId,
+      status,
+      position: status === task.status ? task.position : await repo.nextPosition(status),
+      version: task.version + 1,
+      updatedAt: ctx.now(),
+    };
+    await repo.saveTask(saved, task.version);
+    return taskAck(saved, await repo.bumpRevision());
   });
 }
 
@@ -96,28 +102,25 @@ export function deleteTask(ctx: WorkspaceContext, input: DeleteTaskInput) {
 }
 
 /** Brings a task back from the trash, to the end of its column. */
-export function restoreTask(ctx: WorkspaceContext, input: RestoreTaskInput) {
+export function restoreTask(ctx: WorkspaceContext, input: RestoreTaskInput): Promise<TaskAck> {
   return ctx.write('workspace.restoreTask', input, async (repo) => {
     const task = await repo.findTask(input.id);
     if (!task) throw new AppError('NOT_FOUND', 'A tarefa não foi encontrada.');
     assertVersion(task.version, input.expectedVersion);
     if (!task.deletedAt) throw new AppError('DOMAIN_RULE', 'A tarefa não está na lixeira.');
-    await repo.saveTask(
-      {
-        ...task,
-        deletedAt: null,
-        position: await repo.nextPosition(task.status),
-        version: task.version + 1,
-        updatedAt: ctx.now(),
-      },
-      task.version,
-    );
-    const revision = await repo.bumpRevision();
-    return { task: await repo.taskView(task.id), revision };
+    const saved = {
+      ...task,
+      deletedAt: null,
+      position: await repo.nextPosition(task.status),
+      version: task.version + 1,
+      updatedAt: ctx.now(),
+    };
+    await repo.saveTask(saved, task.version);
+    return taskAck(saved, await repo.bumpRevision());
   });
 }
 
-export function moveTask(ctx: WorkspaceContext, input: MoveTaskInput) {
+export function moveTask(ctx: WorkspaceContext, input: MoveTaskInput): Promise<TaskAck> {
   return ctx.write('workspace.moveTask', input, async (repo) => {
     if ((await repo.revision()) !== input.expectedRevision) {
       throw new AppError('VERSION_CONFLICT', 'O quadro mudou em outro dispositivo. Atualize antes de mover a tarefa.');
@@ -131,15 +134,13 @@ export function moveTask(ctx: WorkspaceContext, input: MoveTaskInput) {
     if (index < 0)
       throw new AppError('VERSION_CONFLICT', 'A posição escolhida não está mais disponível. Atualize o quadro.');
     column.splice(index, 0, task);
-    for (const [position, item] of column.entries()) {
-      if (item.id === task.id)
-        await repo.saveTask(
-          { ...item, status: input.status, position, updatedAt: ctx.now(), version: item.version + 1 },
-          item.version,
-        );
+    const position = column.indexOf(task);
+    const moved = { ...task, status: input.status, position, updatedAt: ctx.now(), version: task.version + 1 };
+    for (const [place, item] of column.entries()) {
+      if (item === task) await repo.saveTask(moved, task.version);
       // A neighbour that only shifts is not edited: the board revision, not its version, orders moves.
-      else if (item.position !== position) await repo.setTaskPosition(item.id, position);
+      else if (item.position !== place) await repo.setTaskPosition(item.id, place);
     }
-    return { task: await repo.taskView(task.id), revision: await repo.bumpRevision() };
+    return taskAck(moved, await repo.bumpRevision());
   });
 }

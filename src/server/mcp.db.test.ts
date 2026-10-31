@@ -146,7 +146,7 @@ describe('MCP protocol', () => {
       nextCursor: null,
     });
     const search = JSON.parse(textOf(await call('search', { query: 'token' }))) as { items: { id: string }[] };
-    expect(search.items.map((item) => item.id)).toEqual([task.task.id, document.id]);
+    expect(search.items.map((item) => item.id)).toEqual([task.id, document.id]);
     expect(textOf(await call('read_document', { id: document.id }))).toContain('Gerar token pessoal');
     const drawing = await call('read_drawing', { id: canvas.id });
     expect(textOf(drawing)).toContain('Imagem: versão 1 (atual), 800×600 px');
@@ -157,8 +157,8 @@ describe('MCP protocol', () => {
         .subarray(1, 4)
         .toString(),
     ).toBe('PNG');
-    expect(JSON.parse(textOf(await call('list_tasks')))).toMatchObject({ tasks: [{ id: task.task.id }] });
-    expect(JSON.parse(textOf(await call('read_task', { id: task.task.id })))).toMatchObject({
+    expect(JSON.parse(textOf(await call('list_tasks')))).toMatchObject({ tasks: [{ id: task.id }] });
+    expect(JSON.parse(textOf(await call('read_task', { id: task.id })))).toMatchObject({
       source: { documentId: document.id, blockAvailable: true },
     });
     const missing = await call('read_task', { id: randomUUID() });

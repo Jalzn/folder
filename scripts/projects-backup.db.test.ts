@@ -31,7 +31,7 @@ test('restores project colours and order, pins and task sources with their title
       title: 'Rascunho',
       content: paragraph('Gerar token pessoal'),
     });
-    const { task } = await workspace.createTask({
+    const task = await workspace.createTask({
       ...request(),
       title: 'Gerar token',
       source: { documentId: draft.id, excerpt: 'Gerar token pessoal' },

@@ -69,7 +69,8 @@ describe('navigation queries', () => {
         id: zeta?.id,
         title: 'Zeta',
         updatedAt: zeta?.updatedAt,
-        createdAt: zeta?.createdAt,
+        // A new document's first edit is its creation.
+        createdAt: zeta?.updatedAt,
         pinnedAt: expect.any(String),
       });
       expect(navigation.drawings).toEqual({
@@ -107,7 +108,7 @@ describe('navigation queries', () => {
       await newTask('Andando', 'doing');
       await newTask('Pronta', 'done');
       const removed = await newTask('Removida', 'todo');
-      await service.deleteTask({ ...request(), id: removed.task.id, expectedVersion: 1 });
+      await service.deleteTask({ ...request(), id: removed.id, expectedVersion: 1 });
       const canvas = await service.createCanvas({ ...request(), projectId: project.id });
       await service.deleteCanvas({ ...request(), id: canvas.id, expectedVersion: 1 });
       await service.updateProject({ ...request(), id: project.id, expectedVersion: 1, archived: true });
