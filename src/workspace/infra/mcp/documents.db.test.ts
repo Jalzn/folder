@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { paragraph, request, useAgentTools } from '../../testing/agent-tools.js';
 
 describe('read_document', () => {
@@ -55,12 +56,12 @@ describe('read_document', () => {
   });
 
   it('pages a long document and refuses a cursor once the document changed', async () => {
-    const blocks = Array.from({ length: 30 }, (_, index) => paragraph(`${index} ${'palavra '.repeat(400)}`));
+    const blocks = Array.from({ length: 15 }, (_, index) => paragraph(`${index} ${'palavra '.repeat(400)}`));
     const document = await agent.service.createDocument({ ...request(), title: 'Longo', content: blocks });
     const first = await agent.call('read_document', { id: document.id });
     const cursor = /"cursor":"(1:\d+)"/u.exec(first.text)?.[1];
     expect(first.text).toContain('Página 1 de 2.');
-    expect(first.text.length).toBeLessThan(70_000);
+    expect(first.text.length).toBeLessThan(READING_LIMITS.toolTextChars);
     const second = await agent.call('read_document', { id: document.id, cursor });
     expect(second.text.startsWith('# Longo')).toBe(false);
     expect(second.text.endsWith('Página 2 de 2.')).toBe(true);

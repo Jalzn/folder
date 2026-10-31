@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { missingId, paragraph, request, useAgentTools } from '../../testing/agent-tools.js';
+import { shape } from '../../testing/canvas-scenes.js';
 
 describe('agent read tools', () => {
   const agent = useAgentTools();
@@ -53,34 +55,78 @@ describe('agent read tools', () => {
       });
   });
 
-  it('keeps list_projects and the first document page within the output budget', async () => {
-    const heavy = '"\\\u0001'.repeat(33);
-    for (let index = 0; index < 205; index += 1)
-      await agent.service.createProject({ ...request(), name: `${heavy.slice(0, 96)}${index}` });
-    const first = await agent.call('list_projects', {});
-    const page = JSON.parse(first.text) as { projects: unknown[]; nextCursor: string };
-    expect(first.text.length).toBeLessThanOrEqual(70_000);
-    expect(page.nextCursor).toMatch(/^p~/u);
-    const rest = JSON.parse((await agent.call('list_projects', { cursor: page.nextCursor })).text) as {
-      projects: unknown[];
+  it('keeps every text result within the output ceiling, by its own budget', async () => {
+    // Quotes, backslashes and control characters grow the most when written as JSON.
+    const heavy = (length: number) => '"\\\u0001'.repeat(length).slice(0, length);
+    const results: { name: string; text: string }[] = [];
+    const record = async (name: string, input: Record<string, unknown>) => {
+      const result = await agent.call(name, input);
+      results.push({ name, text: result.text });
+      return result;
     };
-    expect(page.projects.length + rest.projects.length).toBe(205);
 
-    const blocks = Array.from({ length: 30 }, (_, index) => paragraph(`${index} ${'palavra '.repeat(400)}`));
+    const projects = [];
+    for (let index = 0; index < 205; index += 1)
+      projects.push(await agent.service.createProject({ ...request(), name: `${heavy(96)}${index}` }));
+    let listed = 0;
+    for (let cursor: string | null | undefined; cursor !== null; ) {
+      const page = JSON.parse((await record('list_projects', cursor ? { cursor } : {})).text) as {
+        projects: unknown[];
+        nextCursor: string | null;
+      };
+      listed += page.projects.length;
+      cursor = page.nextCursor;
+    }
+    expect(listed).toBe(205);
+
+    const projectId = projects[0]?.id;
+    const code = { type: 'codeBlock', props: { language: 'ts' }, content: 'linha de código\n'.repeat(3_000) };
     const document = await agent.service.createDocument({
       ...request(),
-      title: heavy.repeat(2).slice(0, 300),
-      content: blocks,
+      title: `${heavy(295)} alvo`,
+      projectId,
+      content: [paragraph(`alvo ${heavy(3_000)}`), code, paragraph('palavra '.repeat(8_000))],
     });
-    for (let index = 0; index < 51; index += 1)
+    for (let index = 0; index < 100; index += 1)
       await agent.service.createTask({
         ...request(),
-        title: heavy.repeat(3).slice(0, 300),
-        source: { documentId: document.id, excerpt: `${index % 30} palavra` },
+        title: `${heavy(290)} alvo ${index}`,
+        projectId,
+        source: { documentId: document.id, excerpt: heavy(3_000) },
       });
-    const read = await agent.call('read_document', { id: document.id });
-    expect(read.text.length).toBeLessThanOrEqual(70_000);
-    expect(read.text).toMatch(/… e mais \d+ tarefas\. Use list_tasks com documentId/u);
+    const labels = Array.from({ length: 60 }, (_, index) =>
+      shape(`t${index}`, 'text', {
+        text: heavy(500),
+        originalText: heavy(500),
+        link: `https://a.b/${'"\\'.repeat(25)}`,
+      }),
+    );
+    const drawing = await agent.service.createCanvas({
+      ...request(),
+      title: heavy(300),
+      projectId,
+      scene: { appState: { viewBackgroundColor: '#ffffff' }, elements: labels },
+    });
+
+    const first = await record('read_document', { id: document.id });
+    expect(first.text).toMatch(/… e mais \d+ tarefas\. Use list_tasks com documentId/u);
+    for (let cursor = /"cursor":"(\d+:\d+)"/u.exec(first.text)?.[1]; cursor; ) {
+      const next = await record('read_document', { id: document.id, cursor });
+      cursor = /"cursor":"(\d+:\d+)"/u.exec(next.text)?.[1];
+    }
+    await record('search', { query: 'alvo', limit: 50 });
+    await record('search', { limit: 50 });
+    await record('list_tasks', { limit: 100 });
+    const { tasks } = JSON.parse((await record('list_tasks', { limit: 1 })).text) as { tasks: { id: string }[] };
+    await record('read_task', { id: tasks[0]?.id });
+    expect((await record('read_drawing', { id: drawing.id, image: false })).text).toContain('… omitidos:');
+    await record('read_document', { id: document.id, cursor: '1:5' });
+
+    expect(results.length).toBeGreaterThan(10);
+    for (const { name, text } of results) {
+      expect(text.length, name).toBeLessThanOrEqual(READING_LIMITS.toolTextChars);
+      expect(text, name).not.toContain('resposta cortada');
+    }
   });
 
   it('logs unexpected failures and answers with a generic message', async () => {

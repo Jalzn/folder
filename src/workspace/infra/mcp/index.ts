@@ -3,6 +3,7 @@ import { readingContext } from '../reading-context.js';
 import { withToolErrors } from './errors.js';
 import { listProjectsTool } from './list-projects.js';
 import { listTasksTool } from './list-tasks.js';
+import { withTextCeiling } from './output-ceiling.js';
 import { readDocumentTool } from './read-document.js';
 import { readDrawingTool } from './read-drawing.js';
 import { readTaskTool } from './read-task.js';
@@ -16,7 +17,7 @@ export interface WorkspaceToolOptions {
   logError?: (error: unknown) => void;
 }
 
-/** The read-only tools agents use to consult the workspace. */
+/** The read-only tools agents use to consult the workspace; no text result passes the output ceiling. */
 export function createWorkspaceTools(db: Database, options: WorkspaceToolOptions = {}): AgentTool[] {
   const reading = readingContext(db);
   const logError = options.logError ?? console.error;
@@ -28,5 +29,5 @@ export function createWorkspaceTools(db: Database, options: WorkspaceToolOptions
     listTasksTool(reading),
     readTaskTool(reading),
   ];
-  return tools.map((tool) => withToolErrors(tool, logError));
+  return tools.map((tool) => withTextCeiling(withToolErrors(tool, logError)));
 }

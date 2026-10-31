@@ -1,6 +1,7 @@
 import type { ReadingContext } from '../../application/reading/ports.js';
 import { type DrawingImage, readDrawing } from '../../application/reading/read-drawing.js';
 import { ReadDrawingInput } from '../../application/reading/schemas.js';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { projectName } from './format.js';
 import { formatCanvasOutline } from './format-outline.js';
 import { type AgentToolContent, defineTool, readOnlyAnnotations } from './types.js';
@@ -32,7 +33,10 @@ export const readDrawingTool = (reading: ReadingContext) =>
         `Desenho ${JSON.stringify(drawing.title)} · ${project ? `Projeto ${project}` : 'sem projeto'} · versão ${drawing.version} · atualizado em ${drawing.updatedAt} · ID ${drawing.id}`,
       ];
       if (image) header.push(imageLine(image, drawing.version, outline !== null));
-      const text = [header.join('\n'), ...(outline ? [formatCanvasOutline(outline)] : [])].join('\n\n');
+      const head = header.join('\n');
+      // The outline gets what the header leaves of the result, up to its own limit.
+      const room = Math.min(READING_LIMITS.outline.maxChars, READING_LIMITS.toolTextChars - head.length - 2);
+      const text = [head, ...(outline ? [formatCanvasOutline(outline, room)] : [])].join('\n\n');
       const content: AgentToolContent[] = [{ type: 'text', text }];
       if (image?.state === 'stored')
         content.push({ type: 'image', data: Buffer.from(image.png).toString('base64'), mimeType: 'image/png' });

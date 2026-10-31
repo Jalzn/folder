@@ -53,6 +53,9 @@ const countList = (counts: Partial<Record<OutlineCountKind, number>>) =>
     return value ? [`${count(value)} ${value === 1 ? singular : plural}`] : [];
   });
 
+const omittedNote = (omitted: Partial<Record<OutlineCountKind, number>>) =>
+  `… omitidos: ${countList(omitted).join(', ')}`;
+
 /**
  * The outline as indented text, for example `e3 retângulo "Validar versão" (960, 80, 220×90)` and
  * `s1 seta "salva": e1 → e3`. Lines stop before `maxChars`; the last line then counts, by type, the
@@ -93,8 +96,9 @@ export function formatCanvasOutline(
   ];
   for (const text of summary) if (text) entries.push({ text });
 
-  // Reserve room for the closing note so the whole text stays within the limit.
-  let length = lines.join('\n').length + 80;
+  // Reserve room for the closing note, at its longest every kind omitted, so the text stays within the limit.
+  const longestNote = omittedNote(Object.fromEntries(countNames.map(([kind]) => [kind, outline.total])));
+  let length = lines.join('\n').length + longestNote.length + 1;
   let written = 0;
   for (const entry of entries) {
     if (length + entry.text.length + 1 > maxChars) break;
@@ -105,8 +109,7 @@ export function formatCanvasOutline(
   }
   const omitted = { ...outline.omitted };
   for (const { kind } of entries.slice(written)) if (kind) omitted[kind] = (omitted[kind] ?? 0) + 1;
-  const left = countList(omitted);
-  if (left.length) lines.push(`… omitidos: ${left.join(', ')}`);
+  if (countList(omitted).length) lines.push(omittedNote(omitted));
   else if (written < entries.length) lines.push('… lista truncada');
   return lines.join('\n');
 }

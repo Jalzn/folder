@@ -1,6 +1,7 @@
 import type { ReadingContext } from '../../application/reading/ports.js';
 import { readDocument } from '../../application/reading/read-document.js';
 import { ReadDocumentInput } from '../../application/reading/schemas.js';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { documentHeader, textResult } from './format.js';
 import { defineTool, readOnlyAnnotations } from './types.js';
 
@@ -16,14 +17,18 @@ export const readDocumentTool = (reading: ReadingContext) =>
     async handler(input) {
       const { document, originTasks, originTaskCount, page, nextCursor } = await readDocument(reading, input);
       const parts: string[] = [];
-      if (page.number === 1)
-        parts.push(documentHeader({ document, originTasks, originTaskCount, empty: !page.text.trim() }), '---');
       // Only line breaks are trimmed: a page cut mid-line keeps the space at its end.
       if (page.text.trim()) parts.push(page.text.replace(/\n+$/u, ''));
       if (page.count > 1) {
         const next =
           nextCursor && ` Continue com read_document ${JSON.stringify({ id: document.id, cursor: nextCursor })}.`;
         parts.push(`---\nPágina ${page.number} de ${page.count}.${next ?? ''}`);
+      }
+      if (page.number === 1) {
+        // The header gets what the page and its footer leave of the result, up to its own budget.
+        const room = READING_LIMITS.toolTextChars - parts.join('\n\n').length - '\n\n---\n\n'.length;
+        const header = { document, originTasks, originTaskCount, empty: !page.text.trim() };
+        parts.unshift(documentHeader(header, Math.min(READING_LIMITS.document.headerChars, room)), '---');
       }
       return textResult(parts.join('\n\n'));
     },

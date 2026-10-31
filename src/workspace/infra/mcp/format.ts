@@ -39,15 +39,18 @@ const shortTitle = (title: string, max = READING_LIMITS.document.originTaskTitle
   title.length > max ? `${title.slice(0, max)}…` : title;
 
 /**
- * Metadata that opens the first page of read_document, within its own budget: origin tasks that do
- * not fit are counted. Titles stay on their line; task titles are quoted.
+ * Metadata that opens the first page of read_document, within `maxChars`: origin tasks that do not
+ * fit are counted. Titles stay on their line; task titles are quoted.
  */
-export function documentHeader(input: {
-  document: ProjectReference & { id: string; title: string; version: number; updatedAt: string };
-  originTasks: OriginTask[];
-  originTaskCount: number;
-  empty: boolean;
-}): string {
+export function documentHeader(
+  input: {
+    document: ProjectReference & { id: string; title: string; version: number; updatedAt: string };
+    originTasks: OriginTask[];
+    originTaskCount: number;
+    empty: boolean;
+  },
+  maxChars: number = READING_LIMITS.document.headerChars,
+): string {
   const { document } = input;
   const lines = [
     `# ${singleLine(document.title)}`,
@@ -64,7 +67,7 @@ export function documentHeader(input: {
   let shown = 0;
   for (const task of input.originTasks) {
     const line = `  - ${JSON.stringify(shortTitle(task.title))} (${taskStatusLabels[task.status]}, id ${task.id})`;
-    if (length + line.length + 1 > READING_LIMITS.document.headerChars) break;
+    if (length + line.length + 1 > maxChars) break;
     lines.push(line);
     length += line.length + 1;
     shown += 1;
