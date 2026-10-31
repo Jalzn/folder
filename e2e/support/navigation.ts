@@ -50,7 +50,12 @@ export async function createProject(page: Page, name: string) {
 /** Opens a project's Visão geral from the switcher. */
 export async function openProject(page: Page, name: string) {
   await openSwitcher(page);
-  await page.getByRole('menuitem', { name, exact: true }).click();
+  // An item's name also carries its G 1–9 shortcut or "atual".
+  await page
+    .getByRole('dialog', { name: 'Trocar de projeto' })
+    .getByRole('menuitem')
+    .filter({ has: page.getByText(name, { exact: true }) })
+    .click();
   await expect(page.getByRole('heading', { name, exact: true, level: 1 })).toBeVisible();
 }
 

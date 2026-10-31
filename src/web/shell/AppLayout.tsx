@@ -8,6 +8,7 @@ import { useRouteFocus } from '../router/use-route-focus';
 import { useApp } from './AppProvider';
 import { CommandPalette } from './command-palette/CommandPalette';
 import { ShortcutsDialog } from './keyboard/ShortcutsDialog';
+import { useShellLayers } from './keyboard/use-shell-layers';
 import { useShortcutActions } from './keyboard/use-shortcut-actions';
 import { useShortcuts } from './keyboard/use-shortcuts';
 import { MoveToProjectMenu } from './project/MoveToProjectMenu';
@@ -55,6 +56,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     else if (mode === 'wide') prefs.setCollapsed(!prefs.collapsed);
     else ui.setOverlay(true);
   }
+  useShellLayers();
   useShortcuts(
     useShortcutActions({ project, projects, switcherPlace, sidebarShown: !rail && mode !== 'narrow', toggleSidebar }),
   );
