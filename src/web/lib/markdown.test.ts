@@ -1,6 +1,6 @@
 import { type DocumentContent, documentPlainText, type JsonValue } from '@tinyfold/workspace/domain';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setupBlockNoteEditor } from './blocknote-test-editor';
+import { setupBlockNoteEditor } from '../testing/blocknote-editor';
 import { exportMarkdownWithMath, importMarkdownWithMath } from './markdown';
 
 const blockNote = setupBlockNoteEditor();

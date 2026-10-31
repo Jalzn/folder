@@ -6,7 +6,7 @@ import {
   readDocumentContent,
 } from '@tinyfold/workspace/domain';
 import { describe, expect, it } from 'vitest';
-import { setupBlockNoteEditor } from './blocknote-test-editor';
+import { setupBlockNoteEditor } from '../testing/blocknote-editor';
 import { importMarkdownWithMath } from './markdown';
 
 const blockNote = setupBlockNoteEditor();

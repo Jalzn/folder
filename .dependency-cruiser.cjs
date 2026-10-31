@@ -57,6 +57,13 @@ module.exports = {
       to: { path: '@modelcontextprotocol/' },
     },
     {
+      name: 'testing-helpers-stay-in-tests',
+      comment: 'testing/ folders hold test helpers that use vitest and fixtures: runtime code never imports them.',
+      severity: 'error',
+      from: { path: '^src/', pathNot: ['\\.test\\.tsx?$', '^src/[^/]+/testing/'] },
+      to: { path: '^src/[^/]+/testing/' },
+    },
+    {
       name: 'no-circular',
       severity: 'error',
       from: {},
