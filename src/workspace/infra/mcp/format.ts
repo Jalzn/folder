@@ -53,7 +53,8 @@ export function documentHeader(input: {
     lines.push('- Tarefas originadas aqui:');
     for (const task of input.originTasks)
       lines.push(`  - ${JSON.stringify(shortTitle(task.title))} (${taskStatusLabels[task.status]}, id ${task.id})`);
-    if (input.moreOriginTasks) lines.push('  - … e outras. Use list_tasks para ver todas.');
+    if (input.moreOriginTasks)
+      lines.push(`  - … e outras. Use list_tasks com documentId ${JSON.stringify(document.id)} para ver todas.`);
   }
   if (input.empty) lines.push('- Conteúdo: vazio');
   return lines.join('\n');

@@ -9,7 +9,14 @@ export async function listTasks(ctx: ReadingContext, input: ListTasksInput) {
   const after = input.cursor === undefined ? undefined : readBoardCursor(input.cursor);
   const terms = queryTerms(input.query);
   const page = await ctx.read((reader) =>
-    reader.tasks({ projectId: input.projectId, statuses: input.status, terms, limit: input.limit, after }),
+    reader.tasks({
+      projectId: input.projectId,
+      documentId: input.documentId,
+      statuses: input.status,
+      terms,
+      limit: input.limit,
+      after,
+    }),
   );
   return {
     tasks: page.items,

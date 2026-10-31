@@ -120,7 +120,7 @@ describe('tool text helpers', () => {
         '- ID: d1',
         '- Tarefas originadas aqui:',
         '  - "Gerar \\"token\\"" (Em andamento, id t1)',
-        '  - … e outras. Use list_tasks para ver todas.',
+        '  - … e outras. Use list_tasks com documentId "d1" para ver todas.',
       ].join('\n'),
     );
   });

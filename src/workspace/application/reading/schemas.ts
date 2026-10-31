@@ -43,6 +43,7 @@ export const ReadDrawingInput = z
 
 export const ListTasksInput = z.object({
   projectId: id.optional().describe('Limita a um projeto.'),
+  documentId: id.optional().describe('Só as tarefas criadas a partir deste documento.'),
   status: z
     .array(z.enum(['todo', 'doing', 'done']))
     .min(1)

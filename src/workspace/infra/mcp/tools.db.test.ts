@@ -368,6 +368,8 @@ describe('agent read tools', () => {
     expect(next.tasks.map((task) => task.id)[0]).toBe(doing.task.id);
     expect(next.nextCursor).toBeNull();
 
+    const fromDocument = await json<{ tasks: { id: string }[] }>('list_tasks', { documentId: document.id });
+    expect(fromDocument.tasks.map((task) => task.id)).toEqual([fromText.task.id]);
     await service.deleteDocument({ ...request(), id: document.id, expectedVersion: document.version });
     const listed = await json<{ tasks: { id: string; source: unknown }[] }>('list_tasks', { query: 'trecho' });
     expect(listed.tasks[0]?.source).toEqual({ documentId: document.id, documentTitle: null, available: false });

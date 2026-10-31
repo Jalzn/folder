@@ -30,6 +30,7 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
     async tasks(query) {
       let select = withSource().orderBy(columnRank).orderBy('item.position').orderBy('item.id');
       if (query.projectId) select = select.where('item.project_id', '=', query.projectId);
+      if (query.documentId) select = select.where('source.document_id', '=', query.documentId);
       if (query.statuses?.length) select = select.where('item.status', 'in', [...query.statuses]);
       const after = query.after;
       if (after)

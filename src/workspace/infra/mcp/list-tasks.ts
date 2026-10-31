@@ -21,7 +21,7 @@ export const listTasksTool = (reading: ReadingContext) =>
     title: 'Listar tarefas',
     description:
       'Lista tarefas na ordem do quadro: A fazer, Em andamento e Concluído, cada coluna na sua ordem. ' +
-      'Filtra por projeto, colunas e texto do título. Cada tarefa traz o documento de onde nasceu, ' +
+      'Filtra por projeto, documento de origem, colunas e palavras do título. Cada tarefa traz o documento de onde nasceu, ' +
       'com documentTitle null e available false quando ele está na lixeira.',
     inputSchema: ListTasksInput,
     annotations: readOnlyAnnotations,

@@ -101,6 +101,7 @@ export interface StoredPreview {
 
 export interface TaskQuery {
   projectId: string | undefined;
+  documentId: string | undefined;
   statuses: readonly TaskStatus[] | undefined;
   /** Normalized words from searchTerms, all required in the title. */
   terms: readonly string[];
