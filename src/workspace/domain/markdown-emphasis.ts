@@ -44,7 +44,8 @@ interface Draft {
 /**
  * Decides where emphasis opens and closes around inline pieces, in linear time. A mark that lasts
  * longer opens outside a shorter one, so it stays open when the shorter one ends. Edge spaces move
- * outside the delimiters.
+ * outside the delimiters, and spaces after the last piece are left out: a block's end drops them,
+ * and a link label's go after the link.
  */
 export function planEmphasis(items: readonly Inline[], inherited: readonly Mark[]): EmphasisPlan {
   const sets = markSets(items, inherited);
@@ -59,7 +60,7 @@ export function planEmphasis(items: readonly Inline[], inherited: readonly Mark[
       if (item.kind === 'text') pending += item.text;
       return;
     }
-    const [lead, text, trail] = item.kind === 'text' && !item.code ? edges(item.text) : ['', '', ''];
+    const [lead, text, trail] = edgesOf(item);
     const draft: Draft = { item, closes: [], opens: [], spaces: pending + lead, text, around: [] };
     let kept = 0;
     while (kept < open.length && wanted.includes((open[kept] as Span).mark)) kept += 1;
@@ -243,6 +244,25 @@ function runLengths(sets: readonly (Mark[] | undefined)[]): Record<Mark, number>
 }
 
 const isSpace = (character: string | undefined) => character !== undefined && /\s/u.test(character);
+
+/** Edge spaces move outside the delimiters: those of a text, and those a link label ends with. */
+function edgesOf(item: Inline): [string, string, string] {
+  if (item.kind === 'text' && !item.code) return edges(item.text);
+  return ['', '', item.kind === 'link' ? trailingSpaces(item.content) : ''];
+}
+
+/** The spaces after the last formatted piece, which a plan of `items` leaves out. */
+function trailingSpaces(items: readonly Inline[]): string {
+  let spaces = '';
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index];
+    if (item?.kind !== 'text' || item.code) break;
+    const [lead, text, trail] = edges(item.text);
+    spaces = (text ? trail : lead) + spaces;
+    if (text) break;
+  }
+  return spaces;
+}
 
 /** Leading spaces, the text between, trailing spaces; scanned by hand, as a regex can go quadratic here. */
 function edges(text: string): [string, string, string] {

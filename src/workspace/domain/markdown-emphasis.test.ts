@@ -3,6 +3,7 @@ import { planEmphasis } from './markdown-emphasis.js';
 import type { Inline, Mark } from './markdown-items.js';
 
 const text = (value: string, ...marks: Mark[]): Inline => ({ kind: 'text', text: value, marks, code: false });
+const link = (...content: Inline[]): Inline => ({ kind: 'link', href: 'https://a.b', content });
 const shape = (items: Inline[], inherited: Mark[] = []) =>
   planEmphasis(items, inherited).steps.map(({ close, spaces, open, text: core }) => ({ close, spaces, open, core }));
 const openings = (items: Inline[]) => planEmphasis(items, []).steps.map((step) => step.open);
@@ -45,6 +46,17 @@ describe('emphasis plan', () => {
     expect(shape([text('a', 'bold', 'italic'), text('b', 'bold')], ['bold'])).toEqual([
       { close: [], spaces: '', open: ['*'], core: 'a' },
       { close: ['*'], spaces: '', open: [], core: 'b' },
+    ]);
+  });
+  it('moves the spaces a link label ends with after the link', () => {
+    expect(shape([text('Veja o '), link(text('manual ')), text('agora.')])).toEqual([
+      { close: [], spaces: '', open: [], core: 'Veja o' },
+      { close: [], spaces: ' ', open: [], core: '' },
+      { close: [], spaces: ' ', open: [], core: 'agora.' },
+    ]);
+    expect(shape([link(text('manual', 'bold'), text('  ')), text('fim', 'bold')])).toEqual([
+      { close: [], spaces: '', open: ['**'], core: '' },
+      { close: [], spaces: '  ', open: [], core: 'fim' },
     ]);
   });
 });

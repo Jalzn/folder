@@ -140,6 +140,13 @@ describe('document to Markdown', () => {
     );
   });
 
+  it('keeps the space a link label ends with, after the link', () => {
+    const link = (...content: JsonValue[]) => ({ type: 'link', href: 'https://a.b', content });
+    expect(markdown(paragraph(text('Veja o '), link(text('manual ')), text('agora.')))).toBe(
+      'Veja o [manual](https://a.b) agora.\n',
+    );
+  });
+
   it('keeps setext underlines, indentation and odd list numbers from changing the structure', () => {
     expect(markdown(paragraph(text('título falso\n===')))).toBe('título falso\\\n\\===\n');
     expect(markdown(paragraph(text('    quatro espaços')), block('quote', [text('\tcom tab')]))).toBe(
