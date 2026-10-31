@@ -135,6 +135,9 @@ describe('document to Markdown', () => {
     ).toBe(
       '<strong>Atenção!</strong>Leia isto e palavra<strong>(negrito)</strong>fim\n\n**negrito** e re*itálico*ver\n',
     );
+    expect(markdown(paragraph(text('Nota:', { bold: true }), text('2', { italic: true }), text('x')))).toBe(
+      '**Nota:**<em>2</em>x\n',
+    );
   });
 
   it('keeps setext underlines, indentation and odd list numbers from changing the structure', () => {

@@ -21,7 +21,7 @@ export interface EmphasisPlan {
   end: string[];
 }
 
-/** A character that counts as punctuation next to a delimiter: another delimiter. */
+/** How a neighboring delimiter counts for flanking: as punctuation. */
 const DELIMITER = '*';
 
 interface Span {
@@ -85,27 +85,21 @@ export function planEmphasis(items: readonly Inline[], inherited: readonly Mark[
 
   const position = new Map(drafts.map((draft, index) => [draft, index]));
   const previous = (draft: Draft | 'end') => drafts[(draft === 'end' ? drafts.length : (position.get(draft) ?? 0)) - 1];
-  const closesOf = (draft: Draft | 'end') => (draft === 'end' ? endCloses : draft.closes);
-  for (const span of spans) {
-    const at = span.opensAt;
-    const order = at.opens.indexOf(span);
-    const before = order > 0 || at.closes.length ? DELIMITER : at.spaces ? ' ' : lastCharacter(previous(at));
-    const after = order < at.opens.length - 1 ? DELIMITER : firstCharacter(at);
-    const closing = closesOf(span.closesAt);
-    const closeOrder = closing.indexOf(span);
-    const end = span.closesAt;
-    const beforeClose = closeOrder > 0 ? DELIMITER : lastCharacter(previous(end));
-    const afterClose =
-      closeOrder < closing.length - 1
-        ? DELIMITER
-        : end === 'end'
-          ? undefined
-          : end.spaces
-            ? ' '
-            : end.opens.length
-              ? DELIMITER
-              : firstCharacter(end);
-    [span.opening, span.closing] = delimiters(span.mark, { before, after }, { before: beforeClose, after: afterClose });
+  // Bold first: an italic span needs to know whether a neighbor is written `**`.
+  for (const span of [...spans.filter(isBold), ...spans.filter((span) => !isBold(span))]) {
+    const closing = span.closesAt === 'end' ? endCloses : span.closesAt.closes;
+    const sides = [
+      beforeOpening(span, previous(span.opensAt)),
+      afterOpening(span),
+      beforeClosing(span, closing, previous(span.closesAt)),
+      afterClosing(span, closing),
+    ] as const;
+    [span.opening, span.closing] = delimiters(
+      span.mark,
+      { before: characterOf(sides[0]), after: characterOf(sides[1]) },
+      { before: characterOf(sides[2]), after: characterOf(sides[3]) },
+      { besideBoldAsterisks: sides.some(isBoldAsterisks) },
+    );
   }
 
   return {
@@ -119,6 +113,41 @@ export function planEmphasis(items: readonly Inline[], inherited: readonly Mark[
     })),
     end: endCloses.map((span) => span.closing),
   };
+}
+
+/** What touches a delimiter on one side: another span's delimiter, or a character, none at the end. */
+type Side = Span | string | undefined;
+
+const isBold = (span: Span) => span.mark === 'bold';
+const isBoldAsterisks = (side: Side) => typeof side === 'object' && side.opening === '**';
+const characterOf = (side: Side) => (typeof side === 'object' ? DELIMITER : side);
+
+// A step writes the delimiters it closes, innermost first, then its spaces, then those it opens.
+function beforeOpening(span: Span, previous: Draft | undefined): Side {
+  const { closes, spaces, opens } = span.opensAt;
+  const order = opens.indexOf(span);
+  if (order > 0) return opens[order - 1];
+  if (spaces) return ' ';
+  return closes.at(-1) ?? lastCharacter(previous);
+}
+
+function afterOpening(span: Span): Side {
+  const { opens } = span.opensAt;
+  return opens[opens.indexOf(span) + 1] ?? firstCharacter(span.opensAt);
+}
+
+function beforeClosing(span: Span, closing: readonly Span[], previous: Draft | undefined): Side {
+  const order = closing.indexOf(span);
+  return order > 0 ? closing[order - 1] : lastCharacter(previous);
+}
+
+function afterClosing(span: Span, closing: readonly Span[]): Side {
+  const next = closing[closing.indexOf(span) + 1];
+  if (next) return next;
+  const end = span.closesAt;
+  if (end === 'end') return undefined;
+  if (end.spaces) return ' ';
+  return end.opens[0] ?? firstCharacter(end);
 }
 
 interface Context {
@@ -148,12 +177,18 @@ const tags: Record<Mark, [string, string]> = {
 
 /**
  * The delimiters a Markdown reader will take as this emphasis. Italic prefers `_`, which cannot
- * merge with the `**` of bold; where no delimiter works, as in `**Atenção!**Leia`, the span is
- * written as an HTML tag pair, which both CommonMark and BlockNote read.
+ * merge with the `**` of bold; a `*` beside `**` would form one delimiter run, which reads
+ * differently. Where no delimiter works, as in `**Atenção!**Leia`, the span is written as an HTML
+ * tag pair, which both CommonMark and BlockNote read.
  */
-function delimiters(mark: Mark, opening: Context, closing: Context): [string, string] {
+function delimiters(
+  mark: Mark,
+  opening: Context,
+  closing: Context,
+  { besideBoldAsterisks }: { besideBoldAsterisks: boolean },
+): [string, string] {
   if (mark === 'italic' && underscoresWork(opening, closing)) return ['_', '_'];
-  if (!asterisksWork(opening, closing)) return tags[mark];
+  if (!asterisksWork(opening, closing) || (mark === 'italic' && besideBoldAsterisks)) return tags[mark];
   return mark === 'bold' ? ['**', '**'] : mark === 'strike' ? ['~~', '~~'] : ['*', '*'];
 }
 
