@@ -15,7 +15,3 @@
   color: var(--text-3);
   white-space: nowrap;
 }
-.shortcut {
-  display: inline-flex;
-  gap: 4px;
-}

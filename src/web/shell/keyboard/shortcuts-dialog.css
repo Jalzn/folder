@@ -1,0 +1,44 @@
+.modal.shortcuts-dialog {
+  width: min(800px, 100%);
+}
+.shortcuts-dialog__intro {
+  margin: 0;
+  color: var(--text-2);
+}
+.shortcuts-dialog__groups {
+  display: flex;
+  flex-direction: column;
+}
+.shortcuts-dialog__group h3 {
+  margin: 10px 0 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  font: var(--type-label);
+  color: var(--text-3);
+}
+.shortcuts-dialog__group dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 28px;
+  margin: 0;
+}
+.shortcuts-dialog__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+  color: var(--text-2);
+}
+.shortcuts-dialog__row dd {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .shortcuts-dialog__group dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

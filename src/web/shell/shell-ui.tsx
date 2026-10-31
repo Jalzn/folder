@@ -1,0 +1,103 @@
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createLayerStack, type LayerStack } from './keyboard/layers';
+
+/** Where the project switcher opens: the sidebar, the rail, the narrow top bar or the sidebar over the page. */
+export type SwitcherPlace = 'sidebar' | 'rail' | 'top-bar' | 'overlay';
+
+/** What the page offers the shell: ⌘S and the palette's "Neste item" actions. */
+export interface PageCommands {
+  saveNow?: () => void;
+}
+
+interface ShellUi {
+  layers: LayerStack;
+  overlay: { open: boolean; search: boolean };
+  setOverlay: (open: boolean, options?: { search?: boolean }) => void;
+  switcherAt: SwitcherPlace | null;
+  setSwitcherAt: (place: SwitcherPlace | null) => void;
+  /** The palette's text while it is open, or null. */
+  palette: string | null;
+  openPalette: (text?: string) => void;
+  closePalette: () => void;
+  shortcutsOpen: boolean;
+  setShortcutsOpen: (open: boolean) => void;
+  newItemOpen: boolean;
+  setNewItemOpen: (open: boolean) => void;
+  moveOpen: boolean;
+  setMoveOpen: (open: boolean) => void;
+  /** Grows by one at each request to focus the sidebar's Buscar. */
+  searchRequest: number;
+  requestSearch: () => void;
+  announcement: string;
+  announce: (text: string) => void;
+  page: { current: PageCommands };
+}
+
+const ShellUiContext = createContext<ShellUi | null>(null);
+
+export function useShellUi() {
+  const value = useContext(ShellUiContext);
+  if (!value) throw new Error('A interface do shell está indisponível.');
+  return value;
+}
+
+/** The shell's open layers and requests, shared by the sidebar, the shortcuts and the palette. */
+export function ShellUiProvider({ children }: { children: ReactNode }) {
+  const [layers] = useState(createLayerStack);
+  const [overlay, setOverlayState] = useState({ open: false, search: false });
+  const [switcherAt, setSwitcherAt] = useState<SwitcherPlace | null>(null);
+  const [palette, setPalette] = useState<string | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [newItemOpen, setNewItemOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [searchRequest, setSearchRequest] = useState(0);
+  const [announcement, setAnnouncement] = useState('');
+  const page = useRef<PageCommands>({});
+  const setOverlay = useCallback(
+    (open: boolean, options: { search?: boolean } = {}) =>
+      setOverlayState({ open, search: open && Boolean(options.search) }),
+    [],
+  );
+  const announce = useCallback((text: string) => {
+    // A repeated message must still be read: clear first, then set.
+    setAnnouncement('');
+    requestAnimationFrame(() => setAnnouncement(text));
+  }, []);
+  const value = useMemo<ShellUi>(
+    () => ({
+      layers,
+      overlay,
+      setOverlay,
+      switcherAt,
+      setSwitcherAt,
+      palette,
+      openPalette: (text = '') => setPalette(text),
+      closePalette: () => setPalette(null),
+      shortcutsOpen,
+      setShortcutsOpen,
+      newItemOpen,
+      setNewItemOpen,
+      moveOpen,
+      setMoveOpen,
+      searchRequest,
+      requestSearch: () => setSearchRequest((count) => count + 1),
+      announcement,
+      announce,
+      page,
+    }),
+    [
+      layers,
+      overlay,
+      setOverlay,
+      switcherAt,
+      palette,
+      shortcutsOpen,
+      newItemOpen,
+      moveOpen,
+      searchRequest,
+      announcement,
+      announce,
+    ],
+  );
+  return <ShellUiContext.Provider value={value}>{children}</ShellUiContext.Provider>;
+}

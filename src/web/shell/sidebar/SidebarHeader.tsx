@@ -3,14 +3,17 @@ import { Button as AriaButton } from 'react-aria-components';
 import type { Project } from '../../lib/types';
 import { IconButton, Logo, ProjectMark } from '../../ui';
 import { ProjectSwitcher } from '../project/ProjectSwitcher';
+import type { SwitcherPlace } from '../shell-ui';
 
 /** The project switcher and, on hover or focus, the button that collapses the sidebar. */
 export function SidebarHeader({
   project,
+  place,
   collapseLabel,
   onCollapse,
 }: {
   project: Project | null;
+  place: SwitcherPlace;
   collapseLabel: string;
   onCollapse: () => void;
 }) {
@@ -18,6 +21,7 @@ export function SidebarHeader({
     <div className="sidebar-header">
       <ProjectSwitcher
         current={project}
+        place={place}
         trigger={
           <AriaButton
             className="sidebar-header__switcher"

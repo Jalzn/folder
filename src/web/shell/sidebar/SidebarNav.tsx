@@ -10,7 +10,7 @@ export function SidebarNav({ project, openTasks }: { project: Project; openTasks
   const overview = paths.overview(project.id);
   const board = paths.board(project.id);
   return (
-    <div className="sidebar-nav">
+    <>
       <SidebarRow
         href={overview}
         icon={<LayoutDashboard size={16} />}
@@ -24,6 +24,6 @@ export function SidebarNav({ project, openTasks }: { project: Project; openTasks
         current={pathname === board}
         meta={openTasks || undefined}
       />
-    </div>
+    </>
   );
 }

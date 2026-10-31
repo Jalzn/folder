@@ -1,11 +1,12 @@
 import './sidebar.css';
 import { useLocation, useNavigate } from '@tanstack/react-router';
-import { LayoutDashboard, PanelLeftOpen, SquareKanban, Trash2 } from 'lucide-react';
+import { LayoutDashboard, PanelLeftOpen, Search, SquareKanban, Trash2 } from 'lucide-react';
 import { Button as AriaButton } from 'react-aria-components';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { IconButton, Logo, ProjectMark } from '../../ui';
 import { ProjectSwitcher } from '../project/ProjectSwitcher';
+import { useShellUi } from '../shell-ui';
 import { RailPopover } from './RailPopover';
 import { Avatar } from './SidebarFooter';
 import { useNavigationData } from './use-navigation-data';
@@ -22,14 +23,16 @@ export function CollapsedRail({
   onExpand: () => void;
 }) {
   const navigation = useNavigationData(project);
+  const ui = useShellUi();
   const navigate = useNavigate();
   const pathname = useLocation({ select: (location) => location.pathname });
   const go = (href: string) => void navigate({ href });
   const on = (href: string) => (pathname === href ? 'true' : undefined);
   return (
-    <div className="rail">
+    <div className="rail" data-region="sidebar">
       <ProjectSwitcher
         current={project}
+        place="rail"
         placement="right top"
         trigger={
           <AriaButton
@@ -43,9 +46,16 @@ export function CollapsedRail({
           </AriaButton>
         }
       />
+      <IconButton
+        label="Buscar"
+        shortcut={['/']}
+        className="rail__button"
+        onPress={() => (project ? ui.setOverlay(true, { search: true }) : ui.openPalette())}
+      >
+        <Search size={16} />
+      </IconButton>
       {project && (
         <>
-          <span className="rail__gap" />
           <IconButton
             label="Visão geral"
             className="rail__button"

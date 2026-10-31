@@ -14,8 +14,17 @@ export function currentProjectId(page: Page) {
 
 /** On a narrow screen the sidebar opens over the page from the top bar's menu. */
 export async function showSidebar(page: Page) {
+  if (await page.getByRole('dialog', { name: 'Navegação' }).isVisible()) return;
   const open = page.getByRole('button', { name: 'Abrir navegação', exact: true });
   if (await open.isVisible()) await open.click();
+}
+
+/** Closes the sidebar over the page, if open, and waits until it is gone. */
+export async function hideSidebar(page: Page) {
+  const overlay = page.getByRole('dialog', { name: 'Navegação' });
+  if (!(await overlay.isVisible())) return;
+  await page.keyboard.press('Escape');
+  await expect(overlay).toBeHidden();
 }
 
 /** The current project's navigation in the sidebar. */
@@ -65,12 +74,19 @@ export async function openIndex(page: Page, type: 'documentos' | 'desenhos') {
   await expect(page).toHaveURL(new RegExp(`/indice\\?tipo=${type}$`));
 }
 
-/** Searches the current project's documents or drawings and leaves the results on screen. */
-export async function searchProject(page: Page, type: 'documentos' | 'desenhos', text: string) {
-  await openIndex(page, type);
-  await page
-    .getByRole('searchbox', { name: type === 'documentos' ? 'Buscar nos documentos' : 'Buscar nos desenhos' })
-    .fill(text);
+/** The sidebar's Buscar of the current project, over the page on a narrow screen. */
+export async function projectSearchbox(page: Page) {
+  await showSidebar(page);
+  return projectNavigation(page).getByRole('searchbox', { name: /^Buscar em / });
+}
+
+/**
+ * Searches the current project with the sidebar's Buscar and returns the sidebar's navigation, where the
+ * results replace the sections.
+ */
+export async function searchProject(page: Page, text: string) {
+  await (await projectSearchbox(page)).fill(text);
+  return projectNavigation(page);
 }
 
 /** Leaves an item page for the project's Visão geral through an in-app link, without loading the page again. */

@@ -40,12 +40,13 @@ import {
 } from '../lib/canvas-autosave';
 import { renderCanvasPng } from '../lib/canvas-png';
 import { CanvasPreviewUploader } from '../lib/canvas-preview';
+import { moveThroughController } from '../lib/editor-move';
 import { invalidateNavigation, useProjects } from '../lib/queries';
-import { registerSave } from '../lib/save-registry';
+import { registerOpenEditor, registerSave } from '../lib/save-registry';
 import { useAction } from '../lib/use-action';
 import { useRequest } from '../lib/use-request';
 import { itemPath, paths } from '../router/paths';
-import { useApp } from '../shell';
+import { useApp, usePageCommands } from '../shell';
 import { useTheme } from '../shell/theme';
 import { ActionMenu, Dialog, EmptyState, useToast } from '../ui';
 
@@ -175,6 +176,15 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const app = useApp();
   const theme = useTheme();
   const [{ controller, previews }] = useState(() => sessionFor(canvas, app.owner.installationId));
+  useEffect(
+    () =>
+      registerOpenEditor('drawing', canvas.id, {
+        moveTo: (projectId) => moveThroughController(controller, projectId),
+      }),
+    [controller, canvas.id],
+  );
+  // ⌘S saves now and, after a failure, tries again.
+  usePageCommands({ saveNow: () => void controller.flush() });
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   const projects = useProjects(true);
   const toast = useToast();

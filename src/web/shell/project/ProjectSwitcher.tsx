@@ -9,6 +9,7 @@ import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { Kbd, MenuItem, MenuSection, MenuSeparator, Popover, PopoverTrigger, ProjectMark } from '../../ui';
 import { useApp } from '../AppProvider';
+import { type SwitcherPlace, useShellUi } from '../shell-ui';
 import { activeProjects } from './project-order';
 
 const NEW_PROJECT = 'new';
@@ -43,13 +44,17 @@ function ProjectOption({ project, current, shortcut }: { project: Project; curre
 export function ProjectSwitcher({
   current,
   trigger,
+  place,
   placement = 'bottom start',
 }: {
   current: Project | null;
   trigger: ReactElement;
+  /** Which switcher this is, so G P opens the one on screen. */
+  place: SwitcherPlace;
   placement?: 'bottom start' | 'right top';
 }) {
   const app = useApp();
+  const ui = useShellUi();
   const navigate = useNavigate();
   const projects = useProjects(true).data ?? [];
   const active = activeProjects(projects);
@@ -60,7 +65,7 @@ export function ProjectSwitcher({
     else void navigate({ href: paths.overview(key) });
   }
   return (
-    <PopoverTrigger>
+    <PopoverTrigger isOpen={ui.switcherAt === place} onOpenChange={(open) => ui.setSwitcherAt(open ? place : null)}>
       {trigger}
       <Popover aria-label="Trocar de projeto" placement={placement} className="project-switcher">
         {({ close }) => (

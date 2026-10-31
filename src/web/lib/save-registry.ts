@@ -48,3 +48,22 @@ export function subscribePendingSaves(listener: () => void) {
 export const pendingSaves = () => pending;
 
 export const isPendingSave = (saves: ReadonlySet<string>, type: ItemType, id: string) => saves.has(keyOf(type, id));
+
+/** An editor open in this tab: moving its item goes through its own autosave. */
+export interface OpenEditor {
+  /** Saves the current content, unsaved edits included, under another project; false when it cannot save. */
+  moveTo: (projectId: string) => Promise<boolean>;
+}
+
+const openEditors = new Map<string, OpenEditor>();
+
+/** Called by an editor while it is mounted; the returned function forgets it. */
+export function registerOpenEditor(type: ItemType, id: string, editor: OpenEditor) {
+  const key = keyOf(type, id);
+  openEditors.set(key, editor);
+  return () => {
+    if (openEditors.get(key) === editor) openEditors.delete(key);
+  };
+}
+
+export const openEditor = (type: ItemType, id: string) => openEditors.get(keyOf(type, id));

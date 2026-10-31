@@ -34,7 +34,6 @@ function ItemFrame<T extends { projectId: string | null }>({
   const navigate = useNavigate();
   const search = useSearch({ strict: false });
   const owner = item.data?.projectId;
-  const moved = Boolean(owner && owner !== projectId);
   useEffect(() => {
     if (!owner || owner === projectId) return;
     const block = type === 'document' && typeof search.bloco === 'string' ? search.bloco : undefined;
@@ -57,7 +56,8 @@ function ItemFrame<T extends { projectId: string | null }>({
       <Spinner label={loadingLabels[type]} />
     </div>
   );
-  if (!item.data || moved) return loading;
+  // An item that moved keeps its page while the address catches up, so an open editor stays mounted.
+  if (!item.data) return loading;
   return <Suspense fallback={loading}>{children(item.data)}</Suspense>;
 }
 

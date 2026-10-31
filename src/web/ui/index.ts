@@ -7,6 +7,7 @@ export { ErrorNotice } from './ErrorNotice';
 export { ColumnRing } from './glyphs/ColumnRing';
 export { Logo } from './glyphs/Logo';
 export { ProjectMark } from './glyphs/ProjectMark';
+export { Highlight } from './Highlight';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { Kbd, Shortcut, shortcutLabel } from './Kbd';
 export {

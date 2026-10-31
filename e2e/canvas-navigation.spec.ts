@@ -1,6 +1,14 @@
 import { expect, type Page, test } from '@playwright/test';
 import { moveToTrash, newDocument, newDrawing, restoreFromTrash, trashRow } from './support/items.js';
-import { createProject, openListedItem, projectNavigation, searchProject, showSidebar } from './support/navigation.js';
+import {
+  createProject,
+  hideSidebar,
+  openListedItem,
+  projectNavigation,
+  projectSearchbox,
+  searchProject,
+  showSidebar,
+} from './support/navigation.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -34,16 +42,16 @@ test('a project keeps its drawings through the sidebar, the Índice, the trash a
   await showSidebar(page);
   const sidebarLink = projectNavigation(page).getByRole('link', { name: new RegExp(`^${drawingTitle}, desenho`) });
   await expect(sidebarLink).toHaveAttribute('aria-current', 'page');
-  await page.keyboard.press('Escape');
+  await hideSidebar(page);
 
-  await searchProject(page, 'desenhos', drawingTitle);
-  const row = page.getByRole('main').getByRole('listitem').filter({ hasText: drawingTitle });
+  const results = await searchProject(page, drawingTitle);
+  const row = results.getByRole('link').filter({ hasText: drawingTitle });
   await expect(row).toBeVisible();
-  await page.getByRole('searchbox', { name: 'Buscar nos desenhos' }).fill('Uma busca sem resultado neste desenho');
+  await (await projectSearchbox(page)).fill('Uma busca sem resultado neste desenho');
   await expect(row).toHaveCount(0);
-  await expect(page.getByText('Nada encontrado.')).toBeVisible();
-  await page.getByRole('searchbox', { name: 'Buscar nos desenhos' }).fill(drawingTitle);
-  await row.getByRole('link').click();
+  await expect(results.getByRole('region', { name: 'Desenhos: 0' })).toBeVisible();
+  await (await projectSearchbox(page)).fill(drawingTitle);
+  await row.click();
   await expect(page).toHaveURL(drawingUrl);
   await moveToTrash(page, 'desenho');
   await expect(page).toHaveURL(projectUrl);
@@ -63,7 +71,7 @@ test('a project keeps its drawings through the sidebar, the Índice, the trash a
   await showSidebar(page);
   await expect(projectNavigation(page).getByRole('button', { name: 'Novo desenho', exact: true })).toHaveCount(0);
   await expect(projectNavigation(page).getByRole('link', { name: new RegExp(`^${drawingTitle}`) })).toBeVisible();
-  await page.keyboard.press('Escape');
+  await hideSidebar(page);
   await page.getByRole('main').getByRole('button', { name: 'Desarquivar', exact: true }).click();
   await expect(archived).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

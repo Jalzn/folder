@@ -107,3 +107,15 @@
     width: min(320px, 100vw - 48px);
   }
 }
+.top-bar__search {
+  margin-left: auto;
+}
+/* Where N and M open their menus: the top right of the page. */
+.app-layout__anchor {
+  position: fixed;
+  top: 40px;
+  right: 24px;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}

@@ -128,3 +128,10 @@ svg.lucide {
     scroll-behavior: auto !important;
   }
 }
+
+/* A search term in a result: the text colour in 600, without a fill (docs/interface/visual.md §6). */
+.highlight {
+  background: none;
+  color: var(--text);
+  font-weight: 600;
+}

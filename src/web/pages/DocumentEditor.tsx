@@ -48,14 +48,15 @@ import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } fr
 import { createInlineMathSpec } from '../components/InlineMath';
 import { api, errorCode, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../lib/api';
 import { AutosaveController, type Snapshot } from '../lib/autosave';
+import { moveThroughController } from '../lib/editor-move';
 import { exportMarkdownWithMath, importMarkdownWithMath } from '../lib/markdown';
 import { invalidateNavigation, useProjects, useTasks } from '../lib/queries';
-import { registerSave } from '../lib/save-registry';
+import { registerOpenEditor, registerSave } from '../lib/save-registry';
 import type { Document, DocumentContent } from '../lib/types';
 import { useAction } from '../lib/use-action';
 import { useRequest } from '../lib/use-request';
 import { itemPath, paths } from '../router/paths';
-import { useApp } from '../shell';
+import { useApp, usePageCommands } from '../shell';
 import { useTheme } from '../shell/theme';
 import { ActionMenu, Dialog, EmptyState, ErrorNotice, Spinner, useToast } from '../ui';
 import { LinkedTask, TaskDialog, type TaskOrigin } from './Board';
@@ -261,6 +262,15 @@ function DocumentEditor({ document }: { document: Document }) {
   const app = useApp();
   const theme = useTheme();
   const [controller] = useState(() => controllerFor(document, app.owner.installationId));
+  useEffect(
+    () =>
+      registerOpenEditor('document', document.id, {
+        moveTo: (projectId) => moveThroughController(controller, projectId),
+      }),
+    [controller, document.id],
+  );
+  // ⌘S saves now and, after a failure, tries again.
+  usePageCommands({ saveNow: () => void controller.flush() });
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   const projects = useProjects(true);
   const tasks = useTasks({ documentId: document.id });

@@ -1,9 +1,10 @@
 import { useNavigate } from '@tanstack/react-router';
-import { KeyRound, LogOut, Monitor, Moon, Sun, SunMoon } from 'lucide-react';
+import { Keyboard, KeyRound, LogOut, Monitor, Moon, Sun, SunMoon } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 import { api, errorMessage, queryClient, reportSessionError } from '../../lib/api';
 import { paths } from '../../router/paths';
 import { AlertDialog, Menu, MenuItem, MenuSeparator, MenuTrigger, SubmenuTrigger, useToast } from '../../ui';
+import { useShellUi } from '../shell-ui';
 import { THEME_CHOICES, type ThemeChoice, themeChoiceLabels, useTheme } from '../theme';
 
 const themeIcons: Record<ThemeChoice, ReactElement> = {
@@ -12,7 +13,7 @@ const themeIcons: Record<ThemeChoice, ReactElement> = {
   dark: <Moon size={16} />,
 };
 
-/** The Você menu: Perfil e token, Tema (Sistema, Claro, Escuro) and Sair, after a confirmation. */
+/** The Você menu: Perfil e token, Tema (Sistema, Claro, Escuro), Atalhos and Sair, after a confirmation. */
 export function YouMenu({
   trigger,
   placement = 'top start',
@@ -23,6 +24,7 @@ export function YouMenu({
   const navigate = useNavigate();
   const toast = useToast();
   const theme = useTheme();
+  const ui = useShellUi();
   const [leaving, setLeaving] = useState(false);
   const [busy, setBusy] = useState(false);
   function chooseTheme(choice: ThemeChoice) {
@@ -69,6 +71,14 @@ export function YouMenu({
               ))}
             </Menu>
           </SubmenuTrigger>
+          <MenuItem
+            id="shortcuts"
+            icon={<Keyboard size={16} />}
+            shortcut={['?']}
+            onAction={() => ui.setShortcutsOpen(true)}
+          >
+            Atalhos
+          </MenuItem>
           <MenuSeparator />
           <MenuItem id="logout" icon={<LogOut size={16} />} onAction={() => setLeaving(true)}>
             Sair
