@@ -188,7 +188,9 @@ function delimiters(
   closing: Context,
   { besideBoldAsterisks }: { besideBoldAsterisks: boolean },
 ): [string, string] {
-  if (mark === 'italic' && underscoresWork(opening, closing)) return ['_', '_'];
+  // After text ending in `_`, written `\_`, BlockNote reads `\__x_` as plain text.
+  const underscoreFits = opening.before !== '_' && underscoresWork(opening, closing);
+  if (mark === 'italic' && underscoreFits) return ['_', '_'];
   if (!asterisksWork(opening, closing) || (mark === 'italic' && besideBoldAsterisks)) return tags[mark];
   return mark === 'bold' ? ['**', '**'] : mark === 'strike' ? ['~~', '~~'] : ['*', '*'];
 }

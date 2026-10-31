@@ -119,6 +119,8 @@ describe('server Markdown read back by the BlockNote parser', () => {
         text('riscado!', { strike: true }),
         text('sim'),
       ),
+      // An escaped `_` right before an opening `_` reads as text, so this italic is written with `*`.
+      paragraph(text('var_'), text('x', { italic: true }), text(' fim')),
       paragraph(text('Escapes: \\ * _ [ ] ` ~ a < b & c | { } ( ) ! . + a = b e R$ 10 ou R$ 20 e US$')),
       paragraph(text('# não é título')),
       paragraph(text('- não é lista')),

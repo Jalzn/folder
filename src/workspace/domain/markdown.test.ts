@@ -149,6 +149,7 @@ describe('document to Markdown', () => {
     expect(markdown(paragraph(text('Nota:', { bold: true }), text('2', { italic: true }), text('x')))).toBe(
       '**Nota:**<em>2</em>x\n',
     );
+    expect(markdown(paragraph(text('var_'), text('x', { italic: true }), text(' fim')))).toBe('var\\_*x* fim\n');
   });
 
   it('keeps the space a link label ends with, after the link', () => {

@@ -33,6 +33,9 @@ describe('emphasis plan', () => {
     expect(openings([text('a '), text('(neg)', 'italic'), text(' b')])).toEqual([[], ['_'], []]);
     expect(openings([text('a'), text('(neg)', 'italic'), text('b')])).toEqual([[], ['<em>'], []]);
     expect(openings([text('fim.'), text('Início', 'italic'), text('.')])).toEqual([[], ['_'], []]);
+    // BlockNote reads `\__` as text, so an escaped `_` before the opening asks for `*`.
+    expect(openings([text('var_'), text('x', 'italic'), text(' fim')])).toEqual([[], ['*'], []]);
+    expect(openings([text('a '), text('_privado', 'italic')])).toEqual([[], ['_']]);
   });
   it('never writes the * of italic beside the ** of bold, which would merge into one run', () => {
     expect(shape([text('Nota:', 'bold'), text('2', 'italic'), text('x')])).toEqual([
