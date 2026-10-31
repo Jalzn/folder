@@ -1,6 +1,7 @@
 import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { AppError } from '@tinyfold/core/application';
+import { createSlidingWindow } from '@tinyfold/core/infra';
 import type { LoginThrottle } from '../application/ports.js';
 
 const scrypt = promisify(scryptCallback) as (password: string, salt: string, length: number) => Promise<Buffer>;
@@ -26,16 +27,14 @@ export const sessionTokens = {
   valid: (token: string) => /^[a-f0-9]{64}$/.test(token),
 };
 
+/** At most 10 login attempts per IP in any minute, on the same sliding window as the MCP limits. */
 export function createLoginThrottle(): LoginThrottle {
-  const entries = new Map<string, { start: number; count: number }>();
+  const attempts = createSlidingWindow({ limit: 10, windowMs: 60_000, maxKeys: 10_000 });
   return {
     check(ip, now) {
-      for (const [key, value] of entries) if (now - value.start >= 60_000) entries.delete(key);
-      const record = entries.get(ip) ?? { start: now, count: 0 };
-      if (record.count >= 10 || (!entries.has(ip) && entries.size >= 10_000))
+      if (attempts.blockedFor(ip, now))
         throw new AppError('RATE_LIMITED', 'Muitas tentativas. Aguarde um minuto e tente novamente.');
-      record.count += 1;
-      entries.set(ip, record);
+      attempts.record(ip, now);
     },
   };
 }
