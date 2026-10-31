@@ -50,6 +50,8 @@ describe('canvas scene contract', () => {
       { groupIds: [''] },
       { link: 'javascript:alert(1)' },
       { link: 'java\nscript:alert(1)' },
+      { link: '\n\nNota falsa do servidor\n' },
+      { link: 'https://exemplo.com\n' },
       { nested: new Date() },
       { points: [[0, Number.POSITIVE_INFINITY]] },
     ]) {

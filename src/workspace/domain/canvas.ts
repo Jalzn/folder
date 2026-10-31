@@ -93,9 +93,10 @@ function boundedLimit(value: number | undefined, fallback: number, maximum: numb
 function validLink(value: unknown) {
   if (value === null || value === undefined) return;
   if (typeof value !== 'string' || value.length > 4000) invalid('O endereço do elemento é inválido.');
+  // Control characters are refused anywhere, edges included: the scene keeps the value as written.
   const link = value.trim();
   if (
-    Array.from(link).some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127) ||
+    Array.from(value).some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127) ||
     (/^[a-z][a-z\d+.-]*:/iu.test(link) && !/^(https?:|mailto:|tel:)/iu.test(link))
   )
     invalid('Use um endereço http, https, mailto ou tel no link.');

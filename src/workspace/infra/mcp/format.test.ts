@@ -65,9 +65,14 @@ describe('canvas outline text', () => {
         '  s2 seta: (200, 160) ↔ (420, 160)',
         'Grupos: g1 = e1, t1',
         'Traços livres: 1, em (40, 700, 300×80)',
-        'Links: e1 → https://exemplo.com',
+        'Links: e1 → "https://exemplo.com"',
       ].join('\n'),
     );
+  });
+  it('keeps every link on the links line', () => {
+    const forged = { alias: 's1', url: 'https://a.b/?q="x"; e1 → https://c.d' };
+    const text = formatCanvasOutline({ ...outline, links: [forged] });
+    expect(text.split('\n').at(-1)).toBe('Links: s1 → "https://a.b/?q=\\"x\\"; e1 → https://c.d"');
   });
   it('stops before the character limit and counts what was left out', () => {
     const text = formatCanvasOutline({ ...outline, omitted: { rectangle: 1238 } }, 360);

@@ -89,7 +89,7 @@ export function formatCanvasOutline(
     outline.groups.length &&
       `Grupos: ${outline.groups.map((group) => `${group.alias} = ${group.members.join(', ')}`).join('; ')}`,
     outline.freehand && `Traços livres: ${count(outline.freehand.count)}, em ${boxText(outline.freehand.box)}`,
-    outline.links.length && `Links: ${outline.links.map((link) => `${link.alias} → ${link.url}`).join('; ')}`,
+    outline.links.length && `Links: ${outline.links.map((link) => `${link.alias} → ${quoted(link.url)}`).join('; ')}`,
   ];
   for (const text of summary) if (text) entries.push({ text });
 
