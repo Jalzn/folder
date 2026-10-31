@@ -1,20 +1,6 @@
 import { readFile } from 'node:fs/promises';
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
-
-const password = 'tinyfold-e2e-passphrase';
-let cookies: Awaited<ReturnType<BrowserContext['cookies']>> | undefined;
-
-async function login(page: Page) {
-  if (cookies) await page.context().addCookies(cookies);
-  await page.goto('/');
-  if (!cookies) {
-    await page.getByLabel('Sua senha').fill(password);
-    await page.getByRole('button', { name: 'Entrar no Tinyfold' }).click();
-    await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-    cookies = await page.context().cookies();
-  }
-  await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-}
+import { expect, type Page, test } from '@playwright/test';
+import { login } from './support/session.js';
 
 async function createDocument(page: Page, title: string, text: string) {
   await page.getByRole('button', { name: 'Começar a escrever' }).click();

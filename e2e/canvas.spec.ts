@@ -1,20 +1,9 @@
 import { readFile } from 'node:fs/promises';
-import { type BrowserContext, type Cookie, expect, type Page, test } from '@playwright/test';
+import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { answers } from './support/rpc.js';
+import { E2E_PASSWORD, login } from './support/session.js';
 
-let cookies: Cookie[] | undefined;
 const titleField = (page: Page) => page.getByRole('textbox', { name: 'Título do desenho' });
-
-async function enter(page: Page, independent = false) {
-  if (cookies && !independent) await page.context().addCookies(cookies);
-  await page.goto('/');
-  if (!cookies || independent) {
-    await page.getByLabel('Sua senha').fill('tinyfold-e2e-passphrase');
-    await page.getByRole('button', { name: 'Entrar no Tinyfold' }).click();
-    await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-    if (!independent) cookies = await page.context().cookies();
-  }
-  await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-}
 
 async function createCanvas(page: Page, title: string) {
   await page.goto('/desenhos');
@@ -27,7 +16,7 @@ async function createCanvas(page: Page, title: string) {
 async function saveTitle(page: Page, title: string) {
   const saved = page.waitForResponse(
     (response) =>
-      response.url().includes('/workspace/saveCanvas') &&
+      answers(response, 'workspace/saveCanvas') &&
       response.status() === 200 &&
       Boolean(response.request().postData()?.includes(title)),
   );
@@ -43,7 +32,7 @@ async function drawRectangle(page: Page) {
   const box = await surface.boundingBox();
   if (!box) throw new Error('Canvas surface has no dimensions.');
   const saved = page.waitForResponse(
-    (response) => response.url().includes('/workspace/saveCanvas') && response.status() === 200,
+    (response) => answers(response, 'workspace/saveCanvas') && response.status() === 200,
   );
   await page.mouse.move(box.x + box.width * 0.35, box.y + box.height * 0.45);
   await page.mouse.down();
@@ -63,7 +52,7 @@ async function drawText(page: Page, text: string) {
   await input.fill(text);
   const saved = page.waitForResponse(
     (response) =>
-      response.url().includes('/workspace/saveCanvas') &&
+      answers(response, 'workspace/saveCanvas') &&
       response.status() === 200 &&
       Boolean(response.request().postData()?.includes(text)),
   );
@@ -77,7 +66,7 @@ async function drawStroke(page: Page, touch = false) {
   const box = await page.locator('.excalidraw canvas.interactive').boundingBox();
   if (!box) throw new Error('Canvas surface has no dimensions.');
   const saved = page.waitForResponse(
-    (response) => response.url().includes('/workspace/saveCanvas') && response.status() === 200,
+    (response) => answers(response, 'workspace/saveCanvas') && response.status() === 200,
   );
   if (touch) {
     const session = await page.context().newCDPSession(page);
@@ -131,7 +120,7 @@ test('draw, reload, export PNG and round-trip an editable drawing with local fon
     if (request.url().includes('/excalidraw/fonts/')) fontRequests.push(request.url());
     if (/\/CanvasEditor-[^/]+\.js/.test(request.url())) editorRequests.push(request.url());
   });
-  await enter(page);
+  await login(page);
   expect(editorRequests).toEqual([]);
   const original = await createCanvas(page, `Fluxo ${info.project.name} ${Date.now()}`);
   await drawRectangle(page);
@@ -176,7 +165,7 @@ test('draw, reload, export PNG and round-trip an editable drawing with local fon
 });
 
 test('lost save response reuses the exact request and preserves newer edits', async ({ page }, info) => {
-  await enter(page);
+  await login(page);
   await createCanvas(page, `Antes do reenvio ${info.project.name} ${Date.now()}`);
   let first = true;
   const requests: string[] = [];
@@ -201,7 +190,7 @@ test('lost save response reuses the exact request and preserves newer edits', as
 });
 
 test('reload recovers a failed canvas draft without losing the server scene', async ({ page }, info) => {
-  await enter(page);
+  await login(page);
   await createCanvas(page, `Rascunho ${info.project.name} ${Date.now()}`);
   await drawRectangle(page);
   const scene = (await exportDrawing(page)).data.elements;
@@ -221,7 +210,7 @@ test('reload recovers a failed canvas draft without losing the server scene', as
 });
 
 test('independent sessions preserve a conflicting drawing as a separate copy', async ({ page, browser }, info) => {
-  await enter(page);
+  await login(page);
   const original = await createCanvas(page, `Conflito ${info.project.name} ${Date.now()}`);
   await drawRectangle(page);
   const scene = (await exportDrawing(page)).data.elements;
@@ -229,7 +218,7 @@ test('independent sessions preserve a conflicting drawing as a separate copy', a
   let release = () => {};
   try {
     const other = await otherContext.newPage();
-    await enter(other, true);
+    await login(other, { independent: true });
     await other.goto(original);
     await expect(titleField(other)).toBeVisible();
     let announce = () => {};
@@ -264,7 +253,7 @@ test('independent sessions preserve a conflicting drawing as a separate copy', a
 });
 
 test('unsupported media import preserves the open drawing and its editable export', async ({ page }, info) => {
-  await enter(page);
+  await login(page);
   const title = `Sem imagens ${info.project.name} ${Date.now()}`;
   const original = await createCanvas(page, title);
   await drawRectangle(page);
@@ -283,14 +272,14 @@ test('unsupported media import preserves the open drawing and its editable expor
 });
 
 test('expired session keeps the canvas draft through login and retry', async ({ page, context }, info) => {
-  await enter(page);
+  await login(page);
   await createCanvas(page, `Sessao ${info.project.name} ${Date.now()}`);
   await context.clearCookies();
   await titleField(page).fill('Desenho preservado durante novo login');
   const dialog = page.getByRole('dialog', { name: 'Vamos continuar?' });
   await expect(dialog).toBeVisible();
   await expect(titleField(page)).toHaveValue('Desenho preservado durante novo login');
-  await dialog.getByLabel('Sua senha').fill('tinyfold-e2e-passphrase');
+  await dialog.getByLabel('Sua senha').fill(E2E_PASSWORD);
   await dialog.getByRole('button', { name: 'Entrar no Tinyfold' }).click();
   await expect(dialog).not.toBeVisible();
   await page.getByRole('button', { name: 'Tentar salvar', exact: true }).click();
@@ -300,7 +289,7 @@ test('expired session keeps the canvas draft through login and retry', async ({ 
 });
 
 test('a duplicated canvas tab keeps its own failed draft after the original saves', async ({ page, context }, info) => {
-  await enter(page);
+  await login(page);
   const original = await createCanvas(page, `Abas ${info.project.name} ${Date.now()}`);
   const inherited = await page.evaluate(() => Object.fromEntries(Object.entries(sessionStorage)));
   const duplicate = await context.newPage();
@@ -322,7 +311,7 @@ test('a duplicated canvas tab keeps its own failed draft after the original save
 });
 
 test('a remote deletion leaves the local draft available for recovery as a copy', async ({ page, context }, info) => {
-  await enter(page);
+  await login(page);
   const original = await createCanvas(page, `Exclusao remota ${info.project.name} ${Date.now()}`);
   await drawRectangle(page);
   const scene = (await exportDrawing(page)).data.elements;

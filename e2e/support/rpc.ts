@@ -1,4 +1,8 @@
-import type { Page } from '@playwright/test';
+import type { Page, Response } from '@playwright/test';
+
+/** Whether a response answers exactly this procedure: `workspace/saveCanvas` is not `workspace/saveCanvasPreview`. */
+export const answers = (response: Response, procedure: string) =>
+  new URL(response.url()).pathname === `/rpc/${procedure}`;
 
 /**
  * Calls an oRPC procedure with the page's session cookie but outside the app, the way another

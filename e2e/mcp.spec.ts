@@ -1,21 +1,8 @@
 import { writeFile } from 'node:fs/promises';
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import { connectMcp, jsonOf, mcpStatus, textOf } from './support/mcp.js';
-import { rpc } from './support/rpc.js';
-
-let cookies: Awaited<ReturnType<BrowserContext['cookies']>> | undefined;
-
-async function login(page: Page) {
-  if (cookies) await page.context().addCookies(cookies);
-  await page.goto('/');
-  if (!cookies) {
-    await page.getByLabel('Sua senha').fill('tinyfold-e2e-passphrase');
-    await page.getByRole('button', { name: 'Entrar no Tinyfold' }).click();
-    await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-    cookies = await page.context().cookies();
-  }
-  await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-}
+import { answers, rpc } from './support/rpc.js';
+import { login } from './support/session.js';
 
 const isMobile = (projectName: string) => projectName.includes('mobile');
 
@@ -27,7 +14,7 @@ async function generateToken(page: Page, name: string) {
   await expect(dialog.getByRole('textbox', { name: /^Nome/ })).toBeFocused();
   await expect(dialog.getByRole('textbox', { name: /^Nome/ })).toHaveValue('Claude Code');
   await dialog.getByRole('textbox', { name: /^Nome/ }).fill(name);
-  const created = page.waitForResponse((response) => response.url().includes('/auth/createAccessToken'));
+  const created = page.waitForResponse((response) => answers(response, 'auth/createAccessToken'));
   await dialog.getByRole('button', { name: 'Gerar', exact: true }).click();
   expect((await created).status()).toBe(200);
   const result = page.getByRole('dialog', { name: 'Token gerado' });
@@ -116,9 +103,7 @@ test('Perfil shows a new token once, copies it with the Claude Code command and 
 });
 
 const canvasSaved = (page: Page) =>
-  page.waitForResponse(
-    (response) => new URL(response.url()).pathname.endsWith('/workspace/saveCanvas') && response.status() === 200,
-  );
+  page.waitForResponse((response) => answers(response, 'workspace/saveCanvas') && response.status() === 200);
 
 /** A document with a checklist and code, and a task created from its first sentence. */
 async function createDocumentWithTask(page: Page, title: string, taskTitle: string) {

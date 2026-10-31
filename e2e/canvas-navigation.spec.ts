@@ -1,24 +1,13 @@
-import { type Cookie, expect, type Page, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
+import { answers } from './support/rpc.js';
+import { login } from './support/session.js';
 
-let cookies: Cookie[] | undefined;
 const canvasTitle = (page: Page) => page.getByRole('textbox', { name: 'Título do desenho' });
-
-async function enter(page: Page) {
-  if (cookies) await page.context().addCookies(cookies);
-  await page.goto('/');
-  if (!cookies) {
-    await page.getByLabel('Sua senha').fill('tinyfold-e2e-passphrase');
-    await page.getByRole('button', { name: 'Entrar no Tinyfold' }).click();
-    await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-    cookies = await page.context().cookies();
-  }
-  await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-}
 
 async function saveCanvasTitle(page: Page, title: string) {
   const saved = page.waitForResponse(
     (response) =>
-      response.url().includes('/workspace/saveCanvas') &&
+      answers(response, 'workspace/saveCanvas') &&
       response.status() === 200 &&
       Boolean(response.request().postData()?.includes(title)),
   );
@@ -31,7 +20,7 @@ test('project drawings support keyboard tabs, project filters, trash and restore
   const suffix = `${info.project.name} ${Date.now()}`;
   const projectName = `Projeto visual ${suffix}`;
   const drawingTitle = `Mapa do projeto ${suffix}`;
-  await enter(page);
+  await login(page);
   await page.getByRole('button', { name: 'Novo projeto', exact: true }).click();
   await page.getByLabel('Nome do projeto').fill(projectName);
   await page.getByRole('dialog').getByRole('button', { name: 'Criar projeto', exact: true }).click();
@@ -119,11 +108,11 @@ test('home combines recent documents and drawings and sidebar opens the drawing 
   const suffix = `${info.project.name} ${Date.now()}`;
   const documentTitle = `Nota visual ${suffix}`;
   const drawingTitle = `Rascunho visual ${suffix}`;
-  await enter(page);
+  await login(page);
   await page.getByRole('button', { name: 'Começar a escrever', exact: true }).click();
   const documentSaved = page.waitForResponse(
     (response) =>
-      response.url().includes('/workspace/saveDocument') &&
+      answers(response, 'workspace/saveDocument') &&
       response.status() === 200 &&
       Boolean(response.request().postData()?.includes(documentTitle)),
   );

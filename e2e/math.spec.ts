@@ -1,18 +1,12 @@
 import { readFile } from 'node:fs/promises';
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
+import { answers } from './support/rpc.js';
+import { login } from './support/session.js';
 
-let cookies: Awaited<ReturnType<BrowserContext['cookies']>> | undefined;
 const sourceInput = (page: Page) => page.locator('.bn-preview-with-source-popup[data-open="true"] code[aria-label]');
 
 async function startDocument(page: Page, title: string) {
-  if (cookies) await page.context().addCookies(cookies);
-  await page.goto('/');
-  if (!cookies) {
-    await page.getByLabel('Sua senha').fill('tinyfold-e2e-passphrase');
-    await page.getByRole('button', { name: 'Entrar no Tinyfold' }).click();
-    await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-    cookies = await page.context().cookies();
-  }
+  await login(page);
   await page.getByRole('button', { name: 'Começar a escrever' }).click();
   await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
@@ -21,7 +15,7 @@ async function startDocument(page: Page, title: string) {
 async function editFormula(page: Page, latex: string) {
   await expect(sourceInput(page)).toBeVisible();
   const saved = page.waitForResponse(
-    (response) => response.url().includes('/workspace/saveDocument') && response.status() === 200,
+    (response) => answers(response, 'workspace/saveDocument') && response.status() === 200,
   );
   await sourceInput(page).fill(latex);
   await expect(sourceInput(page)).toHaveText(latex);

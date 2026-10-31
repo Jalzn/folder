@@ -1,27 +1,13 @@
-import { type BrowserContext, type Cookie, expect, type Page, test } from '@playwright/test';
-
-const password = 'tinyfold-e2e-passphrase';
-let savedCookies: Cookie[] | undefined;
-
-async function enter(page: Page, independent = false) {
-  if (savedCookies && !independent) await page.context().addCookies(savedCookies);
-  await page.goto('/');
-  if (!savedCookies || independent) {
-    await page.getByLabel('Sua senha').fill(password);
-    await page.getByRole('button', { name: 'Entrar no Tinyfold' }).click();
-    await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-    if (!independent) savedCookies = await page.context().cookies();
-  } else {
-    await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-  }
-}
+import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { answers } from './support/rpc.js';
+import { login } from './support/session.js';
 
 const editor = (page: Page) => page.getByTestId('document-content');
 
 async function writeAndSave(page: Page, text: string) {
   const saved = page.waitForResponse(
     (response) =>
-      response.url().includes('/workspace/saveDocument') &&
+      answers(response, 'workspace/saveDocument') &&
       response.status() === 200 &&
       Boolean(response.request().postData()?.includes(text)),
   );
@@ -47,7 +33,7 @@ test('two independent sessions keep both versions when a conflicting draft is sa
   page,
   browser,
 }, info) => {
-  await enter(page);
+  await login(page);
   const title = `Conflito ${info.project.name} ${Date.now()}`;
   const documentUrl = await createDocument(page, title, 'Ideia original compartilhada.');
   const otherContext = await browser.newContext({
@@ -57,7 +43,7 @@ test('two independent sessions keep both versions when a conflicting draft is sa
   let release = () => {};
   try {
     const other = await otherContext.newPage();
-    await enter(other, true);
+    await login(other, { independent: true });
     await other.goto(documentUrl);
     await expect(editor(other)).toContainText('Ideia original compartilhada.');
     let announce = () => {};
@@ -96,7 +82,7 @@ test('two independent sessions keep both versions when a conflicting draft is sa
 test('a task created from selected text survives document trash and restores its source link', async ({
   page,
 }, info) => {
-  await enter(page);
+  await login(page);
   const title = `Origem ${info.project.name} ${Date.now()}`;
   const taskTitle = `Proximo passo ${info.project.name} ${Date.now()}`;
   const documentUrl = await createDocument(page, title, 'Organizar as referencias do projeto.');
@@ -138,7 +124,7 @@ test('a task created from selected text survives document trash and restores its
 });
 
 test('retrying after a committed task response is lost creates only one task', async ({ page }, info) => {
-  await enter(page);
+  await login(page);
   await page.goto('/kanban');
   const title = `Reenvio unico ${info.project.name} ${Date.now()}`;
   let loseFirstResponse = true;

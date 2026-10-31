@@ -1,17 +1,11 @@
-import { type Cookie, expect, type Page, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
+import { answers } from './support/rpc.js';
+import { login } from './support/session.js';
 
 const editor = (page: Page) => page.getByTestId('document-content');
-let savedCookies: Cookie[] | undefined;
 
 async function createDocument(page: Page, title: string) {
-  if (savedCookies) await page.context().addCookies(savedCookies);
-  await page.goto('/');
-  if (!savedCookies) {
-    await page.getByLabel('Sua senha').fill('tinyfold-e2e-passphrase');
-    await page.getByRole('button', { name: 'Entrar no Tinyfold' }).click();
-    await expect(page.getByRole('button', { name: 'Começar a escrever' })).toBeVisible();
-    savedCookies = await page.context().cookies();
-  }
+  await login(page);
   await page.getByRole('button', { name: 'Começar a escrever' }).click();
   await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
   await writeAndSave(page, 'Ideia original antes de duplicar a aba.');
@@ -21,7 +15,7 @@ async function createDocument(page: Page, title: string) {
 async function writeAndSave(page: Page, content: string) {
   const saved = page.waitForResponse(
     (response) =>
-      response.url().includes('/workspace/saveDocument') &&
+      answers(response, 'workspace/saveDocument') &&
       response.status() === 200 &&
       Boolean(response.request().postData()?.includes(content)),
   );
