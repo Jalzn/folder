@@ -2,7 +2,13 @@ import { AppError } from '@tinyfold/core/application';
 import { excerptPresent } from '../domain/task-source.js';
 import { assertProjectAssignment, assertVersion, requireDocument, requireTask } from './helpers.js';
 import type { TaskRecord, TaskSourceRecord, WorkspaceContext } from './ports.js';
-import type { CreateTaskInput, DeleteTaskInput, ListTasksInput, MoveTaskInput, UpdateTaskInput } from './schemas.js';
+import type {
+  CreateTaskInput,
+  DeleteTaskInput,
+  ListTasksInput,
+  MoveTaskInput,
+  UpdateTaskInput,
+} from './schemas/tasks.js';
 
 export function listTasks(ctx: WorkspaceContext, input: ListTasksInput) {
   return ctx.read(async (repo) => ({ tasks: await repo.listTasks(input), revision: await repo.revision() }));

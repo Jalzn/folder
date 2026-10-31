@@ -9,7 +9,7 @@ import type {
   ListDocumentsInput,
   RestoreDocumentInput,
   SaveDocumentInput,
-} from './schemas.js';
+} from './schemas/documents.js';
 
 export function listDocuments(ctx: WorkspaceContext, input: ListDocumentsInput) {
   return ctx.read((repo) => repo.listDocuments(input));

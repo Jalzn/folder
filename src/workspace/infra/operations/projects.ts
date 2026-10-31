@@ -1,0 +1,10 @@
+import type { WorkspaceContext } from '../../application/ports.js';
+import { createProject, listProjects, updateProject } from '../../application/projects.js';
+import { CreateProjectInput, ListProjectsInput, UpdateProjectInput } from '../../application/schemas/projects.js';
+import { operation } from './operation.js';
+
+export const projectOperations = (ctx: WorkspaceContext) => ({
+  listProjects: operation(ListProjectsInput, (input) => listProjects(ctx, input)),
+  createProject: operation(CreateProjectInput, (input) => createProject(ctx, input)),
+  updateProject: operation(UpdateProjectInput, (input) => updateProject(ctx, input)),
+});

@@ -1,6 +1,8 @@
 import type { Canvas, CanvasSummary } from '../domain/canvas.js';
 import type { Document, DocumentSummary, Project, Task, TaskSource, TaskStatus } from '../domain/models.js';
-import type { ListCanvasesInput, ListDocumentsInput, ListTasksInput } from './schemas.js';
+import type { ListCanvasesInput } from './schemas/canvases.js';
+import type { ListDocumentsInput } from './schemas/documents.js';
+import type { ListTasksInput } from './schemas/tasks.js';
 
 export type TaskRecord = Omit<Task, 'source'> & { deletedAt: string | null };
 export type TaskSourceRecord = Pick<TaskSource, 'documentId' | 'blockId' | 'excerpt'> & { taskId: string };

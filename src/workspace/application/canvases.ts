@@ -10,7 +10,7 @@ import type {
   ListCanvasesInput,
   RestoreCanvasInput,
   SaveCanvasInput,
-} from './schemas.js';
+} from './schemas/canvases.js';
 
 async function requireCanvas(repo: WorkspaceRepository, id: string, includeDeleted = false): Promise<Canvas> {
   const canvas = await repo.findCanvas(id);

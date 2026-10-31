@@ -3,7 +3,7 @@ import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../do
 import { hasValidRowFilters, readPngInfo } from '../domain/png.js';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
 import type { PngImageData, WorkspaceContext } from './ports.js';
-import type { SaveCanvasPreviewInput } from './schemas.js';
+import type { SaveCanvasPreviewInput } from './schemas/canvases.js';
 
 export interface CanvasPreviewAck {
   stored: boolean;

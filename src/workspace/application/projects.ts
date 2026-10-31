@@ -1,6 +1,6 @@
 import { assertProjectAssignment, assertVersion, requireProject } from './helpers.js';
 import type { WorkspaceContext } from './ports.js';
-import type { CreateProjectInput, ListProjectsInput, UpdateProjectInput } from './schemas.js';
+import type { CreateProjectInput, ListProjectsInput, UpdateProjectInput } from './schemas/projects.js';
 
 export function listProjects(ctx: WorkspaceContext, input: ListProjectsInput) {
   return ctx.read((repo) => repo.listProjects(input.includeArchived ?? false));
