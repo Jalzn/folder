@@ -6,6 +6,7 @@ import {
   MAX_DOCUMENT_BYTES,
   RECOVERY_DOCUMENT_LIMITS,
   readDocumentContent,
+  withBlockIds,
 } from './document.js';
 import type { DocumentBlock } from './models.js';
 
@@ -37,6 +38,21 @@ describe('document lead', () => {
     );
     expect(documentLead([block('paragraph', '')])).toBe('');
     expect(documentLead([])).toBe('');
+  });
+});
+
+describe('block ids', () => {
+  it('gives each block without an id a new one, never one already taken, and keeps the others', () => {
+    const ids = ['kept', 'quote-id', 'child-id'];
+    const blocks = [{ ...block('paragraph', 'a'), id: 'kept' }, block('quote', 'b', [block('mathBlock', 'y')])];
+    const filled = withBlockIds(blocks, () => ids.shift() ?? 'exhausted');
+    expect(filled.map((item) => item.id)).toEqual(['kept', 'quote-id']);
+    expect(filled[1]?.children?.[0]).toEqual({ ...block('mathBlock', 'y'), id: 'child-id' });
+    expect(blocks[1]?.id).toBeUndefined();
+  });
+  it('returns the same blocks when each one has an id', () => {
+    const blocks = [{ ...block('paragraph', 'a', [{ ...block('paragraph', 'b'), id: 'b' }]), id: 'a' }];
+    expect(withBlockIds(blocks, () => 'unused')).toBe(blocks);
   });
 });
 

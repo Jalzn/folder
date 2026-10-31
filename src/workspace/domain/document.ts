@@ -223,6 +223,36 @@ export function documentLead(blocks: readonly DocumentBlock[]): string {
   return headings.join('\n');
 }
 
+/**
+ * The blocks with an id each, the ones they have kept. The editor gives every block an id, and a task
+ * made from a selection points at it, so a block saved without one would get a new id each time the
+ * editor opens the document and the task would point at a block the server does not have. Content
+ * from elsewhere (a Markdown import splitting a block around a formula, a script, an API client) can
+ * come without them. Returns the same array when nothing is missing.
+ */
+export function withBlockIds(blocks: DocumentBlock[], newId: () => string): DocumentBlock[] {
+  const taken = new Set<string>();
+  let missing = false;
+  for (const block of eachBlock(blocks)) {
+    if (block.id === undefined) missing = true;
+    else taken.add(block.id);
+  }
+  if (!missing) return blocks;
+  const freshId = () => {
+    let id = newId();
+    while (taken.has(id)) id = newId();
+    taken.add(id);
+    return id;
+  };
+  const fill = (list: DocumentBlock[]): DocumentBlock[] =>
+    list.map((block) => ({
+      ...block,
+      id: block.id ?? freshId(),
+      ...(block.children ? { children: fill(block.children) } : {}),
+    }));
+  return fill(blocks);
+}
+
 export function findBlock(blocks: readonly DocumentBlock[], id: string): DocumentBlock | undefined {
   for (const block of blocks) {
     if (block.id === id) return block;

@@ -109,7 +109,7 @@ describe('workspace persistence and adversarial cases', () => {
     const document = await service.createDocument({
       ...request(),
       projectId: project.id,
-      content: [{ type: 'mathBlock', props: {}, content: 'x^2' }],
+      content: [{ id: 'math', type: 'mathBlock', props: {}, content: 'x^2' }],
     });
     expect(() =>
       service.saveDocument({
@@ -121,7 +121,7 @@ describe('workspace persistence and adversarial cases', () => {
       }),
     ).toThrow();
     expect((await service.getDocument({ id: document.id })).content).toEqual([
-      { type: 'mathBlock', props: {}, content: 'x^2' },
+      { id: 'math', type: 'mathBlock', props: {}, content: 'x^2' },
     ]);
     expect((await service.getDocument({ id: document.id })).version).toBe(1);
   });
@@ -284,6 +284,41 @@ describe('workspace persistence and adversarial cases', () => {
       service.createTask({ ...request(), ...task, source: { ...task.source, expectedVersion: 10 } }),
     ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
     expect(await service.listTasks({})).toEqual({ tasks: [], revision: 0 });
+  });
+
+  it('stores an id for every block, so a selection in content from elsewhere can become a task', async () => {
+    const paragraph = (text: string): DocumentBlock => ({
+      type: 'paragraph',
+      content: [{ type: 'text', text, styles: {} }],
+    });
+    // The web's Markdown import splits a quote around a display formula into children without ids.
+    const quote: DocumentBlock = {
+      id: 'quote',
+      type: 'quote',
+      content: [{ type: 'text', text: 'Antes', styles: {} }],
+      children: [{ type: 'mathBlock', props: {}, content: 'y' }, paragraph('Depois da fórmula')],
+    };
+    const document = await service.createDocument({ ...request(), projectId: project.id, content: [quote] });
+    const stored = await service.getDocument({ id: document.id });
+    expect(stored.content).toEqual(document.content);
+    expect(stored.content[0]?.id).toBe('quote');
+    const after = stored.content[0]?.children?.[1];
+    expect(after?.id).toEqual(expect.any(String));
+    const task = await service.createTask({
+      ...request(),
+      title: 'Depois',
+      source: { documentId: document.id, blockId: after?.id ?? null, excerpt: 'Depois da fórmula', expectedVersion: 1 },
+    });
+    expect(task.task.source?.blockAvailable).toBe(true);
+    // A save without ids, from a script or another client, gets them too.
+    await service.saveDocument({
+      ...request(),
+      id: document.id,
+      expectedVersion: 1,
+      title: 'Importado',
+      content: [paragraph('Sem id')],
+    });
+    expect((await service.getDocument({ id: document.id })).content[0]?.id).toEqual(expect.any(String));
   });
 
   it('reorders tasks with board concurrency checks and preserves stable order', async () => {

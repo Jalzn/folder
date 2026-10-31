@@ -1,4 +1,4 @@
-import { documentPlainText } from '../domain/document.js';
+import { documentPlainText, withBlockIds } from '../domain/document.js';
 import type { DocumentAck } from '../domain/models.js';
 import { assertVersion, projectForEditedItem, projectForNewItem, requireDocument } from './helpers.js';
 import type { WorkspaceContext } from './ports.js';
@@ -26,7 +26,7 @@ export function createDocument(ctx: WorkspaceContext, input: CreateDocumentInput
   return ctx.write('workspace.createDocument', input, async (repo) => {
     const project = await projectForNewItem(repo, input.projectId);
     const now = ctx.now();
-    const content = input.content ?? [];
+    const content = withBlockIds(input.content ?? [], () => ctx.newId());
     const document = {
       id: ctx.newId(),
       title: input.title || 'Sem título',
@@ -60,7 +60,7 @@ export function saveDocument(ctx: WorkspaceContext, input: SaveDocumentInput): P
         // Pins belong to a project's sidebar, so moving the document unpins it.
         pinnedAt: projectId === document.projectId ? document.pinnedAt : null,
         title: input.title || 'Sem título',
-        content: input.content,
+        content: withBlockIds(input.content, () => ctx.newId()),
         plainText,
         version,
         updatedAt,
