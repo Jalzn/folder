@@ -35,3 +35,4 @@ export type {
   TaskStatus,
 } from './models.js';
 export { searchText } from './search-text.js';
+export { TASK_STATUSES, taskStatusLabels } from './task-status.js';

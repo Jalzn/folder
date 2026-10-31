@@ -1,5 +1,3 @@
-import type { TaskStatus } from '@tinyfold/workspace/domain';
-
 export type {
   Canvas,
   CanvasScene,
@@ -12,8 +10,7 @@ export type {
   TaskStatus,
 } from '@tinyfold/workspace/domain';
 
-export const statusLabels: Record<TaskStatus, string> = { todo: 'A fazer', doing: 'Em andamento', done: 'Concluído' };
-export const taskStatuses: TaskStatus[] = ['todo', 'doing', 'done'];
+export { TASK_STATUSES, taskStatusLabels } from '@tinyfold/workspace/domain';
 export function relativeDate(value: string) {
   const date = new Date(value);
   const days = Math.floor((Date.now() - date.getTime()) / 86_400_000);

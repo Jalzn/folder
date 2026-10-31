@@ -17,7 +17,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { api, errorMessage, refreshWorkspace, reportSessionError } from '../lib/api';
 import { useProjects, useTasks } from '../lib/queries';
-import { statusLabels, type Task, type TaskStatus, taskStatuses } from '../lib/types';
+import { TASK_STATUSES, type Task, type TaskStatus, taskStatusLabels } from '../lib/types';
 import { Dialog, ErrorNotice, Menu, Spinner, useAction, useRequest, useToast } from '../ui';
 
 export type TaskOrigin = { documentId: string; blockId?: string | null; excerpt: string; expectedVersion?: number };
@@ -127,9 +127,9 @@ export function TaskDialog({
             <label className="field">
               Estado
               <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)}>
-                {taskStatuses.map((s) => (
+                {TASK_STATUSES.map((s) => (
                   <option key={s} value={s}>
-                    {statusLabels[s]}
+                    {taskStatusLabels[s]}
                   </option>
                 ))}
               </select>
@@ -348,13 +348,13 @@ export function Kanban({ projectId, archived = false }: { projectId?: string | n
         )}
       </div>
       <div className="kanban">
-        {taskStatuses.map((status) => {
+        {TASK_STATUSES.map((status) => {
           const columnTasks = tasks.data?.tasks.filter((task) => task.status === status) ?? [];
           return (
             <section
               key={status}
               className={`kanban-column ${overColumn === status ? 'drag-over' : ''}`}
-              aria-label={statusLabels[status]}
+              aria-label={taskStatusLabels[status]}
               onDragOver={(event) => {
                 if (!draggedId) return;
                 event.preventDefault();
@@ -370,13 +370,13 @@ export function Kanban({ projectId, archived = false }: { projectId?: string | n
             >
               <header className="column-header">
                 <span className={`status-dot ${status}`} />
-                <h2>{statusLabels[status]}</h2>
+                <h2>{taskStatusLabels[status]}</h2>
                 <span className="column-count">{columnTasks.length}</span>
                 {!archived && (
                   <button
                     type="button"
                     className="icon-button"
-                    aria-label={`Adicionar tarefa em ${statusLabels[status]}`}
+                    aria-label={`Adicionar tarefa em ${taskStatusLabels[status]}`}
                     onClick={() => setNewStatus(status)}
                   >
                     <Plus size={16} />
@@ -427,13 +427,11 @@ export function Kanban({ projectId, archived = false }: { projectId?: string | n
                         trigger={<MoreHorizontal size={16} />}
                         items={[
                           { label: 'Editar tarefa', action: () => setSelectedId(task.id) },
-                          ...taskStatuses
-                            .filter((s) => s !== status)
-                            .map((s) => ({
-                              label: `Mover para ${statusLabels[s]}`,
-                              action: () => void move(task, s),
-                              icon: <ArrowRight size={14} />,
-                            })),
+                          ...TASK_STATUSES.filter((s) => s !== status).map((s) => ({
+                            label: `Mover para ${taskStatusLabels[s]}`,
+                            action: () => void move(task, s),
+                            icon: <ArrowRight size={14} />,
+                          })),
                           {
                             label: 'Mover para cima',
                             icon: <ArrowUp size={14} />,
@@ -526,7 +524,7 @@ export function LinkedTask({ task, onOpen }: { task: Task; onOpen: () => void })
       </button>
       <button type="button" className="linked-task-title" onClick={onOpen}>
         {task.title}
-        <span>{statusLabels[task.status]}</span>
+        <span>{taskStatusLabels[task.status]}</span>
       </button>
     </div>
   );
