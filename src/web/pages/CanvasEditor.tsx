@@ -45,8 +45,8 @@ import { useCanvas, useProjects } from '../lib/queries';
 import { useApp } from '../shell';
 import { Dialog, EmptyState, ErrorNotice, Menu, Spinner, useAction, useRequest, useToast } from '../ui';
 
-/** The canvas as getCanvas returns it, with the scene version of the stored PNG preview. */
-type EditableCanvas = Canvas & { previewVersion: number | null };
+/** The canvas as getCanvas returns it, including whether the stored PNG preview shows its scene. */
+type EditableCanvas = Awaited<ReturnType<typeof api.workspace.getCanvas>>;
 /** Saving and preview uploads outlive the editor, so leaving right after an edit loses nothing. */
 interface CanvasSession {
   controller: AutosaveController<CanvasSnapshot>;
@@ -123,9 +123,8 @@ function sessionFor(canvas: EditableCanvas, installationId: string): CanvasSessi
         void queryClient.invalidateQueries({ queryKey: ['workspace', 'canvases'] });
         previews.request(ack.version, sent.scene);
       },
+      onAdopted: (adopted, version) => previews.request(version, adopted.scene),
     });
-    // Drawings saved before previews existed, imported or copied get one when opened.
-    if (!canvas.deletedAt && canvas.previewVersion !== canvas.version) previews.request(canvas.version, canvas.scene);
     session = { controller, previews };
     sessions.set(identity, session);
   }
@@ -207,6 +206,11 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const viewport = useRef(readViewport(viewportKey));
 
   useEffect(() => controller.receiveRemote(snapshot(canvas), canvas.version), [controller, canvas]);
+  // Each opening and refetch checks the stored preview: drawings saved before previews existed,
+  // imported, copied or changed elsewhere get one.
+  useEffect(() => {
+    if (!canvas.deletedAt && !canvas.previewCurrent) previews.request(canvas.version, canvas.scene);
+  }, [previews, canvas]);
   useEffect(() => {
     if (lastEpoch.current !== state.remoteEpoch) {
       lastEpoch.current = state.remoteEpoch;

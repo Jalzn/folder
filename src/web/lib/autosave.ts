@@ -111,7 +111,10 @@ export class AutosaveController<T = Snapshot> {
       draftDelayMs?: number;
       idFactory: () => string;
       classifyError: (error: unknown) => string | undefined;
+      /** The request was acknowledged; `snapshot` is what that version holds. */
       onSaved?: (ack: SaveAck, snapshot: T) => void;
+      /** The editor took over a newer version saved elsewhere, without local changes to keep. */
+      onAdopted?: (snapshot: T, version: number) => void;
     },
   ) {
     this.savedSnapshot = clone(options.snapshot);
@@ -228,7 +231,8 @@ export class AutosaveController<T = Snapshot> {
         this.savedSnapshot = sentSnapshot as T;
         const caughtUp = this.equal(this.state.snapshot, this.savedSnapshot);
         const newerRemote = this.remote.version > ack.version;
-        if (newerRemote && caughtUp) {
+        const adopted = newerRemote && caughtUp;
+        if (adopted) {
           this.savedSnapshot = clone(this.remote.snapshot);
           this.emit({
             snapshot: clone(this.remote.snapshot),
@@ -255,7 +259,8 @@ export class AutosaveController<T = Snapshot> {
             /* A successful server save remains successful. */
           }
         }
-        this.options.onSaved?.(ack, this.savedSnapshot);
+        this.options.onSaved?.(ack, sentSnapshot as T);
+        if (adopted) this.options.onAdopted?.(clone(this.remote.snapshot), this.remote.version);
         return this.state.status !== 'conflict';
       } catch (error) {
         const code = this.options.classifyError(error);
@@ -313,6 +318,7 @@ export class AutosaveController<T = Snapshot> {
         this.emit({ storageFailed: true });
       }
     }
+    this.options.onAdopted?.(clone(snapshot), version);
   }
   recoveryDownloaded() {
     this.emit({ recoveryData: null });

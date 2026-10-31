@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AutosaveController, parseDraft, type SaveInput, type Snapshot } from './autosave';
+import { AutosaveController, parseDraft, type SaveAck, type SaveInput, type Snapshot } from './autosave';
 
 const initial: Snapshot = { title: 'Ideia', projectId: null, content: [] };
 const changed = { ...initial, title: 'Nova ideia' };
@@ -7,6 +7,10 @@ function setup(
   send: (input: SaveInput) => Promise<{ id: string; version: number; updatedAt: string }>,
   stored: string | null = null,
   remoteVersion = 1,
+  hooks: {
+    onSaved?: (ack: SaveAck, snapshot: Snapshot) => void;
+    onAdopted?: (snapshot: Snapshot, version: number) => void;
+  } = {},
 ) {
   let value = stored;
   let next = 0;
@@ -17,6 +21,7 @@ function setup(
     send,
     idFactory: () => `id-${++next}`,
     classifyError: (error) => (error as { code?: string }).code,
+    ...hooks,
     storage: {
       read: () => value,
       write: (v) => {
@@ -97,6 +102,37 @@ describe('document autosave', () => {
     await controller.flush();
     expect(controller.getState().status).toBe('conflict');
     expect(controller.getState().snapshot.title).toBe('Ainda não enviado');
+  });
+  it('reports a newer remote version it takes over while nothing is pending', () => {
+    const onAdopted = vi.fn();
+    const { controller } = setup(vi.fn(), null, 1, { onAdopted });
+    const remote = { ...initial, title: 'Outro dispositivo' };
+    controller.receiveRemote(remote, 2);
+    expect(controller.getState()).toMatchObject({ status: 'saved', version: 2, snapshot: remote });
+    expect(onAdopted).toHaveBeenCalledExactlyOnceWith(remote, 2);
+  });
+  it('acknowledges its own save and then reports the newer remote version that replaces it', async () => {
+    const answer = Promise.withResolvers<SaveAck>();
+    const onSaved = vi.fn();
+    const onAdopted = vi.fn();
+    const { controller } = setup(() => answer.promise, null, 1, { onSaved, onAdopted });
+    controller.change(changed);
+    const flushing = controller.flush();
+    const remote = { ...changed, title: 'Salvo depois em outro dispositivo' };
+    controller.receiveRemote(remote, 3);
+    answer.resolve({ id: 'doc', version: 2, updatedAt: 'now' });
+    expect(await flushing).toBe(true);
+    expect(controller.getState()).toMatchObject({ status: 'saved', version: 3, snapshot: remote });
+    expect(onSaved).toHaveBeenCalledExactlyOnceWith({ id: 'doc', version: 2, updatedAt: 'now' }, changed);
+    expect(onAdopted).toHaveBeenCalledExactlyOnceWith(remote, 3);
+  });
+  it('reports no adoption for its own saves', async () => {
+    const onAdopted = vi.fn();
+    const { controller } = setup(async () => ({ id: 'doc', version: 2, updatedAt: 'now' }), null, 1, { onAdopted });
+    controller.change(changed);
+    await controller.flush();
+    controller.receiveRemote(changed, 2);
+    expect(onAdopted).not.toHaveBeenCalled();
   });
   it('keeps editing state even when draft storage is unavailable', async () => {
     const controller = new AutosaveController({

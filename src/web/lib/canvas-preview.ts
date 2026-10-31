@@ -57,9 +57,12 @@ export class CanvasPreviewUploader {
     this.uploaded = options.previewVersion ?? 0;
   }
 
-  /** Asks for a preview of a saved version and the scene saved with it. */
+  /**
+   * Asks for a preview of a saved version and the scene saved with it. Asking again for the waiting
+   * version restarts its wait, which wakes a request that found an edit pending.
+   */
   request(version: number, scene: CanvasScene) {
-    if (version <= Math.max(this.uploaded, this.waiting?.version ?? 0) || !hasActiveElements(scene)) return;
+    if (version <= this.uploaded || version < (this.waiting?.version ?? 0) || !hasActiveElements(scene)) return;
     this.waiting = { version, scene };
     this.schedule();
   }
@@ -84,6 +87,8 @@ export class CanvasPreviewUploader {
     const job = this.waiting;
     if (!job || this.running || this.held || !this.options.ready()) return;
     this.waiting = null;
+    // Asked again while the same version was uploading.
+    if (job.version <= this.uploaded) return;
     this.running = true;
     try {
       const png = await renderPreview(job.scene, this.options.render);

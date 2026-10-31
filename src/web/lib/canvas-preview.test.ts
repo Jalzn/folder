@@ -120,6 +120,35 @@ describe('CanvasPreviewUploader', () => {
     expect(uploads.map(({ version }) => version)).toEqual([3]);
   });
 
+  it('wakes a version that waited for a pending edit when it is asked for again', async () => {
+    const previews = uploader();
+    ready = false;
+    previews.request(2, scene());
+    await elapse();
+    expect(upload).not.toHaveBeenCalled();
+    ready = true;
+    previews.request(2, scene());
+    await elapse();
+    expect(uploads.map(({ version }) => version)).toEqual([2]);
+  });
+
+  it('uploads a version once when it is asked for again during its upload', async () => {
+    const first = Promise.withResolvers<void>();
+    upload.mockImplementationOnce(async (input) => {
+      await first.promise;
+      uploads.push(input);
+      return { previewVersion: input.version };
+    });
+    const previews = uploader();
+    previews.request(2, scene());
+    await elapse();
+    previews.request(2, scene());
+    first.resolve();
+    await elapse();
+    await elapse();
+    expect(upload).toHaveBeenCalledTimes(1);
+  });
+
   it('skips versions the server already has and drawings without active elements', async () => {
     const previews = uploader({ previewVersion: 4 });
     previews.request(4, scene());

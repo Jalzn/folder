@@ -1,6 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { connectMcp, jsonOf, mcpStatus, textOf } from './support/mcp.js';
+import { rpc } from './support/rpc.js';
 
 let cookies: Awaited<ReturnType<BrowserContext['cookies']>> | undefined;
 
@@ -257,4 +258,56 @@ test('Claude Code reads what the interface created, never the trash, until the t
   await expect(mcp.call('list_projects')).rejects.toThrow();
   expect(await mcpStatus(baseURL as string, token)).toBe(401);
   await mcp.close();
+});
+
+test('a drawing changed on another device gets a new preview when reopened in the same session', async ({
+  page,
+}, info) => {
+  test.setTimeout(90_000);
+  const title = `Prévia remota ${info.project.name} ${Date.now()}`;
+  await login(page);
+  await createDrawing(page, title, 'Antes');
+  const id = new URL(page.url()).pathname.split('/').at(-1);
+  type Drawing = {
+    version: number;
+    title: string;
+    projectId: string | null;
+    scene: { elements: Record<string, unknown>[]; appState: { viewBackgroundColor: string } };
+    previewVersion: number | null;
+    previewCurrent: boolean;
+  };
+  const read = () => rpc<Drawing>(page, 'workspace/getCanvas', { id });
+  await expect.poll(async () => (await read()).previewCurrent, { timeout: 20_000 }).toBe(true);
+
+  // Leave through an in-app link, then another device moves the rectangle.
+  await page.getByRole('link', { name: 'Desenhos', exact: true }).filter({ visible: true }).first().click();
+  await expect(page).toHaveURL(/\/desenhos$/);
+  const before = await read();
+  const elements = before.scene.elements.map((element) =>
+    element.type === 'rectangle'
+      ? { ...element, x: Number(element.x) + 120, version: Number(element.version) + 1, versionNonce: 4242 }
+      : element,
+  );
+  await rpc(page, 'workspace/saveCanvas', {
+    id,
+    title: before.title,
+    projectId: before.projectId,
+    scene: { ...before.scene, elements },
+    expectedVersion: before.version,
+    requestId: crypto.randomUUID(),
+  });
+  expect((await read()).previewCurrent).toBe(false);
+
+  // The editor's data stays fresh for 10 s; reopening after that refetches it without a page load.
+  await page.waitForTimeout(10_500);
+  await page.locator('.document-row').filter({ hasText: title }).click();
+  await expect
+    .poll(
+      async () => {
+        const drawing = await read();
+        return drawing.previewCurrent && drawing.previewVersion === before.version + 1;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true);
 });
