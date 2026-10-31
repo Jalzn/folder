@@ -40,7 +40,8 @@ import {
 } from '../lib/canvas-autosave';
 import { renderCanvasPng } from '../lib/canvas-png';
 import { CanvasPreviewUploader } from '../lib/canvas-preview';
-import { useProjects } from '../lib/queries';
+import { invalidateNavigation, useProjects } from '../lib/queries';
+import { registerSave } from '../lib/save-registry';
 import { useAction } from '../lib/use-action';
 import { useRequest } from '../lib/use-request';
 import { itemPath, paths } from '../router/paths';
@@ -127,12 +128,14 @@ function sessionFor(canvas: EditableCanvas, installationId: string): CanvasSessi
           };
         });
         void queryClient.invalidateQueries({ queryKey: ['workspace', 'canvases'] });
+        invalidateNavigation();
         previews.request(ack.version, sent.scene);
       },
       onAdopted: (adopted, version) => previews.request(version, adopted.scene),
     });
     session = { controller, previews };
     sessions.set(identity, session);
+    registerSave('drawing', canvas.id, controller);
   }
   return session;
 }

@@ -40,6 +40,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.menu-item__description {
+  display: block;
+  font: var(--type-meta);
+  color: var(--text-3);
+}
 .menu-item__detail {
   font: var(--type-meta);
   color: var(--text-3);

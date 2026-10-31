@@ -160,7 +160,7 @@ test('draw, reload, export PNG and round-trip an editable drawing with local fon
   expect(fontRequests.length).toBeGreaterThan(0);
   expect(fontRequests.every((url) => new URL(url).origin === new URL(page.url()).origin)).toBe(true);
   await searchProject(page, 'desenhos', 'Roteiro visual pesquisavel');
-  await expect(page.getByRole('link').filter({ hasText: importedTitle })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link').filter({ hasText: importedTitle })).toBeVisible();
 });
 
 test('lost save response reuses the exact request and preserves newer edits', async ({ page }, info) => {

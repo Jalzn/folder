@@ -49,7 +49,8 @@ import { createInlineMathSpec } from '../components/InlineMath';
 import { api, errorCode, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../lib/api';
 import { AutosaveController, type Snapshot } from '../lib/autosave';
 import { exportMarkdownWithMath, importMarkdownWithMath } from '../lib/markdown';
-import { useProjects, useTasks } from '../lib/queries';
+import { invalidateNavigation, useProjects, useTasks } from '../lib/queries';
+import { registerSave } from '../lib/save-registry';
 import type { Document, DocumentContent } from '../lib/types';
 import { useAction } from '../lib/use-action';
 import { useRequest } from '../lib/use-request';
@@ -157,9 +158,11 @@ function controllerFor(document: Document, installationId: string) {
         );
         void queryClient.invalidateQueries({ queryKey: ['workspace', 'documents'] });
         void queryClient.invalidateQueries({ queryKey: ['workspace', 'tasks'] });
+        invalidateNavigation();
       },
     });
     controllers.set(identity, controller);
+    registerSave('document', document.id, controller);
   }
   return controller;
 }

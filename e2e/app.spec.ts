@@ -31,7 +31,7 @@ test('capture in the current project, reopen, search and export Markdown', async
   await expect(page.locator('[contenteditable="true"]').first()).toContainText('Uma ideia simples');
   await page.screenshot({ path: info.outputPath('editor.png'), fullPage: true });
   await searchProject(page, 'documentos', 'organizar meus projetos');
-  await expect(page.getByRole('link', { name: new RegExp(title) })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: new RegExp(title) })).toBeVisible();
   await page.goto(url);
   await page.getByRole('button', { name: 'Opções do documento' }).click();
   const downloaded = page.waitForEvent('download');

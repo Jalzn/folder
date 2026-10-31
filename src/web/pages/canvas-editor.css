@@ -1,8 +1,8 @@
 .canvas-page {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  min-height: 540px;
+  height: 100%;
+  min-height: 500px;
   overflow: hidden;
 }
 .canvas-page .canvas-topbar {
@@ -62,12 +62,6 @@
   flex-shrink: 0;
   margin: 0;
   border-radius: 0;
-}
-@media (max-width: 860px) {
-  .canvas-page {
-    height: calc(100dvh - 54px);
-    min-height: 500px;
-  }
 }
 @media (max-width: 760px) {
   .canvas-metadata {

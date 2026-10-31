@@ -1,20 +1,17 @@
 import { expect, type Page } from '@playwright/test';
-import { openBoard, openIndex, openTrash, showSidebar } from './navigation.js';
+import { openBoard, openTrash, projectNavigation, showSidebar } from './navigation.js';
 
-/** Creates a document in the current project and opens it. */
+/** Creates a document in the current project, with the "+" of the sidebar's Documentos, and opens it. */
 export async function newDocument(page: Page) {
   await showSidebar(page);
-  await page
-    .getByRole('complementary', { name: 'Navegação principal' })
-    .getByRole('button', { name: 'Novo documento', exact: true })
-    .click();
+  await projectNavigation(page).getByRole('button', { name: 'Novo documento', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Título do documento' })).toBeVisible();
 }
 
-/** Creates a drawing in the current project and opens it. */
+/** Creates a drawing in the current project, with the "+" of the sidebar's Desenhos, and opens it. */
 export async function newDrawing(page: Page) {
-  await openIndex(page, 'desenhos');
-  await page.getByRole('button', { name: 'Novo desenho', exact: true }).first().click();
+  await showSidebar(page);
+  await projectNavigation(page).getByRole('button', { name: 'Novo desenho', exact: true }).click();
   await expect(page.getByTestId('canvas-editor')).toBeVisible();
 }
 
@@ -37,7 +34,7 @@ export async function moveToTrash(page: Page, type: 'documento' | 'desenho') {
 /** The row of an item in the current project's trash. */
 export async function trashRow(page: Page, title: string) {
   await openTrash(page);
-  return page.locator('.document-row').filter({ hasText: title });
+  return page.getByRole('main').getByRole('listitem').filter({ hasText: title });
 }
 
 /** Restores an item from the current project's trash. */

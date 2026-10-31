@@ -1,0 +1,109 @@
+/* The shell (docs/etapas/08-fundacao.md, "Layout e larguras"). */
+.app-layout {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+.app-layout[data-rail] {
+  grid-template-columns: 52px minmax(0, 1fr);
+}
+.app-layout[data-mode="narrow"] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 44px minmax(0, 1fr);
+}
+.app-layout__main {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  outline: none;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--line);
+  background: var(--sidebar-bg);
+}
+.top-bar__project {
+  min-width: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: 600 13px / 20px var(--font-sans);
+  letter-spacing: var(--tracking-ui);
+  cursor: pointer;
+}
+.top-bar__project[data-hovered],
+.top-bar__project[aria-expanded="true"] {
+  background: var(--sidebar-hover);
+}
+.top-bar__project[data-focus-visible] {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.top-bar__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The sidebar over the page, from the rail or the top bar. */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: var(--scrim);
+}
+.sidebar-overlay[data-entering] {
+  animation: overlay-fade var(--duration-scrim) var(--ease-out);
+}
+.sidebar-overlay__panel {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 248px;
+  box-shadow: var(--shadow-float);
+  outline: none;
+}
+.sidebar-overlay__panel[data-entering] {
+  animation: overlay-slide var(--duration-drawer-in) var(--ease-standard);
+}
+.sidebar-overlay__dialog {
+  height: 100%;
+  outline: none;
+}
+@keyframes overlay-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes overlay-slide {
+  from {
+    transform: translateX(-16px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-overlay__panel[data-entering] {
+    animation-name: overlay-fade;
+  }
+}
+@media (max-width: 719px) {
+  .sidebar-overlay__panel {
+    width: min(320px, 100vw - 48px);
+  }
+}

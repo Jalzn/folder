@@ -1,0 +1,111 @@
+/*
+ * The column pages of a project (Visão geral, Índice, Lixeira, the empty state): 720 px, a label over each
+ * section and a line between sections (docs/interface/refino.md §8).
+ */
+.project-page {
+  width: 100%;
+  max-width: 784px;
+  margin: 0 auto;
+  padding: 28px 32px 120px;
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  color: var(--text);
+}
+.project-page > .page-header {
+  margin-bottom: 20px;
+}
+.project-page > .banner {
+  margin-bottom: 16px;
+}
+.project-section {
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+}
+.project-page > .page-header + .project-section,
+.project-page > .banner + .project-section {
+  border-top: 0;
+  padding-top: 0;
+}
+.project-section__label {
+  margin: 0 0 6px;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-3);
+}
+.project-section__empty {
+  margin: 0;
+  padding: 8px 0;
+  color: var(--text-3);
+}
+.project-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.project-toolbar .search-box {
+  flex: 1;
+  max-width: 360px;
+}
+@media (max-width: 760px) {
+  .project-page {
+    padding: 20px 16px 96px;
+  }
+}
+
+.trash-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.trash-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--height-list-row);
+  border-bottom: 1px solid var(--line);
+}
+.trash-row__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.trash-row__meta {
+  margin-right: auto;
+  font: var(--type-meta);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.empty-projects {
+  padding-top: 72px;
+}
+.empty-projects__archived {
+  margin-top: 32px;
+}
+.archived-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.archived-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--height-list-row);
+  border-bottom: 1px solid var(--line);
+}
+.archived-row__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.archived-row__date {
+  margin-right: auto;
+  font: var(--type-meta);
+  color: var(--text-3);
+}

@@ -268,7 +268,7 @@ test('a drawing changed on another device gets a new preview when reopened, and 
   await expect.poll(async () => (await read()).previewCurrent, { timeout: 20_000 }).toBe(true);
 
   // Leave through an in-app link, then another device moves the rectangle.
-  await leaveItem(page, 'desenhos');
+  await leaveItem(page);
   const before = await read();
   const elements = before.scene.elements.map((element) =>
     element.type === 'rectangle'

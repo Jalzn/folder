@@ -11,6 +11,7 @@ import {
   MenuTrigger,
   type PopoverProps,
   Separator,
+  Text,
 } from 'react-aria-components';
 import { IconButton } from './IconButton';
 import { Shortcut } from './Kbd';
@@ -26,9 +27,14 @@ export interface MenuProps<T> extends Omit<AriaMenuProps<T>, 'className'> {
 export function Menu<T extends object>({ placement = 'bottom end', ...props }: MenuProps<T>) {
   return (
     <PopoverSurface placement={placement} className="menu-popover">
-      <AriaMenu {...props} className="menu" />
+      <MenuList {...props} />
     </PopoverSurface>
   );
+}
+
+/** The menu without its popover, for a popover placed by hand, such as one anchored to a row. */
+export function MenuList<T extends object>(props: Omit<AriaMenuProps<T>, 'className'>) {
+  return <AriaMenu {...props} className="menu" />;
 }
 
 export interface MenuItemProps extends Omit<AriaMenuItemProps, 'className' | 'children'> {
@@ -36,13 +42,15 @@ export interface MenuItemProps extends Omit<AriaMenuItemProps, 'className' | 'ch
   icon?: ReactNode;
   /** Keys of the item's shortcut, such as `['G', 'P']`. */
   shortcut?: readonly string[];
-  /** A secondary line or value at the end of the row. */
+  /** A second line under the label, such as the current choice of a submenu. */
+  description?: string;
+  /** A value at the end of the row. */
   detail?: ReactNode;
   danger?: boolean;
   children: ReactNode;
 }
 
-export function MenuItem({ icon, shortcut, detail, danger = false, children, ...props }: MenuItemProps) {
+export function MenuItem({ icon, shortcut, description, detail, danger = false, children, ...props }: MenuItemProps) {
   const text = props.textValue ?? (typeof children === 'string' ? children : undefined);
   return (
     <AriaMenuItem
@@ -59,7 +67,16 @@ export function MenuItem({ icon, shortcut, detail, danger = false, children, ...
             </span>
           )}
           {icon}
-          <span className="menu-item__label">{children}</span>
+          {description ? (
+            <span className="menu-item__label">
+              {children}
+              <Text slot="description" className="menu-item__description">
+                {description}
+              </Text>
+            </span>
+          ) : (
+            <span className="menu-item__label">{children}</span>
+          )}
           {detail && <span className="menu-item__detail">{detail}</span>}
           {shortcut && <Shortcut keys={shortcut} />}
           {hasSubmenu && <ChevronRight className="menu-item__chevron" size={14} aria-hidden="true" />}

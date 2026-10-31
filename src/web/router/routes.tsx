@@ -1,10 +1,12 @@
 import { createRootRoute, createRoute, lazyRouteComponent, redirect } from '@tanstack/react-router';
 import { BoardPage } from '../pages/Board';
-import { ProjectIndexPage, ProjectPage, TrashPage } from '../pages/Library';
+import { IndexPage } from '../pages/project/IndexPage';
 import { DocumentRoute, DrawingRoute } from '../pages/project/ItemRoute';
 import { NoActiveProjectPage } from '../pages/project/NoActiveProjectPage';
+import { OverviewPage } from '../pages/project/OverviewPage';
 import { ProjectRoute } from '../pages/project/ProjectRoute';
-import { Shell } from '../shell';
+import { TrashPage } from '../pages/project/TrashPage';
+import { AppRoot } from '../shell';
 import { Spinner } from '../ui';
 import { LegacyRedirect } from './LegacyRedirect';
 import type { IndexType } from './paths';
@@ -12,7 +14,7 @@ import { StartRedirect } from './StartRedirect';
 
 const text = (value: unknown) => (typeof value === 'string' && value ? value : undefined);
 
-const rootRoute = createRootRoute({ component: Shell });
+const rootRoute = createRootRoute({ component: AppRoot });
 
 const startRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: StartRedirect });
 /** The login shows wherever the session is missing; signed in, `/entrar` continues like `/`. */
@@ -38,7 +40,7 @@ const projectRoute = createRoute({
   path: '/projetos/$projectId',
   component: ProjectRoute,
 });
-const overviewRoute = createRoute({ getParentRoute: () => projectRoute, path: '/', component: ProjectPage });
+const overviewRoute = createRoute({ getParentRoute: () => projectRoute, path: '/', component: OverviewPage });
 const boardRoute = createRoute({
   getParentRoute: () => projectRoute,
   path: 'quadro',
@@ -51,7 +53,7 @@ const boardRoute = createRoute({
 const indexRoute = createRoute({
   getParentRoute: () => projectRoute,
   path: 'indice',
-  component: ProjectIndexPage,
+  component: IndexPage,
   // `q` serves the lists this address shows until the Índice arrives; the old lists' `q` is dropped.
   validateSearch: (search): { tipo?: IndexType; q?: string } => {
     const q = text(search.q);

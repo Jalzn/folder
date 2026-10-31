@@ -12,42 +12,54 @@ export function currentProjectId(page: Page) {
   return id;
 }
 
-/** On a narrow screen the sidebar sits behind the menu button. */
+/** On a narrow screen the sidebar opens over the page from the top bar's menu. */
 export async function showSidebar(page: Page) {
   const open = page.getByRole('button', { name: 'Abrir navegação', exact: true });
   if (await open.isVisible()) await open.click();
 }
 
-/** Creates a project and opens it; returns its id. */
+/** The current project's navigation in the sidebar. */
+export const projectNavigation = (page: Page) => page.getByRole('navigation', { name: /^Projeto / });
+
+/** Opens the project switcher, from the sidebar or from the top bar. */
+export async function openSwitcher(page: Page) {
+  await page.getByRole('button', { name: /Trocar de projeto|Abrir o seletor/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Trocar de projeto' })).toBeVisible();
+}
+
+/** Creates a project from the switcher and opens it; returns its id. */
 export async function createProject(page: Page, name: string) {
-  await showSidebar(page);
-  await page.getByRole('button', { name: 'Criar projeto', exact: true }).click();
-  await page.getByLabel('Nome do projeto').fill(name);
-  await page.getByRole('dialog').getByRole('button', { name: 'Criar projeto', exact: true }).click();
-  await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+  await openSwitcher(page);
+  await page.getByRole('menuitem', { name: 'Novo projeto', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Novo projeto' });
+  await dialog.getByRole('textbox', { name: 'Nome' }).fill(name);
+  await dialog.getByRole('button', { name: 'Criar projeto', exact: true }).click();
+  await expect(page.getByRole('heading', { name, exact: true, level: 1 })).toBeVisible();
   return currentProjectId(page);
 }
 
-/** Opens a project's Visão geral. */
+/** Opens a project's Visão geral from the switcher. */
 export async function openProject(page: Page, name: string) {
-  await showSidebar(page);
-  await page.getByRole('navigation', { name: 'Projetos' }).getByRole('link', { name, exact: true }).click();
-  await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+  await openSwitcher(page);
+  await page.getByRole('menuitem', { name, exact: true }).click();
+  await expect(page.getByRole('heading', { name, exact: true, level: 1 })).toBeVisible();
 }
 
-/** The current project's board. */
+/** The current project's board, from the sidebar. */
 export async function openBoard(page: Page) {
-  await page.goto('/kanban');
+  await showSidebar(page);
+  await projectNavigation(page).getByRole('link', { name: 'Quadro' }).click();
   await expect(page).toHaveURL(/\/quadro$/);
 }
 
-/** The current project's trash. */
+/** The current project's trash, from the sidebar's footer. */
 export async function openTrash(page: Page) {
-  await page.goto('/lixeira');
+  await showSidebar(page);
+  await page.getByRole('link', { name: /^Lixeira de / }).click();
   await expect(page).toHaveURL(/\/lixeira$/);
 }
 
-/** The current project's documents or drawings. */
+/** The current project's Índice, filtered by type. */
 export async function openIndex(page: Page, type: 'documentos' | 'desenhos') {
   await page.goto(`/${type}`);
   await expect(page).toHaveURL(new RegExp(`/indice\\?tipo=${type}$`));
@@ -57,21 +69,18 @@ export async function openIndex(page: Page, type: 'documentos' | 'desenhos') {
 export async function searchProject(page: Page, type: 'documentos' | 'desenhos', text: string) {
   await openIndex(page, type);
   await page
-    .getByRole('textbox', { name: type === 'documentos' ? 'Buscar nos documentos' : 'Buscar nos desenhos' })
+    .getByRole('searchbox', { name: type === 'documentos' ? 'Buscar nos documentos' : 'Buscar nos desenhos' })
     .fill(text);
 }
 
-/** Leaves an item page through an in-app link, without loading the page again. */
-export async function leaveItem(page: Page, type: 'documentos' | 'desenhos') {
+/** Leaves an item page for the project's Visão geral through an in-app link, without loading the page again. */
+export async function leaveItem(page: Page) {
   await showSidebar(page);
-  await page
-    .locator('.sidebar')
-    .getByRole('link', { name: type === 'documentos' ? 'Documentos' : 'Desenhos', exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/indice\?tipo=/);
+  await projectNavigation(page).getByRole('link', { name: 'Visão geral' }).click();
+  await expect(page).toHaveURL(overviewAddress);
 }
 
-/** Opens an item listed on the current page by its title. */
+/** Opens an item listed on the current page, or in the sidebar, by its title. */
 export async function openListedItem(page: Page, title: string) {
   await page.getByRole('link').filter({ hasText: title }).first().click();
 }

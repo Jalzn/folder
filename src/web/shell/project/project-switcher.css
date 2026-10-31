@@ -1,0 +1,34 @@
+/* The switcher popover, 300 px (docs/interface/visual.md §6, "Seletor de projeto"). */
+.project-switcher {
+  width: 300px;
+  padding: 0 4px 4px;
+}
+.project-switcher__filter {
+  margin: 0 -4px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.project-switcher__input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+}
+.project-switcher__input::placeholder {
+  color: var(--text-3);
+}
+.project-switcher__input:focus-visible {
+  outline: none;
+}
+.project-switcher__input::-webkit-search-cancel-button {
+  display: none;
+}
+.project-switcher__list .menu-item {
+  min-height: 30px;
+}
+.project-switcher__current {
+  color: var(--accent);
+}

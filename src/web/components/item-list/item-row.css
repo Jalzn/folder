@@ -1,0 +1,56 @@
+/* A 36 px list row (docs/interface/refino.md §8): title 13/20 500, excerpt and date 12/16 in --text-3. */
+.item-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.item-row__link {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: var(--height-list-row);
+  margin: 0 -8px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color var(--duration-hover) var(--ease-out);
+}
+.item-row__link:hover {
+  background: var(--hover);
+}
+.item-row__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.item-row__icon {
+  flex: none;
+  align-self: center;
+  color: var(--icon);
+}
+.item-row__title {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 13px / 20px var(--font-sans);
+  letter-spacing: var(--tracking-ui);
+}
+.item-row__excerpt {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+.item-row__date {
+  flex: none;
+  margin-left: auto;
+  font: var(--type-meta);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
