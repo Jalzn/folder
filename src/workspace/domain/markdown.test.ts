@@ -11,15 +11,54 @@ const block = (type: string, content: JsonValue[] | string, extra: Partial<Docum
 const paragraph = (...content: JsonValue[]) => block('paragraph', content);
 const markdown = (...blocks: DocumentBlock[]) => documentToMarkdown(blocks);
 
-/** The fastest of three runs in milliseconds, so a pause from the scheduler or the collector does not count. */
-function fastestRun(run: () => unknown): number {
-  let fastest = Number.POSITIVE_INFINITY;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const started = performance.now();
+/** Built-ins that walk the array or string they are called on, iteration included. */
+const WALKING_METHODS: [object, (string | symbol)[]][] = [
+  [
+    Array.prototype,
+    [
+      ...['concat', 'entries', 'every', 'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'flat'],
+      ...['flatMap', 'forEach', 'includes', 'indexOf', 'join', 'keys', 'lastIndexOf', 'map', 'reduce'],
+      ...['reverse', 'shift', 'slice', 'some', 'sort', 'splice', 'unshift', 'values', Symbol.iterator],
+    ],
+  ],
+  [
+    String.prototype,
+    [
+      ...['endsWith', 'includes', 'indexOf', 'lastIndexOf', 'match', 'matchAll', 'replace', 'replaceAll'],
+      ...['search', 'slice', 'split', 'startsWith', 'trim', 'trimEnd', 'trimStart', Symbol.iterator],
+    ],
+  ],
+];
+
+/**
+ * The work `run` does, counted as the total length of the arrays and strings those built-ins walk
+ * while it runs. Unlike the clock, the count is the same on every machine and every run, whatever
+ * else the test runner does in parallel. Rescanning the output or slicing the pieces once per piece,
+ * as the quadratic serializer of stage 07 did, makes it grow with the square of the pieces.
+ */
+function walkedLength(run: () => unknown): number {
+  let walked = 0;
+  const restore: (() => void)[] = [];
+  for (const [prototype, names] of WALKING_METHODS)
+    for (const name of names) {
+      const descriptor = Object.getOwnPropertyDescriptor(prototype, name);
+      const original = descriptor?.value as ((...args: unknown[]) => unknown) | undefined;
+      if (!descriptor || !original) throw new Error(`Built-in ${String(name)} not found.`);
+      Object.defineProperty(prototype, name, {
+        ...descriptor,
+        value(this: { length: number }, ...args: unknown[]) {
+          walked += this.length;
+          return original.apply(this, args);
+        },
+      });
+      restore.push(() => Object.defineProperty(prototype, name, descriptor));
+    }
+  try {
     run();
-    fastest = Math.min(fastest, performance.now() - started);
+  } finally {
+    for (const undo of restore) undo();
   }
-  return fastest;
+  return walked;
 }
 
 describe('document to Markdown', () => {
@@ -193,12 +232,14 @@ describe('document to Markdown', () => {
 
   it('stays linear in the pieces of one block', () => {
     const math = { type: 'math', props: {}, content: 'x' };
-    const breaks = (count: number) => markdown(paragraph(text('a\n'.repeat(count))));
-    const formulas = (count: number) => markdown(paragraph(...Array.from({ length: count }, () => math)));
-    expect(breaks(3)).toBe('a\\\na\\\na\n');
-    expect(formulas(3)).toBe('$x$<!-- -->$x$<!-- -->$x$\n');
-    // Four times the pieces take about four times as long; a quadratic step would take sixteen.
-    for (const write of [breaks, formulas])
-      expect(fastestRun(() => write(80_000)) / fastestRun(() => write(20_000))).toBeLessThan(10);
+    const breaks = (count: number) => paragraph(text('a\n'.repeat(count)));
+    const formulas = (count: number) => paragraph(...Array.from({ length: count }, () => math));
+    expect(markdown(breaks(3))).toBe('a\\\na\\\na\n');
+    expect(markdown(formulas(3))).toBe('$x$<!-- -->$x$<!-- -->$x$\n');
+    // Four times the pieces walk about four times as much; a quadratic step would walk sixteen.
+    for (const pieces of [breaks, formulas]) {
+      const [few, many] = [pieces(2_000), pieces(8_000)];
+      expect(walkedLength(() => markdown(many)) / walkedLength(() => markdown(few))).toBeLessThan(5);
+    }
   });
 });
