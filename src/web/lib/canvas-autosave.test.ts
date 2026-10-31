@@ -7,7 +7,13 @@ import {
 } from '@tinyfold/workspace/domain';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AutosaveController, type SaveInput } from './autosave';
-import { type CanvasSnapshot, canvasFile, parseCanvasDraft, readCanvasImport } from './canvas-autosave';
+import {
+  type CanvasSnapshot,
+  canvasFile,
+  parseCanvasDraft,
+  readCanvasImport,
+  withTrimmedLinks,
+} from './canvas-autosave';
 
 const element = {
   id: 'rectangle',
@@ -185,6 +191,29 @@ describe('editable canvas interchange', () => {
     file.files = { image: { dataURL: 'data:image/png;base64,abc' } };
     expect(() => readCanvasImport(JSON.stringify(file))).toThrow('Imagens');
     expect(edited.scene).toEqual(drawing);
+  });
+  it('trims line breaks and control characters around links instead of refusing the file', () => {
+    const file = JSON.parse(canvasFile(edited));
+    file.elements = [
+      { ...element, id: 'link', link: '\n https://tinyfold.dev/a \t\u0000' },
+      { ...element, id: 'blank', link: ' \r\n ' },
+      { ...element, id: 'plain', link: 'mailto:eu@exemplo.com' },
+    ];
+    expect(readCanvasImport(JSON.stringify(file)).elements.map(({ link }) => link)).toEqual([
+      'https://tinyfold.dev/a',
+      null,
+      'mailto:eu@exemplo.com',
+    ]);
+  });
+  it('still refuses a control character inside a link', () => {
+    const file = JSON.parse(canvasFile(edited));
+    file.elements = [{ ...element, link: 'https://tinyfold.dev/a\nb' }];
+    expect(() => readCanvasImport(JSON.stringify(file))).toThrow('Use um endereço');
+  });
+  it('trims links of a scene entering the editor and keeps a clean scene as it is', () => {
+    const pasted = { ...drawing, elements: [{ ...element, link: 'https://tinyfold.dev\n' }] };
+    expect(withTrimmedLinks(pasted).elements[0]?.link).toBe('https://tinyfold.dev');
+    expect(withTrimmedLinks(drawing)).toBe(drawing);
   });
   it('rejects embedded content even if disguised as a normal editable file', () => {
     const file = JSON.parse(canvasFile(edited));

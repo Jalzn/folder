@@ -1,4 +1,5 @@
 import {
+  type CanvasElement,
   type CanvasScene,
   compactCanvasScene,
   emptyCanvasScene,
@@ -98,6 +99,27 @@ export function canvasDraftStorage(installationId: string, canvasId: string): Dr
   };
 }
 
+const edgeSpaceOrControl = /^[\s\p{Cc}]+|[\s\p{Cc}]+$/gu;
+
+/** An element with its link trimmed of the spaces and control characters around it; anything else unchanged. */
+function trimLink(element: unknown): unknown {
+  if (!element || typeof element !== 'object') return element;
+  const { link } = element as { link?: unknown };
+  if (typeof link !== 'string') return element;
+  const trimmed = link.replace(edgeSpaceOrControl, '');
+  return trimmed === link ? element : { ...element, link: trimmed || null };
+}
+
+/**
+ * The server refuses control characters anywhere in a link. Excalidraw files and pasted content can
+ * carry line breaks around one, so they are trimmed where a scene enters the editor; a control
+ * character inside a link still makes the scene invalid.
+ */
+export function withTrimmedLinks(scene: CanvasScene): CanvasScene {
+  const elements = scene.elements.map(trimLink) as CanvasElement[];
+  return elements.every((element, index) => element === scene.elements[index]) ? scene : { ...scene, elements };
+}
+
 export function readCanvasImport(raw: string): CanvasScene {
   const value = JSON.parse(raw) as Record<string, unknown>;
   if (!value || typeof value !== 'object' || value.type !== 'excalidraw' || value.version !== 2)
@@ -109,7 +131,7 @@ export function readCanvasImport(raw: string): CanvasScene {
     compactCanvasScene(
       readCanvasScene(
         {
-          elements: value.elements,
+          elements: Array.isArray(value.elements) ? value.elements.map(trimLink) : value.elements,
           appState: {
             viewBackgroundColor: appState?.viewBackgroundColor ?? emptyCanvasScene().appState.viewBackgroundColor,
           },
