@@ -3,23 +3,41 @@ import { searchText } from './search-text.js';
 const ellipsis = '…';
 const chunkCodePoints = 256;
 
+/** Whether the text an excerpt is taken from is itself cut out of a longer text. */
+export interface TextCut {
+  before: boolean;
+  after: boolean;
+}
+
+const uncut: TextCut = { before: false, after: false };
+
 /**
  * Up to `length` code points of `text` on one line, starting `lead` code points before the first
  * occurrence of any term, or at the start without terms. Cut ends get an ellipsis. Positions are
  * found in the normalized text and mapped back, so stripped accents and variation selectors before
- * the match do not move the excerpt away from it.
+ * the match do not move the excerpt away from it. Without terms nothing is normalized.
  */
-export function excerptAround(text: string, terms: readonly string[], length: number, lead: number): string {
-  const normalized = searchText(text);
-  const positions = terms.map((term) => normalized.indexOf(term)).filter((index) => index >= 0);
-  const start = positions.length
-    ? codePointsBefore(text, originalIndex(text, normalized, Math.min(...positions)), lead)
-    : 0;
+export function excerptAround(
+  text: string,
+  terms: readonly string[],
+  length: number,
+  lead: number,
+  cut: TextCut = uncut,
+): string {
+  const match = terms.length ? firstMatch(text, terms) : undefined;
+  const start = match === undefined ? 0 : codePointsBefore(text, match, lead);
   const window = Array.from(text.slice(start, start + 2 * (length + 1))).slice(0, length + 1);
   let excerpt = window.slice(0, length);
-  if (start > 0) excerpt = [ellipsis, ...excerpt.slice(1)];
-  if (window.length > length) excerpt = [...excerpt.slice(0, -1), ellipsis];
+  if (start > 0 || cut.before) excerpt = [ellipsis, ...excerpt.slice(1)];
+  if (window.length > length || cut.after) excerpt = [...excerpt.slice(0, length - 1), ellipsis];
   return excerpt.join('').replace(/\s+/gu, ' ').trim();
+}
+
+/** The index in `text` of the first occurrence of any term, matched in the normalized text. */
+function firstMatch(text: string, terms: readonly string[]): number | undefined {
+  const normalized = searchText(text);
+  const positions = terms.map((term) => normalized.indexOf(term)).filter((index) => index >= 0);
+  return positions.length ? originalIndex(text, normalized, Math.min(...positions)) : undefined;
 }
 
 /**

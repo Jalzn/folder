@@ -6,7 +6,8 @@ export const READING_LIMITS = {
   /** Characters of text in one tool result. */
   toolTextChars: 70_000,
   projects: 200,
-  search: { defaultPageSize: 20, maxPageSize: 50, excerptChars: 240, excerptLeadChars: 60 },
+  /** Excerpts come from the text within `excerptWindowMargin` characters of the first match. */
+  search: { defaultPageSize: 20, maxPageSize: 50, excerptChars: 240, excerptLeadChars: 60, excerptWindowMargin: 2_000 },
   tasks: { defaultPageSize: 50, maxPageSize: 100 },
   /** The first page's header (title, metadata and origin tasks) has its own budget, so pages keep one size. */
   document: { pageChars: 60_000, headerChars: 9_000, originTasks: 50, originTaskTitleChars: 100 },

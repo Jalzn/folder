@@ -5,6 +5,7 @@ import { excerptAround } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
 import type { WorkspaceTables } from '../db.js';
+import { excerptWindows } from './excerpt-windows.js';
 import { searchableItems, type TextType, titleLengthInSearchText } from './searchable.js';
 import { projectColumns, projectReference } from './shared.js';
 
@@ -80,17 +81,6 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
       }));
   }
 
-  /** The full text of the shown documents and drawings, read only for their excerpts. */
-  async function plainTexts(type: TextType, ids: string[]): Promise<Map<string, string>> {
-    if (!ids.length) return new Map();
-    const rows = await db
-      .selectFrom(searchableItems(db, type))
-      .select(['item.id', 'item.plain_text'])
-      .where('item.id', 'in', ids)
-      .execute();
-    return new Map(rows.map((row) => [row.id, row.plain_text]));
-  }
-
   return {
     async searchItems(query) {
       // Each source returns enough rows for one page; merging them keeps the global order.
@@ -103,15 +93,16 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
       ranked.sort((a, b) => compareSearchKeys(searchKey(a), searchKey(b)));
       const shown = ranked.slice(0, query.limit);
       const idsOf = (type: TextType) => shown.filter((hit) => hit.type === type).map((hit) => hit.id);
-      const texts = new Map([
-        ...(await plainTexts('document', idsOf('document'))),
-        ...(await plainTexts('drawing', idsOf('drawing'))),
+      const windows = new Map([
+        ...(await excerptWindows(db, 'document', idsOf('document'), query.terms)),
+        ...(await excerptWindows(db, 'drawing', idsOf('drawing'), query.terms)),
       ]);
       const { excerptChars, excerptLeadChars } = READING_LIMITS.search;
       const items = shown.map((hit): SearchHit => {
         if (hit.type === 'task') return hit;
-        const text = texts.get(hit.id) ?? '';
-        return { ...hit, excerpt: excerptAround(text, query.terms, excerptChars, excerptLeadChars) };
+        const window = windows.get(hit.id) ?? { text: '', cut: { before: false, after: false } };
+        const excerpt = excerptAround(window.text, query.terms, excerptChars, excerptLeadChars, window.cut);
+        return { ...hit, excerpt };
       });
       return { items, hasMore: ranked.length > query.limit };
     },

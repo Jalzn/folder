@@ -16,6 +16,11 @@ describe('search excerpt', () => {
     const decomposed = `${'ação '.normalize('NFD').repeat(200)}ALVO-FINAL`;
     expect(excerpt(decomposed, 'alvo-final')).toContain('ALVO-FINAL');
   });
+  it('marks the ends of a text that was itself cut out of a longer one', () => {
+    expect(excerptAround('meio do texto', [], 40, 10, { before: true, after: true })).toBe('…eio do texto…');
+    expect(excerptAround('meio do texto', [], 40, 10, { before: false, after: true })).toBe('meio do texto…');
+    expect(excerptAround('x'.repeat(50), [], 40, 10, { before: false, after: true })).toBe(`${'x'.repeat(39)}…`);
+  });
   it('never splits a surrogate pair', () => {
     for (const text of [`${'😀'.repeat(60)} alvo ${'😀'.repeat(60)}`, `x${'😀'.repeat(60)}`]) {
       const value = excerpt(text, 'alvo');

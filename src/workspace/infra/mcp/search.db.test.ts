@@ -107,6 +107,20 @@ describe('search', () => {
     expect(recent.items[0]?.excerpt.startsWith('Começo do texto.')).toBe(true);
   });
 
+  it('takes excerpts from a part of the text around the match, also after decomposed accents', async () => {
+    // 4,000 accents stripped before the match: twice the margin read around the estimated place.
+    const decomposed = 'ação, '.normalize('NFD').repeat(2000);
+    const text = `${decomposed}alvo-profundo${' fim'.repeat(2000)}`;
+    await agent.service.createDocument({ ...request(), title: 'Fundo', content: [paragraph(text)] });
+    const excerpt = async (query?: string) =>
+      (await agent.json<{ items: { excerpt: string }[] }>('search', query ? { query } : {})).items[0]?.excerpt ?? '';
+    const deep = await excerpt('alvo-profundo');
+    expect(deep).toMatch(/^….*alvo-profundo fim.*…$/u);
+    expect(Array.from(deep).length).toBeLessThanOrEqual(240);
+    const start = await excerpt();
+    expect(start.normalize('NFC')).toMatch(/^ação, ação, .*…$/u);
+  });
+
   it('pages through results in a stable order', async () => {
     const created = [];
     for (let index = 0; index < 5; index += 1)
