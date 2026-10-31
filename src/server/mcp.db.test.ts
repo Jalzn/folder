@@ -252,6 +252,21 @@ describe('MCP origin, size and rate limits', () => {
     expect(streamed.status).toBe(413);
   });
 
+  it('refuses JSON-RPC batches, which would multiply calls per request', async () => {
+    const { post } = await fixture();
+    const call = (id: number) => ({ ...rpc('tools/call', { name: 'list_projects', arguments: {} }), id });
+    const batch = await post([call(1), call(2)]);
+    expect(batch.status).toBe(400);
+    expect(batch.headers.get('cache-control')).toBe('no-store');
+    expect(await batch.json()).toEqual({
+      jsonrpc: '2.0',
+      id: null,
+      error: { code: -32600, message: 'Lotes de mensagens não são aceitos. Envie uma mensagem por requisição.' },
+    });
+    expect((await post(call(3))).status).toBe(200);
+    expect((await post('{"jsonrpc":')).status).toBe(400);
+  });
+
   it('limits authentication failures per proxied IP', async () => {
     const { post } = await fixture({ trustProxy: true });
     const from = (ip: string, authorization = '') =>
