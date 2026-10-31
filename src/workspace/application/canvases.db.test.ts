@@ -1,14 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyCanvasScene } from '../domain/canvas.js';
+import type { Project } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
+import { legacyRows, migrateWorkspaceTo } from '../testing/legacy-workspace.js';
+import { testProject } from '../testing/projects.js';
 
 const request = () => ({ requestId: randomUUID() });
 describe('canvas persistence and concurrency', () => {
@@ -16,22 +18,24 @@ describe('canvas persistence and concurrency', () => {
   let filename: string;
   let db: Database;
   let service: ReturnType<typeof createWorkspaceService>;
+  let project: Project;
   beforeEach(async () => {
     directory = await mkdtemp(join(tmpdir(), 'tinyfold-canvas-'));
     filename = join(directory, 'test.sqlite');
     db = createDatabase(filename);
     await migrate(db, [coreModule, workspaceModule]);
     service = createWorkspaceService(db);
+    project = await testProject(service);
   });
   afterEach(async () => {
     await db.destroy();
     await rm(directory, { recursive: true, force: true });
   });
   it('persists a complete editable scene and reopens it after database restart', async () => {
-    const created = await service.createCanvas(request());
+    const created = await service.createCanvas({ ...request(), projectId: project.id });
     expect(await service.getCanvas({ id: created.id })).toMatchObject({
       title: 'Sem título',
-      projectId: null,
+      projectId: project.id,
       scene: emptyCanvasScene(),
     });
     const scene = drawingFixture();
@@ -49,7 +53,7 @@ describe('canvas persistence and concurrency', () => {
     expect((await service.listCanvases())[0]).not.toHaveProperty('scene');
   });
   it('replays creation and saves once with compact responses and refuses request reuse', async () => {
-    const input = { ...request(), title: 'Importado', scene: drawingFixture() };
+    const input = { ...request(), projectId: project.id, title: 'Importado', scene: drawingFixture() };
     const created = await service.createCanvas(input);
     expect(await service.createCanvas(input)).toEqual(created);
     const edit = { ...request(), id: created.id, expectedVersion: 1, title: 'Alterado', scene: drawingFixture() };
@@ -60,14 +64,16 @@ describe('canvas persistence and concurrency', () => {
     await expect(service.saveCanvas({ ...edit, title: 'Pedido diferente' })).rejects.toMatchObject({
       code: 'REQUEST_REUSED',
     });
-    const records = await tables<{ core_mutations: { response: string } }>(db)
+    const records = await tables<{ core_mutations: { operation: string; response: string } }>(db)
       .selectFrom('core_mutations')
       .select('response')
+      .where('operation', 'in', ['workspace.createCanvas', 'workspace.saveCanvas'])
       .execute();
+    expect(records).toHaveLength(2);
     expect(records.every((record) => record.response.length < 200)).toBe(true);
   });
   it('rejects a stale save across connections without overwriting the newer scene', async () => {
-    const canvas = await service.createCanvas(request());
+    const canvas = await service.createCanvas({ ...request(), projectId: project.id });
     const second = createDatabase(filename);
     try {
       const other = createWorkspaceService(second);
@@ -98,7 +104,7 @@ describe('canvas persistence and concurrency', () => {
     }
   });
   it('serializes competing edits and acknowledges only one expected version', async () => {
-    const canvas = await service.createCanvas(request());
+    const canvas = await service.createCanvas({ ...request(), projectId: project.id });
     const results = await Promise.allSettled(
       ['A', 'B'].map((title) =>
         service.saveCanvas({ ...request(), id: canvas.id, expectedVersion: 1, title, scene: emptyCanvasScene() }),
@@ -111,16 +117,21 @@ describe('canvas persistence and concurrency', () => {
     expect((await service.getCanvas({ id: canvas.id })).version).toBe(2);
   });
   it('searches titles and active text without accents and treats wildcards literally', async () => {
-    const canvas = await service.createCanvas({ ...request(), title: 'Rascunho 100%', scene: drawingFixture() });
+    const canvas = await service.createCanvas({
+      ...request(),
+      projectId: project.id,
+      title: 'Rascunho 100%',
+      scene: drawingFixture(),
+    });
     expect((await service.listCanvases({ query: 'ACAO' })).map((item) => item.id)).toEqual([canvas.id]);
     expect(await service.listCanvases({ query: '%' })).toHaveLength(1);
     expect(await service.listCanvases({ query: '_' })).toHaveLength(0);
   });
-  it('filters by project and unassigned content, preserves archived projects and restores trash', async () => {
-    const project = await service.createProject({ ...request(), name: 'Projeto' });
+  it('filters by project, preserves archived projects and restores trash', async () => {
+    const other = await testProject(service, 'Outro');
     const canvas = await service.createCanvas({ ...request(), projectId: project.id, scene: drawingFixture() });
-    const unassigned = await service.createCanvas(request());
-    expect((await service.listCanvases({ projectId: null })).map((item) => item.id)).toEqual([unassigned.id]);
+    const elsewhere = await service.createCanvas({ ...request(), projectId: other.id });
+    expect((await service.listCanvases({ projectId: other.id })).map((item) => item.id)).toEqual([elsewhere.id]);
     expect((await service.listCanvases({ projectId: project.id })).map((item) => item.id)).toEqual([canvas.id]);
     await service.updateProject({ ...request(), id: project.id, expectedVersion: 1, archived: true });
     const edit = await service.saveCanvas({
@@ -144,7 +155,7 @@ describe('canvas persistence and concurrency', () => {
       version: deleted.version,
       scene: drawingFixture(),
     });
-    expect((await service.listCanvases()).map((item) => item.id)).toEqual([unassigned.id]);
+    expect((await service.listCanvases()).map((item) => item.id)).toEqual([elsewhere.id]);
     await expect(
       service.saveCanvas({
         ...request(),
@@ -165,25 +176,31 @@ describe('canvas persistence and concurrency', () => {
   });
   it('adds the canvas migration to an existing workspace without changing documents or tasks', async () => {
     await db.destroy();
-    const oldDirectory = join(directory, 'old-migrations');
-    await mkdir(oldDirectory);
-    await copyFile(
-      new URL('../infra/migrations/001_workspace.sql', import.meta.url),
-      join(oldDirectory, '001_workspace.sql'),
-    );
     db = createDatabase(join(directory, 'upgrade.sqlite'));
-    await migrate(db, [coreModule, { ...workspaceModule, migrations: pathToFileURL(`${oldDirectory}/`) }]);
-    service = createWorkspaceService(db);
-    const document = await service.createDocument({ ...request(), title: 'Preservado' });
-    const task = await service.createTask({ ...request(), title: 'Preservada' });
+    await migrateWorkspaceTo(db, 1, directory);
+    const old = legacyRows(db);
+    const document = await old.document({ title: 'Preservado' });
+    const task = await old.task({ title: 'Preservada' });
     expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
       { module: 'workspace', version: 2, name: 'canvases' },
       { module: 'workspace', version: 3, name: 'canvas_previews' },
       { module: 'workspace', version: 4, name: 'canvas_preview_fingerprint' },
+      { module: 'workspace', version: 5, name: 'projects_required' },
     ]);
-    expect(await service.getDocument({ id: document.id })).toEqual(document);
-    expect((await service.listTasks()).tasks[0]?.id).toBe(task.task.id);
-    const canvas = await service.createCanvas({ ...request(), scene: drawingFixture() });
+    service = createWorkspaceService(db);
+    const [general] = await service.listProjects();
+    expect(await service.getDocument({ id: document.id })).toMatchObject({
+      title: 'Preservado',
+      projectId: general?.id,
+      version: 1,
+      updatedAt: document.updated_at,
+    });
+    expect((await service.listTasks()).tasks[0]).toMatchObject({ id: task.id, projectId: general?.id });
+    const canvas = await service.createCanvas({
+      ...request(),
+      projectId: general?.id ?? null,
+      scene: drawingFixture(),
+    });
     expect((await service.getCanvas({ id: canvas.id })).scene).toEqual(drawingFixture());
   });
 });

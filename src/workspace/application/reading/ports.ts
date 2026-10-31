@@ -1,6 +1,7 @@
 import type { CanvasScene } from '../../domain/canvas.js';
 import type { DocumentBlock, TaskSource, TaskStatus } from '../../domain/models.js';
 import type { BoardKey, ProjectKey, SearchItemType, SearchKey } from '../../domain/paging.js';
+import type { ProjectColor } from '../../domain/project.js';
 
 /**
  * Queries of the agent read model. Nothing in the trash is ever returned: a trashed item reads as
@@ -8,7 +9,6 @@ import type { BoardKey, ProjectKey, SearchItemType, SearchKey } from '../../doma
  */
 export interface WorkspaceReader {
   projectsWithCounts(query: ProjectQuery): Promise<Page<ProjectWithCounts>>;
-  withoutProjectCounts(): Promise<ItemCounts>;
   searchItems(query: SearchQuery): Promise<Page<SearchHit>>;
   documentForReading(id: string): Promise<DocumentForReading | undefined>;
   /** The first `limit` tasks created from the document, in board order, and how many there are. */
@@ -46,15 +46,18 @@ export interface ProjectQuery {
 export interface ProjectWithCounts extends ItemCounts {
   id: string;
   name: string;
+  color: ProjectColor;
+  /** The place in the project selector; null for an archived project, which has none. */
+  position: number | null;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-/** Until stage 08, items may live outside any project, with null project fields. */
+/** The project every item belongs to. */
 export interface ProjectReference {
-  projectId: string | null;
-  projectName: string | null;
+  projectId: string;
+  projectName: string;
   projectArchived: boolean;
 }
 
@@ -120,16 +123,26 @@ export interface TaskQuery {
   after: BoardKey | undefined;
 }
 
+/**
+ * Where a task came from, as agents see it: a live document with its title; a trashed one without,
+ * as if missing; and one deleted for good, with a null ID and the title it had then.
+ */
+export interface SourceDocument {
+  documentId: string | null;
+  documentTitle: string | null;
+  available: boolean;
+}
+
 export interface TaskListing extends ProjectReference {
   id: string;
   title: string;
   status: TaskStatus;
   position: number;
   updatedAt: string;
-  source: { documentId: string; documentTitle: string | null; available: boolean } | null;
+  source: SourceDocument | null;
 }
 
 export interface TaskDetail extends Omit<TaskListing, 'source'> {
   createdAt: string;
-  source: (Omit<TaskSource, 'documentTitle'> & { documentTitle: string | null }) | null;
+  source: (Omit<TaskSource, keyof SourceDocument> & SourceDocument) | null;
 }

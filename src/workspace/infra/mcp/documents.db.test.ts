@@ -57,7 +57,12 @@ describe('read_document', () => {
 
   it('pages a long document and refuses a cursor once the document changed', async () => {
     const blocks = Array.from({ length: 15 }, (_, index) => paragraph(`${index} ${'palavra '.repeat(400)}`));
-    const document = await agent.service.createDocument({ ...request(), title: 'Longo', content: blocks });
+    const document = await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Longo',
+      content: blocks,
+    });
     const first = await agent.call('read_document', { id: document.id });
     const cursor = /"cursor":"(1:\d+)"/u.exec(first.text)?.[1];
     expect(first.text).toContain('Página 1 de 2.');
@@ -81,6 +86,7 @@ describe('read_document', () => {
   it('keeps the space at a mid-line page cut', async () => {
     const document = await agent.service.createDocument({
       ...request(),
+      projectId: agent.project.id,
       title: 'Corte',
       content: [paragraph('ab '.repeat(30_000))],
     });

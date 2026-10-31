@@ -7,6 +7,8 @@ import type { CanvasRow, DocumentRow, ProjectRow, TaskRow } from '../db.js';
 export const projectModel = (row: ProjectRow): Project => ({
   id: row.id,
   name: row.name,
+  color: row.color,
+  position: row.position,
   version: row.version,
   archivedAt: row.archived_at,
   createdAt: row.created_at,
@@ -15,6 +17,8 @@ export const projectModel = (row: ProjectRow): Project => ({
 export const projectRow = (project: Project): ProjectRow => ({
   id: project.id,
   name: project.name,
+  color: project.color,
+  position: project.position,
   version: project.version,
   archived_at: project.archivedAt,
   created_at: project.createdAt,

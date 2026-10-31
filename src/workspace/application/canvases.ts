@@ -1,7 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
 import { type Canvas, type CanvasAck, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
 import { previewShowsScene } from '../domain/canvas-preview.js';
-import { assertProjectAssignment, assertVersion } from './helpers.js';
+import { assertVersion, projectForEditedItem, projectForNewItem } from './helpers.js';
 import type { WorkspaceContext, WorkspaceRepository } from './ports.js';
 import type {
   CreateCanvasInput,
@@ -18,8 +18,11 @@ async function requireCanvas(repo: WorkspaceRepository, id: string, includeDelet
     throw new AppError('NOT_FOUND', 'O desenho não está disponível.');
   return canvas;
 }
-export function listCanvases(ctx: WorkspaceContext, input: ListCanvasesInput) {
-  return ctx.read((repo) => repo.listCanvases(input));
+export async function listCanvases(ctx: WorkspaceContext, input: ListCanvasesInput) {
+  const { projectId, ...query } = input;
+  // Only the interface from before every item had a project filters by null; nothing matches.
+  if (projectId === null) return [];
+  return ctx.read((repo) => repo.listCanvases({ ...query, projectId }));
 }
 /**
  * Reading a trashed scene lets the editor recover a local draft or save it as a copy.
@@ -39,14 +42,13 @@ export function getCanvas(ctx: WorkspaceContext, input: GetCanvasInput) {
 }
 export function createCanvas(ctx: WorkspaceContext, input: CreateCanvasInput): Promise<CanvasAck> {
   return ctx.write('workspace.createCanvas', input, async (repo) => {
-    const projectId = input.projectId ?? null;
-    await assertProjectAssignment(repo, projectId);
+    const project = await projectForNewItem(repo, input.projectId);
     const now = ctx.now();
     const scene = input.scene ?? emptyCanvasScene();
     const canvas: Canvas = {
       id: ctx.newId(),
       title: input.title || 'Sem título',
-      projectId,
+      projectId: project.id,
       scene,
       plainText: canvasPlainText(scene),
       formatVersion: 1,
@@ -64,8 +66,7 @@ export function saveCanvas(ctx: WorkspaceContext, input: SaveCanvasInput): Promi
   return ctx.write('workspace.saveCanvas', input, async (repo) => {
     const canvas = await requireCanvas(repo, input.id);
     assertVersion(canvas.version, input.expectedVersion);
-    const projectId = input.projectId === undefined ? canvas.projectId : input.projectId;
-    if (projectId !== canvas.projectId) await assertProjectAssignment(repo, projectId);
+    const projectId = await projectForEditedItem(repo, canvas.projectId, input.projectId);
     const updatedAt = ctx.now();
     const version = canvas.version + 1;
     await repo.saveCanvas(

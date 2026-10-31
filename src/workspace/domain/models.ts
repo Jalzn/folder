@@ -1,3 +1,4 @@
+import type { ProjectColor } from './project.js';
 import type { TaskStatus } from './task-status.js';
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -15,6 +16,9 @@ export type DocumentContent = DocumentBlock[];
 export interface Project {
   id: string;
   name: string;
+  color: ProjectColor;
+  /** The place in the project selector; only active projects are ordered by it. */
+  position: number;
   version: number;
   archivedAt: string | null;
   createdAt: string;
@@ -24,6 +28,7 @@ export interface Project {
 export interface DocumentSummary {
   id: string;
   title: string;
+  /** Always set since every item has a project; null is still typed while the interface sends it. */
   projectId: string | null;
   plainText: string;
   formatVersion: number;
@@ -39,8 +44,12 @@ export interface Document extends DocumentSummary {
 
 export type { TaskStatus };
 
+/**
+ * Where a task was created. A document deleted for good leaves `documentId` null, and the source
+ * keeps the title the document had then.
+ */
 export interface TaskSource {
-  documentId: string;
+  documentId: string | null;
   blockId: string | null;
   excerpt: string;
   documentTitle: string;
@@ -51,6 +60,7 @@ export interface TaskSource {
 export interface Task {
   id: string;
   title: string;
+  /** Always set since every item has a project; null is still typed while the interface sends it. */
   projectId: string | null;
   status: TaskStatus;
   position: number;

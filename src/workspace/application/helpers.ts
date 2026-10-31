@@ -16,10 +16,35 @@ export async function requireProject(repo: WorkspaceRepository, id: string): Pro
   return project;
 }
 
-export async function assertProjectAssignment(repo: WorkspaceRepository, projectId: string | null): Promise<void> {
-  if (!projectId) return;
-  const project = await requireProject(repo, projectId);
-  if (project.archivedAt) throw new AppError('VALIDATION', 'Restaure o projeto antes de adicionar conteúdo a ele.');
+/** Items are only added to an existing project that is not archived. */
+export async function requireActiveProject(repo: WorkspaceRepository, id: string): Promise<Project> {
+  const project = await requireProject(repo, id);
+  if (project.archivedAt) throw new AppError('VALIDATION', 'Desarquive o projeto antes de adicionar conteúdo a ele.');
+  return project;
+}
+
+/**
+ * The project a new item joins. Null comes from the interface from before every item had a
+ * project, and stands for the first active project of the selector.
+ */
+export async function projectForNewItem(repo: WorkspaceRepository, projectId: string | null): Promise<Project> {
+  if (projectId !== null) return requireActiveProject(repo, projectId);
+  const [first] = await repo.listProjects(false);
+  if (!first) throw new AppError('VALIDATION', 'Crie ou desarquive um projeto antes de criar itens.');
+  return first;
+}
+
+/**
+ * The project an edited item ends up in. Leaving it out keeps the current project, and so does
+ * null, from the interface from before every item had a project; another project must be active.
+ */
+export async function projectForEditedItem(
+  repo: WorkspaceRepository,
+  current: string | null,
+  requested: string | null | undefined,
+): Promise<string | null> {
+  if (!requested || requested === current) return current;
+  return (await requireActiveProject(repo, requested)).id;
 }
 
 export async function requireDocument(

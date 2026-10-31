@@ -2,11 +2,11 @@ import { type Kysely, sql } from 'kysely';
 import type { ItemCounts, WorkspaceReader } from '../../application/reading/ports.js';
 import type { WorkspaceTables } from '../db.js';
 
-type ProjectReads = Pick<WorkspaceReader, 'projectsWithCounts' | 'withoutProjectCounts'>;
+type ProjectReads = Pick<WorkspaceReader, 'projectsWithCounts'>;
 
 export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
-  /** Live documents and drawings and the tasks outside the done column, per project (null: none). */
-  async function countsByProject(): Promise<(projectId: string | null) => ItemCounts> {
+  /** Live documents and drawings and the tasks outside the done column, per project. */
+  async function countsByProject(): Promise<(projectId: string) => ItemCounts> {
     const [documents, drawings, tasks] = await Promise.all([
       db
         .selectFrom('workspace_documents')
@@ -42,7 +42,7 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
     async projectsWithCounts({ includeArchived, limit, after }) {
       let query = db
         .selectFrom('workspace_projects')
-        .select(['id', 'name', 'archived_at', 'created_at', 'updated_at'])
+        .select(['id', 'name', 'color', 'position', 'archived_at', 'created_at', 'updated_at'])
         .orderBy('updated_at', 'desc')
         .orderBy('id')
         .limit(limit + 1);
@@ -55,15 +55,14 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
       const items = projects.slice(0, limit).map((project) => ({
         id: project.id,
         name: project.name,
+        color: project.color,
+        position: project.archived_at === null ? project.position : null,
         archived: project.archived_at !== null,
         createdAt: project.created_at,
         updatedAt: project.updated_at,
         ...counts(project.id),
       }));
       return { items, hasMore: projects.length > limit };
-    },
-    async withoutProjectCounts() {
-      return (await countsByProject())(null);
     },
   };
 }

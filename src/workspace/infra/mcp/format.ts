@@ -29,11 +29,9 @@ export function fitItems<T>(items: readonly T[], render: (shown: readonly T[]) =
 /** User text placed in a header line: a line break inside it could forge more header lines. */
 export const singleLine = (text: string) => text.replace(/\s+/gu, ' ').trim();
 
-/** The project's name, flagged when archived; null for an item outside any project. */
-export function projectName(reference: ProjectReference): string | null {
-  if (!reference.projectName) return null;
-  return `${singleLine(reference.projectName)}${reference.projectArchived ? ' (arquivado)' : ''}`;
-}
+/** The project's name on one line, flagged when archived. */
+export const projectName = (reference: ProjectReference): string =>
+  `${singleLine(reference.projectName)}${reference.projectArchived ? ' (arquivado)' : ''}`;
 
 const shortTitle = (title: string, max = READING_LIMITS.document.originTaskTitleChars) =>
   title.length > max ? `${title.slice(0, max)}…` : title;
@@ -55,7 +53,7 @@ export function documentHeader(
   const lines = [
     `# ${singleLine(document.title)}`,
     '',
-    `- Projeto: ${projectName(document) ?? 'nenhum'}`,
+    `- Projeto: ${projectName(document)}`,
     `- Atualizado: ${document.updatedAt} · versão ${document.version}`,
     `- ID: ${document.id}`,
   ];

@@ -1,6 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
 import { excerptPresent } from '../domain/task-source.js';
-import { assertProjectAssignment, assertVersion, requireDocument, requireTask } from './helpers.js';
+import { assertVersion, projectForEditedItem, projectForNewItem, requireDocument, requireTask } from './helpers.js';
 import type { TaskRecord, TaskSourceRecord, WorkspaceContext } from './ports.js';
 import type {
   CreateTaskInput,
@@ -11,7 +11,12 @@ import type {
 } from './schemas/tasks.js';
 
 export function listTasks(ctx: WorkspaceContext, input: ListTasksInput) {
-  return ctx.read(async (repo) => ({ tasks: await repo.listTasks(input), revision: await repo.revision() }));
+  const { projectId, ...query } = input;
+  return ctx.read(async (repo) => ({
+    // Only the interface from before every item had a project filters by null; nothing matches.
+    tasks: projectId === null ? [] : await repo.listTasks({ ...query, projectId }),
+    revision: await repo.revision(),
+  }));
 }
 
 export function createTask(ctx: WorkspaceContext, input: CreateTaskInput) {
@@ -22,22 +27,29 @@ export function createTask(ctx: WorkspaceContext, input: CreateTaskInput) {
     if (input.source) {
       const document = await requireDocument(repo, input.source.documentId);
       if (input.source.expectedVersion !== undefined) assertVersion(document.version, input.source.expectedVersion);
-      if (input.projectId === undefined) projectId = document.projectId;
+      // A task from an excerpt joins the document's project unless the input names another one.
+      projectId ??= document.projectId;
       const blockId = input.source.blockId ?? null;
       if (!excerptPresent(document, blockId, input.source.excerpt))
         throw new AppError(
           'VERSION_CONFLICT',
           'O trecho de origem mudou. Salve o documento e selecione o trecho novamente.',
         );
-      source = { taskId: id, documentId: document.id, blockId, excerpt: input.source.excerpt };
+      source = {
+        taskId: id,
+        documentId: document.id,
+        documentTitle: document.title,
+        blockId,
+        excerpt: input.source.excerpt,
+      };
     }
-    await assertProjectAssignment(repo, projectId);
+    const project = await projectForNewItem(repo, projectId);
     const now = ctx.now();
     const status = input.status ?? 'todo';
     const task: TaskRecord = {
       id,
       title: input.title,
-      projectId,
+      projectId: project.id,
       status,
       position: await repo.nextPosition(status),
       version: 1,
@@ -56,8 +68,7 @@ export function updateTask(ctx: WorkspaceContext, input: UpdateTaskInput) {
   return ctx.write('workspace.updateTask', input, async (repo) => {
     const task = await requireTask(repo, input.id);
     assertVersion(task.version, input.expectedVersion);
-    const projectId = input.projectId === undefined ? task.projectId : input.projectId;
-    if (projectId !== task.projectId) await assertProjectAssignment(repo, projectId);
+    const projectId = await projectForEditedItem(repo, task.projectId, input.projectId);
     const status = input.status ?? task.status;
     await repo.saveTask(
       {

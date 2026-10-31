@@ -1,8 +1,11 @@
 import type { TaskStatus } from '../domain/models.js';
+import type { ProjectColor } from '../domain/project.js';
 
 export interface ProjectRow {
   id: string;
   name: string;
+  color: ProjectColor;
+  position: number;
   version: number;
   archived_at: string | null;
   created_at: string;
@@ -11,6 +14,7 @@ export interface ProjectRow {
 
 export interface DocumentRow {
   id: string;
+  /** Never null since migration 005, whose triggers refuse it. */
   project_id: string | null;
   title: string;
   content: string;
@@ -25,6 +29,7 @@ export interface DocumentRow {
 
 export interface TaskRow {
   id: string;
+  /** Never null since migration 005, whose triggers refuse it. */
   project_id: string | null;
   title: string;
   status: TaskStatus;
@@ -35,9 +40,11 @@ export interface TaskRow {
   deleted_at: string | null;
 }
 
+/** A document deleted for good leaves `document_id` null; `document_title` is the title it had. */
 export interface SourceRow {
   task_id: string;
-  document_id: string;
+  document_id: string | null;
+  document_title: string;
   block_id: string | null;
   excerpt: string;
 }
@@ -64,6 +71,7 @@ export interface WorkspaceTables {
 
 export interface CanvasRow {
   id: string;
+  /** Never null since migration 005, whose triggers refuse it. */
   project_id: string | null;
   title: string;
   scene: string;

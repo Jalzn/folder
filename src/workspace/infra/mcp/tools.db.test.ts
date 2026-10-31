@@ -26,18 +26,30 @@ describe('agent read tools', () => {
       expectedVersion: archived.version,
       archived: true,
     });
-    await agent.service.createDocument({ ...request(), title: 'Solto' });
+    await agent.service.createDocument({ ...request(), projectId: agent.project.id, title: 'Ativo' });
 
-    expect(await agent.json('list_projects')).toEqual({
-      projects: [],
-      withoutProject: { documents: 1, drawings: 0, openTasks: 0 },
-      nextCursor: null,
+    const active = expect.objectContaining({
+      id: agent.project.id,
+      color: 'violet',
+      position: 0,
+      archived: false,
+      documents: 1,
     });
+    expect(await agent.json('list_projects')).toEqual({ projects: [active], nextCursor: null });
     const { projects } = await agent.json<{ projects: Record<string, unknown>[] }>('list_projects', {
       includeArchived: true,
     });
     expect(projects).toEqual([
-      expect.objectContaining({ id: archived.id, archived: true, documents: 1, drawings: 0, openTasks: 1 }),
+      expect.objectContaining({
+        id: archived.id,
+        color: 'ochre',
+        position: null,
+        archived: true,
+        documents: 1,
+        drawings: 0,
+        openTasks: 1,
+      }),
+      active,
     ]);
     const { items } = await agent.json<{ items: { id: string; projectArchived: boolean }[] }>('search', {
       projectId: archived.id,
@@ -77,9 +89,11 @@ describe('agent read tools', () => {
       listed += page.projects.length;
       cursor = page.nextCursor;
     }
-    expect(listed).toBe(205);
+    expect(listed).toBe(206);
 
-    const projectId = projects[0]?.id;
+    const [heaviest] = projects;
+    if (!heaviest) throw new Error('No project to fill.');
+    const projectId = heaviest.id;
     const code = { type: 'codeBlock', props: { language: 'ts' }, content: 'linha de código\n'.repeat(3_000) };
     const document = await agent.service.createDocument({
       ...request(),

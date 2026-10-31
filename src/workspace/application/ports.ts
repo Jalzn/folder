@@ -1,35 +1,54 @@
 import type { Canvas, CanvasSummary } from '../domain/canvas.js';
 import type { Document, DocumentSummary, Project, Task, TaskSource, TaskStatus } from '../domain/models.js';
-import type { ListCanvasesInput } from './schemas/canvases.js';
-import type { ListDocumentsInput } from './schemas/documents.js';
-import type { ListTasksInput } from './schemas/tasks.js';
 
 export type TaskRecord = Omit<Task, 'source'> & { deletedAt: string | null };
-export type TaskSourceRecord = Pick<TaskSource, 'documentId' | 'blockId' | 'excerpt'> & { taskId: string };
+
+/** A new task's source, which keeps the document's title for when the document is deleted for good. */
+export interface TaskSourceRecord extends Pick<TaskSource, 'blockId' | 'excerpt' | 'documentTitle'> {
+  taskId: string;
+  documentId: string;
+}
+
+/** Which documents or drawings to list: one project's or every project's, live or trashed. */
+export interface ItemListQuery {
+  projectId?: string | undefined;
+  /** Text the item contains, ignoring case and accents. */
+  query?: string | undefined;
+  deleted?: boolean | undefined;
+}
+
+export interface TaskListQuery {
+  projectId?: string | undefined;
+  /** Only tasks created from this document. */
+  documentId?: string | undefined;
+}
 
 export interface ProjectRepository {
+  /** Active projects in selector order, then, when asked, archived ones from the most recently archived. */
   listProjects(includeArchived: boolean): Promise<Project[]>;
   findProject(id: string): Promise<Project | undefined>;
   insertProject(project: Project): Promise<void>;
   saveProject(project: Project, expectedVersion: number): Promise<void>;
+  /** Moves a project in the selector. The order is not an edit: version and dates stay. */
+  setProjectPosition(id: string, position: number): Promise<void>;
 }
 
 export interface DocumentRepository {
-  listDocuments(input: ListDocumentsInput): Promise<DocumentSummary[]>;
+  listDocuments(query: ItemListQuery): Promise<DocumentSummary[]>;
   findDocument(id: string): Promise<Document | undefined>;
   insertDocument(document: Document): Promise<void>;
   saveDocument(document: Document, expectedVersion: number): Promise<void>;
 }
 
 export interface CanvasRepository {
-  listCanvases(input: ListCanvasesInput): Promise<CanvasSummary[]>;
+  listCanvases(query: ItemListQuery): Promise<CanvasSummary[]>;
   findCanvas(id: string): Promise<Canvas | undefined>;
   insertCanvas(canvas: Canvas): Promise<void>;
   saveCanvas(canvas: Canvas, expectedVersion: number): Promise<void>;
 }
 
 export interface TaskRepository {
-  listTasks(input: ListTasksInput): Promise<Task[]>;
+  listTasks(query: TaskListQuery): Promise<Task[]>;
   findTask(id: string): Promise<TaskRecord | undefined>;
   taskView(id: string): Promise<Task>;
   insertTask(task: TaskRecord): Promise<void>;

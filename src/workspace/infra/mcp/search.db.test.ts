@@ -8,12 +8,23 @@ describe('search', () => {
   it('searches documents, drawings and tasks ignoring case and accents', async () => {
     const document = await agent.service.createDocument({
       ...request(),
+      projectId: agent.project.id,
       title: 'Notas',
       content: [paragraph('Plano de AÇÃO')],
     });
-    const canvas = await agent.service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
-    const task = await agent.service.createTask({ ...request(), title: 'Revisar ação' });
-    await agent.service.createDocument({ ...request(), title: 'Outro', content: [paragraph('Sem vínculo')] });
+    const canvas = await agent.service.createCanvas({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Fluxo',
+      scene: drawingFixture(),
+    });
+    const task = await agent.service.createTask({ ...request(), title: 'Revisar ação', projectId: agent.project.id });
+    await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Outro',
+      content: [paragraph('Sem vínculo')],
+    });
     const found = await agent.json<{ items: { type: string; id: string; excerpt?: string }[]; nextCursor: null }>(
       'search',
       {
@@ -34,6 +45,7 @@ describe('search', () => {
   it('requires every word in any order, ranks title matches first and refuses an empty folded query', async () => {
     const body = await agent.service.createDocument({
       ...request(),
+      projectId: agent.project.id,
       title: 'Notas de reunião',
       content: [
         { type: 'heading', content: [{ type: 'text', text: 'Ideia', styles: {} }] },
@@ -42,6 +54,7 @@ describe('search', () => {
     });
     const titled = await agent.service.createDocument({
       ...request(),
+      projectId: agent.project.id,
       title: 'MCP somente leitura',
       content: [paragraph('Ideia antiga.')],
     });
@@ -65,10 +78,15 @@ describe('search', () => {
   });
 
   it('ranks by the normalized title and ignores punctuation around query words', async () => {
-    const titled = await agent.service.createDocument({ ...request(), title: 'Relatório alfa' });
+    const titled = await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Relatório alfa',
+    });
     // Four variation selectors make the raw title longer than the stored one, which ends before "alfa".
     const emoji = await agent.service.createDocument({
       ...request(),
+      projectId: agent.project.id,
       title: '⚠️⚠️⚠️⚠️ Notas',
       content: [paragraph('alfa no começo do texto.')],
     });
@@ -77,6 +95,7 @@ describe('search', () => {
     expect(await ids('alfa')).toEqual([titled.id, emoji.id]);
     const token = await agent.service.createDocument({
       ...request(),
+      projectId: agent.project.id,
       title: 'Acesso',
       content: [paragraph('Use o token pessoal (MCP).')],
     });
@@ -87,6 +106,7 @@ describe('search', () => {
   it('points the excerpt at the match after emoji with variation selectors', async () => {
     await agent.service.createDocument({
       ...request(),
+      projectId: agent.project.id,
       title: 'Emoji',
       content: [paragraph(`${'❤️'.repeat(200)} alvo-emoji fim`)],
     });
@@ -97,7 +117,12 @@ describe('search', () => {
 
   it('cuts excerpts around the first match and lists recent items without a query', async () => {
     const text = `${'Começo do texto. '.repeat(20)}O token pessoal aparece aqui.${' Fim.'.repeat(100)}`;
-    await agent.service.createDocument({ ...request(), title: 'Longo', content: [paragraph(text)] });
+    await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Longo',
+      content: [paragraph(text)],
+    });
     const { items } = await agent.json<{ items: { excerpt: string }[] }>('search', { query: 'token pessoal' });
     expect(items[0]?.excerpt.startsWith('…')).toBe(true);
     expect(items[0]?.excerpt.endsWith('…')).toBe(true);
@@ -111,7 +136,12 @@ describe('search', () => {
     // 4,000 accents stripped before the match: twice the margin read around the estimated place.
     const decomposed = 'ação, '.normalize('NFD').repeat(2000);
     const text = `${decomposed}alvo-profundo${' fim'.repeat(2000)}`;
-    await agent.service.createDocument({ ...request(), title: 'Fundo', content: [paragraph(text)] });
+    await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Fundo',
+      content: [paragraph(text)],
+    });
     const excerpt = async (query?: string) =>
       (await agent.json<{ items: { excerpt: string }[] }>('search', query ? { query } : {})).items[0]?.excerpt ?? '';
     const deep = await excerpt('alvo-profundo');
@@ -124,7 +154,10 @@ describe('search', () => {
   it('pages through results in a stable order', async () => {
     const created = [];
     for (let index = 0; index < 5; index += 1)
-      created.push((await agent.service.createDocument({ ...request(), title: `Documento ${index}` })).id);
+      created.push(
+        (await agent.service.createDocument({ ...request(), projectId: agent.project.id, title: `Documento ${index}` }))
+          .id,
+      );
     const seen: string[] = [];
     let cursor: string | null | undefined;
     do {
@@ -145,7 +178,9 @@ describe('search', () => {
   it('keeps paging after the last item shown when an earlier item is edited', async () => {
     const created = [];
     for (let index = 0; index < 5; index += 1)
-      created.push(await agent.service.createDocument({ ...request(), title: `Página ${index}` }));
+      created.push(
+        await agent.service.createDocument({ ...request(), projectId: agent.project.id, title: `Página ${index}` }),
+      );
     const page = (cursor?: string) =>
       agent.json<{ items: { id: string }[]; nextCursor: string | null }>('search', {
         limit: 2,
@@ -172,7 +207,12 @@ describe('search', () => {
     scene.elements = scene.elements.map((element) =>
       element.type === 'frame' ? { ...element, name: 'Zebulonserver' } : element,
     );
-    const canvas = await agent.service.createCanvas({ ...request(), title: 'Arquitetura', scene });
+    const canvas = await agent.service.createCanvas({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Arquitetura',
+      scene,
+    });
     const { items } = await agent.json<{ items: { id: string; excerpt: string }[] }>('search', {
       query: 'zebulonserver',
     });

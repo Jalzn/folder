@@ -11,7 +11,7 @@ export function canvasReads(db: Kysely<WorkspaceTables>): CanvasReads {
     async canvasForReading(id) {
       const row = await db
         .selectFrom('workspace_canvases as item')
-        .leftJoin('workspace_projects as project', 'project.id', 'item.project_id')
+        .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
         .leftJoin('workspace_canvas_previews as preview', 'preview.canvas_id', 'item.id')
         .select(['item.id', 'item.title', 'item.scene', 'item.version', 'item.updated_at'])
         .select(projectColumns)

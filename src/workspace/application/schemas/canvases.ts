@@ -20,7 +20,7 @@ export const GetCanvasInput = z.object({ id });
 export const CreateCanvasInput = z.object({
   ...request,
   title: z.string().trim().max(300).optional(),
-  projectId: projectId.optional(),
+  projectId,
   scene: scene.optional(),
 });
 export const SaveCanvasInput = z.object({

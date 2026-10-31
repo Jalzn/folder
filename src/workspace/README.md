@@ -4,8 +4,11 @@ Projetos, documentos, desenhos, tarefas e seus vínculos no mesmo módulo. A int
 
 ## Regras implementadas
 
-- Documentos e tarefas podem existir sem projeto. Filtro de projeto omitido significa todos; `null` significa sem projeto.
-- Arquivar projeto preserva o conteúdo. É possível continuar editando documentos existentes; adicionar novos itens exige restaurar o projeto.
+- Todo documento, desenho e tarefa pertence a um projeto. Criar exige `projectId`, exceto a tarefa criada de um trecho, que entra no projeto do documento. O projeto precisa existir e estar ativo. Filtro de projeto omitido significa todos.
+- A migração `005_projects_required.sql` levou os itens soltos, inclusive os da lixeira, ao projeto Geral (`00000000-0000-4000-8000-000000000001`), criado só quando havia itens soltos, sem mudar versões nem datas. Gatilhos recusam `project_id` nulo em inserções e atualizações.
+- Compatibilidade transitória, enquanto a interface anterior envia `null`: na criação, `null` é o primeiro projeto ativo do seletor (sem projeto ativo, `VALIDATION`); ao salvar, mantém o projeto atual; num filtro, não encontra nada.
+- Projetos têm cor (`violet`, `ochre`, `gray`, `green`) e posição no seletor. Um projeto novo entra no fim dos ativos com a primeira cor que nenhum ativo usa. `moveProject` reposiciona entre os ativos sem mudar versão nem datas. `listProjects` traz os ativos pela posição e, com `includeArchived`, os arquivados do mais recente para o mais antigo.
+- Arquivar projeto preserva o conteúdo, e qualquer projeto pode ser arquivado, inclusive o último ativo. É possível continuar editando itens existentes; adicionar novos itens exige desarquivar. Um projeto desarquivado volta no fim do seletor.
 - Documento usa JSON do subconjunto BlockNote suportado, com formato 1, até 1 MiB em UTF-8 e 5.000 blocos. Texto de busca é derivado no servidor; a busca ignora caixa e acentos.
 - Parágrafo, título, listas, checklist, citação e código são os blocos iniciais. Propriedades, estilos e links são validados antes de persistir para que um conteúdo inválido não impeça a reabertura do editor.
 - Todo pedido de escrita tem `requestId`. Repetição idêntica devolve a resposta original; reutilização para outro conteúdo é recusada. Atualizações também exigem `expectedVersion`.
@@ -18,14 +21,15 @@ Projetos, documentos, desenhos, tarefas e seus vínculos no mesmo módulo. A int
 - A posição é global por coluna; quadros de projeto filtram essa ordem. Reordenar pode incrementar as versões dos cartões reposicionados, e a interface deve recarregar a lista.
 - Tarefa criada a partir de trecho valida o documento salvo, sua versão quando enviada, bloco e trecho. Tarefa e vínculo são gravados na mesma transação.
 - Editar título/estado da tarefa não muda o documento. Excluir documento ou remover trecho preserva a tarefa e o texto capturado.
-- A origem expõe `available` para o documento e `blockAvailable` para o trecho. Quando o trecho não existe mais, o retorno pode levar ao documento com aviso.
+- A origem expõe `available` para o documento e `blockAvailable` para o trecho. Quando o trecho não existe mais, o retorno pode levar ao documento com aviso. A origem guarda o título do documento: se ele for excluído de vez, `documentId` fica nulo e `documentTitle` mostra o título guardado.
 
 ## Leitura por agentes
 
 `createWorkspaceTools(db, { logError })` devolve as ferramentas somente leitura que o servidor expõe por MCP: `list_projects`, `search`, `read_document`, `read_drawing`, `list_tasks` e `read_task`. Elas não dependem do SDK MCP; cada uma tem esquema Zod em `application/reading/schemas.ts`, um caso de uso sobre a porta `WorkspaceReader` (SQL em `infra/reader/`) e a formatação em `infra/mcp/`. Os limites de saída ficam em `domain/reading-limits.ts`.
 
 - Nenhuma resposta passa de 45.000 caracteres de texto, rodapés e erros incluídos: o Claude Code 2.1.310 grava num arquivo o resultado com mais de 50.000 e mostra ao modelo só uma prévia. Cada ferramenta cabe nisso pelo próprio orçamento; `withTextCeiling` corta, com aviso, o que ainda passasse, como um bloco de código com milhares de crases.
-- Itens na lixeira não aparecem: ler um deles responde como um ID inexistente, e um documento de origem na lixeira vem sem título e com `available: false`.
+- Itens na lixeira não aparecem: ler um deles responde como um ID inexistente, e um documento de origem na lixeira vem sem título e com `available: false`. Um documento de origem excluído de vez vem com `documentId: null`, o título guardado e `available: false`.
+- `list_projects` traz `color` e `position` (nula nos arquivados) de cada projeto. Sem projeto ativo, a lista vem vazia, e `includeArchived: true` mostra os arquivados.
 - A busca divide a consulta em palavras normalizadas por `searchText`, a mesma forma das colunas `search_text`, e exige todas, em qualquer ordem. Hífens também separam palavras, e a pontuação em volta delas é ignorada. Itens com mais palavras no título vêm primeiro, comparando com o título normalizado no começo de `search_text`, depois os editados mais recentemente. Títulos de tarefas não têm coluna de busca: o leitor compara a forma normalizada em JavaScript, depois da consulta. Uma consulta que fica vazia sem acentos e pontuação é recusada.
 - O trecho da busca vem de uma janela do texto: o SQL acha a primeira ocorrência em `search_text` e devolve 2.000 caracteres de cada lado do lugar estimado no texto guardado (em proporção, quando a normalização mudou o comprimento). `excerptAround` corta o trecho nessa janela, sem partir pares substitutos, e sem consulta não normaliza nada.
 - Listas são paginadas por chave: o cursor guarda a ordenação do último item mostrado (`s~…` na busca, `t~…` no quadro, `p~…` nos projetos), e edições em outros itens não repetem nem pulam resultados. A ordem das colunas vem de `TASK_STATUSES` e a dos tipos da busca, de `SEARCH_ITEM_TYPES`. Mover uma tarefa renumera a coluna, então o cursor do quadro também fixa a revisão do quadro (`t~<revisão>~…`) e é recusado depois de qualquer mudança nas tarefas. Respostas em JSON perdem itens do fim, com o cursor ajustado, quando passariam do teto de saída.
@@ -59,7 +63,9 @@ O navegador gera uma prévia PNG depois de salvar e a envia por `workspace.saveC
 
 ## Verificação
 
-`domain/document.test.ts` verifica o formato suportado, limites, propriedades e links inválidos. `application/workspace.db.test.ts` usa SQLite real em arquivos temporários para testar reabertura após reinício, dois clientes, conflitos, idempotência, busca, arquivamento, lixeira, ordenação e referências que sobrevivem à remoção do conteúdo de origem.
+`domain/document.test.ts` verifica o formato suportado, limites, propriedades e links inválidos. `application/workspace.db.test.ts` usa SQLite real em arquivos temporários para testar reabertura após reinício, dois clientes, conflitos, idempotência, busca, arquivamento, lixeira, ordenação e referências que sobrevivem à remoção do conteúdo de origem. Os testes de banco criam os itens num projeto de `testProject` (`testing/projects.ts`).
+
+`domain/project.test.ts` verifica a inicial e a cor padrão; `application/projects.db.test.ts`, cor, ordem e arquivamento; `application/projects-required.db.test.ts`, a migração 005 sobre bases montadas com 001 a 004 por `testing/legacy-workspace.ts` e as regras de projeto obrigatório, com a compatibilidade transitória.
 
 `domain/markdown.test.ts`, `markdown-emphasis.test.ts`, `markdown-pages.test.ts`, `excerpt.test.ts`, `search-text.test.ts`, `canvas-outline.test.ts`, `canvas-preview.test.ts`, `png.test.ts` e `paging.test.ts` verificam a leitura pura, e `application/reading/keyset-page.test.ts` o cursor das listas; `application/canvas-previews.db.test.ts` cobre as regras das prévias e as migrações 003 e 004. Em `infra/mcp/`, um arquivo por ferramenta (`search`, `documents`, `drawings` e `tasks`) a percorre em SQLite temporário com `useAgentTools` de `testing/agent-tools.ts`; `tools.db.test.ts` cobre o que vale para todas: lixeira, arquivamento, orçamentos de saída e falhas inesperadas.
 

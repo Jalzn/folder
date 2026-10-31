@@ -7,10 +7,15 @@ describe('read_drawing', () => {
   const agent = useAgentTools();
 
   it('describes the current scene of a drawing', async () => {
-    const canvas = await agent.service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
+    const canvas = await agent.service.createCanvas({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Fluxo',
+      scene: drawingFixture(),
+    });
     const { text } = await agent.call('read_drawing', { id: canvas.id });
     expect(text).toContain(
-      `Desenho "Fluxo" · sem projeto · versão 1 · atualizado em ${canvas.updatedAt} · ID ${canvas.id}`,
+      `Desenho "Fluxo" · Projeto "Projeto de teste" · versão 1 · atualizado em ${canvas.updatedAt} · ID ${canvas.id}`,
     );
     expect(text).toContain('Imagem: indisponível');
     expect(text).toContain('Quadro q1 "Ideia" (0, 0, 800×600)');
@@ -22,12 +27,17 @@ describe('read_drawing', () => {
     expect((await agent.call('read_drawing', { id: inProject.id })).text).toContain(
       'Desenho "Mapa" · Projeto "Alfa · versão 9 \\"beta\\"" · versão 1 ·',
     );
-    const empty = await agent.service.createCanvas({ ...request(), title: 'Vazio' });
+    const empty = await agent.service.createCanvas({ ...request(), projectId: agent.project.id, title: 'Vazio' });
     expect((await agent.call('read_drawing', { id: empty.id })).text).toContain('Imagem: o desenho está vazio');
   });
 
   it('sends the stored preview as an image and flags one from an older version', async () => {
-    const canvas = await agent.service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
+    const canvas = await agent.service.createCanvas({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Fluxo',
+      scene: drawingFixture(),
+    });
     const png = pngImage(1200, 800);
     await agent.service.saveCanvasPreview({ id: canvas.id, version: 1, png });
     const read = (input: Record<string, unknown>) => agent.run('read_drawing', input);

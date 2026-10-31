@@ -19,6 +19,7 @@ export interface CanvasScene {
 export interface CanvasSummary {
   id: string;
   title: string;
+  /** Always set since every item has a project; null is still typed while the interface sends it. */
   projectId: string | null;
   plainText: string;
   formatVersion: number;

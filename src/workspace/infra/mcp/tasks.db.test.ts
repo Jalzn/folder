@@ -25,7 +25,7 @@ describe('list_tasks and read_task', () => {
     });
     const first = await agent.service.createTask({ ...request(), title: 'Primeira', projectId: project.id });
     await agent.service.createTask({ ...request(), title: 'Pronta', projectId: project.id, status: 'done' });
-    await agent.service.createTask({ ...request(), title: 'Fora do projeto' });
+    await agent.service.createTask({ ...request(), title: 'Fora do projeto', projectId: agent.project.id });
 
     const all = await agent.json<{ tasks: { title: string }[] }>('list_tasks', { projectId: project.id });
     expect(all.tasks.map((task) => task.title)).toEqual(['Nasceu do trecho', 'Primeira', 'Em curso', 'Pronta']);
@@ -72,7 +72,9 @@ describe('list_tasks and read_task', () => {
   it('refuses a cursor from before the board changed', async () => {
     const created = [];
     for (let index = 0; index < 5; index += 1)
-      created.push((await agent.service.createTask({ ...request(), title: `Tarefa ${index}` })).task);
+      created.push(
+        (await agent.service.createTask({ ...request(), title: `Tarefa ${index}`, projectId: agent.project.id })).task,
+      );
     const first = await agent.json<{ tasks: { title: string }[]; nextCursor: string }>('list_tasks', { limit: 2 });
     expect(first.tasks.map((task) => task.title)).toEqual(['Tarefa 0', 'Tarefa 1']);
     const moved = created[4];

@@ -6,14 +6,17 @@ import { expectUpdated } from './versioned-update.js';
 
 export function projectRepository(connection: Database): ProjectRepository {
   const db = tables<WorkspaceTables>(connection);
+  const projects = () => db.selectFrom('workspace_projects').selectAll();
   return {
     async listProjects(includeArchived) {
-      let query = db.selectFrom('workspace_projects').selectAll();
-      if (!includeArchived) query = query.where('archived_at', 'is', null);
-      return (await query.orderBy('updated_at', 'desc').orderBy('id').execute()).map(projectModel);
+      const active = await projects().where('archived_at', 'is', null).orderBy('position').orderBy('id').execute();
+      const archived = includeArchived
+        ? await projects().where('archived_at', 'is not', null).orderBy('archived_at', 'desc').orderBy('id').execute()
+        : [];
+      return [...active, ...archived].map(projectModel);
     },
     async findProject(id) {
-      const row = await db.selectFrom('workspace_projects').selectAll().where('id', '=', id).executeTakeFirst();
+      const row = await projects().where('id', '=', id).executeTakeFirst();
       return row && projectModel(row);
     },
     async insertProject(project) {
@@ -27,6 +30,9 @@ export function projectRepository(connection: Database): ProjectRepository {
         .where('version', '=', expectedVersion)
         .executeTakeFirstOrThrow();
       expectUpdated(result.numUpdatedRows);
+    },
+    async setProjectPosition(id, position) {
+      await db.updateTable('workspace_projects').set({ position }).where('id', '=', id).execute();
     },
   };
 }

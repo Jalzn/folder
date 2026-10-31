@@ -1,15 +1,17 @@
 import { randomUUID } from 'node:crypto';
-import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { Project } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
+import { legacyRows, migrateWorkspaceTo } from '../testing/legacy-workspace.js';
 import { pngChunk, pngFile, pngFrom, pngHeaderChunk, pngImage, storedZlib } from '../testing/png.js';
+import { testProject } from '../testing/projects.js';
 
 const request = () => ({ requestId: randomUUID() });
 
@@ -17,11 +19,13 @@ describe('drawing previews', () => {
   let directory: string;
   let db: Database;
   let service: ReturnType<typeof createWorkspaceService>;
+  let project: Project;
   beforeEach(async () => {
     directory = await mkdtemp(join(tmpdir(), 'tinyfold-previews-'));
     db = createDatabase(join(directory, 'test.sqlite'));
     await migrate(db, [coreModule, workspaceModule]);
     service = createWorkspaceService(db);
+    project = await testProject(service);
   });
   afterEach(async () => {
     await db.destroy();
@@ -37,7 +41,12 @@ describe('drawing previews', () => {
       .executeTakeFirst();
 
   it('stores the preview of the current version without touching the drawing', async () => {
-    const created = await service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
+    const created = await service.createCanvas({
+      ...request(),
+      projectId: project.id,
+      title: 'Fluxo',
+      scene: drawingFixture(),
+    });
     const before = await service.getCanvas({ id: created.id });
     expect(before.previewVersion).toBeNull();
     const png = pngImage(1568, 940);
@@ -54,12 +63,12 @@ describe('drawing previews', () => {
     const row = await storedPreview(created.id);
     expect(row).toMatchObject({ scene_version: 1, width: 1568 });
     expect(Buffer.from(row?.png ?? []).equals(Buffer.from(png))).toBe(true);
-    const mutations = await sql<{ count: number }>`select count(*) as count from core_mutations`.execute(db);
-    expect(mutations.rows[0]?.count).toBe(1);
+    const mutations = await sql<{ operation: string }>`select operation from core_mutations`.execute(db);
+    expect(mutations.rows.map((row) => row.operation)).not.toContain('workspace.saveCanvasPreview');
   });
 
   it('ignores an outdated preview and replaces an older one with a newer one', async () => {
-    const created = await service.createCanvas({ ...request(), scene: drawingFixture() });
+    const created = await service.createCanvas({ ...request(), projectId: project.id, scene: drawingFixture() });
     await service.saveCanvasPreview({ id: created.id, version: 1, png: pngImage(100, 100) });
     const saved = await service.saveCanvas({
       ...request(),
@@ -79,7 +88,7 @@ describe('drawing previews', () => {
   });
 
   it('refuses a future version, a trashed drawing and invalid images', async () => {
-    const created = await service.createCanvas({ ...request(), scene: drawingFixture() });
+    const created = await service.createCanvas({ ...request(), projectId: project.id, scene: drawingFixture() });
     await expect(
       service.saveCanvasPreview({ id: created.id, version: 2, png: pngImage(10, 10) }),
     ).rejects.toMatchObject({
@@ -95,7 +104,7 @@ describe('drawing previews', () => {
       pngFrom([pngHeaderChunk(10, 10, { bitDepth: 1, colourType: 0 }), pngChunk('IDAT', idat), pngChunk('IEND')]);
     const unknownFilter = new Uint8Array(30);
     unknownFilter[3] = 5;
-    const other = await service.createCanvas({ ...request(), scene: drawingFixture() });
+    const other = await service.createCanvas({ ...request(), projectId: project.id, scene: drawingFixture() });
     const valid = await service.saveCanvasPreview({ id: other.id, version: 1, png: grey(blackRows(30)) });
     expect(valid.stored).toBe(true);
     const invalid = [
@@ -123,7 +132,7 @@ describe('drawing previews', () => {
   });
 
   it('deletes the preview with its drawing', async () => {
-    const created = await service.createCanvas({ ...request(), scene: drawingFixture() });
+    const created = await service.createCanvas({ ...request(), projectId: project.id, scene: drawingFixture() });
     await service.saveCanvasPreview({ id: created.id, version: 1, png: pngImage(10, 10) });
     await sql`delete from workspace_canvases where id = ${created.id}`.execute(db);
     expect(await storedPreview(created.id)).toBeUndefined();
@@ -131,20 +140,13 @@ describe('drawing previews', () => {
 
   it('adds the preview table to a database with the first two workspace migrations', async () => {
     await db.destroy();
-    const oldMigrations = join(directory, 'old-workspace');
-    await mkdir(oldMigrations);
-    for (const name of ['001_workspace.sql', '002_canvases.sql'])
-      await copyFile(new URL(`../infra/migrations/${name}`, import.meta.url), join(oldMigrations, name));
     db = createDatabase(join(directory, 'upgrade.sqlite'));
-    await migrate(db, [coreModule, { ...workspaceModule, migrations: pathToFileURL(`${oldMigrations}/`) }]);
-    const canvas = await createWorkspaceService(db).createCanvas({
-      ...request(),
-      title: 'Antigo',
-      scene: drawingFixture(),
-    });
+    await migrateWorkspaceTo(db, 2, directory);
+    const canvas = await legacyRows(db).canvas({ projectId: null, title: 'Antigo', scene: drawingFixture() });
     expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
       { module: 'workspace', version: 3, name: 'canvas_previews' },
       { module: 'workspace', version: 4, name: 'canvas_preview_fingerprint' },
+      { module: 'workspace', version: 5, name: 'projects_required' },
     ]);
     service = createWorkspaceService(db);
     expect(await service.getCanvas({ id: canvas.id })).toMatchObject({
@@ -156,15 +158,20 @@ describe('drawing previews', () => {
   });
 
   it('keeps a preview current through rename, project moves and the trash, until the scene changes', async () => {
-    const project = await service.createProject({ ...request(), name: 'Destino' });
-    const created = await service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
+    const destination = await testProject(service, 'Destino');
+    const created = await service.createCanvas({
+      ...request(),
+      projectId: project.id,
+      title: 'Fluxo',
+      scene: drawingFixture(),
+    });
     await service.saveCanvasPreview({ id: created.id, version: 1, png: pngImage(10, 10) });
     const renamed = await service.saveCanvas({
       ...request(),
       id: created.id,
       expectedVersion: 1,
       title: 'Outro nome',
-      projectId: project.id,
+      projectId: destination.id,
       scene: drawingFixture(),
     });
     const trashed = await service.deleteCanvas({ ...request(), id: created.id, expectedVersion: renamed.version });
@@ -188,18 +195,14 @@ describe('drawing previews', () => {
 
   it('adds fingerprints to existing previews, which fall back to the version until replaced', async () => {
     await db.destroy();
-    const oldMigrations = join(directory, 'before-fingerprints');
-    await mkdir(oldMigrations);
-    for (const name of ['001_workspace.sql', '002_canvases.sql', '003_canvas_previews.sql'])
-      await copyFile(new URL(`../infra/migrations/${name}`, import.meta.url), join(oldMigrations, name));
     db = createDatabase(join(directory, 'fingerprints.sqlite'));
-    await migrate(db, [coreModule, { ...workspaceModule, migrations: pathToFileURL(`${oldMigrations}/`) }]);
-    const old = createWorkspaceService(db);
-    const canvas = await old.createCanvas({ ...request(), title: 'Antigo', scene: drawingFixture() });
-    await sql`insert into workspace_canvas_previews (canvas_id, scene_version, png, width, height, created_at)
-      values (${canvas.id}, 1, ${Buffer.from(pngImage(10, 10))}, 10, 10, ${canvas.updatedAt})`.execute(db);
+    await migrateWorkspaceTo(db, 3, directory);
+    const old = legacyRows(db);
+    const canvas = await old.canvas({ title: 'Antigo', scene: drawingFixture() });
+    await old.preview(canvas.id, pngImage(10, 10));
     expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
       { module: 'workspace', version: 4, name: 'canvas_preview_fingerprint' },
+      { module: 'workspace', version: 5, name: 'projects_required' },
     ]);
     service = createWorkspaceService(db);
     expect(await service.getCanvas({ id: canvas.id })).toMatchObject({ previewVersion: 1, previewCurrent: true });

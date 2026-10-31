@@ -58,6 +58,10 @@ afterEach(async () => {
   }
   resources.length = 0;
 });
+/** Every item belongs to a project, and a new database has none. */
+const newProject = (client: RouterClient<AppRouter>) =>
+  client.workspace.createProject({ requestId: randomUUID(), name: 'Projeto de teste' });
+
 const paths = (router: object, prefix: string[] = []): string[][] =>
   Object.entries(router).flatMap(([key, value]) =>
     isProcedure(value) ? [[...prefix, key]] : paths(value as object, [...prefix, key]),
@@ -100,8 +104,10 @@ describe('server boundaries', () => {
     const { client } = browser();
     await client.auth.login({ password });
     const text = 'Conteúdo longo. '.repeat(6000);
+    const project = await newProject(client);
     const document = await client.workspace.createDocument({
       requestId: randomUUID(),
+      projectId: project.id,
       title: 'Longo',
       content: [
         { id: 'paragraph', type: 'paragraph', props: {}, content: [{ type: 'text', text, styles: {} }], children: [] },
@@ -119,7 +125,12 @@ describe('server boundaries', () => {
     const { browser } = await fixture();
     const { client } = browser();
     await client.auth.login({ password });
-    const created = await client.workspace.createCanvas({ requestId: randomUUID(), title: 'Fluxo' });
+    const project = await newProject(client);
+    const created = await client.workspace.createCanvas({
+      requestId: randomUUID(),
+      projectId: project.id,
+      title: 'Fluxo',
+    });
     const canvas = await client.workspace.getCanvas({ id: created.id });
     expect(canvas.scene.elements).toEqual([]);
     const input = {
@@ -139,6 +150,7 @@ describe('server boundaries', () => {
     await expect(
       client.workspace.createCanvas({
         requestId: randomUUID(),
+        projectId: project.id,
         scene: { ...canvas.scene, elements: [{ id: 'bad', type: 'image' }] },
       }),
     ).rejects.toMatchObject({ status: 400, data: { code: 'VALIDATION' } });
@@ -168,7 +180,12 @@ describe('server boundaries', () => {
     const { browser } = await fixture();
     const { client } = browser();
     await client.auth.login({ password });
-    const created = await client.workspace.createCanvas({ requestId: randomUUID(), title: 'Fluxo' });
+    const project = await newProject(client);
+    const created = await client.workspace.createCanvas({
+      requestId: randomUUID(),
+      projectId: project.id,
+      title: 'Fluxo',
+    });
     const png = new File([pngImage(800, 600).slice()], 'preview.png', { type: 'image/png' });
     expect(await client.workspace.saveCanvasPreview({ id: created.id, version: created.version, png })).toEqual({
       stored: true,

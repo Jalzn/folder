@@ -1,0 +1,172 @@
+import { randomUUID } from 'node:crypto';
+import { copyFile, mkdtemp, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { coreModule, type Database, migrate, tables } from '@tinyfold/core/infra';
+import { type CanvasScene, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
+import { documentPlainText } from '../domain/document.js';
+import type { DocumentBlock, TaskStatus } from '../domain/models.js';
+import { searchText } from '../domain/search-text.js';
+import { workspaceModule } from '../infra/module.js';
+
+/**
+ * Applies the workspace migrations up to `version` only, as an installation of an earlier stage
+ * would have them. The files are copied to a folder inside `scratch`.
+ */
+export async function migrateWorkspaceTo(db: Database, version: number, scratch: string): Promise<void> {
+  const folder = await mkdtemp(join(scratch, `migrations-${version}-`));
+  const names = (await readdir(workspaceModule.migrations)).filter((name) => Number(name.slice(0, 3)) <= version);
+  for (const name of names) await copyFile(new URL(name, workspaceModule.migrations), join(folder, name));
+  await migrate(db, [coreModule, { ...workspaceModule, migrations: pathToFileURL(`${folder}/`) }]);
+}
+
+interface LegacyItem {
+  id: string;
+  project_id: string | null;
+  title: string;
+  plain_text: string;
+  search_text: string;
+  format_version: number;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+/** The tables as migrations 001 to 004 left them, before every item needed a project. */
+interface LegacyTables {
+  workspace_projects: {
+    id: string;
+    name: string;
+    version: number;
+    archived_at: string | null;
+    created_at: string;
+    updated_at: string;
+  };
+  workspace_documents: LegacyItem & { content: string };
+  workspace_canvases: LegacyItem & { scene: string };
+  workspace_canvas_previews: {
+    canvas_id: string;
+    scene_version: number;
+    /** Since migration 004. */
+    scene_fingerprint?: string | null;
+    png: Buffer;
+    width: number;
+    height: number;
+    created_at: string;
+  };
+  workspace_tasks: {
+    id: string;
+    project_id: string | null;
+    title: string;
+    status: TaskStatus;
+    position: number;
+    version: number;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+  };
+  workspace_task_sources: { task_id: string; document_id: string; block_id: string | null; excerpt: string };
+}
+
+interface Dates {
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+}
+
+interface ItemFields extends Dates {
+  projectId?: string | null;
+  title?: string;
+  version?: number;
+}
+
+/**
+ * Writes rows as the workspace did before migration 005, with derived text columns computed as the
+ * repositories computed them. Each row is a minute after the previous one unless dated.
+ */
+export function legacyRows(connection: Database) {
+  const db = tables<LegacyTables>(connection);
+  let clock = Date.parse('2026-10-01T12:00:00.000Z');
+  const next = () => {
+    clock += 60_000;
+    return new Date(clock).toISOString();
+  };
+  const dates = (fields: Dates) => {
+    const createdAt = fields.createdAt ?? next();
+    return { created_at: createdAt, updated_at: fields.updatedAt ?? createdAt, deleted_at: fields.deletedAt ?? null };
+  };
+  const item = (fields: ItemFields, plainText: string) => {
+    const title = fields.title ?? 'Sem título';
+    return {
+      id: randomUUID(),
+      project_id: fields.projectId ?? null,
+      title,
+      plain_text: plainText,
+      search_text: searchText(`${title}\n${plainText}`),
+      format_version: 1,
+      version: fields.version ?? 1,
+      ...dates(fields),
+    };
+  };
+
+  return {
+    async project(name: string, fields: Dates & { archivedAt?: string | null; version?: number } = {}) {
+      const { created_at, updated_at } = dates(fields);
+      const row = {
+        id: randomUUID(),
+        name,
+        version: fields.version ?? 1,
+        archived_at: fields.archivedAt ?? null,
+        created_at,
+        updated_at,
+      };
+      await db.insertInto('workspace_projects').values(row).execute();
+      return row;
+    },
+    async document(fields: ItemFields & { content?: DocumentBlock[] } = {}) {
+      const content = fields.content ?? [];
+      const row = { ...item(fields, documentPlainText(content)), content: JSON.stringify(content) };
+      await db.insertInto('workspace_documents').values(row).execute();
+      return row;
+    },
+    async canvas(fields: ItemFields & { scene?: CanvasScene } = {}) {
+      const scene = fields.scene ?? emptyCanvasScene();
+      const row = { ...item(fields, canvasPlainText(scene)), scene: JSON.stringify(scene) };
+      await db.insertInto('workspace_canvases').values(row).execute();
+      return row;
+    },
+    /** A preview of the canvas, with the scene fingerprint only when given, as migration 004 added it. */
+    async preview(canvasId: string, png: Uint8Array, fields: { sceneVersion?: number; fingerprint?: string } = {}) {
+      const row = {
+        canvas_id: canvasId,
+        scene_version: fields.sceneVersion ?? 1,
+        ...(fields.fingerprint === undefined ? {} : { scene_fingerprint: fields.fingerprint }),
+        png: Buffer.from(png),
+        width: 10,
+        height: 10,
+        created_at: next(),
+      };
+      await db.insertInto('workspace_canvas_previews').values(row).execute();
+      return row;
+    },
+    async task(fields: Omit<ItemFields, 'title'> & { title: string; status?: TaskStatus; position?: number }) {
+      const row = {
+        id: randomUUID(),
+        project_id: fields.projectId ?? null,
+        title: fields.title,
+        status: fields.status ?? 'todo',
+        position: fields.position ?? 0,
+        version: fields.version ?? 1,
+        ...dates(fields),
+      };
+      await db.insertInto('workspace_tasks').values(row).execute();
+      return row;
+    },
+    async source(taskId: string, documentId: string, excerpt: string, blockId: string | null = null) {
+      const row = { task_id: taskId, document_id: documentId, block_id: blockId, excerpt };
+      await db.insertInto('workspace_task_sources').values(row).execute();
+      return row;
+    },
+  };
+}

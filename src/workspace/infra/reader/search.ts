@@ -33,7 +33,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
     const titleRank = missingFromTitle.length ? sql<number>`${sql.join(missingFromTitle, sql` + `)}` : sql<number>`0`;
     let select = db
       .selectFrom(searchableItems(db, type))
-      .leftJoin('workspace_projects as project', 'project.id', 'item.project_id')
+      .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
       .select(['item.id', 'item.title', 'item.updated_at', titleRank.as('title_rank')])
       .select(projectColumns)
       .where('item.deleted_at', 'is', null)
@@ -58,7 +58,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
   async function taskHits(query: SearchQuery, limit: number): Promise<RankedHit[]> {
     let select = db
       .selectFrom('workspace_tasks as item')
-      .leftJoin('workspace_projects as project', 'project.id', 'item.project_id')
+      .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
       .select(['item.id', 'item.title', 'item.status', 'item.updated_at'])
       .select(projectColumns)
       .where('item.deleted_at', 'is', null)

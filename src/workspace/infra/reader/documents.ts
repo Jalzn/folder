@@ -11,7 +11,7 @@ export function documentReads(db: Kysely<WorkspaceTables>): DocumentReads {
     async documentForReading(id) {
       const row = await db
         .selectFrom('workspace_documents as item')
-        .leftJoin('workspace_projects as project', 'project.id', 'item.project_id')
+        .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
         .select(['item.id', 'item.title', 'item.content', 'item.version', 'item.created_at', 'item.updated_at'])
         .select(projectColumns)
         .where('item.id', '=', id)

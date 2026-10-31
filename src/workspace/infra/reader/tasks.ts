@@ -4,26 +4,25 @@ import type { DocumentBlock } from '../../domain/models.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
 import { excerptPresent } from '../../domain/task-source.js';
 import type { WorkspaceTables } from '../db.js';
-import { columnRank, projectColumns, projectReference, sourceDocument } from './shared.js';
+import { columnRank, projectColumns, projectReference, sourceColumns, sourceDocument } from './shared.js';
 
 type TaskReads = Pick<WorkspaceReader, 'tasks' | 'task' | 'boardRevision'>;
+
+/** The left join finds a source row when the task has one: every source keeps an excerpt and a title. */
+const hasSource = <Row extends { excerpt: string | null; kept_title: string | null }>(
+  row: Row,
+): row is Row & { excerpt: string; kept_title: string } => row.excerpt !== null && row.kept_title !== null;
 
 export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
   const withSource = () =>
     db
       .selectFrom('workspace_tasks as item')
-      .leftJoin('workspace_projects as project', 'project.id', 'item.project_id')
+      .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
       .leftJoin('workspace_task_sources as source', 'source.task_id', 'item.id')
       .leftJoin('workspace_documents as document', 'document.id', 'source.document_id')
       .select(['item.id', 'item.title', 'item.status', 'item.position', 'item.created_at', 'item.updated_at'])
       .select(projectColumns)
-      .select([
-        'source.document_id',
-        'source.block_id',
-        'source.excerpt',
-        'document.title as document_title',
-        'document.deleted_at as document_deleted_at',
-      ])
+      .select(sourceColumns)
       .where('item.deleted_at', 'is', null);
 
   return {
@@ -60,9 +59,7 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
           position: row.position,
           ...projectReference(row),
           updatedAt: row.updated_at,
-          source: row.document_id
-            ? { documentId: row.document_id, ...sourceDocument(row.document_title, row.document_deleted_at) }
-            : null,
+          source: hasSource(row) ? sourceDocument(row) : null,
         }),
       );
       return { items, hasMore: matching.length > query.limit };
@@ -74,20 +71,7 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
         .where('item.id', '=', id)
         .executeTakeFirst();
       if (!row) return undefined;
-      const { document_id: documentId, excerpt } = row;
-      const document = sourceDocument(row.document_title, row.document_deleted_at);
-      const blockAvailable =
-        document.available &&
-        excerpt !== null &&
-        excerptPresent(
-          {
-            content: JSON.parse(row.document_content ?? '[]') as DocumentBlock[],
-            plainText: row.document_plain_text ?? '',
-          },
-          row.block_id,
-          excerpt,
-        );
-      return {
+      const task = {
         id: row.id,
         title: row.title,
         status: row.status,
@@ -95,11 +79,20 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         position: row.position,
-        source:
-          documentId && excerpt !== null
-            ? { documentId, blockId: row.block_id, excerpt, ...document, blockAvailable }
-            : null,
       };
+      if (!hasSource(row)) return { ...task, source: null };
+      const document = sourceDocument(row);
+      const blockAvailable =
+        document.available &&
+        excerptPresent(
+          {
+            content: JSON.parse(row.document_content ?? '[]') as DocumentBlock[],
+            plainText: row.document_plain_text ?? '',
+          },
+          row.block_id,
+          row.excerpt,
+        );
+      return { ...task, source: { ...document, blockId: row.block_id, excerpt: row.excerpt, blockAvailable } };
     },
   };
 }

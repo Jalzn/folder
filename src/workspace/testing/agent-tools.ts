@@ -4,10 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { afterEach, beforeEach, vi } from 'vitest';
-import type { DocumentBlock } from '../domain/models.js';
+import type { DocumentBlock, Project } from '../domain/models.js';
 import { createWorkspaceTools } from '../infra/mcp/index.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
+import { testProject } from './projects.js';
 
 export const request = () => ({ requestId: randomUUID() });
 export const missingId = '00000000-0000-4000-8000-000000000000';
@@ -20,13 +21,15 @@ export const paragraph = (text: string, id?: string): DocumentBlock => ({
 
 /**
  * The agent read tools over a fresh temporary database for each test, with the workspace service
- * to arrange data. Every write advances the clock by a second, so recency order is explicit.
+ * to arrange data and an active project for its items. Every write advances the clock by a second,
+ * so recency order is explicit.
  */
 export function useAgentTools() {
   let directory = '';
   let db: Database;
   let service: ReturnType<typeof createWorkspaceService>;
   let tools: ReturnType<typeof createWorkspaceTools>;
+  let project: Project;
   const logError = vi.fn();
 
   beforeEach(async () => {
@@ -39,6 +42,7 @@ export function useAgentTools() {
       return now;
     });
     tools = createWorkspaceTools(db, { logError });
+    project = await testProject(service);
     logError.mockClear();
   });
   afterEach(async () => {
@@ -63,6 +67,10 @@ export function useAgentTools() {
   return {
     get service() {
       return service;
+    },
+    /** The project each test's items go to, unless the test makes its own. */
+    get project() {
+      return project;
     },
     logError,
     run,

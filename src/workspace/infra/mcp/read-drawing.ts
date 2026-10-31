@@ -28,10 +28,7 @@ export const readDrawingTool = (reading: ReadingContext) =>
     async handler(input) {
       const { drawing, image, outline } = await readDrawing(reading, input);
       // Names are quoted: a "·" inside one could otherwise pass for another field.
-      const project =
-        drawing.projectName === null
-          ? 'sem projeto'
-          : `Projeto ${JSON.stringify(drawing.projectName)}${drawing.projectArchived ? ' (arquivado)' : ''}`;
+      const project = `Projeto ${JSON.stringify(drawing.projectName)}${drawing.projectArchived ? ' (arquivado)' : ''}`;
       const header = [
         `Desenho ${JSON.stringify(drawing.title)} · ${project} · versão ${drawing.version} · atualizado em ${drawing.updatedAt} · ID ${drawing.id}`,
       ];

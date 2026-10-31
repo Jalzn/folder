@@ -10,18 +10,16 @@ export const listProjectsTool = (reading: ReadingContext) =>
     title: 'Listar projetos',
     description:
       'Lista os projetos do Tinyfold com a quantidade de documentos, desenhos e tarefas abertas de cada um. ' +
-      'Projetos arquivados ficam de fora, a menos que includeArchived seja true. withoutProject conta os itens sem ' +
-      'projeto. Os mais recentes vêm primeiro; passe o nextCursor para ver a próxima página.',
+      'Todo item pertence a um projeto. Projetos arquivados ficam de fora, a menos que includeArchived seja true; ' +
+      'sem projeto ativo, a lista vem vazia e includeArchived: true mostra os arquivados. color é a cor da marca, ' +
+      'e position, a ordem no seletor do Tinyfold, null nos arquivados. Os editados mais recentemente vêm ' +
+      'primeiro; passe o nextCursor para ver a próxima página.',
     inputSchema: ListProjectsInput,
     annotations: readOnlyAnnotations,
     async handler(input) {
       const page = await listProjects(reading, input);
       const text = fitItems(page.items, (shown) =>
-        compactJson({
-          projects: shown,
-          withoutProject: page.withoutProject,
-          nextCursor: page.nextCursor(shown.length),
-        }),
+        compactJson({ projects: shown, nextCursor: page.nextCursor(shown.length) }),
       );
       return textResult(text);
     },

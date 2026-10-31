@@ -8,7 +8,10 @@ import type { TaskRow, WorkspaceTables } from '../db.js';
 import { documentModel, taskModel, taskRow } from './mappers.js';
 import { expectUpdated } from './versioned-update.js';
 
-/** Attaches each task's source with the current availability of its document and excerpt. */
+/**
+ * Attaches each task's source with the current availability of its document and excerpt. A
+ * document deleted for good is gone, and the source shows the title it kept.
+ */
 async function hydrateTasks(db: Kysely<WorkspaceTables>, rows: TaskRow[]): Promise<Task[]> {
   if (!rows.length) return [];
   const sources = await db
@@ -20,7 +23,7 @@ async function hydrateTasks(db: Kysely<WorkspaceTables>, rows: TaskRow[]): Promi
       rows.map((row) => row.id),
     )
     .execute();
-  const documentIds = [...new Set(sources.map((source) => source.document_id))];
+  const documentIds = [...new Set(sources.flatMap((source) => source.document_id ?? []))];
   const documents = documentIds.length
     ? await db.selectFrom('workspace_documents').selectAll().where('id', 'in', documentIds).execute()
     : [];
@@ -30,7 +33,7 @@ async function hydrateTasks(db: Kysely<WorkspaceTables>, rows: TaskRow[]): Promi
     const { deletedAt: _, ...task } = taskModel(row);
     const source = sourceMap.get(row.id);
     if (!source) return { ...task, source: null };
-    const document = documentMap.get(source.document_id);
+    const document = source.document_id === null ? undefined : documentMap.get(source.document_id);
     const available = Boolean(document && !document.deletedAt);
     return {
       ...task,
@@ -38,7 +41,7 @@ async function hydrateTasks(db: Kysely<WorkspaceTables>, rows: TaskRow[]): Promi
         documentId: source.document_id,
         blockId: source.block_id,
         excerpt: source.excerpt,
-        documentTitle: document?.title ?? 'Documento indisponível',
+        documentTitle: document?.title ?? source.document_title,
         available,
         blockAvailable: Boolean(available && document && excerptPresent(document, source.block_id, source.excerpt)),
       },
@@ -51,11 +54,7 @@ export function taskRepository(connection: Database): TaskRepository {
   return {
     async listTasks(input) {
       let query = db.selectFrom('workspace_tasks').selectAll().where('deleted_at', 'is', null);
-      if (input.projectId !== undefined)
-        query =
-          input.projectId === null
-            ? query.where('project_id', 'is', null)
-            : query.where('project_id', '=', input.projectId);
+      if (input.projectId) query = query.where('project_id', '=', input.projectId);
       if (input.documentId)
         query = query.where(
           'id',
@@ -97,6 +96,7 @@ export function taskRepository(connection: Database): TaskRepository {
         .values({
           task_id: source.taskId,
           document_id: source.documentId,
+          document_title: source.documentTitle,
           block_id: source.blockId,
           excerpt: source.excerpt,
         })

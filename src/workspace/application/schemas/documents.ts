@@ -20,7 +20,7 @@ export const GetDocumentInput = z.object({ id });
 export const CreateDocumentInput = z.object({
   ...request,
   title: z.string().trim().max(300).optional(),
-  projectId: projectId.optional(),
+  projectId,
   content: content.optional(),
 });
 export const SaveDocumentInput = z.object({

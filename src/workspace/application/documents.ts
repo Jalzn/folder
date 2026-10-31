@@ -1,6 +1,6 @@
 import { documentPlainText } from '../domain/document.js';
 import type { DocumentAck } from '../domain/models.js';
-import { assertProjectAssignment, assertVersion, requireDocument } from './helpers.js';
+import { assertVersion, projectForEditedItem, projectForNewItem, requireDocument } from './helpers.js';
 import type { WorkspaceContext } from './ports.js';
 import type {
   CreateDocumentInput,
@@ -11,8 +11,11 @@ import type {
   SaveDocumentInput,
 } from './schemas/documents.js';
 
-export function listDocuments(ctx: WorkspaceContext, input: ListDocumentsInput) {
-  return ctx.read((repo) => repo.listDocuments(input));
+export async function listDocuments(ctx: WorkspaceContext, input: ListDocumentsInput) {
+  const { projectId, ...query } = input;
+  // Only the interface from before every item had a project filters by null; nothing matches.
+  if (projectId === null) return [];
+  return ctx.read((repo) => repo.listDocuments({ ...query, projectId }));
 }
 
 export function getDocument(ctx: WorkspaceContext, input: GetDocumentInput) {
@@ -21,14 +24,13 @@ export function getDocument(ctx: WorkspaceContext, input: GetDocumentInput) {
 
 export function createDocument(ctx: WorkspaceContext, input: CreateDocumentInput) {
   return ctx.write('workspace.createDocument', input, async (repo) => {
-    const projectId = input.projectId ?? null;
-    await assertProjectAssignment(repo, projectId);
+    const project = await projectForNewItem(repo, input.projectId);
     const now = ctx.now();
     const content = input.content ?? [];
     const document = {
       id: ctx.newId(),
       title: input.title || 'Sem título',
-      projectId,
+      projectId: project.id,
       content,
       plainText: documentPlainText(content),
       formatVersion: 1,
@@ -47,8 +49,7 @@ export function saveDocument(ctx: WorkspaceContext, input: SaveDocumentInput): P
   return ctx.write('workspace.saveDocument', input, async (repo) => {
     const document = await requireDocument(repo, input.id);
     assertVersion(document.version, input.expectedVersion);
-    const projectId = input.projectId === undefined ? document.projectId : input.projectId;
-    if (projectId !== document.projectId) await assertProjectAssignment(repo, projectId);
+    const projectId = await projectForEditedItem(repo, document.projectId, input.projectId);
     const updatedAt = ctx.now();
     const version = document.version + 1;
     await repo.saveDocument(

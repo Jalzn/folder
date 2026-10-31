@@ -131,13 +131,19 @@ describe('MCP protocol', () => {
       title: 'Gerar token',
       source: { documentId: document.id, blockId: 'b', excerpt: 'Gerar token' },
     });
-    const canvas = await workspace.createCanvas({ requestId: randomUUID(), title: 'Fluxo', scene: drawingFixture() });
+    const canvas = await workspace.createCanvas({
+      requestId: randomUUID(),
+      projectId: project.id,
+      title: 'Fluxo',
+      scene: drawingFixture(),
+    });
     await workspace.saveCanvasPreview({ id: canvas.id, version: 1, png: pngImage(800, 600) });
     const client = await connect();
     const call = (name: string, args: Record<string, unknown> = {}) => client.callTool({ name, arguments: args });
 
-    expect(JSON.parse(textOf(await call('list_projects')))).toMatchObject({
-      projects: [{ name: 'Tinyfold', documents: 1 }],
+    expect(JSON.parse(textOf(await call('list_projects')))).toEqual({
+      projects: [expect.objectContaining({ name: 'Tinyfold', color: 'violet', position: 0, documents: 1 })],
+      nextCursor: null,
     });
     const search = JSON.parse(textOf(await call('search', { query: 'token' }))) as { items: { id: string }[] };
     expect(search.items.map((item) => item.id)).toEqual([task.task.id, document.id]);
@@ -164,6 +170,39 @@ describe('MCP protocol', () => {
     expect(textOf(await call('search', { limit: 99 }))).toContain('Grande demais');
     // Only the tool schemas speak Portuguese: Zod's process-wide locale is untouched.
     expect(z.number().safeParse('x').error?.issues[0]?.message).toContain('expected number');
+  });
+
+  it('lists no project while the only one is archived, and lists it on request', async () => {
+    const { db, connect } = await fixture();
+    const workspace = createWorkspaceService(db);
+    const created = await workspace.createProject({ requestId: randomUUID(), name: 'Site pessoal 2024' });
+    const archived = await workspace.updateProject({
+      requestId: randomUUID(),
+      id: created.id,
+      expectedVersion: created.version,
+      archived: true,
+    });
+    const client = await connect();
+    const list = async (args: Record<string, unknown> = {}) =>
+      JSON.parse(textOf(await client.callTool({ name: 'list_projects', arguments: args })));
+    expect(await list()).toEqual({ projects: [], nextCursor: null });
+    expect(await list({ includeArchived: true })).toEqual({
+      projects: [
+        {
+          id: archived.id,
+          name: 'Site pessoal 2024',
+          color: 'violet',
+          position: null,
+          archived: true,
+          createdAt: archived.createdAt,
+          updatedAt: archived.updatedAt,
+          documents: 0,
+          drawings: 0,
+          openTasks: 0,
+        },
+      ],
+      nextCursor: null,
+    });
   });
 
   it('announces a fixed tool list and refuses subscription streams', async () => {

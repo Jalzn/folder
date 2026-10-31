@@ -22,7 +22,13 @@ test('restores access tokens and drawing previews from a live SQLite backup', as
     const tokens = createAccessTokens(db);
     const created = await tokens.create({ name: 'Claude Code' });
     const workspace = createWorkspaceService(db);
-    const canvas = await workspace.createCanvas({ requestId: randomUUID(), title: 'Fluxo', scene: drawingFixture() });
+    const project = await workspace.createProject({ requestId: randomUUID(), name: 'Fluxos' });
+    const canvas = await workspace.createCanvas({
+      requestId: randomUUID(),
+      projectId: project.id,
+      title: 'Fluxo',
+      scene: drawingFixture(),
+    });
     await workspace.saveCanvasPreview({ id: canvas.id, version: 1, png: pngImage(640, 480) });
     await snapshot(source, backup);
     await tokens.revoke({ id: created.accessToken.id });

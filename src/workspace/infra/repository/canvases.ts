@@ -24,11 +24,7 @@ export function canvasRepository(connection: Database): CanvasRepository {
           'deleted_at',
         ])
         .where('deleted_at', input.deleted ? 'is not' : 'is', null);
-      if (input.projectId !== undefined)
-        query =
-          input.projectId === null
-            ? query.where('project_id', 'is', null)
-            : query.where('project_id', '=', input.projectId);
+      if (input.projectId) query = query.where('project_id', '=', input.projectId);
       if (input.query?.trim())
         query = query.where(sql<boolean>`instr(search_text, ${searchText(input.query.trim())}) > 0`);
       return (await query.orderBy('updated_at', 'desc').orderBy('id').execute()).map((row) => ({

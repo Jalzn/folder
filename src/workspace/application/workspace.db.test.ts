@@ -4,9 +4,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { DocumentBlock } from '../domain/models.js';
+import type { DocumentBlock, Project } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
+import { testProject } from '../testing/projects.js';
 
 const request = () => ({ requestId: randomUUID() });
 const content = (text: string, blockId = 'block-one'): DocumentBlock[] => [
@@ -18,6 +19,7 @@ describe('workspace persistence and adversarial cases', () => {
   let filename: string;
   let db: Database;
   let service: ReturnType<typeof createWorkspaceService>;
+  let project: Project;
 
   beforeEach(async () => {
     directory = await mkdtemp(join(tmpdir(), 'tinyfold-workspace-'));
@@ -25,6 +27,7 @@ describe('workspace persistence and adversarial cases', () => {
     db = createDatabase(filename);
     await migrate(db, [coreModule, workspaceModule]);
     service = createWorkspaceService(db);
+    project = await testProject(service);
   });
 
   afterEach(async () => {
@@ -32,9 +35,9 @@ describe('workspace persistence and adversarial cases', () => {
     await rm(directory, { recursive: true, force: true });
   });
 
-  it('creates an unassigned document, persists edits and reopens after server restart', async () => {
-    const document = await service.createDocument(request());
-    expect(document).toMatchObject({ title: 'Sem título', projectId: null, version: 1, content: [] });
+  it('creates a document in its project, persists edits and reopens after server restart', async () => {
+    const document = await service.createDocument({ ...request(), projectId: project.id });
+    expect(document).toMatchObject({ title: 'Sem título', projectId: project.id, version: 1, content: [] });
     const ack = await service.saveDocument({
       ...request(),
       id: document.id,
@@ -68,7 +71,12 @@ describe('workspace persistence and adversarial cases', () => {
         ],
       },
     ];
-    const document = await service.createDocument({ ...request(), title: 'Equações do projeto', content: equations });
+    const document = await service.createDocument({
+      ...request(),
+      projectId: project.id,
+      title: 'Equações do projeto',
+      content: equations,
+    });
     await db.destroy();
     db = createDatabase(filename);
     await migrate(db, [coreModule, workspaceModule]);
@@ -100,6 +108,7 @@ describe('workspace persistence and adversarial cases', () => {
   it('rejects malformed math before writing and preserves the previous valid document', async () => {
     const document = await service.createDocument({
       ...request(),
+      projectId: project.id,
       content: [{ type: 'mathBlock', props: {}, content: 'x^2' }],
     });
     expect(() =>
@@ -118,7 +127,7 @@ describe('workspace persistence and adversarial cases', () => {
   });
 
   it('retries a save once, rejects request reuse and leaves a compact acknowledgment', async () => {
-    const document = await service.createDocument(request());
+    const document = await service.createDocument({ ...request(), projectId: project.id });
     const input = {
       ...request(),
       id: document.id,
@@ -141,7 +150,11 @@ describe('workspace persistence and adversarial cases', () => {
   });
 
   it('rejects stale document changes from another database connection', async () => {
-    const document = await service.createDocument({ ...request(), content: content('Original') });
+    const document = await service.createDocument({
+      ...request(),
+      projectId: project.id,
+      content: content('Original'),
+    });
     const second = createDatabase(filename);
     try {
       const other = createWorkspaceService(second);
@@ -169,7 +182,7 @@ describe('workspace persistence and adversarial cases', () => {
   });
 
   it('serializes competing edits and commits only one expected revision', async () => {
-    const document = await service.createDocument(request());
+    const document = await service.createDocument({ ...request(), projectId: project.id });
     const results = await Promise.allSettled(
       ['A', 'B'].map((title) =>
         service.saveDocument({ ...request(), id: document.id, expectedVersion: 1, title, content: content(title) }),
@@ -184,6 +197,7 @@ describe('workspace persistence and adversarial cases', () => {
   it('searches accented text and treats SQL wildcard characters literally', async () => {
     const document = await service.createDocument({
       ...request(),
+      projectId: project.id,
       title: 'Ideias de ação',
       content: content('Referências para o portfólio: 100% pessoal'),
     });
@@ -193,12 +207,12 @@ describe('workspace persistence and adversarial cases', () => {
   });
 
   it('assigns and archives projects without losing documents', async () => {
-    const project = await service.createProject({ ...request(), name: 'Site pessoal' });
-    const document = await service.createDocument({ ...request(), projectId: project.id });
-    await service.updateProject({ ...request(), id: project.id, expectedVersion: 1, archived: true });
-    expect(await service.listProjects({})).toEqual([]);
-    expect(await service.listProjects({ includeArchived: true })).toHaveLength(1);
-    expect(await service.listDocuments({ projectId: project.id })).toHaveLength(1);
+    const site = await service.createProject({ ...request(), name: 'Site pessoal' });
+    const document = await service.createDocument({ ...request(), projectId: site.id });
+    await service.updateProject({ ...request(), id: site.id, expectedVersion: 1, archived: true });
+    expect(await service.listProjects({})).toEqual([project]);
+    expect(await service.listProjects({ includeArchived: true })).toHaveLength(2);
+    expect(await service.listDocuments({ projectId: site.id })).toHaveLength(1);
     // Existing writing can continue, while new assignments require an active project.
     await service.saveDocument({
       ...request(),
@@ -207,7 +221,7 @@ describe('workspace persistence and adversarial cases', () => {
       title: 'Ainda acessível',
       content: [],
     });
-    await expect(service.createDocument({ ...request(), projectId: project.id })).rejects.toMatchObject({
+    await expect(service.createDocument({ ...request(), projectId: site.id })).rejects.toMatchObject({
       code: 'VALIDATION',
     });
     await expect(service.createDocument({ ...request(), projectId: randomUUID() })).rejects.toMatchObject({
@@ -218,6 +232,7 @@ describe('workspace persistence and adversarial cases', () => {
   it('creates a source-linked task exactly once and keeps it when text and document are removed', async () => {
     const document = await service.createDocument({
       ...request(),
+      projectId: project.id,
       title: 'Meu plano',
       content: content('Publicar meu portfólio'),
     });
@@ -250,7 +265,11 @@ describe('workspace persistence and adversarial cases', () => {
   });
 
   it('rejects stale or fabricated source references atomically', async () => {
-    const document = await service.createDocument({ ...request(), content: content('Criar uma página') });
+    const document = await service.createDocument({
+      ...request(),
+      projectId: project.id,
+      content: content('Criar uma página'),
+    });
     const task = {
       title: 'Publicar',
       source: { documentId: document.id, blockId: 'block-one', excerpt: 'uma página', expectedVersion: 1 },
@@ -268,9 +287,9 @@ describe('workspace persistence and adversarial cases', () => {
   });
 
   it('reorders tasks with board concurrency checks and preserves stable order', async () => {
-    const a = await service.createTask({ ...request(), title: 'A' });
-    const b = await service.createTask({ ...request(), title: 'B' });
-    const c = await service.createTask({ ...request(), title: 'C' });
+    const a = await service.createTask({ ...request(), title: 'A', projectId: project.id });
+    const b = await service.createTask({ ...request(), title: 'B', projectId: project.id });
+    const c = await service.createTask({ ...request(), title: 'C', projectId: project.id });
     const move = {
       ...request(),
       id: c.task.id,
@@ -297,7 +316,11 @@ describe('workspace persistence and adversarial cases', () => {
   });
 
   it('keeps document text unchanged when the linked task is renamed and completed', async () => {
-    const document = await service.createDocument({ ...request(), content: content('Escrever apresentação') });
+    const document = await service.createDocument({
+      ...request(),
+      projectId: project.id,
+      content: content('Escrever apresentação'),
+    });
     const created = await service.createTask({
       ...request(),
       title: 'Escrever apresentação',
@@ -317,14 +340,14 @@ describe('workspace persistence and adversarial cases', () => {
     ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
   });
 
-  it('distinguishes unassigned items from all projects and persists task deletion', async () => {
-    const project = await service.createProject({ ...request(), name: 'Projeto' });
-    const unassigned = await service.createTask({ ...request(), title: 'Solta' });
-    await service.createTask({ ...request(), title: 'Organizada', projectId: project.id });
+  it('filters tasks by project and persists task deletion', async () => {
+    const other = await service.createProject({ ...request(), name: 'Outro' });
+    const first = await service.createTask({ ...request(), title: 'Primeira', projectId: project.id });
+    await service.createTask({ ...request(), title: 'Organizada', projectId: other.id });
     expect((await service.listTasks({})).tasks).toHaveLength(2);
-    expect((await service.listTasks({ projectId: null })).tasks.map((task) => task.id)).toEqual([unassigned.task.id]);
-    expect((await service.listTasks({ projectId: project.id })).tasks).toHaveLength(1);
-    const deletion = { ...request(), id: unassigned.task.id, expectedVersion: 1 };
+    expect((await service.listTasks({ projectId: project.id })).tasks.map((task) => task.id)).toEqual([first.task.id]);
+    expect((await service.listTasks({ projectId: other.id })).tasks).toHaveLength(1);
+    const deletion = { ...request(), id: first.task.id, expectedVersion: 1 };
     expect(await service.deleteTask(deletion)).toEqual(await service.deleteTask(deletion));
     expect((await service.listTasks({})).tasks).toHaveLength(1);
   });

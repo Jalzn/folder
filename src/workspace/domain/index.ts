@@ -34,6 +34,7 @@ export type {
   TaskStatus,
 } from './models.js';
 export { type PngInfo, readPngInfo } from './png.js';
+export { defaultProjectColor, PROJECT_COLORS, type ProjectColor, projectInitial } from './project.js';
 export { sceneFingerprint } from './scene-fingerprint.js';
 export { searchText } from './search-text.js';
 export { TASK_STATUSES, taskStatusLabels } from './task-status.js';
