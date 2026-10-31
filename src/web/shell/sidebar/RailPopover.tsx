@@ -1,27 +1,26 @@
 import { useLocation } from '@tanstack/react-router';
 import type { NavSection } from '@tinyfold/workspace/domain';
-import { ChevronRight, FileText, Shapes } from 'lucide-react';
+import { FileText, Shapes } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { IconButton, Popover, PopoverTrigger } from '../../ui';
+import { SectionList } from './SectionList';
 import { SidebarRow } from './SidebarRow';
-import { sectionRows } from './section-rows';
+import { sectionKinds, sectionRows } from './section-rows';
 import type { SectionKind } from './sidebar-prefs';
 import { useOpenItem } from './use-open-item';
 import { useRovingFocus } from './use-roving-focus';
 
-const kinds = {
-  documents: { type: 'document', label: 'Documentos', icon: FileText, index: 'documentos' },
-  drawings: { type: 'drawing', label: 'Desenhos', icon: Shapes, index: 'desenhos' },
-} as const;
+const icons = { documents: FileText, drawings: Shapes } as const;
 
 /**
  * The popover's list, mounted with the popover, so its rows get their tab stop and the first focus: ↓ and
  * ↑ move, ↵ opens.
  */
 function RailList({ project, kind, section }: { project: Project; kind: SectionKind; section: NavSection }) {
-  const { type, icon: Icon, index } = kinds[kind];
+  const { type, index } = sectionKinds[kind];
+  const Icon = icons[kind];
   const open = useOpenItem(type);
   const roving = useRovingFocus<HTMLUListElement>();
   const rows = sectionRows(section, open);
@@ -40,23 +39,14 @@ function RailList({ project, kind, section }: { project: Project; kind: SectionK
     </li>
   );
   return (
-    <ul ref={roving.ref} className="sidebar-section__list" onKeyDown={roving.onKeyDown}>
-      {rows.pinned.map(row)}
-      {rows.pinned.length > 0 && rows.items.length > 0 && <li className="sidebar-section__rule" aria-hidden="true" />}
-      {rows.items.map(row)}
-      {rows.active && row(rows.active)}
-      {rows.seeAll !== null && (
-        <li>
-          <SidebarRow
-            href={paths.index(project.id, index)}
-            icon={<ChevronRight size={16} />}
-            label="Ver todos"
-            meta={rows.seeAll}
-          />
-        </li>
-      )}
-      {section.total === 0 && <li className="sidebar-section__empty">Nada aqui ainda.</li>}
-    </ul>
+    <SectionList
+      rows={rows}
+      total={section.total}
+      seeAllHref={paths.index(project.id, index)}
+      renderItem={row}
+      listRef={roving.ref}
+      onKeyDown={roving.onKeyDown}
+    />
   );
 }
 
@@ -73,7 +63,8 @@ export function RailPopover({
   kind: SectionKind;
   section: NavSection | undefined;
 }) {
-  const { label, icon: Icon } = kinds[kind];
+  const { label } = sectionKinds[kind];
+  const Icon = icons[kind];
   const [isOpen, setOpen] = useState(false);
   const pathname = useLocation({ select: (location) => location.pathname });
   // biome-ignore lint/correctness/useExhaustiveDependencies: A new page, from a row of the list, closes it.

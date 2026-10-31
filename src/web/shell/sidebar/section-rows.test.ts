@@ -1,6 +1,6 @@
 import type { NavItem } from '@tinyfold/workspace/domain';
 import { describe, expect, it } from 'vitest';
-import { sectionRows } from './section-rows';
+import { sectionRows, showsPinnedRule } from './section-rows';
 
 const item = (id: string, pinnedAt: string | null = null): NavItem => ({
   id,
@@ -27,5 +27,13 @@ describe('sectionRows', () => {
     expect(sectionRows({ total: 12, pinned: [], items }, open).active).toEqual(open);
     expect(sectionRows({ total: 12, pinned: [], items }, item('b')).active).toBeNull();
     expect(sectionRows({ total: 12, pinned: [item('z', 'x')], items }, open).active).toBeNull();
+  });
+
+  it('draws the line under the pinned items only when other rows follow', () => {
+    const pinned = [item('p', 'x')];
+    expect(showsPinnedRule(sectionRows({ total: 2, pinned, items: [item('a')] }, null))).toBe(true);
+    expect(showsPinnedRule(sectionRows({ total: 9, pinned, items: [] }, item('z')))).toBe(true);
+    expect(showsPinnedRule(sectionRows({ total: 1, pinned, items: [] }, null))).toBe(false);
+    expect(showsPinnedRule(sectionRows({ total: 1, pinned: [], items: [item('a')] }, null))).toBe(false);
   });
 });

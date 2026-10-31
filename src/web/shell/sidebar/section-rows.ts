@@ -1,4 +1,13 @@
 import type { NavItem, NavSection } from '@tinyfold/workspace/domain';
+import type { ItemType } from '../../lib/types';
+import type { IndexType } from '../../router/paths';
+import type { SectionKind } from './sidebar-prefs';
+
+/** Documentos and Desenhos, in the sidebar and on the rail. */
+export const sectionKinds: Record<SectionKind, { type: ItemType; label: string; noun: string; index: IndexType }> = {
+  documents: { type: 'document', label: 'Documentos', noun: 'documento', index: 'documentos' },
+  drawings: { type: 'drawing', label: 'Desenhos', noun: 'desenho', index: 'desenhos' },
+};
 
 export interface SectionRows {
   /** In pinning order, above a line. */
@@ -24,3 +33,7 @@ export function sectionRows(section: NavSection, active: NavItem | null): Sectio
     seeAll: section.total > listed ? section.total : null,
   };
 }
+
+/** The line under the pinned items shows when something follows them: other items or the open one. */
+export const showsPinnedRule = (rows: SectionRows) =>
+  rows.pinned.length > 0 && (rows.items.length > 0 || rows.active !== null);

@@ -2,24 +2,18 @@ import type { NavSection, NavSort } from '@tinyfold/workspace/domain';
 import { ChevronRight, Ellipsis, Plus } from 'lucide-react';
 import { type KeyboardEvent, useId } from 'react';
 import { isPendingSave } from '../../lib/save-registry';
-import type { ItemType, Project } from '../../lib/types';
+import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { IconButton, Menu, MenuItem, MenuTrigger } from '../../ui';
 import { useApp } from '../AppProvider';
 import { usePins } from '../project/use-pins';
+import { SectionList } from './SectionList';
 import { SidebarItem } from './SidebarItem';
-import { SidebarRow } from './SidebarRow';
-import { sectionRows } from './section-rows';
+import { sectionKinds, sectionRows } from './section-rows';
 import type { SectionKind } from './sidebar-prefs';
 import { useOpenItem } from './use-open-item';
 import { usePendingSaves } from './use-pending-saves';
 import { useSidebarPrefs } from './use-sidebar-prefs';
-
-const sections: Record<SectionKind, { type: ItemType; label: string; noun: string; index: 'documentos' | 'desenhos' }> =
-  {
-    documents: { type: 'document', label: 'Documentos', noun: 'documento', index: 'documentos' },
-    drawings: { type: 'drawing', label: 'Desenhos', noun: 'desenho', index: 'desenhos' },
-  };
 
 const sortLabels: Record<NavSort, string> = { recent: 'Recentes', title: 'A–Z', created: 'Criação' };
 
@@ -41,7 +35,7 @@ export function ItemSection({
   const prefs = useSidebarPrefs();
   const pins = usePins();
   const pending = usePendingSaves();
-  const { type, label, noun, index } = sections[kind];
+  const { type, label, noun, index } = sectionKinds[kind];
   const open = useOpenItem(type);
   const listId = useId();
   const { open: expanded, sort } = prefs.section(project.id, kind);
@@ -110,29 +104,14 @@ export function ItemSection({
         </span>
         <span className="sidebar-section__count">{section?.total ?? ''}</span>
       </div>
-      {expanded && rows && (
-        // One keyed list, so a row that gets pinned moves, with its focus, instead of being created again.
-        <ul id={listId} className="sidebar-section__list">
-          {[
-            ...rows.pinned.map(item),
-            ...(rows.pinned.length > 0 && (rows.items.length > 0 || rows.active)
-              ? [<li key="pinned-rule" className="sidebar-section__rule" aria-hidden="true" />]
-              : []),
-            ...rows.items.map(item),
-            ...(rows.active ? [item(rows.active)] : []),
-          ]}
-          {rows.seeAll !== null && (
-            <li>
-              <SidebarRow
-                href={paths.index(project.id, index)}
-                icon={<ChevronRight size={16} />}
-                label="Ver todos"
-                meta={rows.seeAll}
-              />
-            </li>
-          )}
-          {section?.total === 0 && <li className="sidebar-section__empty">Nada aqui ainda.</li>}
-        </ul>
+      {expanded && rows && section && (
+        <SectionList
+          id={listId}
+          rows={rows}
+          total={section.total}
+          seeAllHref={paths.index(project.id, index)}
+          renderItem={item}
+        />
       )}
     </section>
   );
