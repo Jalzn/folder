@@ -6,6 +6,7 @@ import { readConfig } from './config.js';
 import { modules } from './modules.js';
 
 const config = readConfig();
+console.info(`Banco: ${config.databasePath}`);
 const db = createDatabase(config.databasePath);
 await migrate(db, modules);
 const auth = createAuthService(db);

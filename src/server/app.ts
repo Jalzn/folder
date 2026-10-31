@@ -1,14 +1,16 @@
-import { getConnInfo } from '@hono/node-server/conninfo';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { ORPCError, onError } from '@orpc/server';
 import { BodyLimitPlugin, RPCHandler } from '@orpc/server/fetch';
 import { type AccessTokenService, type AuthService, createAccessTokens, createAuthService } from '@tinyfold/auth';
 import type { Database, RequestContext } from '@tinyfold/core/infra';
-import { type Context, Hono } from 'hono';
+import { createWorkspaceTools } from '@tinyfold/workspace';
+import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { secureHeaders } from 'hono/secure-headers';
 import { sql } from 'kysely';
+import { clientIp } from './client-ip.js';
 import type { Config } from './config.js';
+import { mountMcp } from './mcp/endpoint.js';
 import { createRouter } from './router.js';
 import { clearedSessionCookie, sessionCookie, sessionCookieName } from './session-cookie.js';
 
@@ -91,6 +93,13 @@ export function createApp({
     for (const value of setCookies) headers.append('Set-Cookie', value);
     return new Response(response.body, { status: response.status, headers });
   });
+  mountMcp(app, {
+    accessTokens: accessTokenService,
+    tools: createWorkspaceTools(db, { logError }),
+    config,
+    clock,
+    logError,
+  });
   if (config.webDir) {
     app.use('*', async (c, next) => {
       await next();
@@ -108,16 +117,4 @@ export function createApp({
     );
   }
   return app;
-}
-
-function clientIp(c: Context, trustProxy: boolean): string {
-  if (trustProxy) {
-    const ip = c.req.header('x-forwarded-for')?.split(',').at(-1)?.trim();
-    if (ip) return ip;
-  }
-  try {
-    return getConnInfo(c).remote.address ?? 'unknown';
-  } catch {
-    return 'unknown';
-  }
 }

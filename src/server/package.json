@@ -10,11 +10,12 @@
     "dev": "tsx watch --env-file-if-exists=../../.env main.ts"
   },
   "dependencies": {
-    "@tinyfold/core": "workspace:*",
-    "@tinyfold/auth": "workspace:*",
-    "@tinyfold/workspace": "workspace:*",
     "@hono/node-server": "2.1.5",
+    "@modelcontextprotocol/server": "2.4.0",
     "@orpc/server": "1.16.1",
+    "@tinyfold/auth": "workspace:*",
+    "@tinyfold/core": "workspace:*",
+    "@tinyfold/workspace": "workspace:*",
     "hono": "4.13.13",
     "kysely": "0.29.7",
     "tsx": "4.23.15",
