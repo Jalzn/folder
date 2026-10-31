@@ -8,8 +8,7 @@ export {
   RECOVERY_CANVAS_LIMITS,
   readCanvasScene,
 } from './canvas.js';
-export type { PngInfo } from './canvas-preview.js';
-export { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE, readPngInfo } from './canvas-preview.js';
+export { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from './canvas-preview.js';
 export type { DocumentContentLimits } from './document.js';
 export {
   documentPlainText,
@@ -34,5 +33,6 @@ export type {
   TaskSource,
   TaskStatus,
 } from './models.js';
+export { type PngInfo, readPngInfo } from './png.js';
 export { searchText } from './search-text.js';
 export { TASK_STATUSES, taskStatusLabels } from './task-status.js';

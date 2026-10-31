@@ -1,4 +1,4 @@
-import { crc32 } from '../domain/canvas-preview.js';
+import { crc32 } from '../domain/png.js';
 
 export interface PngFileOptions {
   bitDepth?: number;

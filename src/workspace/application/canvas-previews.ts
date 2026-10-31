@@ -1,11 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
-import {
-  exceedsPreviewLimits,
-  MAX_PREVIEW_BYTES,
-  MAX_PREVIEW_SIDE,
-  readPngInfo,
-  sceneFingerprint,
-} from '../domain/canvas-preview.js';
+import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas-preview.js';
+import { readPngInfo } from '../domain/png.js';
+import { sceneFingerprint } from '../domain/scene-fingerprint.js';
 import type { WorkspaceContext } from './ports.js';
 import type { SaveCanvasPreviewInput } from './schemas.js';
 
