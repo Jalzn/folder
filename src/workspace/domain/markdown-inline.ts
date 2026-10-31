@@ -31,13 +31,15 @@ function renderInline(items: readonly Inline[], blockStart: TextStart, inherited
     last = piece;
   };
   let start = blockStart;
-  for (const step of steps) {
+  for (const [index, step] of steps.entries()) {
     if (step.close.length || step.open.length) start = 'inline';
     write(step.close.join(''));
     write(step.spaces);
     write(step.open.join(''));
     const { item } = step;
-    if (item.kind === 'text') write(item.code ? codeSpan(item.text) : escapeText(step.text, start));
+    const next = steps[index + 1];
+    const touchesLink = next?.item.kind === 'link' && !next.close.length && !next.spaces && !next.open.length;
+    if (item.kind === 'text') write(item.code ? codeSpan(item.text) : escapeText(step.text, start, touchesLink));
     else if (item.kind === 'link') write(renderLink(item, step.around));
     else if (item.kind === 'break') write(item.text);
     else {
@@ -95,11 +97,13 @@ function isTableDelimiterRow(line: string): boolean {
 /**
  * Escapes what would start emphasis, code, links, math or strikethrough anywhere, and block markers
  * at a line start. After a hard break it also escapes the lines that would restructure the line
- * above: a setext underline or a table delimiter row. Only characters that both CommonMark and the BlockNote parser unescape are used; `<` and
+ * above: a setext underline or a table delimiter row. Before a link, a final `!` would make it an
+ * image. Only characters that both CommonMark and the BlockNote parser unescape are used; `<` and
  * `&` stay literal because BlockNote has no escape for them.
  */
-function escapeText(text: string, start: TextStart): string {
+function escapeText(text: string, start: TextStart, beforeLink = false): string {
   let escaped = text.replace(new RegExp(ESCAPED_ANYWHERE.source, 'gu'), '\\$&');
+  if (beforeLink && escaped.endsWith('!')) escaped = `${escaped.slice(0, -1)}\\!`;
   if (start === 'inline') return escaped;
   if (start === 'break' && /^[ \t]*=+[ \t]*$/u.test(escaped)) return escaped.replace('=', '\\=');
   if (start === 'break' && isTableDelimiterRow(escaped)) escaped = escaped.replace('-', '\\-');

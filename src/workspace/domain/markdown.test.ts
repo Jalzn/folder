@@ -172,6 +172,13 @@ describe('document to Markdown', () => {
     expect(markdown(paragraph(text(`a\n-${' '.repeat(50_000)}x`))).length).toBeGreaterThan(50_000);
   });
 
+  it('keeps a ! before a link from making it an image', () => {
+    const link = (...content: JsonValue[]) => ({ type: 'link', href: 'https://a.b', content });
+    expect(markdown(paragraph(text('Veja!'), link(text('isto')), text(' e! '), link(text('aquilo'))))).toBe(
+      'Veja\\![isto](https://a.b) e! [aquilo](https://a.b)\n',
+    );
+  });
+
   it('stays linear in the pieces of one block', () => {
     const math = { type: 'math', props: {}, content: 'x' };
     const started = performance.now();

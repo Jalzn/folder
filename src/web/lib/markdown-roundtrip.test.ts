@@ -126,6 +126,7 @@ describe('server Markdown read back by the BlockNote parser', () => {
       paragraph(text('> não é citação')),
       paragraph(text('===')),
       paragraph(text(':--|:--')),
+      paragraph(text('Veja!'), link('https://example.com', text('isto'))),
       paragraph(
         link('https://example.com/a(b) c', text('link '), text('forte', { bold: true })),
         text(' e '),
