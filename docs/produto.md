@@ -33,7 +33,7 @@ Espaço pessoal e minimalista para conduzir projetos, de software ou não. Reún
 2. Escrever documentos e desenhar dentro dele.
 3. Selecionar um trecho e usar uma ação explícita para criar uma tarefa.
 4. Acompanhar essa tarefa no Kanban e voltar ao contexto de origem.
-5. **Planejado:** consultar documentos, desenhos e tarefas do projeto pelo Claude Code, via MCP.
+5. Consultar projetos, documentos, desenhos e tarefas pelo Claude Code, via MCP somente leitura.
 
 Uma tarefa também pode nascer diretamente no Kanban. Um checklist no documento permanece parte do texto; criar uma tarefa acompanhada é uma ação separada.
 
@@ -126,15 +126,18 @@ Colunas diferentes por projeto ficam fora do escopo, para manter o modelo simple
 
 ## Acesso pelo Claude Code
 
-**Planejado:** servidor MCP somente leitura para o Claude Code consultar o espaço — por exemplo, um documento que descreve uma ideia, um desenho de arquitetura ou as tarefas de um projeto.
+Servidor MCP somente leitura para o Claude Code consultar o espaço, por exemplo um documento que descreve uma ideia, um desenho de arquitetura ou as tarefas de um projeto. Implementado na [etapa 07](etapas/07-mcp.md):
 
-- Listar projetos e pastas e buscar documentos, desenhos e tarefas.
-- Ler um documento em Markdown. Tarefas e desenhos incorporados aparecem como referências que podem ser consultadas.
-- Ler um desenho como imagem PNG e como textos e estrutura da cena.
-- Ler tarefas com coluna, prazo, etiquetas e descrição.
-- Itens na lixeira ficam de fora. O acesso usa um token pessoal somente leitura, criado e revogado no Perfil.
+- Listar projetos e buscar documentos, desenhos e tarefas por palavras.
+- Ler um documento em Markdown, com as tarefas que nasceram dele.
+- Ler um desenho como imagem PNG e como textos e estrutura da cena, com as ligações das setas.
+- Ler tarefas com estado, posição e trecho de origem.
+- Itens na lixeira ficam de fora. O acesso usa um token pessoal somente leitura, criado e revogado no Perfil, que mostra o último uso de cada token.
 
-Criar ou alterar conteúdo pelo MCP fica para depois.
+**Planejado:**
+
+- Pastas (etapa 09), colunas, prazos, etiquetas e descrição das tarefas (etapa 10) e itens incorporados como referências (etapa 11) entram nas saídas do MCP com essas etapas.
+- Criar ou alterar conteúdo pelo MCP fica para depois.
 
 ## Em aberto
 

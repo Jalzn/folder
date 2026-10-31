@@ -15,6 +15,7 @@
 | Login | Conta única, scrypt, sessões por cookie | Adaptado do módulo auth |
 | Editor | BlockNote 0.56.0 e integração Mantine | JSON versionado, Markdown e idioma pt-BR |
 | Desenho | Excalidraw 0.18.1 | Cena vetorial própria, idioma pt-BR e carregamento sob demanda |
+| Acesso por agentes | SDK MCP oficial `@modelcontextprotocol/server` 2.4.0, versão exata; cliente 2.4.0 só nos testes | Sem equivalente no Orbis; o SDK fica restrito a `src/server/mcp/` |
 | Qualidade | Biome, tipos, dependency-cruiser, Vitest e Playwright | Testes de banco em SQLite e navegador Chrome |
 | Operação | Docker, uma instância e volume persistente | Backup pela API do SQLite |
 

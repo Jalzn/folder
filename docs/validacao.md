@@ -1,6 +1,132 @@
 # Tinyfold — Validação local
 
-Validação local em 29 de outubro de 2026. A aplicação foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada. Nenhuma publicação na nuvem foi realizada.
+Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. Nenhuma publicação na nuvem foi realizada.
+
+## Etapa 07: MCP somente leitura
+
+A etapa foi implementada em 2026-10-31 por dois subagentes em sequência: backend (B1 a B5) e web (W1 a W4). Seguiram-se duas rodadas adversariais cruzadas, de segurança e persistência, de protocolo e saída das ferramentas, e de qualidade de código. Cada falha confirmada recebeu correção, teste e nova verificação. Os bancos usados são temporários; `data/tinyfold.sqlite` não foi aberto.
+
+| Verificação | Resultado |
+| --- | --- |
+| `mise exec -- pnpm check` | Biome, tipos de todos os pacotes, E2E e scripts, dependency-cruiser sem violações em 244 módulos e 235 testes unitários em 26 arquivos |
+| `mise exec -- pnpm test:db` | 88 testes em 16 arquivos, com SQLite temporário |
+| `mise exec -- pnpm build` | Bundle de produção aprovado |
+| `mise exec -- pnpm e2e` | 50 testes aprovados: 25 desktop e 25 emulação Pixel 7, incluindo os 6 novos de `e2e/mcp.spec.ts` |
+
+Os testes de unidade e de banco cobrem:
+
+- **Tokens:**
+  - formato e nome;
+  - token em texto puro ausente dos bytes do arquivo principal e do WAL;
+  - último uso no máximo uma vez por minuto;
+  - limite de 10;
+  - revogação pela redefinição de senha na mesma transação, com reversão comprovada.
+- **Leitura:**
+  - busca por palavras com acentos e pontuação;
+  - lixeira e projetos arquivados;
+  - cursores por chave estáveis com empates e edições, e o cursor do quadro recusado depois de um movimento;
+  - orçamentos de saída;
+  - páginas de documento com código e fórmulas cortados.
+- **Markdown:**
+  - o serializador do servidor lido de volta pelo parser real do BlockNote 0.56, com as perdas do parser declaradas com o resultado exato;
+  - crescimento linear em 80.000 trechos.
+- **Prévias:**
+  - PNG completo com descompressão exata;
+  - versão antiga, futura e na lixeira;
+  - impressão digital da cena depois de renomear e restaurar;
+  - migrações 003 e 004.
+- **Servidor** (`app.fetch` com o cliente oficial e chamadas brutas na revisão 2025-06-18):
+  - origem, cookie sem bearer, corpo acima de 64 KiB declarado ou em fluxo, JSON inválido e lotes, inclusive com duas marcas BOM;
+  - limites por IP e por token;
+  - `GET` 405 e `/.well-known` 404;
+  - bearer ignorado em `/rpc`;
+  - ausência do token nas respostas e no log.
+- **Backup:** `scripts/mcp-backup.db.test.ts` restaura tokens e prévias em outro arquivo.
+
+### Fluxos no Chrome
+
+`e2e/mcp.spec.ts` roda nos dois perfis, com o cliente MCP oficial no processo do teste, sem `Origin`:
+
+1. **Perfil:**
+   - o token é mostrado uma vez e recebe o foco;
+   - o comando traz a origem do teste e `/mcp` e quebra linhas sem rolagem horizontal;
+   - a cópia usa a área de transferência no desktop e, no celular, seleciona o texto quando a escrita é recusada;
+   - um clique fora mantém o diálogo, e Esc o fecha e devolve o foco a "Gerar token";
+   - depois de recarregar, a lista mostra nome, prefixo, criação e "Nunca usado", e o segredo não está na página nem no armazenamento do navegador;
+   - revogar devolve 401 ao token.
+2. **Conteúdo:**
+   - um documento com checklist e código, uma tarefa a partir de um trecho e um desenho com retângulo, texto e seta ligada ao texto são criados pela interface;
+   - `search` acha os três;
+   - `read_document` traz a tarefa, `- [ ]` e a cerca de código;
+   - `read_drawing` traz a prévia da versão atual, com PNG de lado e tamanho dentro dos limites, e a estrutura com a ligação da seta;
+   - `read_task` traz a origem;
+   - na lixeira, o documento some da busca e da leitura;
+   - o Perfil mostra o último uso, e revogar faz a chamada seguinte falhar com 401.
+3. **Prévia ao reabrir:**
+   - um desenho alterado por `/rpc` com o editor fechado ganha prévia atual ao ser reaberto por links internos;
+   - renomeá-lo não envia outra prévia.
+
+A suíte existente passa com o login compartilhado em `e2e/support/session.ts` e esperas pelo caminho exato de cada procedimento.
+
+| Tela | Desktop | Celular |
+| --- | --- | --- |
+| Perfil, token gerado | [Captura](screens/perfil-token-desktop.png) | [Captura](screens/perfil-token-mobile.png) |
+
+As capturas mostram um token de um banco de teste temporário, já descartado.
+
+### Validação real com o Claude Code
+
+Executada em 2026-10-31 sobre o commit `2b4fbb0` (fim das entregas, antes das rodadas adversariais), com o servidor de desenvolvimento num banco temporário e as portas 3471 e 5271. O log confirmou `Banco: …/tinyfold-mcp.RW13anlI27/tinyfold.sqlite` e `Tinyfold em http://127.0.0.1:3471`. Banco, token e configuração temporária foram removidos ao fim.
+
+1. **Google Chrome**, pela extensão Claude in Chrome:
+   - login;
+   - um projeto, um documento com checklist, código, fórmula em linha e "R$ 0", e uma tarefa a partir de um trecho, movida para Em andamento;
+   - um desenho com duas caixas rotuladas, uma seta e texto. Um salvamento gerou um único `saveCanvasPreview` (200), com `previewVersion` igual à versão;
+   - um desenho denso criado por `/rpc`, com 192 elementos, ganhou prévia ao ser aberto;
+   - no Perfil: estado vazio, token "Validação" mostrado uma vez e copiado. A área de transferência continha exatamente o comando mostrado. Depois, o prefixo, "Criado em", "Nunca usado" e "Último uso agora";
+   - revogação com confirmação e o foco de volta a "Gerar token".
+2. **Claude Code 2.1.310**, modelo `claude-opus-5-5`, em sessão não interativa:
+   - **Registro:** o servidor foi registrado com o endereço e o cabeçalho do comando copiado, num `--mcp-config` temporário com `--strict-mcp-config`, sem alterar a configuração do usuário.
+   - **Protocolo:** a revisão negociada foi 2026-07-28, com as seis ferramentas listadas.
+   - **Respostas:** listou projetos e buscou. O Markdown chegou íntegro, com `R\$ 0` lido como R$ 0, checklist, fórmula e código.
+   - **Imagem pequena:** chegou como imagem: 408×219 px, cerca de 15 KiB. O modelo descreveu as caixas e notou, pela estrutura, que a ponta da seta não estava ligada.
+   - **Imagem grande:** o desenho denso caiu na escada até 768×439 px, com cerca de 235 KiB (320.564 caracteres base64). O modelo respondeu pela imagem (cor e número de linhas), sem aviso de saída grande no fluxo nem no log de depuração.
+   - **Tarefas:** `list_tasks` e `read_task` trouxeram a tarefa em andamento e o trecho de origem.
+   - **Revogação:** depois de revogar, o servidor aparece como `failed`, com a mensagem em português "Token inválido ou revogado…", e o Claude Code informa que o fallback OAuth fica desligado quando há `Authorization`. Uma chamada direta recebeu 401 com `error="invalid_token"`.
+   - **Vazamento:** nenhuma ocorrência do token no log do servidor, nas transcrições nem nos logs de depuração.
+
+Essa validação não foi repetida depois das rodadas adversariais. As saídas que mudaram desde então (busca, cursores, cabeçalho de documento, estrutura de desenho e validação do PNG) estão cobertas pelos testes de servidor e pelo E2E com o cliente oficial.
+
+### Rodadas adversariais
+
+Nenhum achado crítico ou alto. Corrigidos e retestados:
+
+- **Primeira rodada, médias:**
+  - lotes JSON-RPC que levavam até 100 chamadas por requisição;
+  - bloqueio por IP antes da autenticação, que barrava um token válido;
+  - busca só por trecho exato;
+  - prévia que não se renovava ao reabrir um desenho na mesma página;
+  - teste de ida e volta que evitava as perdas do parser;
+  - `read_document` quadrático numa quebra por linha;
+  - Markdown que virava título ou código para um leitor CommonMark;
+  - leitor concentrado num arquivo;
+  - limites espalhados;
+  - emissor de Markdown difícil de alterar.
+- **Segunda rodada:**
+  - média: duas marcas BOM furavam a recusa de lotes;
+  - PNG com dados que não descomprimem;
+  - links que forjavam linhas na estrutura do desenho;
+  - trechos de busca que normalizavam o texto inteiro;
+  - cursor do quadro que repetia tarefas depois de um movimento;
+  - resíduos de ênfase, rótulo de link e cortes de página;
+  - renderizações desnecessárias de prévias e uma perda não declarada do parser do BlockNote.
+
+### Pendências
+
+- HTTPS público, proxy real (`/mcp` com `Authorization` e `text/event-stream` sem buffer, `TRUST_PROXY`) e o Claude Code apontando para a origem pública.
+- Acesso de dois aparelhos físicos na origem pública.
+- `headersHelper` e a variável de ambiente no `.mcp.json`, documentados em [operação](implantacao.md#claude-code), não foram exercitados.
+- O registro pelo próprio `claude mcp add` e `claude mcp list` não foram executados, para não alterar a configuração do usuário. A conexão usou o mesmo endereço e cabeçalho.
 
 ## Canvas e regressão no worktree
 

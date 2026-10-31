@@ -9,19 +9,26 @@ O Orbis serviu de referência para o workspace pnpm, TypeScript, SPA React/Vite,
 ```text
 src/
 ├── core/          erros, banco, transações, migrações e idempotência
-├── auth/          conta pessoal, senha e sessões
-├── workspace/     projetos, documentos, desenhos, tarefas e vínculos
-├── server/        Hono, oRPC, composição, configuração e comandos
-└── web/           React: navegação, editor, projetos e Kanban
+├── auth/          conta pessoal, senha, sessões e tokens de acesso
+├── workspace/     projetos, documentos, desenhos, tarefas, vínculos e leitura por agentes
+├── server/        Hono, oRPC, MCP, composição, configuração e comandos
+└── web/           React: navegação, editor, desenhos, projetos, Kanban e Perfil
 ```
 
-Cada pasta é um pacote `@tinyfold/<nome>`. Auth e workspace seguem domínio, aplicação e infraestrutura. O domínio é puro; casos de uso dependem de portas; a infraestrutura implementa SQL e transporte. O servidor compõe os módulos e a web importa tipos e regras puras. Dependency-cruiser verifica os limites.
+Cada pasta é um pacote `@tinyfold/<nome>`. Auth e workspace seguem domínio, aplicação e infraestrutura. O domínio é puro; casos de uso dependem de portas; a infraestrutura implementa SQL e transporte. O servidor compõe os módulos e a web importa tipos e regras puras. Dependency-cruiser verifica os limites:
+
+- o domínio e a aplicação não importam infraestrutura, e os módulos não se conhecem;
+- servidor e web chegam a um módulo só pelos arquivos que o `package.json` dele exporta, e a web leva ao navegador só código próprio e domínio puro;
+- só `src/server/mcp/` importa o SDK MCP;
+- as pastas `testing/`, com auxiliares de teste, nunca entram no código de execução.
+
+A exclusão do build cobre só `src/*/dist`, então as regras também enxergam os pacotes npm.
 
 Projetos, documentos, desenhos e tarefas pertencem ao mesmo módulo para preservar as regras de atribuição e gravar a criação de uma tarefa e seu vínculo documental na mesma transação. Desenhos têm contrato próprio; cenas não são blocos do editor de documentos.
 
 ## Execução e SQLite
 
-Em produção, um processo Node serve a SPA e `/rpc` pela mesma origem HTTPS. O navegador consulta essa API e o SQLite fica no servidor, em volume persistente. A configuração rejeita origem HTTP e força cookie Secure em produção.
+Em produção, um processo Node serve a SPA, `/rpc` e `/mcp` pela mesma origem HTTPS. O navegador consulta `/rpc`, o Claude Code consulta `/mcp`, e o SQLite fica no servidor, em volume persistente. A configuração rejeita origem HTTP e força cookie Secure em produção.
 
 Kysely usa better-sqlite3 com um dialeto que inicia transações com `BEGIN IMMEDIATE`, reservando a escrita antes de consultar versões e pedidos anteriores. SQLite usa `foreign_keys=ON`, WAL, `busy_timeout=5000` e `synchronous=FULL`. Escritas são curtas; o cálculo de senha ocorre fora da transação.
 
@@ -36,7 +43,9 @@ A implantação prevê uma instância e um volume local ao processo. Não há r�
 - Tokens aleatórios de sessão; apenas os hashes são persistidos.
 - Cookie `tinyfold_session` HttpOnly, SameSite=Strict e Secure em produção.
 - Sessões renováveis de 30 dias, logout, troca de senha e revogação de sessões no Perfil.
-- Login limitado por IP; recuperação de senha por comando no servidor encerra todas as sessões.
+- Login limitado a 10 tentativas por minuto por IP, numa janela deslizante. Com a tabela cheia, os IPs menos recentes são descartados.
+- Recuperação de senha por comando no servidor encerra todas as sessões e revoga todos os tokens de acesso na mesma transação da nova senha.
+- Tokens pessoais somente leitura para o Claude Code, gerados e revogados no Perfil. Trocar a senha no Perfil não os revoga. Ver [Acesso pelo Claude Code](#acesso-pelo-claude-code-mcp).
 - Toda operação de conteúdo exige sessão; chamadas RPC verificam a origem configurada.
 - Consulta/renovação de sessão e redefinição/revogação respeitam transações para evitar corridas.
 
@@ -46,9 +55,11 @@ A implantação prevê uma instância e um volume local ao processo. Não há r�
 | --- | --- |
 | `auth_owner` | Conta única, hash de senha e identidade da instalação |
 | `auth_sessions` | Hash do token, aparelho e validade |
+| `auth_access_tokens` | Nome, SHA-256 e prefixo do token pessoal, escopo `read`, criação e último uso |
 | `workspace_projects` | Nome, versão, datas e arquivamento |
 | `workspace_documents` | Projeto opcional, título, JSON, texto de busca, formato, versão e exclusão lógica |
 | `workspace_canvases` | Projeto opcional, título, cena vetorial JSON, texto de busca, formato, versão e exclusão lógica |
+| `workspace_canvas_previews` | Uma prévia PNG por desenho: versão e impressão digital da cena, largura, altura e bytes; apagada com o desenho |
 | `workspace_tasks` | Projeto opcional, título, estado, posição, versão e exclusão lógica |
 | `workspace_task_sources` | Uma origem por tarefa: documento, bloco opcional e trecho capturado |
 | `workspace_state` | Revisão do quadro para validar movimentos concorrentes |
@@ -98,8 +109,61 @@ Importar `.excalidraw` valida e compacta a cena antes de criar outro desenho. O 
 
 As fontes são copiadas pelo Vite para a própria origem no desenvolvimento e no build. Uma correção versionada pelo pnpm remove o fallback de CDN quando há caminho de fontes configurado, mantendo a política `font-src 'self'`; veja [stack](stack.md).
 
+## Acesso pelo Claude Code (MCP)
+
+O servidor expõe `/mcp` na mesma origem da SPA e de `/rpc`, por Streamable HTTP sem sessão, com o SDK oficial `@modelcontextprotocol/server` 2.4.0 (`createMcpHandler` com `legacy: 'stateless'` e `responseMode: 'json'`). Seis ferramentas somente leitura respondem: `list_projects`, `search`, `read_document`, `read_drawing`, `list_tasks` e `read_task`. Itens na lixeira ficam de fora de todas.
+
+`responseMode: 'json'` vale para a revisão 2026-07-28 do protocolo. Um cliente que negocia uma revisão 2025 recebe a resposta como um único evento SSE. Assinaturas são recusadas (`maxSubscriptions: 0`), e as ferramentas declaram `listChanged: false`.
+
+### Verificações em `/mcp`
+
+1. `Origin`, quando presente, igual a `APP_ORIGIN` (403 `forbidden_origin`). Clientes de terminal não a enviam.
+2. `Content-Length` declarado até 64 KiB (413).
+3. `Authorization: Bearer <token>` válido e não revogado. Em falha, 401 `invalid_token` com `WWW-Authenticate`; só então o IP é contado, e 10 falhas por minuto dão 429 com `Retry-After`. Um token válido nunca é bloqueado pelo limite de IP.
+4. No máximo 240 requisições por minuto por token (429).
+5. O endpoint lê o corpo, limitado a 64 KiB mesmo sem tamanho declarado. JSON inválido responde 400 com `-32700`, e lotes JSON-RPC, 400 com `-32600`. O SDK recebe a mensagem já lida e nunca a interpreta de novo.
+
+Respostas saem com `Cache-Control: no-store`, e os erros HTTP usam o formato OAuth em português. `/.well-known/*` responde sempre 404 em JSON, antes do fallback da SPA. O SDK recebe só o ID do token, nunca o segredo. Os limites de taxa ficam em memória, por processo, como prevê a instância única.
+
+| Aspecto | `/rpc` (navegador) | `/mcp` (Claude Code) |
+| --- | --- | --- |
+| Credencial | Cookie de sessão; `Authorization` é ignorado | Só bearer; cookies são ignorados |
+| Origem | Obrigatória e igual a `APP_ORIGIN` | Opcional; quando presente, igual a `APP_ORIGIN` |
+| Corpo | 2 MiB | 64 KiB, uma mensagem por requisição |
+
+### Tokens
+
+`tf_mcp_` seguido de 43 caracteres base64url (256 bits). O banco guarda só o SHA-256, o prefixo de 13 caracteres para reconhecer o token, o nome (1 a 100 caracteres), a criação e o último uso, gravado no máximo uma vez por minuto. São até 10 tokens ativos, sem validade. A criação não passa pelo registro de pedidos, que guardaria o segredo, e revogar apaga a linha. No Perfil, o segredo só existe no estado do diálogo que o mostra uma vez.
+
+### Leitura por agentes
+
+As ferramentas do workspace são objetos simples (`createWorkspaceTools(db, { logError })`), sem dependência do SDK. Casos de uso em `application/reading/` usam a porta `WorkspaceReader`, implementada em `infra/reader/`. Os limites ficam em `domain/reading-limits.ts`.
+
+- **Busca:** exige todas as palavras da consulta, normalizadas sem caixa e acentos, e ordena por palavras no título e depois pela edição mais recente. O trecho de 240 caracteres vem de uma janela do texto em volta da primeira ocorrência.
+- **Listas:** são paginadas por chave (`s~…`, `t~…`, `p~…`). O cursor do quadro fixa a revisão do quadro e é recusado depois de qualquer mudança nas tarefas.
+- **Documentos:** saem em Markdown do serializador puro do domínio (`documentToMarkdown`), em páginas de 60.000 caracteres com cursor `<versão>:<deslocamento>`. Um bloco cortado pela página é fechado e reaberto.
+- **Desenhos:** saem como estrutura textual da cena atual (`outlineCanvasScene`) e a prévia PNG guardada.
+- **Respostas:** ficam abaixo de 70.000 caracteres, só em `content`, sem `structuredContent`.
+
+O [README do workspace](../src/workspace/README.md) descreve as regras e as perdas conhecidas do Markdown no parser do BlockNote.
+
+### Prévias de desenho
+
+O navegador renderiza a prévia com o próprio Excalidraw, em tema claro, 1,5 s depois de um salvamento e com o navegador ocioso. Tenta lados de 1.568 px para baixo até o arquivo caber em 200 KiB, ou 256 KiB no menor lado, e envia por `workspace.saveCanvasPreview`. A gravação não usa o registro de pedidos nem muda versão, datas ou revisão do quadro.
+
+O servidor só aceita um PNG completo, cujos dados de imagem descomprimem exatamente no tamanho do cabeçalho, até 1.568 px e 256 KiB. A prévia guarda a impressão digital da cena (`sceneFingerprint`): renomear, mover ou passar pela lixeira não a torna defasada. `getCanvas` devolve `previewVersion` e `previewCurrent`.
+
+O editor gera a prévia ao abrir um desenho sem prévia atual, ao adotar uma versão salva em outro dispositivo e depois de cada salvamento que muda a cena. Uma cena que nenhum tamanho comporta não é renderizada de novo até mudar.
+
+### Módulos e portas
+
+- **auth:** `domain/access-token.ts`, os casos de uso em `application/access-tokens/` e, na infraestrutura, o repositório, os segredos e `createAccessTokens`.
+- **workspace:** no domínio, o serializador Markdown, as páginas, a estrutura da cena, `png.ts`, `scene-fingerprint.ts` e os limites; na aplicação, `reading/` e `canvas-previews.ts`, que valida a prévia pela porta `PngImageData`; na infraestrutura, `reader/`, `mcp/` (ferramentas e formatação) e `png-image-data.ts`.
+- **server:** compõe tudo em `src/server/mcp/`, com `bearer.ts`, `request-body.ts`, `mcp-server.ts` (registro das ferramentas no SDK) e `endpoint.ts` (`mountMcp`), e o IP do cliente em `client-ip.ts`.
+- **Migrações:** `auth/002_access_tokens.sql`, `workspace/003_canvas_previews.sql` e `workspace/004_canvas_preview_fingerprint.sql`.
+
 ## Operação
 
-Docker serve SPA e API, executa como usuário sem privilégios e mantém o banco em `/data`. `/health` verifica o processo; `/ready` consulta o banco. O backup usa a API do SQLite, verifica integridade e não substitui arquivos existentes. Restauração cria outro arquivo.
+Docker serve SPA e API, executa como usuário sem privilégios e mantém o banco em `/data`. `/health` verifica o processo; `/ready` consulta o banco. O backup usa a API do SQLite, verifica integridade e não substitui arquivos existentes; inclui tokens e prévias de desenho. Restauração cria outro arquivo.
 
 Veja [operação](implantacao.md) e [validação](validacao.md). Provedor, domínio, HTTPS público, agendamento e armazenamento externo de backups ainda precisam ser configurados.

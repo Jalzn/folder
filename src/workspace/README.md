@@ -38,6 +38,7 @@ Projetos, documentos, desenhos, tarefas e seus vínculos no mesmo módulo. A int
 - Perdas conhecidas no parser do BlockNote, fixadas em `src/web/lib/markdown-roundtrip.test.ts`:
   - um espaço é acrescentado depois de cada quebra num parágrafo ou citação, e uma quebra na borda de um trecho com estilo entra no estilo;
   - filhos de parágrafo de um item de checklist e uma lista aninhada depois de outro filho de um item voltam como irmãos;
+  - um parágrafo ou código depois de uma lista aninhada num item volta como item da lista de fora, e o código vira o texto desse item, sem a linguagem;
   - `\=` depois de uma quebra mantém a barra, assim como os escapes de endereços de link com parênteses desbalanceados, `<`, `>` ou `\`;
   - texto com forma de tag HTML é lido como HTML, e um endereço solto no texto vira link.
 - Como `&` fica literal, um leitor CommonMark lê texto como `&amp;` ou `&copy;` como a entidade (`&`, `©`). Sublinhado, cores e alinhamento não têm forma em Markdown.

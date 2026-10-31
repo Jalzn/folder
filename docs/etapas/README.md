@@ -8,7 +8,7 @@
 | 04 | [Kanban e contexto](04-kanban.md) | Tarefas, movimentos, ordem e vínculo documental | Concluída localmente |
 | 05 | [Operação e revisão](05-operacao.md) | Docker, backup/restauração, Chrome e rodadas adversariais | Validação local concluída; produção externa pendente |
 | 06 | [Canvas de desenho](06-canvas.md) | Desenhos com Excalidraw, salvamento e integração com projetos | Recorte vetorial concluído e validado localmente |
-| 07 | [MCP somente leitura](07-mcp.md) | Claude Code consulta projetos, documentos, desenhos e tarefas com token pessoal criado no Perfil | Planejada |
+| 07 | [MCP somente leitura](07-mcp.md) | Claude Code consulta projetos, documentos, desenhos e tarefas com token pessoal criado no Perfil | Concluída localmente |
 | 08 | [Fundação e lateral](08-fundacao.md) | Sistema visual Sumário, lateral do projeto e todo item dentro de um projeto | Planejada |
 | 09 | [Pastas](09-pastas.md) | Pastas de um nível para documentos e desenhos | Planejada |
 | 10 | [Quadro e tarefa](10-quadro-tarefa.md) | Colunas configuráveis, gaveta da tarefa, descrição, prazo e etiquetas | Planejada |

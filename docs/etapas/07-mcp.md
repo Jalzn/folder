@@ -1,10 +1,72 @@
 # Etapa 07 — MCP somente leitura
 
-**Estado:** planejada em 2026-10-31. Nada desta página foi implementado ainda; as verificações listadas são planejadas.
+**Estado:** concluída localmente em 2026-10-31, nas entregas B1 a B5 (backend) e W1 a W4 (web), seguidas de duas rodadas adversariais com correções. As verificações executadas estão em [validação](../validacao.md#etapa-07-mcp-somente-leitura). HTTPS público e o proxy real continuam pendentes até existir hospedagem.
+
+As seções a partir de "Casos de uso" são o plano aprovado. O que mudou na implementação está em [Resultado](#resultado) e [Desvios do plano](#desvios-do-plano); a descrição do que existe está em [arquitetura](../arquitetura.md#acesso-pelo-claude-code-mcp) e no [README do workspace](../../src/workspace/README.md).
 
 O Claude Code passa a consultar o Tinyfold por um servidor MCP somente leitura: lista projetos, busca e lê documentos em Markdown, vê desenhos como imagem PNG e como estrutura textual, e lê tarefas. O acesso usa um token pessoal, gerado e revogado no Perfil. Itens na lixeira ficam de fora.
 
 A etapa usa a interface atual. A lateral do projeto, as pastas e os itens incorporados chegam nas etapas 08 a 11, que atualizam as saídas do MCP.
+
+## Resultado
+
+- `/mcp` serve as seis ferramentas na mesma origem da SPA, com token pessoal somente leitura e as verificações de origem, tamanho, autenticação e taxa.
+- O Perfil gera o token com nome, mostra-o uma vez com o comando do Claude Code, lista prefixo, criação e último uso e revoga. O token não entra em cache, armazenamento do navegador nem logs.
+- Documentos saem em Markdown do serializador do domínio, paginados; desenhos, como PNG gerado no navegador e estrutura textual da cena atual; tarefas, em JSON com a origem.
+- O Claude Code 2.1.310 real conectou, leu projetos, documento, desenho como imagem e tarefas, e perdeu o acesso na revogação.
+
+## Desvios do plano
+
+**Transporte e verificações**
+
+- `responseMode: 'json'` vale só para trocas na revisão 2026-07-28. Clientes que negociam uma revisão 2025 recebem um único evento SSE; o proxy precisa encaminhar `text/event-stream` sem buffer. O Claude Code 2.1.310 negociou 2026-07-28 na validação.
+- Ordem real: origem; `Content-Length` até 64 KiB; token; limite por IP **só depois de uma falha de autenticação**, para que vizinhos de IP não bloqueiem um token válido; limite por token. Depois disso, o próprio endpoint lê o corpo (64 KiB também sem tamanho declarado, 413), responde JSON inválido com 400 e `-32700`, recusa lotes JSON-RPC com 400 e `-32600` e entrega ao SDK a mensagem já lida (`parsedBody`). `GET /mcp` com token válido responde 405; sem token, 401.
+- Assinaturas recusadas (`maxSubscriptions: 0`) e `tools.listChanged: false`: a lista de ferramentas não muda e um fluxo aberto sobreviveria à revogação.
+- Erros de entrada começam com o prefixo do SDK em inglês, "Input validation error: Invalid arguments for tool …", seguido das mensagens em português definidas em cada campo dos esquemas de leitura. O idioma global do Zod não muda, e `/rpc` continua com as mensagens padrão.
+- Na subida, o SDK avisa que `responseMode: 'json'` descarta notificações durante uma chamada. Nenhuma ferramenta as emite.
+- `WWW-Authenticate` traz `error="invalid_token"` quando um token foi apresentado. O Vite encaminha `/.well-known` além de `/mcp`, e `/.well-known/*` é sempre um 404 em JSON.
+
+**Tokens e Perfil**
+
+- `pnpm reset-password` encerra sessões e revoga tokens na mesma transação da nova senha (`AuthRepository.deleteAccessTokens`). Não existem `revokeAllAccessTokens` nem `server/account-recovery.ts`.
+- O limite de login passou para a janela deslizante do core: 10 tentativas por minuto por IP; com a tabela cheia, descarta os IPs menos recentes em vez de recusar os novos.
+- O Perfil ganhou `access-tokens.ts` (consulta da lista), `CreatedAccessToken.tsx` e `RevokeAccessTokenDialog.tsx`, além dos arquivos previstos. A lista recarrega no evento `focus` da janela, que cobre a volta do terminal.
+- O passo "Token gerado" ignora cliques fora do diálogo (`Dialog.closeOnOutsideClick`); Esc e ✕ fecham. O campo do nome tem `autocomplete="off"` e as dicas de exclusão de gerenciadores de senha.
+- Prefixo, token e comando usam a fonte monoespaçada do sistema; JetBrains Mono chega com a interface Sumário na etapa 08.
+- A web importa `DEFAULT_ACCESS_TOKEN_NAME` e `MAX_ACTIVE_ACCESS_TOKENS` de `@tinyfold/auth/domain`.
+
+**Ferramentas**
+
+- `search` divide a consulta em palavras normalizadas e exige todas, em qualquer ordem; hífens separam palavras e a pontuação em volta delas é ignorada. A ordem é: mais palavras no título, `updatedAt` decrescente, tipo e `id`. Uma consulta vazia depois da normalização é `VALIDATION`. O trecho é cortado no domínio (`excerptAround`, 240 pontos de código com 60 antes da ocorrência) a partir de uma janela de 2.000 caracteres de cada lado que o SQL devolve.
+- Todas as listas paginam por chave: `s~…` na busca, `t~<revisão do quadro>~…` em `list_tasks` e `p~…` em `list_projects`. Um cursor de tarefas de outra revisão responde "O quadro mudou desde a primeira página. Liste de novo sem cursor.". Documentos mantêm `<versão>:<deslocamento>`. Os limites de deslocamento de 1.000 e 2.000 não existem. Quando o orçamento corta itens do fim, o cursor aponta para o último mostrado.
+- `list_projects` é paginado (até 200 por página, dentro de 70.000 caracteres). `list_tasks` aceita `documentId`.
+- `read_document`: o cabeçalho da primeira página tem orçamento próprio de 9.000 caracteres, com títulos das tarefas originadas cortados em 100 e "… e mais N tarefas. Use list_tasks com documentId …". Títulos e nomes de projeto ficam numa linha. Código ou fórmula `$$` cortados pela página são fechados e reabertos na seguinte. Só quebras de linha finais são removidas da página.
+- `read_drawing`: "atual" significa a mesma impressão digital da cena (`sceneFingerprint`, migração `004_canvas_preview_fingerprint.sql`); renomear, mover ou passar pela lixeira não deixa a prévia defasada. Prévias anteriores à 004 comparam a versão. `getCanvas` devolve `previewCurrent`.
+- A estrutura escolhe formas em ordem de leitura, cada uma com as conexões que completa, e conta os omitidos por tipo ("… omitidos: 2.190 retângulos, 300 setas"). Nomes de quadros entram na busca, num desenho existente a partir da próxima gravação. Links são escritos entre aspas JSON, e o domínio recusa caracteres de controle em qualquer parte de um link.
+- A prévia só é aceita se for um PNG completo: CRC de cada bloco, IHDR válido, apenas os blocos auxiliares que o codificador do navegador escreve, `IDAT` seguidos e `IEND` no fim. Os dados de imagem precisam descomprimir exatamente no tamanho do IHDR (porta `PngImageData`, `infra/png-image-data.ts`).
+
+**Markdown**
+
+- Ênfase segue as regras de flanqueamento do CommonMark: `_` onde funciona, `*` dentro de palavras, e `<strong>`, `<em>` ou `<del>` onde nenhum delimitador abre e fecha. O `*` do itálico nunca encosta no `**` do negrito.
+- Endereços de link saem sem codificação percentual: soltos quando possível, senão entre `<…>`, com `\`, `<`, `>` e parênteses desbalanceados escapados. Espaços no fim do rótulo saem depois do link, e um `!` logo antes de um link sai como `\!`.
+- Quebras dentro de itens de lista saem como `<br>`. Depois de uma quebra, uma linha só de `=` e uma linha delimitadora de tabela GFM são escapadas. A indentação inicial de um bloco é descartada, e números de lista ficam entre 0 e 999.999.999.
+- `$` no texto sai como `\$`, e a importação `.md` da web passou a resolver `\$` fora de código, HTML e fórmulas.
+- Perdas do parser do BlockNote 0.56, que nenhuma forma Markdown evita, ficam declaradas com o resultado exato em `src/web/lib/markdown-roundtrip.test.ts`: espaço depois de uma quebra num parágrafo ou citação; quebra na borda de um trecho com estilo entrando no estilo; barra mantida em `\=` depois de uma quebra e nos escapes de endereços de link; texto com forma de tag lido como HTML; endereço solto virando link; filhos de parágrafo de um item de checklist, uma lista depois de outro filho de um item, e um parágrafo ou código depois de uma lista aninhada voltando como irmãos ou itens. Um leitor CommonMark também lê `&amp;` como entidade.
+- O teste de ida e volta fica em `markdown-roundtrip.test.ts`, e não em `markdown.test.ts`, com o editor de teste em `src/web/testing/blocknote-editor.ts`.
+
+**Prévias na web**
+
+- Os lados tentados derivam de `MAX_PREVIEW_SIDE` (`previewSides`), e uma renderização acima do limite passa ao lado seguinte.
+- O editor confere `previewCurrent` a cada abertura e recarga, e pede a prévia de uma versão adotada de outro dispositivo (`AutosaveController.onAdopted`). `onSaved` recebe o snapshot confirmado, também nos documentos.
+- O envio compara impressões digitais: uma cena que a prévia guardada já mostra (renomear, mover, editar só o título) e uma cena que não cabe em nenhum tamanho não são renderizadas de novo até a cena mudar.
+- Links com espaços ou caracteres de controle nas pontas são aparados ao importar `.excalidraw`, ao colar e ao abrir uma cena guardada.
+
+**Módulos e regras**
+
+- Arquivos além da lista: no domínio, `reading-limits.ts`, `excerpt.ts`, `markdown-items.ts`, `markdown-emphasis.ts`, `markdown-fence.ts`, `markdown-pages.ts`, `png.ts` e `scene-fingerprint.ts`; na aplicação, `reading/list-order.ts`, `reading/query-terms.ts` e `reading/keyset-page.ts`; na infraestrutura, `infra/reader/` (inclusive `searchable.ts` e `excerpt-windows.ts`), `infra/mcp/format-outline.ts` e `infra/png-image-data.ts`; no servidor, `mcp/request-body.ts`; para testes, `src/workspace/testing/` (`agent-tools.ts`, `canvas-scenes.ts`, `png.ts`) e `src/web/testing/`. Não há `application/reading/index.ts`.
+- Portas: `WorkspaceContext.writeWithoutRequestRecord`; `canvasPreview` no lugar de `canvasPreviewVersion`; `WorkspaceReader.boardRevision()` e consultas paginadas por chave; `PngImageData`; `saveCanvasPreview(ctx, imageData, input)`; `createWorkspaceTools(db, { logError })`.
+- `@tinyfold/workspace/domain` exporta também `TASK_STATUSES`, `taskStatusLabels`, `sceneFingerprint`, `exceedsPreviewLimits` e `PngInfo`.
+- O dependency-cruiser ganhou três regras, ao contrário do plano: `compose-through-entry-points` (servidor e web só pelos arquivos que o `package.json` de cada módulo exporta), `mcp-sdk-stays-in-server-mcp` e `testing-helpers-stay-in-tests`. `web-runtime-imports` isenta testes, e a exclusão de `dist/` ficou restrita a `src/*/dist`, o que torna as regras de pureza efetivas também para pacotes npm.
 
 ## Casos de uso
 
@@ -669,18 +731,18 @@ O ambiente vence o `.env` nas duas pontas: no `--env-file-if-exists` do Node e n
 
 ## Critérios de pronto
 
-- [ ] `check`, `test:db`, `build` e `e2e` (desktop e Pixel 7) verdes depois de cada entrega da etapa.
-- [ ] O token aparece uma única vez. Só o hash e o prefixo ficam no banco, e o texto puro não está nos arquivos SQLite nem nos logs.
-- [ ] O Perfil lista nome, prefixo, criação e último uso, e revogar corta o acesso na próxima chamada.
-- [ ] As seis ferramentas respondem dentro dos limites definidos, com paginação e mensagens em português.
-- [ ] Itens na lixeira não aparecem em nenhuma ferramenta.
-- [ ] O Markdown do servidor volta pelo parser real do BlockNote sem perder a estrutura suportada.
-- [ ] O desenho chega como PNG de até 1.568 px e 256 KiB, e a prévia defasada é indicada. A estrutura reflete a cena atual.
-- [ ] `/mcp` recusa origem estrangeira, cookie sem bearer, corpo acima de 64 KiB e excesso de chamadas. `/rpc` ignora o bearer.
-- [ ] `/.well-known/*` responde 404 e `GET /mcp` responde 405.
-- [ ] O Claude Code real conectou pelo comando do Perfil, leu documento, desenho (como imagem) e tarefas, e perdeu o acesso ao revogar. A validação usou banco temporário e portas 3471 e 5271.
-- [ ] A migração de uma base anterior preserva o conteúdo, e o backup e a restauração incluem tokens e prévias.
-- [ ] Documentação atualizada conforme a seção final.
+- [x] `check`, `test:db`, `build` e `e2e` (desktop e Pixel 7) verdes depois de cada entrega da etapa.
+- [x] O token aparece uma única vez. Só o hash e o prefixo ficam no banco, e o texto puro não está nos arquivos SQLite nem nos logs.
+- [x] O Perfil lista nome, prefixo, criação e último uso, e revogar corta o acesso na próxima chamada.
+- [x] As seis ferramentas respondem dentro dos limites definidos, com paginação e mensagens em português. O prefixo dos erros de entrada vem do SDK, em inglês.
+- [x] Itens na lixeira não aparecem em nenhuma ferramenta.
+- [x] O Markdown do servidor volta pelo parser real do BlockNote sem perder a estrutura suportada. **Ressalva:** as perdas do próprio parser, que nenhuma forma Markdown evita, estão declaradas com o resultado exato no teste de ida e volta (ver Desvios). Um leitor CommonMark, como o Claude, recebe a estrutura completa.
+- [x] O desenho chega como PNG de até 1.568 px e 256 KiB, e a prévia defasada é indicada. A estrutura reflete a cena atual.
+- [x] `/mcp` recusa origem estrangeira, cookie sem bearer, corpo acima de 64 KiB e excesso de chamadas. `/rpc` ignora o bearer.
+- [x] `/.well-known/*` responde 404 e `GET /mcp` responde 405 (com token válido; sem token, 401).
+- [x] O Claude Code real conectou com o endereço e o cabeçalho copiados do comando do Perfil, leu documento, desenho (como imagem) e tarefas, e perdeu o acesso ao revogar. A validação usou banco temporário e portas 3471 e 5271. Para não tocar a configuração do usuário, o servidor foi registrado por `--mcp-config` temporário com `--strict-mcp-config`, e não por `claude mcp add`.
+- [x] A migração de uma base anterior preserva o conteúdo, e o backup e a restauração incluem tokens e prévias.
+- [x] Documentação atualizada conforme a seção final.
 
 ## Divisão do trabalho
 

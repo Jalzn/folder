@@ -13,7 +13,8 @@ Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e ac
 - Projetos, recentes, busca pelo título e conteúdo, arquivamento e lixeira de documentos.
 - Kanban geral ou por projeto; criar, editar, mover, ordenar e concluir tarefas.
 - Criar tarefa a partir de um trecho e voltar ao documento de origem.
-- Perfil com troca de senha e gerenciamento de sessões.
+- Perfil com troca de senha, gerenciamento de sessões e tokens pessoais para o Claude Code.
+- Acesso do Claude Code por MCP somente leitura: lista projetos, busca, lê documentos em Markdown, desenhos como imagem e estrutura, e tarefas. A lixeira fica de fora.
 
 ## Executar
 
@@ -49,12 +50,12 @@ Se a porta padrão dos testes estiver ocupada, use `E2E_PORT=5172 mise exec -- p
 | Documento | Conteúdo |
 | --- | --- |
 | [Produto](docs/produto.md) | Experiência e limites da primeira versão |
-| [Arquitetura](docs/arquitetura.md) | Módulos, autenticação, SQLite e salvamento |
+| [Arquitetura](docs/arquitetura.md) | Módulos, autenticação, SQLite, salvamento e MCP |
 | [Equações](docs/equacoes.md) | Inserir, editar e importar/exportar fórmulas LaTeX |
 | [Stack](docs/stack.md) | Tecnologias e adaptações do Orbis |
 | [Identidade visual](docs/identidade-visual.md) | Direção escolhida e referência do Claude |
 | [Interface](docs/interface/README.md) | Próxima interface aprovada: especificações e protótipos |
-| [Operação](docs/implantacao.md) | Docker, configuração, senha e backups |
+| [Operação](docs/implantacao.md) | Docker, configuração, senha, backups e Claude Code |
 | [Validação](docs/validacao.md) | Testes executados, Chrome e revisões adversariais |
 | [Etapas](docs/etapas/README.md) | Estado das entregas |
 | [Decisões](docs/decisoes.md) | Histórico de produto e implementação |
