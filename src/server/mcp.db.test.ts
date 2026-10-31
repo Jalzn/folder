@@ -159,6 +159,8 @@ describe('MCP protocol', () => {
     expect(textOf(missing)).toBe('Tarefa não encontrada ou na lixeira.');
     const invalid = await call('read_task', { id: 'não é um id' });
     expect(invalid.isError).toBe(true);
+    expect(textOf(invalid)).toContain('Formato do UUID inválido');
+    expect(textOf(await call('search', { limit: 99 }))).toContain('Grande demais');
   });
 
   it('announces a fixed tool list and refuses subscription streams', async () => {
