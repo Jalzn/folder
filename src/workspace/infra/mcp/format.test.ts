@@ -45,7 +45,7 @@ const outline: CanvasOutline = {
   groups: [{ alias: 'g1', members: ['e1', 't1'] }],
   freehand: { count: 1, box: { x: 40, y: 700, width: 300, height: 80 } },
   links: [{ alias: 'e1', url: 'https://exemplo.com' }],
-  omitted: 0,
+  omitted: {},
 };
 
 describe('canvas outline text', () => {
@@ -70,11 +70,11 @@ describe('canvas outline text', () => {
     );
   });
   it('stops before the character limit and counts what was left out', () => {
-    const text = formatCanvasOutline({ ...outline, omitted: 1238 }, 360);
+    const text = formatCanvasOutline({ ...outline, omitted: { rectangle: 1238 } }, 360);
     expect(text.length).toBeLessThanOrEqual(360);
     expect(text).toContain('  e2 retângulo');
     expect(text).not.toContain('Conexões');
-    expect(text.endsWith('… mais 1.242 elementos omitidos')).toBe(true);
+    expect(text.endsWith('… omitidos: 1.239 retângulos, 2 setas, 1 texto')).toBe(true);
   });
   it('describes an empty drawing in one line', () => {
     expect(

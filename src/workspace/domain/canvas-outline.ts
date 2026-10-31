@@ -17,8 +17,8 @@ export interface CanvasOutline {
   groups: { alias: string; members: string[] }[];
   freehand: { count: number; box: OutlineBox } | null;
   links: { alias: string; url: string }[];
-  /** Frames, shapes, texts and connections left out by the element limit. */
-  omitted: number;
+  /** Frames, shapes, texts and connections left out by the element limit, by type. */
+  omitted: Partial<Record<OutlineCountKind, number>>;
 }
 
 export type OutlineNodeKind = 'rectangle' | 'diamond' | 'ellipse' | 'text';
@@ -62,7 +62,7 @@ const emptyOutline: CanvasOutline = {
   groups: [],
   freehand: null,
   links: [],
-  omitted: 0,
+  omitted: {},
 };
 
 export function outlineCanvasScene(
@@ -72,28 +72,27 @@ export function outlineCanvasScene(
   const active = scene.elements.filter((element) => !element.isDeleted);
   if (!active.length) return emptyOutline;
   const view = sceneView(active, limits.maxTextChars);
-  const budget = elementBudget(limits.maxElements);
+  const listed = chooseListed(view, limits.maxElements);
+  const isListed = (element: CanvasElement) => listed.has(element.id);
   const frames = view.ordered
-    .filter((element) => element.type === 'frame')
-    .flatMap((frame) => {
-      const children = view.ordered.filter((element) => view.isNode(element) && view.frameOf(element) === frame.id);
-      if (!budget.take([frame]).length) {
-        budget.skip(children.length);
-        return [];
-      }
-      return [
-        {
-          alias: view.alias(frame),
-          name: view.frameName(frame),
-          box: view.box(frame),
-          children: budget.take(children).map(view.node),
-        },
-      ];
-    });
-  const loose = budget.take(view.ordered.filter((element) => view.isNode(element) && !view.frameOf(element)));
-  const connections = budget.take(
-    view.ordered.filter((element) => element.type === 'arrow' || element.type === 'line'),
-  );
+    .filter((element) => element.type === 'frame' && isListed(element))
+    .map((frame) => ({
+      alias: view.alias(frame),
+      name: view.frameName(frame),
+      box: view.box(frame),
+      children: view.ordered
+        .filter((element) => view.isNode(element) && isListed(element) && view.frameOf(element) === frame.id)
+        .map(view.node),
+    }));
+  // A child whose frame was left out is listed with the elements outside frames.
+  const loose = view.ordered.filter((element) => {
+    const frame = view.frameOf(element);
+    return view.isNode(element) && isListed(element) && (!frame || !listed.has(frame));
+  });
+  const omitted: CanvasOutline['omitted'] = {};
+  for (const element of view.ordered)
+    if ((element.type === 'frame' || view.isNode(element) || view.isConnection(element)) && !isListed(element))
+      omitted[element.type as OutlineCountKind] = (omitted[element.type as OutlineCountKind] ?? 0) + 1;
   const strokes = view.ordered.filter((element) => element.type === 'freedraw');
   return {
     total: active.length,
@@ -101,33 +100,50 @@ export function outlineCanvasScene(
     area: view.area,
     frames,
     loose: loose.map(view.node),
-    connections: connections.map(view.connection),
-    groups: view.groups(),
+    connections: view.ordered.filter((element) => view.isConnection(element) && isListed(element)).map(view.connection),
+    groups: view.groups(listed),
     freehand: strokes.length ? { count: strokes.length, box: view.box(...strokes) } : null,
     links: view.ordered.flatMap((element) => {
       const url = typeof element.link === 'string' ? element.link : '';
-      return url && view.hasAlias(element) ? [{ alias: view.alias(element), url: view.cut(url) }] : [];
+      return url && isListed(element) ? [{ alias: view.alias(element), url: view.cut(url) }] : [];
     }),
-    omitted: budget.omitted(),
+    omitted,
   };
 }
 
-function elementBudget(limit: number) {
-  let remaining = limit;
-  let omitted = 0;
-  return {
-    take<T>(items: T[]): T[] {
-      const kept = items.slice(0, Math.max(0, remaining));
-      remaining -= kept.length;
-      omitted += items.length - kept.length;
-      return kept;
-    },
-    skip(count: number) {
-      omitted += count;
-    },
-    omitted: () => omitted,
+/**
+ * The frames, shapes, texts and connections to list, at most `limit`. Shapes go in reading order,
+ * each followed by the connections it completes, so a large drawing keeps a readable part of its
+ * graph instead of shapes only. Connections bound to nothing come last.
+ */
+function chooseListed(view: SceneView, limit: number): Set<string> {
+  const listed = new Set<string>();
+  const waiting = new Map<string, CanvasElement[]>();
+  const unbound: CanvasElement[] = [];
+  for (const connection of view.ordered.filter(view.isConnection)) {
+    const ends = view.boundEnds(connection);
+    if (!ends.length) unbound.push(connection);
+    for (const end of ends) {
+      const connections = waiting.get(end);
+      if (connections) connections.push(connection);
+      else waiting.set(end, [connection]);
+    }
+  }
+  const add = (element: CanvasElement) => {
+    if (listed.size >= limit || listed.has(element.id)) return;
+    listed.add(element.id);
   };
+  for (const element of view.ordered) {
+    if (element.type !== 'frame' && !view.isNode(element)) continue;
+    add(element);
+    for (const connection of waiting.get(element.id) ?? [])
+      if (view.boundEnds(connection).every((end) => listed.has(end))) add(connection);
+  }
+  for (const connection of unbound) add(connection);
+  return listed;
 }
+
+type SceneView = ReturnType<typeof sceneView>;
 
 interface Extent {
   left: number;
@@ -236,7 +252,12 @@ function sceneView(active: CanvasElement[], maxTextLength: number) {
       width: Math.round(Math.max(...all.map((extent) => extent.right)) - originX),
       height: Math.round(Math.max(...all.map((extent) => extent.bottom)) - originY),
     },
-    hasAlias: (element: CanvasElement) => aliases.has(element.id),
+    isConnection: (element: CanvasElement) => element.type === 'arrow' || element.type === 'line',
+    /** The listed elements a connection is bound to, by ID. */
+    boundEnds: (element: CanvasElement) =>
+      [bindingTarget(element.startBinding), bindingTarget(element.endBinding)].filter(
+        (id): id is string => id !== undefined && aliases.has(id),
+      ),
     isNode: (element: CanvasElement) => nodeTypes.has(element.type) && !isLabel(element),
     frameOf: (element: CanvasElement) => {
       const frameId = reference(element.frameId);
@@ -261,12 +282,12 @@ function sceneView(active: CanvasElement[], maxTextLength: number) {
         endArrowhead: typeof element.endArrowhead === 'string',
       };
     },
-    /** Groups in order of first appearance, with every aliased member, nested groups included. */
-    groups: () => {
+    /** Groups in order of first appearance, with their listed members, nested groups included. */
+    groups: (listed: ReadonlySet<string>) => {
       const members = new Map<string, string[]>();
       for (const element of ordered) {
         const elementAlias = aliases.get(element.id);
-        if (!elementAlias || !Array.isArray(element.groupIds)) continue;
+        if (!elementAlias || !listed.has(element.id) || !Array.isArray(element.groupIds)) continue;
         for (const group of element.groupIds)
           if (typeof group === 'string') members.set(group, [...(members.get(group) ?? []), elementAlias]);
       }

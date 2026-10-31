@@ -104,7 +104,7 @@ describe('canvas outline', () => {
     expect(outlineCanvasScene(reversed)).toEqual(outlineCanvasScene(scene()));
   });
 
-  it('cuts long texts and lists, keeping the counts complete', () => {
+  it('cuts long texts and lists, keeping the counts complete and counting omissions by type', () => {
     const many = scene();
     many.elements.push(shape('long', 'text', { x: 0, y: 900, text: 'x'.repeat(600) }));
     const outline = outlineCanvasScene(many, { maxElements: 3, maxTextChars: 10 });
@@ -112,7 +112,17 @@ describe('canvas outline', () => {
     expect(outline.frames[0]?.children.map((child) => child.label)).toEqual(['Fluxo de a…']);
     expect(outline.loose.map((node) => node.alias)).toEqual(['e2']);
     expect(outline.connections).toEqual([]);
-    expect(outline.omitted).toBe(4);
+    expect(outline.omitted).toEqual({ text: 2, arrow: 1, line: 1 });
+    expect(outline.links).toEqual([]);
+    expect(outline.groups).toEqual([{ alias: 'g1', members: ['e1', 'e2'] }]);
+  });
+
+  it('keeps the connections between the shapes it lists', () => {
+    const outline = outlineCanvasScene(scene(), { maxElements: 4, maxTextChars: 500 });
+    expect(outline.connections.map((connection) => [connection.alias, connection.start, connection.end])).toEqual([
+      ['s1', { alias: 'e1' }, { alias: 'e2' }],
+    ]);
+    expect(outline.omitted).toEqual({ text: 1, line: 1 });
   });
 
   it('describes an empty or fully deleted scene', () => {
@@ -120,6 +130,6 @@ describe('canvas outline', () => {
       ...drawingFixture(),
       elements: [shape('gone', 'rectangle', { isDeleted: true })],
     });
-    expect(outline).toMatchObject({ total: 0, area: null, frames: [], loose: [], connections: [], omitted: 0 });
+    expect(outline).toMatchObject({ total: 0, area: null, frames: [], loose: [], connections: [], omitted: {} });
   });
 });
