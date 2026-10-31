@@ -13,7 +13,7 @@ export const PurgeItemInput = z.object(edit);
 export const EmptyTrashInput = z.object({
   ...request,
   projectId: id,
-  items: z.array(z.object({ type: z.enum(TRASH_ITEM_TYPES), id, version })).max(NAVIGATION_LIMITS.trash.emptied),
+  items: z.array(z.object({ type: z.enum(TRASH_ITEM_TYPES), id, version })).max(NAVIGATION_LIMITS.trash.items),
 });
 
 export type ListTrashInput = z.infer<typeof ListTrashInput>;

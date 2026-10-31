@@ -2,10 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DocumentBlock, Project } from '../domain/models.js';
+import type { WorkspaceTables } from '../infra/db.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
@@ -219,8 +220,39 @@ describe('project trash and permanent delete', () => {
     expect((await service.listTrash({ projectId: project.id })).items).toEqual([]);
     expect((await service.getDocument({ id: restored.id })).deletedAt).toBeNull();
     expect((await service.listTrash({ projectId: other.id })).items.map((item) => item.id)).toEqual([elsewhere.id]);
+  });
+
+  it('lists and empties up to 1,000 items at once, and counts them all', async () => {
+    const deletedAt = (index: number) => new Date(Date.UTC(2026, 9, 1) + index * 1000).toISOString();
+    await tables<WorkspaceTables>(db)
+      .insertInto('workspace_tasks')
+      .values(
+        Array.from({ length: 1_001 }, (_, index) => ({
+          id: randomUUID(),
+          project_id: project.id,
+          title: `Tarefa ${index}`,
+          status: 'todo' as const,
+          position: index,
+          version: 2,
+          created_at: deletedAt(0),
+          updated_at: deletedAt(index),
+          deleted_at: deletedAt(index),
+        })),
+      )
+      .execute();
+    const trashCount = async () => (await service.projectNavigation({ projectId: project.id })).trashCount;
+    const { items } = await service.listTrash({ projectId: project.id });
+    expect([items.length, await trashCount()]).toEqual([1_000, 1_001]);
+    const shown = items.map(({ type, id, version }) => ({ type, id, version }));
     expect(() =>
-      service.emptyTrash({ ...request(), projectId: project.id, items: Array(501).fill(shown[0]) }),
+      service.emptyTrash({ ...request(), projectId: project.id, items: [...shown, ...shown.slice(0, 1)] }),
     ).toThrow();
+    expect(await service.emptyTrash({ ...request(), projectId: project.id, items: shown })).toEqual({
+      purged: 1_000,
+      skipped: 0,
+    });
+    // The oldest deletion was not shown, so it stays.
+    expect((await service.listTrash({ projectId: project.id })).items.map((item) => item.title)).toEqual(['Tarefa 0']);
+    expect(await trashCount()).toBe(1);
   });
 });

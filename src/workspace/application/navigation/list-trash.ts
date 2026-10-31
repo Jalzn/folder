@@ -7,7 +7,7 @@ import { requireProject } from './require-project.js';
 export async function listTrash(ctx: NavigationContext, input: ListTrashInput) {
   const items = await ctx.read(async (reader) => {
     await requireProject(reader, input.projectId);
-    return reader.trashItems(input.projectId, NAVIGATION_LIMITS.trash.listed);
+    return reader.trashItems(input.projectId, NAVIGATION_LIMITS.trash.items);
   });
   return { items };
 }
