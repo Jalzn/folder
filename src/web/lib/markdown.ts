@@ -31,6 +31,8 @@ const literalNodes = new Set(['image', 'imageReference', 'code', 'inlineCode', '
 /** Link labels show their dollars as text, but their escapes are still resolved. */
 const linkNodes = new Set(['link', 'linkReference']);
 const asciiPunctuation = /[!-/:-@[-`{-~]/u;
+/** BlockNote reads the content of these tags as Markdown, unlike other inline HTML. */
+const emphasisTag = /^<\s*(\/?)\s*(strong|em|del)\s*>$/iu;
 const voidTags = new Set([
   'area',
   'base',
@@ -88,36 +90,67 @@ function replaceRanges(source: string, ranges: { start: number; end: number; tex
   return result + source.slice(offset);
 }
 
-function tokenPrefix(source: string): string {
-  let prefix: string;
-  do {
-    prefix = `TINYFOLDMATH${crypto.randomUUID().replaceAll('-', '')}Q`;
-  } while (source.includes(prefix));
-  return prefix;
+/**
+ * The content ranges of the outermost `<strong>`, `<em>` and `<del>` pairs, found without math so a
+ * dollar never hides a tag. The server writes them where no Markdown delimiter can open and close.
+ */
+function emphasisContents(source: string): { start: number; end: number }[] {
+  const ranges: { start: number; end: number }[] = [];
+  const visit = (node: SyntaxNode): void => {
+    if (literalNodes.has(node.type)) return;
+    const open: { name: string; end: number }[] = [];
+    for (const child of node.children ?? []) {
+      const tag = child.type === 'html' ? emphasisTag.exec(child.value ?? '') : null;
+      const start = child.position?.start.offset;
+      const end = child.position?.end.offset;
+      if (!tag || start === undefined || end === undefined) {
+        if (open.length === 0) visit(child);
+        continue;
+      }
+      const name = (tag[2] ?? '').toLowerCase();
+      if (!tag[1]) {
+        open.push({ name, end });
+        continue;
+      }
+      const index = open.findLastIndex((entry) => entry.name === name);
+      const opening = open[index];
+      if (!opening) continue;
+      open.length = index;
+      if (index === 0) ranges.push({ start: opening.end, end: start });
+    }
+  };
+  visit(fromMarkdown(source));
+  return ranges;
 }
 
+type Found = { equations: Omit<Equation, 'token'>[]; escapes: number[] };
+
 /**
- * The Markdown AST identifies math and dollar escapes; BlockNote remains responsible for every other
- * Markdown feature.
+ * Finds the formulas and dollar escapes of `source`, whose first character is at `offset` in the
+ * document. The content of each emphasis pair is scanned on its own, so a dollar inside one never
+ * pairs with a dollar outside it into a formula.
  */
-export async function importMarkdownWithMath(
-  markdown: string,
-  parseMarkdown: (source: string) => DocumentContent | Promise<DocumentContent>,
-): Promise<DocumentContent> {
-  const prefix = tokenPrefix(markdown);
-  const equations: Equation[] = [];
-  const escapes: number[] = [];
+function scanMath(source: string, offset: number, found: Found, insideEmphasis = false): void {
+  const contents = emphasisContents(source);
+  const blanked = replaceRanges(
+    source,
+    contents.map(({ start, end }) => ({ start, end, text: source.slice(start, end).replace(/[^\r\n]/gu, 'x') })),
+  );
+  const crossesContent = (start: number, end: number) =>
+    contents.some((range) => start < range.end && end > range.start);
   const collect = (node: SyntaxNode, inLink = false): void => {
     if (literalNodes.has(node.type)) return;
     if (node.type === 'text') {
-      escapes.push(...dollarEscapes(markdown, node));
+      found.escapes.push(...dollarEscapes(blanked, node).map((index) => index + offset));
       return;
     }
     if (!inLink && (node.type === 'math' || node.type === 'inlineMath')) {
       const start = node.position?.start.offset;
       const end = node.position?.end.offset;
       if (start === undefined || end === undefined || node.value === undefined) failedImport();
-      equations.push({ start, end, kind: node.type, source: node.value, token: `${prefix}${equations.length}END` });
+      // A formula across an emphasis tag, or a display formula inside one, stays text.
+      if (!crossesContent(start, end) && !(insideEmphasis && node.type === 'math'))
+        found.equations.push({ start: start + offset, end: end + offset, kind: node.type, source: node.value });
       return;
     }
     // Inline HTML appears as sibling opening/closing tags in mdast. Leave its contents to BlockNote too.
@@ -134,7 +167,33 @@ export async function importMarkdownWithMath(
       }
     }
   };
-  collect(fromMarkdown(markdown, { extensions: [math()], mdastExtensions: [mathFromMarkdown()] }));
+  collect(fromMarkdown(blanked, { extensions: [math()], mdastExtensions: [mathFromMarkdown()] }));
+  for (const range of contents) scanMath(source.slice(range.start, range.end), offset + range.start, found, true);
+}
+
+function tokenPrefix(source: string): string {
+  let prefix: string;
+  do {
+    prefix = `TINYFOLDMATH${crypto.randomUUID().replaceAll('-', '')}Q`;
+  } while (source.includes(prefix));
+  return prefix;
+}
+
+/**
+ * The Markdown AST identifies math and dollar escapes, also inside the `<strong>`, `<em>` and `<del>`
+ * the server writes; BlockNote remains responsible for every other Markdown feature.
+ */
+export async function importMarkdownWithMath(
+  markdown: string,
+  parseMarkdown: (source: string) => DocumentContent | Promise<DocumentContent>,
+): Promise<DocumentContent> {
+  const prefix = tokenPrefix(markdown);
+  const found: Found = { equations: [], escapes: [] };
+  scanMath(markdown, 0, found);
+  const escapes = found.escapes;
+  const equations: Equation[] = found.equations
+    .toSorted((a, b) => a.start - b.start)
+    .map((equation, index) => ({ ...equation, token: `${prefix}${index}END` }));
 
   const placeholder = (equation: Equation) => {
     if (equation.kind === 'inlineMath') return equation.token;

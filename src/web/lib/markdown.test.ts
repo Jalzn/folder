@@ -254,6 +254,31 @@ $$
     expect(blocks[0]?.content).toContainEqual({ type: 'text', text: 'R$ 20', styles: { bold: true } });
   });
 
+  it('reads dollars and formulas inside <strong>, <em> and <del> on their own', async () => {
+    const [first] = await imported('<strong>Preço: R$ 10!</strong>Agora e R\\$ 5 e $y$');
+    expect(first?.content).toEqual([
+      { type: 'text', text: 'Preço: R$ 10!', styles: { bold: true } },
+      { type: 'text', text: 'Agora e R$ 5 e ', styles: {} },
+      { type: 'math', props: {}, content: 'y' },
+    ]);
+    const [second] = await imported('<em>a $x$ b</em> e <del>R\\$ 2</del> <strong><em>R\\$ 3</em></strong>');
+    expect(second?.content).toEqual([
+      { type: 'text', text: 'a ', styles: { italic: true } },
+      { type: 'math', props: {}, content: 'x' },
+      { type: 'text', text: ' b', styles: { italic: true } },
+      { type: 'text', text: ' e ', styles: {} },
+      { type: 'text', text: 'R$ 2', styles: { strike: true } },
+      { type: 'text', text: ' ', styles: {} },
+      { type: 'text', text: 'R$ 3', styles: { bold: true, italic: true } },
+    ]);
+  });
+
+  it('keeps a formula across an emphasis tag, and other inline HTML, as BlockNote reads them', async () => {
+    const blocks = await imported('$a <strong>b</strong> c$ e <span>R\\$ 4</span>');
+    expect(formulas(blocks, 'math')).toEqual([]);
+    expect(documentPlainText(blocks)).toBe('$a b c$ e R\\$ 4');
+  });
+
   it('resolves an escaped dollar next to a formula', async () => {
     const blocks = await imported('Preço \\$$x$ e $y$\\$.');
     expect(formulas(blocks, 'math')).toEqual(['x', 'y']);

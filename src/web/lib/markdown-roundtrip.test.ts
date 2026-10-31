@@ -121,6 +121,19 @@ describe('server Markdown read back by the BlockNote parser', () => {
       ),
       // An escaped `_` right before an opening `_` reads as text, so this italic is written with `*`.
       paragraph(text('var_'), text('x', { italic: true }), text(' fim')),
+      // Dollars and formulas inside the HTML pairs, whose content the import scans on its own.
+      paragraph(text('Preço: R$ 10!', { bold: true }), text('Agora e R$ 5')),
+      paragraph(
+        text('x'),
+        text('R$ 1!', { italic: true }),
+        text('y e a'),
+        text('R$ 2!', { strike: true }),
+        text('b e '),
+        text('Nota!', { bold: true }),
+        formula('x'),
+        text('fim!', { bold: true }),
+        text('depois'),
+      ),
       paragraph(text('Escapes: \\ * _ [ ] ` ~ a < b & c | { } ( ) ! . + a = b e R$ 10 ou R$ 20 e US$')),
       paragraph(text('# não é título')),
       paragraph(text('- não é lista')),
@@ -241,14 +254,6 @@ describe('server Markdown read back by the BlockNote parser', () => {
     it('moves a line break at the edge of styled text into the style', async () => {
       expect(await readBack([paragraph(text('negrito', { bold: true }), text('\ndepois'))])).toEqual(
         shape([paragraph(text('negrito\n', { bold: true }), text(' depois'))]),
-      );
-    });
-
-    it('keeps the backslash of an escaped $ inside an HTML emphasis pair', async () => {
-      // BlockNote decodes neither `&#36;` nor `&dollar;` there, and a bare `$` could pair with a later
-      // one into a formula for CommonMark readers with math, the import's own parser included.
-      expect(await readBack([paragraph(text('Preço: R$ 10!', { bold: true }), text('Agora'))])).toEqual(
-        shape([paragraph(text('Preço: R\\$ 10!', { bold: true }), text('Agora'))]),
       );
     });
 
