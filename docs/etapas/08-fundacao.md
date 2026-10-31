@@ -736,7 +736,7 @@ testing/projects.ts                  testProject(service): cria e devolve um pro
 
 Os tipos de resposta chegam à web pelo `AppRouter`, só como tipos.
 
-`scripts/seed-sample.ts` (`pnpm seed:sample`) cria os dados de exemplo do [brief](../interface/brief.md) num banco temporário: projetos, documentos, desenhos, tarefas e o projeto arquivado. Prazos e etiquetas ficam para a etapa 10. O script recusa rodar se `DATABASE_PATH` apontar para `data/tinyfold.sqlite` ou se o banco já tiver documentos. Serve à validação visual e às capturas, nunca à produção.
+`scripts/seed-sample.ts` (`pnpm seed:sample`) cria os dados de exemplo do [brief](../interface/brief.md) num banco temporário: projetos, documentos, desenhos, tarefas e o projeto arquivado. Prazos e etiquetas ficam para a etapa 10. O script só grava na pasta temporária do sistema, num arquivo novo ou num banco vazio, e confere isso antes de migrar: recusa qualquer outro destino, um link simbólico, `data/tinyfold.sqlite` e `/data/tinyfold.sqlite`. Serve à validação visual e às capturas, nunca à produção.
 
 Ele monta as próprias cenas simples (retângulos, setas e textos) e não importa `src/*/testing/`: essas pastas usam Vitest e ficam restritas aos testes, pela regra `testing-helpers-stay-in-tests`.
 

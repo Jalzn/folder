@@ -6,6 +6,8 @@ Use `mise install` para as versões fixadas, seguido de `mise exec -- pnpm insta
 
 `mise exec -- pnpm dev` inicia o servidor em `127.0.0.1:3370` e a interface em `http://localhost:5170`. O Vite encaminha `/rpc`, `/mcp` e `/.well-known` ao servidor, então o comando do Claude Code mostrado no Perfil funciona em `localhost:5170`. O caminho relativo `DATABASE_PATH` é resolvido a partir da raiz do repositório, independentemente do diretório atual. Na subida, o servidor registra o caminho do banco aberto (`Banco: …`).
 
+`mise exec -- pnpm seed:sample` preenche um banco com os dados de exemplo, para validação visual e capturas, nunca para uso real. Ele só grava na pasta temporária do sistema, num arquivo novo ou num banco vazio, por exemplo `DATABASE_PATH="$(mktemp -d)/tinyfold.sqlite"`, e confere o destino antes de migrar qualquer coisa. Recusa outro lugar, um link simbólico, qualquer `data/tinyfold.sqlite`, o banco de produção (`/data/tinyfold.sqlite`), `NODE_ENV=production` e um arquivo que já tenha tabelas. Rode-o com o `dev` parado e suba o `dev` com o mesmo `DATABASE_PATH`.
+
 ## Produção
 
 A imagem Docker serve a interface compilada, `/rpc` e `/mcp` no mesmo processo. Configurar:

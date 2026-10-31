@@ -6,12 +6,13 @@
  *
  *   DATABASE_PATH=/tmp/tinyfold-08/tinyfold.sqlite pnpm seed:sample
  *
- * Refuses, before migrating anything, the main database (data/tinyfold.sqlite), the production one
- * (/data/tinyfold.sqlite), NODE_ENV=production and any file that already holds a table.
+ * Writes only inside the system's temporary folders, to a new file or an empty database: before
+ * migrating anything, it refuses any other target (see assertSeedTarget), the main database
+ * (data/tinyfold.sqlite) and the production one (/data/tinyfold.sqlite) included.
  */
 import { randomUUID } from 'node:crypto';
 import { createDatabase, migrate } from '../src/core/infra/index.js';
-import { readConfig, repositoryRoot } from '../src/server/config.js';
+import { readConfig } from '../src/server/config.js';
 import { modules } from '../src/server/modules.js';
 import type {
   CanvasElement,
@@ -21,7 +22,7 @@ import type {
   TaskStatus,
 } from '../src/workspace/domain/index.js';
 import { createWorkspaceService, type WorkspaceService } from '../src/workspace/index.js';
-import { assertSeedTarget } from './seed-target.js';
+import { assertSeedTarget, temporaryRoots } from './seed-target.js';
 
 const request = () => ({ requestId: randomUUID() });
 
@@ -291,7 +292,7 @@ function sampleClock() {
 
 async function main() {
   const { databasePath } = readConfig();
-  assertSeedTarget(databasePath, { repositoryRoot, production: process.env.NODE_ENV === 'production' });
+  assertSeedTarget(databasePath, { roots: temporaryRoots(), production: process.env.NODE_ENV === 'production' });
   const db = createDatabase(databasePath);
   try {
     await migrate(db, modules);
