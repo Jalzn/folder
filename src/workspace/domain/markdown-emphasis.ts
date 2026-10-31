@@ -126,14 +126,35 @@ interface Context {
   after: string | undefined;
 }
 
-const isWordCharacter = (character: string | undefined) => character !== undefined && /[\p{L}\p{N}_]/u.test(character);
+// CommonMark flanking rules: a delimiter run opens or closes emphasis only next to the right characters.
+const isWhitespace = (character: string | undefined) => character === undefined || /\s/u.test(character);
+const isPunctuation = (character: string | undefined) => character !== undefined && /[\p{P}\p{S}]/u.test(character);
+const leftFlanking = ({ before, after }: Context) =>
+  !isWhitespace(after) && (!isPunctuation(after) || isWhitespace(before) || isPunctuation(before));
+const rightFlanking = ({ before, after }: Context) =>
+  !isWhitespace(before) && (!isPunctuation(before) || isWhitespace(after) || isPunctuation(after));
+const asterisksWork = (opening: Context, closing: Context) => leftFlanking(opening) && rightFlanking(closing);
+/** `_` also refuses to open or close inside a word. */
+const underscoresWork = (opening: Context, closing: Context) =>
+  leftFlanking(opening) &&
+  (!rightFlanking(opening) || isPunctuation(opening.before)) &&
+  rightFlanking(closing) &&
+  (!leftFlanking(closing) || isPunctuation(closing.after));
+const tags: Record<Mark, [string, string]> = {
+  bold: ['<strong>', '</strong>'],
+  italic: ['<em>', '</em>'],
+  strike: ['<del>', '</del>'],
+};
 
-/** `_` cannot open or close inside a word, so italic switches to `*` there. */
+/**
+ * The delimiters a Markdown reader will take as this emphasis. Italic prefers `_`, which cannot
+ * merge with the `**` of bold; where no delimiter works, as in `**Atenção!**Leia`, the span is
+ * written as an HTML tag pair, which both CommonMark and BlockNote read.
+ */
 function delimiters(mark: Mark, opening: Context, closing: Context): [string, string] {
-  if (mark === 'bold') return ['**', '**'];
-  if (mark === 'strike') return ['~~', '~~'];
-  const inWord = isWordCharacter(opening.before) || isWordCharacter(closing.after);
-  return inWord ? ['*', '*'] : ['_', '_'];
+  if (mark === 'italic' && underscoresWork(opening, closing)) return ['_', '_'];
+  if (!asterisksWork(opening, closing)) return tags[mark];
+  return mark === 'bold' ? ['**', '**'] : mark === 'strike' ? ['~~', '~~'] : ['*', '*'];
 }
 
 /**
@@ -204,12 +225,12 @@ function firstCharacter(draft: Draft): string | undefined {
     const first = String.fromCodePoint(draft.text.codePointAt(0) ?? 32);
     return ESCAPED_ANYWHERE.test(first) ? '\\' : first;
   }
-  return item.kind === 'link' ? '[' : item.kind === 'math' ? '$' : '\\';
+  return item.kind === 'link' ? '[' : item.kind === 'math' ? '$' : item.text[0];
 }
 
 function lastCharacter(draft: Draft | undefined): string | undefined {
   if (!draft) return undefined;
   const { item } = draft;
   if (item.kind === 'text') return item.code ? '`' : Array.from(draft.text.slice(-2)).at(-1);
-  return item.kind === 'link' ? ')' : item.kind === 'math' ? '$' : '\n';
+  return item.kind === 'link' ? ')' : item.kind === 'math' ? '$' : item.text.at(-1);
 }

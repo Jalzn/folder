@@ -82,13 +82,13 @@ describe('document to Markdown', () => {
     expect(markdown(block('heading', [text('Tópico #')], { props: { level: 1 } }))).toBe('# Tópico \\#\n');
   });
 
-  it('writes hard breaks inside blocks, quotes and list items, dropping those at the ends', () => {
+  it('writes hard breaks inside blocks and quotes, <br> inside list items, dropping those at the ends', () => {
     expect(markdown(paragraph(text('\num\ndois\n')))).toBe('um\\\ndois\n');
     expect(markdown(block('quote', [text('um\ndois')]))).toBe('> um\\\n> dois\n');
-    expect(markdown(block('bulletListItem', [text('um\ndois')]))).toBe('- um\\\n  dois\n');
+    expect(markdown(block('bulletListItem', [text('um\ndois')]))).toBe('- um<br>dois\n');
   });
 
-  it('writes links with angle brackets for spaces and encoded unbalanced parentheses', () => {
+  it('writes link addresses unchanged, between angle brackets when they need it', () => {
     const link = (href: string, ...content: JsonValue[]) => ({ type: 'link', href, content });
     expect(
       markdown(
@@ -99,7 +99,7 @@ describe('document to Markdown', () => {
     ).toBe(
       '[com espaço](<https://exemplo.com/a b>)\n\n' +
         '**[wiki](https://pt.wikipedia.org/wiki/Foo_(bar))**\n\n' +
-        '[ímpar](https://exemplo.com/a%29b%3Cc%3E)\n',
+        '[ímpar](<https://exemplo.com/a\\)b\\<c\\>>)\n',
     );
   });
 
@@ -113,6 +113,43 @@ describe('document to Markdown', () => {
       'Veja $x$<!-- -->$$ $y$ $$ e $\\frac{$\n',
     );
     expect(markdown(block('mathBlock', '\\begin{a}\n$$\n\\end{a}'))).toBe('$$$\n\\begin{a}\n$$\n\\end{a}\n$$$\n');
+  });
+
+  it('writes emphasis CommonMark reads, with tags where no delimiter is flanking', () => {
+    expect(
+      markdown(
+        paragraph(
+          text('Atenção!', { bold: true }),
+          text('Leia isto e palavra'),
+          text('(negrito)', { bold: true }),
+          text('fim'),
+        ),
+        paragraph(
+          text('negrito', { bold: true }),
+          text(' e '),
+          text('re'),
+          text('itálico', { italic: true }),
+          text('ver'),
+        ),
+      ),
+    ).toBe(
+      '<strong>Atenção!</strong>Leia isto e palavra<strong>(negrito)</strong>fim\n\n**negrito** e re*itálico*ver\n',
+    );
+  });
+
+  it('keeps setext underlines, indentation and odd list numbers from changing the structure', () => {
+    expect(markdown(paragraph(text('título falso\n===')))).toBe('título falso\\\n\\===\n');
+    expect(markdown(paragraph(text('    quatro espaços')), block('quote', [text('\tcom tab')]))).toBe(
+      'quatro espaços\n\n> com tab\n',
+    );
+    expect(markdown(block('bulletListItem', [text('     recuado')]))).toBe('- recuado\n');
+    expect(
+      markdown(
+        block('numberedListItem', [text('negativo')], { props: { start: -1 } }),
+        paragraph(text('entre')),
+        block('numberedListItem', [text('enorme')], { props: { start: 12_345_678_901 } }),
+      ),
+    ).toBe('0. negativo\n\nentre\n\n999999999. enorme\n');
   });
 
   it('stays linear in the pieces of one block', () => {

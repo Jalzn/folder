@@ -23,6 +23,13 @@ const listFamily = (block: DocumentBlock): ListFamily | undefined =>
 
 /** Markdown takes an ordered list's numbering from its first item; a comment ends the list to restart it. */
 const LIST_BREAK = '<!-- -->';
+/** CommonMark list numbers have at most nine digits and are never negative. */
+const MAX_LIST_NUMBER = 999_999_999;
+
+function listStart(block: DocumentBlock): number | undefined {
+  const start = numericProp(block, 'start');
+  return start === undefined ? undefined : Math.min(Math.max(start, 0), MAX_LIST_NUMBER);
+}
 
 function renderBlocks(blocks: readonly DocumentBlock[]): string[] {
   const lines: string[] = [];
@@ -33,11 +40,11 @@ function renderBlocks(blocks: readonly DocumentBlock[]): string[] {
     let marker = '';
     let restarts = false;
     if (family === 'number') {
-      const start = numericProp(block, 'start');
+      const start = listStart(block);
       const continues = previousFamily === 'number' && (start === undefined || start === nextNumber);
       restarts = previousFamily === 'number' && !continues;
       if (!continues) nextNumber = start ?? 1;
-      marker = `${nextNumber}. `;
+      marker = `${Math.min(nextNumber, MAX_LIST_NUMBER)}. `;
       nextNumber += 1;
     }
     const rendered = renderBlock(block, marker);
@@ -84,14 +91,16 @@ function withChildren(lines: string[], children: string[]): string[] {
 }
 
 /**
- * Children are indented to the content column, which for a task item is the column after `- `.
- * An empty item keeps the space after its marker, which the BlockNote parser requires.
+ * An item keeps its text on the marker's line, with `<br>` for line breaks: the BlockNote parser
+ * takes only that line as the item's text. Children are indented to the content column, which for a
+ * task item is the column after `- `. An empty item keeps the space after its marker, which the
+ * BlockNote parser requires.
  */
 function listItem(marker: string, block: DocumentBlock, children: string[]): string[] {
-  const [first = '', ...rest] = inlineLines(block.content);
+  const text = withoutIndentation(inlineMarkdown(block.content, { lineStart: true, breaks: 'html' }));
   const nested = children.length && !startsInterruptingList(children) ? ['', ...children] : children;
   const indent = ' '.repeat(block.type === 'checkListItem' ? 2 : marker.length);
-  return [`${marker}${first}`, ...prefixLines([...rest, ...nested], indent, indent)];
+  return [`${marker}${text.trim() ? text : ''}`, ...prefixLines(nested, indent, indent)];
 }
 
 /** Bullet lists and lists numbered from 1 may start right below a paragraph line; others need a blank line. */
@@ -109,7 +118,7 @@ function prefixLines(lines: string[], first: string, rest: string): string[] {
 /** An empty heading has no Markdown form. A trailing `#` run is escaped so it is not read as a closing sequence. */
 function heading(block: DocumentBlock): string[] {
   const level = Math.min(6, Math.max(1, numericProp(block, 'level') ?? 1));
-  const text = inlineMarkdown(block.content, { lineStart: false, breaksAsSpaces: true }).trim();
+  const text = inlineMarkdown(block.content, { lineStart: false, breaks: 'space' }).trim();
   return text ? [`${'#'.repeat(level)} ${text.replace(/(\s)(#+)$/u, '$1\\$2')}`] : [];
 }
 
@@ -120,9 +129,12 @@ function codeFence(code: string, language: string | undefined): string[] {
 }
 
 function inlineLines(content: JsonValue | undefined): string[] {
-  const text = inlineMarkdown(content, { lineStart: true });
+  const text = withoutIndentation(inlineMarkdown(content, { lineStart: true }));
   return text.trim() ? text.split('\n') : [];
 }
+
+/** Markdown cannot keep a block's leading indentation: four spaces would start a code block. */
+const withoutIndentation = (text: string) => text.replace(/^[ \t]+/u, '');
 
 function numericProp(block: DocumentBlock, name: string): number | undefined {
   const value = block.props?.[name];

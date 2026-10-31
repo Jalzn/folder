@@ -1,19 +1,19 @@
 import { planEmphasis } from './markdown-emphasis.js';
 import { fenceFor } from './markdown-fence.js';
-import { ESCAPED_ANYWHERE, type Inline, inlineItems, type Mark } from './markdown-items.js';
+import { ESCAPED_ANYWHERE, type Inline, inlineItems, type LineBreaks, type Mark } from './markdown-items.js';
 import { inlineMath, MATH_SEPARATOR, needsMathSeparator } from './markdown-math.js';
 import type { JsonValue } from './models.js';
 
 /**
- * Inline BlockNote content as Markdown. Line breaks become `\` hard breaks, or spaces where a hard
- * break cannot exist (headings). `lineStart` says whether the text begins a line, where block
- * markers need escaping.
+ * Inline BlockNote content as Markdown. Line breaks become `\` hard breaks by default; `html`
+ * writes `<br>` where the line must not end and `space` joins the lines (headings). `lineStart`
+ * says whether the text begins a line, where block markers need escaping.
  */
 export function inlineMarkdown(
   content: JsonValue | undefined,
-  options: { lineStart: boolean; breaksAsSpaces?: boolean },
+  options: { lineStart: boolean; breaks?: LineBreaks },
 ): string {
-  return renderInline(inlineItems(content, options.breaksAsSpaces ?? false), options.lineStart, []);
+  return renderInline(inlineItems(content, options.breaks ?? 'hard'), options.lineStart, []);
 }
 
 /** Writes the emphasis plan: delimiters, the spaces kept outside them, then each piece. */
@@ -36,12 +36,12 @@ function renderInline(items: readonly Inline[], lineStart: boolean, inherited: r
     const { item } = step;
     if (item.kind === 'text') write(item.code ? codeSpan(item.text) : escapeText(step.text, atLineStart));
     else if (item.kind === 'link') write(renderLink(item, step.around));
-    else if (item.kind === 'break') write('\\\n');
+    else if (item.kind === 'break') write(item.text);
     else {
       const formula = inlineMath(item.source);
       write(needsMathSeparator(last, formula) ? `${MATH_SEPARATOR}${formula}` : formula);
     }
-    atLineStart = item.kind === 'break';
+    atLineStart = item.kind === 'break' && item.text.endsWith('\n');
   }
   write(end.join(''));
   return output.join('');
@@ -52,13 +52,16 @@ function renderLink(link: Extract<Inline, { kind: 'link' }>, around: readonly Ma
   return `[${label}](${linkDestination(link.href)})`;
 }
 
-const percentEncoded: Record<string, string> = { '<': '%3C', '>': '%3E', '(': '%28', ')': '%29' };
-
-/** Angle brackets allow spaces; unbalanced parentheses and angle brackets are percent-encoded. */
+/**
+ * The address as written: bare when a Markdown reader takes it unchanged, otherwise between angle
+ * brackets, which allow spaces, with `\`, `<` and `>` escaped. Unbalanced parentheses are escaped
+ * in either form, since the BlockNote parser pairs them even inside angle brackets.
+ */
 function linkDestination(href: string): string {
-  const unsafe = parenthesesBalanced(href) ? /[<>]/gu : /[<>()]/gu;
-  const encoded = href.replace(unsafe, (character) => percentEncoded[character] ?? character);
-  return /\s/u.test(encoded) ? `<${encoded}>` : encoded;
+  const angle = /[\s\\<>]/u.test(href);
+  let destination = angle ? href.replace(/[\\<>]/gu, '\\$&') : href;
+  if (!parenthesesBalanced(href)) destination = destination.replace(/[()]/gu, '\\$&');
+  return angle ? `<${destination}>` : destination;
 }
 
 function parenthesesBalanced(text: string): boolean {
@@ -84,6 +87,8 @@ function codeSpan(text: string): string {
 function escapeText(text: string, lineStart: boolean): string {
   const escaped = text.replace(new RegExp(ESCAPED_ANYWHERE.source, 'gu'), '\\$&');
   if (!lineStart) return escaped;
+  // A line of only `=` below a paragraph line would turn that line into a heading.
+  if (/^[ \t]*=+[ \t]*$/u.test(escaped)) return escaped.replace('=', '\\=');
   return escaped.replace(/^([ \t]*)(?:([#>+|-])|(\d{1,9})([.)]))/u, (_match, space, marker, digits, delimiter) =>
     marker ? `${space}\\${marker}` : `${space}${digits}\\${delimiter}`,
   );

@@ -21,9 +21,9 @@ describe('emphasis plan', () => {
       { close: ['_'], spaces: ' ', open: [], core: 'c' },
     ]);
   });
-  it('uses asterisks for italic inside a word and closes what is still open at the end', () => {
+  it('uses asterisks for italic inside a word, tags where no delimiter works, and closes at the end', () => {
     const plan = planEmphasis([text('re'), text('escre', 'italic'), text('ver'), text('!', 'bold')], []);
-    expect(plan.steps.map((step) => step.open)).toEqual([[], ['*'], [], ['**']]);
-    expect(plan.end).toEqual(['**']);
+    expect(plan.steps.map((step) => step.open)).toEqual([[], ['*'], [], ['<strong>']]);
+    expect(plan.end).toEqual(['</strong>']);
   });
 });
