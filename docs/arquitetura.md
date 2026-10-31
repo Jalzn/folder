@@ -141,9 +141,9 @@ As ferramentas do workspace são objetos simples (`createWorkspaceTools(db, { lo
 
 - **Busca:** exige todas as palavras da consulta, normalizadas sem caixa e acentos, e ordena por palavras no título e depois pela edição mais recente. O trecho de 240 caracteres vem de uma janela do texto em volta da primeira ocorrência.
 - **Listas:** são paginadas por chave (`s~…`, `t~…`, `p~…`). O cursor do quadro fixa a revisão do quadro e é recusado depois de qualquer mudança nas tarefas.
-- **Documentos:** saem em Markdown do serializador puro do domínio (`documentToMarkdown`), em páginas de 60.000 caracteres com cursor `<versão>:<deslocamento>`. Um bloco cortado pela página é fechado e reaberto.
+- **Documentos:** saem em Markdown do serializador puro do domínio (`documentToMarkdown`), em páginas de 36.000 caracteres com cursor `<versão>:<deslocamento>`; a primeira reserva 9.000 para cabeçalho e rodapé. Um bloco cortado pela página é fechado e reaberto.
 - **Desenhos:** saem como estrutura textual da cena atual (`outlineCanvasScene`) e a prévia PNG guardada.
-- **Respostas:** ficam abaixo de 70.000 caracteres, só em `content`, sem `structuredContent`.
+- **Respostas:** têm até 45.000 caracteres de texto, rodapés e erros incluídos, só em `content`, sem `structuredContent`. O Claude Code 2.1.310 grava num arquivo o resultado que passa de 50.000 e mostra ao modelo só uma prévia. Cada ferramenta cabe no teto pelo próprio orçamento, e `withTextCeiling` corta, com aviso, o que ainda passasse.
 
 O [README do workspace](../src/workspace/README.md) descreve as regras e as perdas conhecidas do Markdown no parser do BlockNote.
 
@@ -151,7 +151,7 @@ O [README do workspace](../src/workspace/README.md) descreve as regras e as perd
 
 O navegador renderiza a prévia com o próprio Excalidraw, em tema claro, 1,5 s depois de um salvamento e com o navegador ocioso. Tenta lados de 1.568 px para baixo até o arquivo caber em 200 KiB, ou 256 KiB no menor lado, e envia por `workspace.saveCanvasPreview`. A gravação não usa o registro de pedidos nem muda versão, datas ou revisão do quadro.
 
-O servidor só aceita um PNG completo, cujos dados de imagem descomprimem exatamente no tamanho do cabeçalho, até 1.568 px e 256 KiB. A prévia guarda a impressão digital da cena (`sceneFingerprint`): renomear, mover ou passar pela lixeira não a torna defasada. `getCanvas` devolve `previewVersion` e `previewCurrent`.
+O servidor só aceita um PNG completo, cujos dados de imagem descomprimem exatamente no tamanho do cabeçalho, em linhas com tipos de filtro válidos, até 1.568 px e 256 KiB. A prévia guarda a impressão digital da cena (`sceneFingerprint`): renomear, mover ou passar pela lixeira não a torna defasada. `getCanvas` devolve `previewVersion` e `previewCurrent`.
 
 O editor gera a prévia ao abrir um desenho sem prévia atual, ao adotar uma versão salva em outro dispositivo e depois de cada salvamento que muda a cena. Uma cena que nenhum tamanho comporta não é renderizada de novo até mudar.
 
