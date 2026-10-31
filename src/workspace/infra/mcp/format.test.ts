@@ -108,7 +108,7 @@ describe('tool text helpers', () => {
           projectArchived: true,
         },
         originTasks: [{ id: 't1', title: 'Gerar "token"', status: 'doing' }],
-        moreOriginTasks: true,
+        originTaskCount: 3,
         empty: false,
       }),
     ).toBe(
@@ -120,9 +120,35 @@ describe('tool text helpers', () => {
         '- ID: d1',
         '- Tarefas originadas aqui:',
         '  - "Gerar \\"token\\"" (Em andamento, id t1)',
-        '  - … e outras. Use list_tasks com documentId "d1" para ver todas.',
+        '  - … e mais 2 tarefas. Use list_tasks com documentId "d1" para ver todas.',
       ].join('\n'),
     );
+  });
+  it('keeps the header within its budget, counting the origin tasks left out', () => {
+    const quoted = '"\\'.repeat(50);
+    const originTasks = Array.from({ length: 50 }, (_, index) => ({
+      id: `t${index}`,
+      title: quoted,
+      status: 'todo' as const,
+    }));
+    const header = documentHeader({
+      document: {
+        id: 'd1',
+        title: quoted.repeat(3),
+        version: 1,
+        updatedAt: '…',
+        projectId: null,
+        projectName: null,
+        projectArchived: false,
+      },
+      originTasks,
+      originTaskCount: 80,
+      empty: false,
+    });
+    expect(header.length).toBeLessThanOrEqual(READING_LIMITS.document.headerChars);
+    const shown = header.split('\n').filter((line) => line.startsWith('  - "')).length;
+    expect(shown).toBeLessThan(50);
+    expect(header).toContain(`… e mais ${80 - shown} tarefas.`);
   });
   it('drops trailing items that exceed the output budget and points the cursor at the last one shown', () => {
     const items = Array.from({ length: 50 }, (_, index) => ({ index, padding: 'x'.repeat(3000) }));

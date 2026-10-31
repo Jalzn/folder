@@ -1,4 +1,4 @@
-import type { Kysely } from 'kysely';
+import { type Kysely, sql } from 'kysely';
 import type { ItemCounts, WorkspaceReader } from '../../application/reading/ports.js';
 import type { WorkspaceTables } from '../db.js';
 
@@ -39,16 +39,20 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
   }
 
   return {
-    async projectsWithCounts(includeArchived, limit) {
+    async projectsWithCounts({ includeArchived, limit, after }) {
       let query = db
         .selectFrom('workspace_projects')
         .select(['id', 'name', 'archived_at', 'created_at', 'updated_at'])
         .orderBy('updated_at', 'desc')
         .orderBy('id')
-        .limit(limit);
+        .limit(limit + 1);
       if (!includeArchived) query = query.where('archived_at', 'is', null);
+      if (after)
+        query = query.where(
+          sql<boolean>`(updated_at < ${after.updatedAt} or (updated_at = ${after.updatedAt} and id > ${after.id}))`,
+        );
       const [projects, counts] = await Promise.all([query.execute(), countsByProject()]);
-      return projects.map((project) => ({
+      const items = projects.slice(0, limit).map((project) => ({
         id: project.id,
         name: project.name,
         archived: project.archived_at !== null,
@@ -56,6 +60,7 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
         updatedAt: project.updated_at,
         ...counts(project.id),
       }));
+      return { items, hasMore: projects.length > limit };
     },
     async withoutProjectCounts() {
       return (await countsByProject())(null);

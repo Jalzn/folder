@@ -59,6 +59,11 @@ export interface SearchKey {
   id: string;
 }
 
+export interface ProjectKey {
+  updatedAt: string;
+  id: string;
+}
+
 export interface BoardKey {
   columnRank: number;
   position: number;
@@ -69,6 +74,7 @@ const isoDate = String.raw`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z`;
 const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const searchCursorPattern = new RegExp(`^s~(\\d{1,3})~(${isoDate})~([0-2])~(${uuid})$`, 'u');
 const boardCursorPattern = new RegExp(`^t~([0-2])~(\\d{1,15})~(${uuid})$`, 'u');
+const projectCursorPattern = new RegExp(`^p~(${isoDate})~(${uuid})$`, 'u');
 
 export function searchCursor(key: SearchKey): string {
   return `s~${key.titleRank}~${key.updatedAt}~${key.typeRank}~${key.id}`;
@@ -93,4 +99,14 @@ export function readBoardCursor(cursor: string): BoardKey {
   const match = boardCursorPattern.exec(cursor);
   if (!match) throw invalidCursor();
   return { columnRank: Number(match[1]), position: Number(match[2]), id: match[3] as string };
+}
+
+export function projectCursor(key: ProjectKey): string {
+  return `p~${key.updatedAt}~${key.id}`;
+}
+
+export function readProjectCursor(cursor: string): ProjectKey {
+  const match = projectCursorPattern.exec(cursor);
+  if (!match) throw invalidCursor();
+  return { updatedAt: match[1] as string, id: match[2] as string };
 }

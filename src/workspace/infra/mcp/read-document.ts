@@ -14,10 +14,10 @@ export const readDocumentTool = (reading: ReadingContext) =>
     inputSchema: ReadDocumentInput,
     annotations: readOnlyAnnotations,
     async handler(input) {
-      const { document, originTasks, moreOriginTasks, page, nextCursor } = await readDocument(reading, input);
+      const { document, originTasks, originTaskCount, page, nextCursor } = await readDocument(reading, input);
       const parts: string[] = [];
       if (page.number === 1)
-        parts.push(documentHeader({ document, originTasks, moreOriginTasks, empty: !page.text.trim() }), '---');
+        parts.push(documentHeader({ document, originTasks, originTaskCount, empty: !page.text.trim() }), '---');
       if (page.text.trim()) parts.push(page.text.trimEnd());
       if (page.count > 1) {
         const next =

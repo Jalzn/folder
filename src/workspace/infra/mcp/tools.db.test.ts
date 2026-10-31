@@ -195,6 +195,7 @@ describe('agent read tools', () => {
     expect(await json('list_projects')).toEqual({
       projects: [],
       withoutProject: { documents: 1, drawings: 0, openTasks: 0 },
+      nextCursor: null,
     });
     const { projects } = await json<{ projects: Record<string, unknown>[] }>('list_projects', {
       includeArchived: true,
@@ -213,6 +214,34 @@ describe('agent read tools', () => {
       ['read_task', removed.task.id],
     ] as const)
       expect(await call(name, { id })).toMatchObject({ isError: true, text: expect.stringContaining('na lixeira') });
+  });
+
+  it('keeps list_projects and the first document page within the output budget', async () => {
+    const heavy = '"\\\u0001'.repeat(33);
+    for (let index = 0; index < 205; index += 1)
+      await service.createProject({ ...request(), name: `${heavy.slice(0, 96)}${index}` });
+    const first = await call('list_projects', {});
+    const page = JSON.parse(first.text) as { projects: unknown[]; nextCursor: string };
+    expect(first.text.length).toBeLessThanOrEqual(70_000);
+    expect(page.nextCursor).toMatch(/^p~/u);
+    const rest = JSON.parse((await call('list_projects', { cursor: page.nextCursor })).text) as { projects: unknown[] };
+    expect(page.projects.length + rest.projects.length).toBe(205);
+
+    const blocks = Array.from({ length: 30 }, (_, index) => paragraph(`${index} ${'palavra '.repeat(400)}`));
+    const document = await service.createDocument({
+      ...request(),
+      title: heavy.repeat(2).slice(0, 300),
+      content: blocks,
+    });
+    for (let index = 0; index < 51; index += 1)
+      await service.createTask({
+        ...request(),
+        title: heavy.repeat(3).slice(0, 300),
+        source: { documentId: document.id, excerpt: `${index % 30} palavra` },
+      });
+    const read = await call('read_document', { id: document.id });
+    expect(read.text.length).toBeLessThanOrEqual(70_000);
+    expect(read.text).toMatch(/… e mais \d+ tarefas\. Use list_tasks com documentId/u);
   });
 
   it('reads a document as Markdown with the tasks created from it', async () => {

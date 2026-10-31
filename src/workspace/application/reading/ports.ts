@@ -1,17 +1,18 @@
 import type { CanvasScene } from '../../domain/canvas.js';
 import type { DocumentBlock, TaskSource, TaskStatus } from '../../domain/models.js';
-import type { BoardKey, SearchKey } from '../../domain/paging.js';
+import type { BoardKey, ProjectKey, SearchKey } from '../../domain/paging.js';
 
 /**
  * Queries of the agent read model. Nothing in the trash is ever returned: a trashed item reads as
  * missing, and a trashed source document has no title.
  */
 export interface WorkspaceReader {
-  projectsWithCounts(includeArchived: boolean, limit: number): Promise<ProjectWithCounts[]>;
+  projectsWithCounts(query: ProjectQuery): Promise<Page<ProjectWithCounts>>;
   withoutProjectCounts(): Promise<ItemCounts>;
   searchItems(query: SearchQuery): Promise<Page<SearchHit>>;
   documentForReading(id: string): Promise<DocumentForReading | undefined>;
-  tasksFromDocument(documentId: string, limit: number): Promise<OriginTask[]>;
+  /** The first `limit` tasks created from the document, in board order, and how many there are. */
+  tasksFromDocument(documentId: string, limit: number): Promise<{ items: OriginTask[]; total: number }>;
   canvasForReading(id: string): Promise<CanvasForReading | undefined>;
   tasks(query: TaskQuery): Promise<Page<TaskListing>>;
   task(id: string): Promise<TaskDetail | undefined>;
@@ -31,6 +32,13 @@ export interface ItemCounts {
   drawings: number;
   /** Tasks outside the done column. */
   openTasks: number;
+}
+
+export interface ProjectQuery {
+  includeArchived: boolean;
+  limit: number;
+  /** The key of the last project of the previous page. */
+  after: ProjectKey | undefined;
 }
 
 export interface ProjectWithCounts extends ItemCounts {

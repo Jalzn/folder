@@ -34,11 +34,14 @@ export function projectName(reference: ProjectReference): string | null {
 const shortTitle = (title: string, max = READING_LIMITS.document.originTaskTitleChars) =>
   title.length > max ? `${title.slice(0, max)}…` : title;
 
-/** Metadata that opens the first page of read_document. Titles are quoted, not parsed as Markdown. */
+/**
+ * Metadata that opens the first page of read_document, within its own budget: origin tasks that do
+ * not fit are counted. Titles are quoted, not parsed as Markdown.
+ */
 export function documentHeader(input: {
   document: ProjectReference & { id: string; title: string; version: number; updatedAt: string };
   originTasks: OriginTask[];
-  moreOriginTasks: boolean;
+  originTaskCount: number;
   empty: boolean;
 }): string {
   const { document } = input;
@@ -49,13 +52,23 @@ export function documentHeader(input: {
     `- Atualizado: ${document.updatedAt} · versão ${document.version}`,
     `- ID: ${document.id}`,
   ];
-  if (input.originTasks.length) {
-    lines.push('- Tarefas originadas aqui:');
-    for (const task of input.originTasks)
-      lines.push(`  - ${JSON.stringify(shortTitle(task.title))} (${taskStatusLabels[task.status]}, id ${task.id})`);
-    if (input.moreOriginTasks)
-      lines.push(`  - … e outras. Use list_tasks com documentId ${JSON.stringify(document.id)} para ver todas.`);
-  }
   if (input.empty) lines.push('- Conteúdo: vazio');
+  if (!input.originTaskCount) return lines.join('\n');
+  lines.push('- Tarefas originadas aqui:');
+  // Keep room for the line that counts the rest.
+  let length = lines.join('\n').length + 200;
+  let shown = 0;
+  for (const task of input.originTasks) {
+    const line = `  - ${JSON.stringify(shortTitle(task.title))} (${taskStatusLabels[task.status]}, id ${task.id})`;
+    if (length + line.length + 1 > READING_LIMITS.document.headerChars) break;
+    lines.push(line);
+    length += line.length + 1;
+    shown += 1;
+  }
+  const rest = input.originTaskCount - shown;
+  if (rest > 0)
+    lines.push(
+      `  - … e mais ${rest} ${rest === 1 ? 'tarefa' : 'tarefas'}. Use list_tasks com documentId ${JSON.stringify(document.id)} para ver todas.`,
+    );
   return lines.join('\n');
 }

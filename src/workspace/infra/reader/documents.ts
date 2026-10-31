@@ -29,18 +29,23 @@ export function documentReads(db: Kysely<WorkspaceTables>): DocumentReads {
         }
       );
     },
-    tasksFromDocument(documentId, limit) {
-      return db
+    async tasksFromDocument(documentId, limit) {
+      const fromDocument = db
         .selectFrom('workspace_task_sources as source')
         .innerJoin('workspace_tasks as item', 'item.id', 'source.task_id')
-        .select(['item.id', 'item.title', 'item.status'])
         .where('source.document_id', '=', documentId)
-        .where('item.deleted_at', 'is', null)
-        .orderBy(columnRank)
-        .orderBy('item.position')
-        .orderBy('item.id')
-        .limit(limit)
-        .execute();
+        .where('item.deleted_at', 'is', null);
+      const [items, count] = await Promise.all([
+        fromDocument
+          .select(['item.id', 'item.title', 'item.status'])
+          .orderBy(columnRank)
+          .orderBy('item.position')
+          .orderBy('item.id')
+          .limit(limit)
+          .execute(),
+        fromDocument.select(({ fn }) => fn.countAll<number>().as('total')).executeTakeFirstOrThrow(),
+      ]);
+      return { items, total: count.total };
     },
   };
 }

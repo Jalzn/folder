@@ -9,6 +9,7 @@ const query = z.string().trim().min(1).max(300);
 
 export const ListProjectsInput = z.object({
   includeArchived: z.boolean().default(false).describe('Inclui projetos arquivados.'),
+  cursor: cursor.optional(),
 });
 
 export const SearchInput = z.object({

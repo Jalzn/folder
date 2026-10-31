@@ -14,7 +14,9 @@ export async function readDocument(ctx: ReadingContext, input: ReadDocumentInput
   const found = await ctx.read(async (reader) => {
     const document = await reader.documentForReading(input.id);
     if (!document) return undefined;
-    const tasks = cursor ? [] : await reader.tasksFromDocument(document.id, READING_LIMITS.document.originTasks + 1);
+    const tasks = cursor
+      ? { items: [], total: 0 }
+      : await reader.tasksFromDocument(document.id, READING_LIMITS.document.originTasks);
     return { document, tasks };
   });
   if (!found) throw new AppError('NOT_FOUND', 'Documento não encontrado ou na lixeira.');
@@ -24,8 +26,8 @@ export async function readDocument(ctx: ReadingContext, input: ReadDocumentInput
   const page = pageText(documentToMarkdown(content), cursor?.offset ?? 0, READING_LIMITS.document.pageChars);
   return {
     document,
-    originTasks: found.tasks.slice(0, READING_LIMITS.document.originTasks),
-    moreOriginTasks: found.tasks.length > READING_LIMITS.document.originTasks,
+    originTasks: found.tasks.items,
+    originTaskCount: found.tasks.total,
     page,
     nextCursor: page.nextOffset === null ? null : documentCursor(document.version, page.nextOffset),
   };
