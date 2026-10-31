@@ -56,6 +56,7 @@ export function createCanvas(ctx: WorkspaceContext, input: CreateCanvasInput): P
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
+      pinnedAt: null,
     };
     await repo.insertCanvas(canvas);
     return { id: canvas.id, version: canvas.version, updatedAt: now };
@@ -70,7 +71,17 @@ export function saveCanvas(ctx: WorkspaceContext, input: SaveCanvasInput): Promi
     const updatedAt = ctx.now();
     const version = canvas.version + 1;
     await repo.saveCanvas(
-      { ...canvas, projectId, title: input.title || 'Sem título', scene: input.scene, plainText, version, updatedAt },
+      {
+        ...canvas,
+        projectId,
+        // Pins belong to a project's sidebar, so moving the drawing unpins it.
+        pinnedAt: projectId === canvas.projectId ? canvas.pinnedAt : null,
+        title: input.title || 'Sem título',
+        scene: input.scene,
+        plainText,
+        version,
+        updatedAt,
+      },
       canvas.version,
     );
     return { id: canvas.id, version, updatedAt };
@@ -86,7 +97,12 @@ function setDeleted(
     assertVersion(canvas.version, input.expectedVersion);
     const updatedAt = ctx.now();
     const version = canvas.version + 1;
-    await repo.saveCanvas({ ...canvas, deletedAt: deleted ? updatedAt : null, version, updatedAt }, canvas.version);
+    // Trashing unpins; restoring does not pin again.
+    const pinnedAt = deleted ? null : canvas.pinnedAt;
+    await repo.saveCanvas(
+      { ...canvas, deletedAt: deleted ? updatedAt : null, pinnedAt, version, updatedAt },
+      canvas.version,
+    );
     return { id: canvas.id, version, updatedAt };
   });
 }

@@ -12,7 +12,7 @@ import { expectUpdated } from './versioned-update.js';
  * Attaches each task's source with the current availability of its document and excerpt. A
  * document deleted for good is gone, and the source shows the title it kept.
  */
-async function hydrateTasks(db: Kysely<WorkspaceTables>, rows: TaskRow[]): Promise<Task[]> {
+export async function hydrateTasks(db: Kysely<WorkspaceTables>, rows: TaskRow[]): Promise<Task[]> {
   if (!rows.length) return [];
   const sources = await db
     .selectFrom('workspace_task_sources')

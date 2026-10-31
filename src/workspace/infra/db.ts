@@ -25,6 +25,7 @@ export interface DocumentRow {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  pinned_at: string | null;
 }
 
 export interface TaskRow {
@@ -82,4 +83,5 @@ export interface CanvasRow {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  pinned_at: string | null;
 }

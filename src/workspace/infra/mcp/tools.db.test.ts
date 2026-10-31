@@ -131,6 +131,9 @@ describe('agent read tools', () => {
       scene: { appState: { viewBackgroundColor: '#ffffff' }, elements: labels },
     });
 
+    await agent.service.pinItem({ type: 'document', id: document.id });
+    await agent.service.pinItem({ type: 'drawing', id: drawing.id });
+
     const first = await record('read_document', { id: document.id });
     expect(first.text).toMatch(/… e mais \d+ tarefas\. Use list_tasks com documentId/u);
     for (let cursor = /"cursor":"(\d+:\d+)"/u.exec(first.text)?.[1]; cursor; ) {
@@ -138,7 +141,7 @@ describe('agent read tools', () => {
       cursor = /"cursor":"(\d+:\d+)"/u.exec(next.text)?.[1];
     }
     await record('search', { query: 'alvo', limit: 50 });
-    await record('search', { limit: 50 });
+    expect((await record('search', { limit: 50 })).text).toContain('"pinned":true');
     const page = JSON.parse((await record('list_tasks', { limit: 100 })).text) as {
       tasks: { id: string; source: { documentId: string | null } }[];
     };

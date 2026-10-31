@@ -36,6 +36,8 @@ export interface DocumentSummary {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  /** When it was pinned at the top of its sidebar section; moving it or trashing it unpins it. */
+  pinnedAt: string | null;
 }
 
 export interface Document extends DocumentSummary {

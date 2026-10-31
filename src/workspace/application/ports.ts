@@ -1,5 +1,6 @@
 import type { Canvas, CanvasSummary } from '../domain/canvas.js';
 import type { Document, DocumentSummary, Project, Task, TaskSource, TaskStatus } from '../domain/models.js';
+import type { NavItemType } from '../domain/navigation.js';
 
 export type TaskRecord = Omit<Task, 'source'> & { deletedAt: string | null };
 
@@ -93,6 +94,14 @@ export interface TrashRepository {
   deleteTaskRow(id: string): Promise<void>;
 }
 
+/** Documents and drawings pinned at the top of their project's sidebar. */
+export interface PinRepository {
+  /** The live pinned documents and drawings of the project, together. */
+  pinnedCount(projectId: string | null): Promise<number>;
+  /** Pins or unpins an item without making it an edit: version and dates stay. */
+  setPinnedAt(type: NavItemType, id: string, pinnedAt: string | null): Promise<void>;
+}
+
 /** The board revision orders concurrent task moves across devices. */
 export interface BoardRepository {
   revision(): Promise<number>;
@@ -105,6 +114,7 @@ export type WorkspaceRepository = ProjectRepository &
   CanvasPreviewRepository &
   TaskRepository &
   TrashRepository &
+  PinRepository &
   BoardRepository;
 
 export interface WorkspaceContext {

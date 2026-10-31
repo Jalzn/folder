@@ -14,4 +14,4 @@ export type {
 export { type AgentTool, type AgentToolResult, createWorkspaceTools } from './infra/mcp/index.js';
 export { workspaceModule } from './infra/module.js';
 export { createWorkspaceRouter } from './infra/rpc.js';
-export { createWorkspaceService } from './infra/service.js';
+export { createWorkspaceService, type WorkspaceService } from './infra/service.js';

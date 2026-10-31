@@ -3,6 +3,9 @@ export const PROJECT_COLORS = ['violet', 'ochre', 'gray', 'green'] as const;
 
 export type ProjectColor = (typeof PROJECT_COLORS)[number];
 
+/** Documents and drawings pinned at the top of a project's sidebar, counted together. */
+export const MAX_PINNED = 8;
+
 const graphemes = new Intl.Segmenter('pt-BR', { granularity: 'grapheme' });
 
 /** The letter on a project's mark: the first grapheme of its name, in capitals, or "?" without a name. */

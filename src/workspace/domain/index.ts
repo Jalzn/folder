@@ -33,8 +33,9 @@ export type {
   TaskSource,
   TaskStatus,
 } from './models.js';
+export { NAV_SORTS, type NavItem, type NavSection, type NavSort } from './navigation.js';
 export { type PngInfo, readPngInfo } from './png.js';
-export { defaultProjectColor, PROJECT_COLORS, type ProjectColor, projectInitial } from './project.js';
+export { defaultProjectColor, MAX_PINNED, PROJECT_COLORS, type ProjectColor, projectInitial } from './project.js';
 export { sceneFingerprint } from './scene-fingerprint.js';
 export { searchText } from './search-text.js';
 export { TASK_STATUSES, taskStatusLabels } from './task-status.js';

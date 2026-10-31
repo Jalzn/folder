@@ -24,6 +24,7 @@ const hitView = ({ projectId, projectName, projectArchived, updatedAt, titleRank
         projectName,
         projectArchived,
         updatedAt,
+        pinned: hit.pinned,
         excerpt: hit.excerpt,
       };
 
@@ -35,8 +36,9 @@ export const searchTool = (reading: ReadingContext) =>
       'Busca documentos, desenhos e tarefas por palavras: todas precisam aparecer, em qualquer ordem, no título ' +
       'ou no texto, sem diferenciar caixa e acentos. Hífens separam palavras, e a pontuação em volta delas é ' +
       'ignorada. Itens com mais palavras no título vêm primeiro e, depois, ' +
-      'os editados mais recentemente. Sem query, lista os itens editados mais recentemente. Passe o nextCursor ' +
-      'para ver a próxima página. Leia os itens com read_document, read_drawing ou read_task.',
+      'os editados mais recentemente. Sem query, lista os itens editados mais recentemente. Documentos e desenhos ' +
+      'trazem pinned, que diz se estão fixados no topo da lateral do projeto. Passe o nextCursor para ver a ' +
+      'próxima página. Leia os itens com read_document, read_drawing ou read_task.',
     inputSchema: SearchInput,
     annotations: readOnlyAnnotations,
     async handler(input) {

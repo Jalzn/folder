@@ -22,6 +22,7 @@ export function documentRepository(connection: Database): DocumentRepository {
           'created_at',
           'updated_at',
           'deleted_at',
+          'pinned_at',
         ])
         .where('deleted_at', input.deleted ? 'is not' : 'is', null);
       if (input.projectId) query = query.where('project_id', '=', input.projectId);

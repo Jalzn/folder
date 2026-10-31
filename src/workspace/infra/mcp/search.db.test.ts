@@ -42,6 +42,19 @@ describe('search', () => {
     expect(onlyTasks.items.map((item) => item.type)).toEqual(['task']);
   });
 
+  it('says which documents and drawings are pinned in their project', async () => {
+    const pinned = await agent.service.createDocument({ ...request(), projectId: agent.project.id, title: 'Fixado' });
+    await agent.service.createCanvas({ ...request(), projectId: agent.project.id, title: 'Solto' });
+    await agent.service.createTask({ ...request(), projectId: agent.project.id, title: 'Tarefa' });
+    await agent.service.pinItem({ type: 'document', id: pinned.id });
+    const { items } = await agent.json<{ items: { type: string; pinned?: boolean }[] }>('search');
+    expect(items.map((item) => [item.type, item.pinned])).toEqual([
+      ['task', undefined],
+      ['drawing', false],
+      ['document', true],
+    ]);
+  });
+
   it('requires every word in any order, ranks title matches first and refuses an empty folded query', async () => {
     const body = await agent.service.createDocument({
       ...request(),

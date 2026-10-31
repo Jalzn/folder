@@ -34,7 +34,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
     let select = db
       .selectFrom(searchableItems(db, type))
       .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
-      .select(['item.id', 'item.title', 'item.updated_at', titleRank.as('title_rank')])
+      .select(['item.id', 'item.title', 'item.updated_at', 'item.pinned_at', titleRank.as('title_rank')])
       .select(projectColumns)
       .where('item.deleted_at', 'is', null)
       .where(afterKey(query, searchTypeRankOf(type), titleRank))
@@ -50,6 +50,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
       title: row.title,
       ...projectReference(row),
       updatedAt: row.updated_at,
+      pinned: row.pinned_at !== null,
       titleRank: row.title_rank,
     }));
   }

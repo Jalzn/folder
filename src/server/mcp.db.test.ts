@@ -205,6 +205,58 @@ describe('MCP protocol', () => {
     });
   });
 
+  it('answers the RPC search with the same items and cursors as the MCP search', async () => {
+    const { db, app, auth, connect } = await fixture();
+    const workspace = createWorkspaceService(db);
+    const project = await workspace.createProject({ requestId: randomUUID(), name: 'Tinyfold' });
+    const other = await workspace.createProject({ requestId: randomUUID(), name: 'Outro' });
+    const paragraph = (text: string) => [{ type: 'paragraph', content: [{ type: 'text', text, styles: {} }] }];
+    for (const [index, projectId] of [project.id, other.id, project.id, project.id].entries())
+      await workspace.createDocument({
+        requestId: randomUUID(),
+        projectId,
+        title: index ? `Nota ${index}` : 'Plano',
+        content: paragraph('Revisar o plano do MCP'),
+      });
+    await workspace.createTask({ requestId: randomUUID(), projectId: project.id, title: 'Plano de testes' });
+    await workspace.createCanvas({ requestId: randomUUID(), projectId: project.id, title: 'Plano visual' });
+    const { token } = await auth.login({ password }, { ip: 'test' });
+    const viaRpc = async (input: Record<string, unknown>) => {
+      const response = await app.request('/rpc/workspace/search', {
+        method: 'POST',
+        headers: { origin, 'content-type': 'application/json', cookie: `tinyfold_session=${token}` },
+        body: JSON.stringify({ json: input }),
+      });
+      return ((await response.json()) as { json: { items: Record<string, unknown>[]; nextCursor: string | null } })
+        .json;
+    };
+    const client = await connect();
+    const viaMcp = async (input: Record<string, unknown>) =>
+      JSON.parse(textOf(await client.callTool({ name: 'search', arguments: input }))) as {
+        items: Record<string, unknown>[];
+        nextCursor: string | null;
+      };
+    const ids = (page: { items: Record<string, unknown>[] }) => page.items.map((item) => item.id);
+
+    const first = { query: 'plano', limit: 2 };
+    for (const input of [first, { limit: 3 }, { query: 'plano', projectId: project.id, types: ['document'] }]) {
+      const [rpcPage, mcpPage] = [await viaRpc(input), await viaMcp(input)];
+      expect(ids(rpcPage), JSON.stringify(input)).toEqual(ids(mcpPage));
+      expect(rpcPage.nextCursor).toBe(mcpPage.nextCursor);
+    }
+    const page = await viaRpc(first);
+    expect(page.nextCursor).toMatch(/^s~/u);
+    const next = { ...first, cursor: page.nextCursor };
+    expect(ids(await viaRpc(next))).toEqual(ids(await viaMcp(next)));
+    expect(page.items[0]).toMatchObject({
+      type: 'drawing',
+      title: 'Plano visual',
+      projectName: 'Tinyfold',
+      pinned: false,
+    });
+    expect(page.items[0]).not.toHaveProperty('titleRank');
+  });
+
   it('announces a fixed tool list and refuses subscription streams', async () => {
     const { connect, post } = await fixture();
     const client = await connect();

@@ -35,6 +35,7 @@ export const documentSummary = (row: Omit<DocumentRow, 'content' | 'search_text'
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   deletedAt: row.deleted_at,
+  pinnedAt: row.pinned_at,
 });
 export const documentModel = (row: DocumentRow): Document => ({
   ...documentSummary(row),
@@ -52,6 +53,7 @@ export const documentRow = (document: Document): DocumentRow => ({
   created_at: document.createdAt,
   updated_at: document.updatedAt,
   deleted_at: document.deletedAt,
+  pinned_at: document.pinnedAt,
 });
 
 export const canvasSummary = (row: Omit<CanvasRow, 'scene' | 'search_text'>): CanvasSummary => ({
@@ -64,6 +66,7 @@ export const canvasSummary = (row: Omit<CanvasRow, 'scene' | 'search_text'>): Ca
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   deletedAt: row.deleted_at,
+  pinnedAt: row.pinned_at,
 });
 export const canvasModel = (row: CanvasRow): Canvas => ({
   ...canvasSummary(row),
@@ -81,6 +84,7 @@ export const canvasRow = (canvas: Canvas): CanvasRow => ({
   created_at: canvas.createdAt,
   updated_at: canvas.updatedAt,
   deleted_at: canvas.deletedAt,
+  pinned_at: canvas.pinnedAt,
 });
 
 export const taskModel = (row: TaskRow): TaskRecord => ({

@@ -77,7 +77,15 @@ export type SearchHit = ProjectReference & {
   updatedAt: string;
   /** How many query words the title lacks; it orders the results and is not shown. */
   titleRank: number;
-} & ({ type: 'document' | 'drawing'; excerpt: string } | { type: 'task'; status: TaskStatus });
+} & (
+    | {
+        type: 'document' | 'drawing';
+        excerpt: string;
+        /** Pinned at the top of its section in the project's sidebar. */
+        pinned: boolean;
+      }
+    | { type: 'task'; status: TaskStatus }
+  );
 
 export interface DocumentForReading extends ProjectReference {
   id: string;

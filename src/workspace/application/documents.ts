@@ -38,6 +38,7 @@ export function createDocument(ctx: WorkspaceContext, input: CreateDocumentInput
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
+      pinnedAt: null,
     };
     await repo.insertDocument(document);
     return document;
@@ -56,6 +57,8 @@ export function saveDocument(ctx: WorkspaceContext, input: SaveDocumentInput): P
       {
         ...document,
         projectId,
+        // Pins belong to a project's sidebar, so moving the document unpins it.
+        pinnedAt: projectId === document.projectId ? document.pinnedAt : null,
         title: input.title || 'Sem título',
         content: input.content,
         plainText,
@@ -78,8 +81,10 @@ function setDeleted(
     assertVersion(document.version, input.expectedVersion);
     const updatedAt = ctx.now();
     const version = document.version + 1;
+    // Trashing unpins; restoring does not pin again.
+    const pinnedAt = deleted ? null : document.pinnedAt;
     await repo.saveDocument(
-      { ...document, deletedAt: deleted ? updatedAt : null, version, updatedAt },
+      { ...document, deletedAt: deleted ? updatedAt : null, pinnedAt, version, updatedAt },
       document.version,
     );
     return { id: document.id, version, updatedAt };
