@@ -1,14 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { moveToTrash, newDrawing } from './support/items.js';
+import { overviewAddress, searchProject } from './support/navigation.js';
 import { answers } from './support/rpc.js';
 import { E2E_PASSWORD, login } from './support/session.js';
 
 const titleField = (page: Page) => page.getByRole('textbox', { name: 'Título do desenho' });
 
 async function createCanvas(page: Page, title: string) {
-  await page.goto('/desenhos');
-  await page.getByRole('button', { name: 'Novo desenho', exact: true }).first().click();
-  await expect(page.getByTestId('canvas-editor')).toBeVisible();
+  await newDrawing(page);
   await saveTitle(page, title);
   return page.url();
 }
@@ -159,8 +159,7 @@ test('draw, reload, export PNG and round-trip an editable drawing with local fon
   expect(editorRequests.length).toBeGreaterThan(0);
   expect(fontRequests.length).toBeGreaterThan(0);
   expect(fontRequests.every((url) => new URL(url).origin === new URL(page.url()).origin)).toBe(true);
-  await page.goto('/desenhos');
-  await page.getByRole('textbox', { name: 'Buscar nos desenhos' }).fill('Roteiro visual pesquisavel');
+  await searchProject(page, 'desenhos', 'Roteiro visual pesquisavel');
   await expect(page.getByRole('link').filter({ hasText: importedTitle })).toBeVisible();
 });
 
@@ -321,10 +320,8 @@ test('a remote deletion leaves the local draft available for recovery as a copy'
   const other = await context.newPage();
   await other.goto(original);
   await expect(titleField(other)).toBeVisible();
-  await other.getByRole('button', { name: 'Opções do desenho', exact: true }).click();
-  await other.getByRole('menuitem', { name: 'Mover para a lixeira', exact: true }).click();
-  await other.getByRole('dialog').getByRole('button', { name: 'Mover para a lixeira', exact: true }).click();
-  await expect(other).toHaveURL(/\/desenhos$/);
+  await moveToTrash(other, 'desenho');
+  await expect(other).toHaveURL(overviewAddress);
   await page.unroute('**/rpc/workspace/saveCanvas');
   await page.reload();
   await expect(titleField(page)).toHaveValue('Rascunho mantido apos exclusao remota');

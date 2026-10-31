@@ -4,7 +4,7 @@ import './canvas-editor.css';
 import { CaptureUpdateAction, Excalidraw, MainMenu } from '@excalidraw/excalidraw';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawProps } from '@excalidraw/excalidraw/types';
-import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import {
   type Canvas,
   type CanvasScene,
@@ -16,7 +16,6 @@ import {
 import {
   AlertCircle,
   ArrowDownToLine,
-  ArrowLeft,
   ArrowUpFromLine,
   CloudCheck,
   Folder,
@@ -41,12 +40,13 @@ import {
 } from '../lib/canvas-autosave';
 import { renderCanvasPng } from '../lib/canvas-png';
 import { CanvasPreviewUploader } from '../lib/canvas-preview';
-import { useCanvas, useProjects } from '../lib/queries';
+import { useProjects } from '../lib/queries';
 import { useAction } from '../lib/use-action';
 import { useRequest } from '../lib/use-request';
+import { itemPath, paths } from '../router/paths';
 import { useApp } from '../shell';
 import { useTheme } from '../shell/theme';
-import { ActionMenu, Dialog, EmptyState, ErrorNotice, Spinner, useToast } from '../ui';
+import { ActionMenu, Dialog, EmptyState, useToast } from '../ui';
 
 /** The canvas as getCanvas returns it, including whether the stored PNG preview shows its scene. */
 type EditableCanvas = Awaited<ReturnType<typeof api.workspace.getCanvas>>;
@@ -163,27 +163,9 @@ function readViewport(key: string): Partial<AppState> {
   return {};
 }
 
-export function CanvasPage() {
-  const { canvasId } = useParams({ from: '/desenhos/$canvasId' });
-  const canvas = useCanvas(canvasId);
-  if (canvas.isPending)
-    return (
-      <div className="page">
-        <Spinner label="Abrindo desenho…" />
-      </div>
-    );
-  if (canvas.error && !canvas.data)
-    return (
-      <div className="page">
-        <Link to="/desenhos" className="text-button">
-          <ArrowLeft size={16} />
-          Desenhos
-        </Link>
-        <ErrorNotice error={canvas.error} retry={() => void canvas.refetch()} />
-      </div>
-    );
-  if (!canvas.data) return null;
-  return <CanvasEditor key={canvasId} canvas={canvas.data} />;
+/** A drawing's page, once its route found it under its own project. */
+export function CanvasPage({ canvas }: { canvas: EditableCanvas }) {
+  return <CanvasEditor key={canvas.id} canvas={canvas} />;
 }
 
 function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
@@ -356,7 +338,7 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
           ? 'Desenho importado sem projeto porque o projeto original está arquivado ou indisponível.'
           : 'Arquivo importado como um novo desenho.',
       );
-      void navigate({ to: '/desenhos/$canvasId', params: { canvasId: imported.id } });
+      void navigate({ href: itemPath('drawing', { id: imported.id, projectId: destinationProject }) });
     } catch (error) {
       reportSessionError(error);
       toast(error instanceof Error ? error.message : errorMessage(error), 'error');
@@ -414,7 +396,7 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
           ? 'Cópia salva sem projeto porque o projeto original está arquivado ou indisponível.'
           : 'Seu rascunho foi salvo em um novo desenho.',
       );
-      void navigate({ to: '/desenhos/$canvasId', params: { canvasId: copy.id } });
+      void navigate({ href: itemPath('drawing', { id: copy.id, projectId: pending.projectId }) });
     } catch (error) {
       if (['VALIDATION', 'DOMAIN_RULE', 'BAD_REQUEST', 'PAYLOAD_TOO_LARGE'].includes(errorCode(error) ?? ''))
         copyPending.current = null;
@@ -436,7 +418,7 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
         deleteRequest.clear();
         setDeleteOpen(false);
         toast('Desenho movido para a lixeira.');
-        void navigate({ to: '/desenhos' });
+        void navigate({ href: canvas.projectId ? paths.overview(canvas.projectId) : paths.start });
       },
     );
   }
@@ -461,9 +443,11 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
           title="Este desenho está na lixeira"
           description="Restaure o desenho para continuar editando."
         >
-          <Link to="/lixeira" className="button primary">
-            Abrir lixeira
-          </Link>
+          {canvas.projectId && (
+            <Link to="/projetos/$projectId/lixeira" params={{ projectId: canvas.projectId }} className="button primary">
+              Abrir lixeira
+            </Link>
+          )}
         </EmptyState>
       </div>
     );
@@ -551,9 +535,15 @@ function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
             <span>Seu rascunho está preservado. Escolha como continuar.</span>
           </div>
           {canvas.deletedAt ? (
-            <Link to="/lixeira" className="button secondary">
-              Abrir lixeira
-            </Link>
+            canvas.projectId && (
+              <Link
+                to="/projetos/$projectId/lixeira"
+                params={{ projectId: canvas.projectId }}
+                className="button secondary"
+              >
+                Abrir lixeira
+              </Link>
+            )
           ) : (
             <button type="button" className="button secondary" onClick={() => setReloadOpen(true)}>
               Carregar versão salva

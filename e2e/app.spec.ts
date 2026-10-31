@@ -1,9 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
+import { newDocument, newTask } from './support/items.js';
+import { createProject, searchProject } from './support/navigation.js';
 import { login } from './support/session.js';
 
 async function createDocument(page: Page, title: string, text: string) {
-  await page.getByRole('button', { name: 'Começar a escrever' }).click();
+  await newDocument(page);
   await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
   const editor = page.locator('[contenteditable="true"]').first();
   await editor.fill(text);
@@ -11,7 +13,7 @@ async function createDocument(page: Page, title: string, text: string) {
   return editor;
 }
 
-test('capture without a project, reopen, search and export Markdown', async ({ page }, info) => {
+test('capture in the current project, reopen, search and export Markdown', async ({ page }, info) => {
   const title = `Ideias ${info.project.name} ${Date.now()}`;
   await login(page);
   await page.screenshot({ path: info.outputPath('inicio.png'), fullPage: true });
@@ -28,8 +30,7 @@ test('capture without a project, reopen, search and export Markdown', async ({ p
     .toBe(true);
   await expect(page.locator('[contenteditable="true"]').first()).toContainText('Uma ideia simples');
   await page.screenshot({ path: info.outputPath('editor.png'), fullPage: true });
-  await page.goto('/documentos');
-  await page.getByRole('textbox', { name: 'Buscar nos documentos' }).fill('organizar meus projetos');
+  await searchProject(page, 'documentos', 'organizar meus projetos');
   await expect(page.getByRole('link', { name: new RegExp(title) })).toBeVisible();
   await page.goto(url);
   await page.getByRole('button', { name: 'Opções do documento' }).click();
@@ -68,14 +69,8 @@ test('imports Markdown as a new document and keeps supported structure after rel
 test('create project, create and move task with accessible controls', async ({ page }, info) => {
   const name = `Projeto ${info.project.name} ${Date.now()}`;
   await login(page);
-  await page.getByRole('button', { name: 'Novo projeto', exact: true }).click();
-  await page.getByLabel('Nome do projeto').fill(name);
-  await page.getByRole('dialog').getByRole('button', { name: 'Criar projeto', exact: true }).click();
-  await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
-  await page.getByRole('tab', { name: 'Kanban', exact: true }).click();
-  await page.getByRole('button', { name: 'Nova tarefa', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Título da tarefa' }).fill('Definir o primeiro passo');
-  await page.getByRole('button', { name: 'Criar tarefa', exact: true }).click();
+  await createProject(page, name);
+  await newTask(page, 'Definir o primeiro passo');
   await page.getByRole('button', { name: 'Opções de Definir o primeiro passo' }).click();
   await page.getByRole('menuitem', { name: 'Mover para Em andamento' }).click();
   const doing = page.getByRole('region', { name: 'Em andamento', exact: true });

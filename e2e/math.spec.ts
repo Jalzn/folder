@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
+import { newDocument } from './support/items.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -7,7 +8,7 @@ const sourceInput = (page: Page) => page.locator('.bn-preview-with-source-popup[
 
 async function startDocument(page: Page, title: string) {
   await login(page);
-  await page.getByRole('button', { name: 'Começar a escrever' }).click();
+  await newDocument(page);
   await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
 }

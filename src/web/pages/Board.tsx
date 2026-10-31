@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import {
   ArrowDown,
   ArrowRight,
@@ -19,6 +19,7 @@ import { useProjects, useTasks } from '../lib/queries';
 import { TASK_STATUSES, type Task, type TaskStatus, taskStatusLabels } from '../lib/types';
 import { useAction } from '../lib/use-action';
 import { useRequest } from '../lib/use-request';
+import { itemPath } from '../router/paths';
 import { ActionMenu, Dialog, ErrorNotice, PageHeader, Spinner, useToast } from '../ui';
 
 export type TaskOrigin = { documentId: string; blockId?: string | null; excerpt: string; expectedVersion?: number };
@@ -184,11 +185,16 @@ export function TaskDialog({
                   type="button"
                   onClick={() => {
                     onClose();
-                    void navigate({
-                      to: '/documentos/$documentId',
-                      params: { documentId: task.source?.documentId ?? '' },
-                      search: task.source?.blockId ? { bloco: task.source.blockId } : {},
-                    });
+                    const documentId = task.source?.documentId;
+                    // The task's project is the best guess; the document page moves to its own if it differs.
+                    if (documentId)
+                      void navigate({
+                        href: itemPath(
+                          'document',
+                          { id: documentId, projectId: task.projectId },
+                          task.source?.blockId ?? undefined,
+                        ),
+                      });
                   }}
                 >
                   <FileText size={15} />
@@ -246,36 +252,21 @@ export function TaskDialog({
   );
 }
 
+/** `/projetos/$projectId/quadro`: the project's board. */
 export function BoardPage() {
-  const [filter, setFilter] = useState('all');
+  const { projectId } = useParams({ from: '/projetos/$projectId/quadro' });
   const projects = useProjects(true);
+  const archived = Boolean(projects.data?.find((project) => project.id === projectId)?.archivedAt);
   return (
     <div className="page board-page">
-      <PageHeader title="Kanban" description="Pequenos passos. Projetos em movimento.">
-        <select
-          className="filter-select"
-          aria-label="Filtrar quadro por projeto"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        >
-          <option value="all">Todos os projetos</option>
-          <option value="none">Sem projeto</option>
-          {projects.data?.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-              {p.archivedAt ? ' (arquivado)' : ''}
-            </option>
-          ))}
-        </select>
-      </PageHeader>
-      <Kanban {...(filter === 'all' ? {} : { projectId: filter === 'none' ? null : filter })} />
+      <PageHeader title="Quadro" description="Pequenos passos. Projetos em movimento." />
+      <Kanban projectId={projectId} archived={archived} />
     </div>
   );
 }
 
-export function Kanban({ projectId, archived = false }: { projectId?: string | null; archived?: boolean }) {
-  const tasks = useTasks(projectId === undefined ? {} : { projectId });
-  const projects = useProjects(true);
+export function Kanban({ projectId, archived = false }: { projectId: string; archived?: boolean }) {
+  const tasks = useTasks({ projectId });
   const [newStatus, setNewStatus] = useState<TaskStatus | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -442,20 +433,12 @@ export function Kanban({ projectId, archived = false }: { projectId?: string | n
                         ]}
                       />
                     </div>
-                    {(task.projectId || task.source) && (
+                    {task.source && (
                       <div className="task-card-meta">
-                        {projectId === undefined && task.projectId && (
-                          <span className="project-label">
-                            <Folder size={12} />
-                            {projects.data?.find((p) => p.id === task.projectId)?.name ?? 'Projeto'}
-                          </span>
-                        )}
-                        {task.source && (
-                          <button type="button" className="source-chip" onClick={() => setSelectedId(task.id)}>
-                            <FileText size={12} />
-                            <span>{task.source.documentTitle}</span>
-                          </button>
-                        )}
+                        <button type="button" className="source-chip" onClick={() => setSelectedId(task.id)}>
+                          <FileText size={12} />
+                          <span>{task.source.documentTitle}</span>
+                        </button>
                       </div>
                     )}
                   </article>
@@ -485,7 +468,7 @@ export function Kanban({ projectId, archived = false }: { projectId?: string | n
         open={newStatus !== null}
         onClose={() => setNewStatus(null)}
         initialStatus={newStatus ?? 'todo'}
-        initialProjectId={projectId ?? null}
+        initialProjectId={projectId}
       />
       <TaskDialog open={Boolean(selected)} onClose={() => setSelectedId(null)} task={selected} />
     </>

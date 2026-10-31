@@ -1,6 +1,8 @@
 import { writeFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
+import { moveToTrash, newDocument, newDrawing } from './support/items.js';
 import { connectMcp, jsonOf, mcpStatus, textOf } from './support/mcp.js';
+import { leaveItem, openListedItem, overviewAddress, projectAddress } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -109,7 +111,7 @@ const canvasSaved = (page: Page) =>
 
 /** A document with a checklist and code, and a task created from its first sentence. */
 async function createDocumentWithTask(page: Page, title: string, taskTitle: string) {
-  await page.getByRole('button', { name: 'Começar a escrever' }).click();
+  await newDocument(page);
   await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
   const editor = page.getByTestId('document-content');
   await editor.click();
@@ -134,8 +136,7 @@ async function createDocumentWithTask(page: Page, title: string, taskTitle: stri
 
 /** A drawing with a rectangle and a text joined by an arrow, drawn with the Excalidraw tools. */
 async function createDrawing(page: Page, title: string, text: string) {
-  await page.goto('/desenhos');
-  await page.getByRole('button', { name: 'Novo desenho', exact: true }).first().click();
+  await newDrawing(page);
   const surface = page.locator('.excalidraw canvas.interactive');
   await expect(surface).toBeVisible();
   let saved = canvasSaved(page);
@@ -180,6 +181,7 @@ test('Claude Code reads what the interface created, never the trash, until the t
   const mcp = await connectMcp(baseURL as string, token);
 
   await page.goto('/');
+  await expect(page).toHaveURL(projectAddress);
   const documentUrl = await createDocumentWithTask(page, `Plano ${marker}`, `Tarefa ${marker}`);
   await createDrawing(page, `Fluxo ${marker}`, 'Validar versão');
 
@@ -225,10 +227,8 @@ test('Claude Code reads what the interface created, never the trash, until the t
 
   // Trash hides the document from every tool.
   await page.goto(documentUrl);
-  await page.getByRole('button', { name: 'Opções do documento', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Mover para a lixeira', exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Mover para a lixeira', exact: true }).click();
-  await expect(page).toHaveURL(/\/documentos$/);
+  await moveToTrash(page, 'documento');
+  await expect(page).toHaveURL(overviewAddress);
   const afterTrash = jsonOf<Found>(await mcp.call('search', { query: marker }));
   expect(afterTrash.items.map((item) => item.type).sort()).toEqual(['drawing', 'task']);
   const trashed = await mcp.call('read_document', { id: documentId });
@@ -268,8 +268,7 @@ test('a drawing changed on another device gets a new preview when reopened, and 
   await expect.poll(async () => (await read()).previewCurrent, { timeout: 20_000 }).toBe(true);
 
   // Leave through an in-app link, then another device moves the rectangle.
-  await page.getByRole('link', { name: 'Desenhos', exact: true }).filter({ visible: true }).first().click();
-  await expect(page).toHaveURL(/\/desenhos$/);
+  await leaveItem(page, 'desenhos');
   const before = await read();
   const elements = before.scene.elements.map((element) =>
     element.type === 'rectangle'
@@ -288,7 +287,7 @@ test('a drawing changed on another device gets a new preview when reopened, and 
 
   // The editor's data stays fresh for 10 s; reopening after that refetches it without a page load.
   await page.waitForTimeout(10_500);
-  await page.locator('.document-row').filter({ hasText: title }).click();
+  await openListedItem(page, title);
   await expect
     .poll(
       async () => {

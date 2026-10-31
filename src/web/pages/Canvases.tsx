@@ -3,6 +3,7 @@ import { ArrowUpRight, FileText, Folder, PenTool, Plus, Search } from 'lucide-re
 import { useEffect, useState } from 'react';
 import { useCanvases, useProjects } from '../lib/queries';
 import { type CanvasSummary, type DocumentSummary, type Project, relativeDate } from '../lib/types';
+import { itemPath } from '../router/paths';
 import { useApp } from '../shell';
 import { EmptyState, ErrorNotice, PageHeader, Spinner } from '../ui';
 
@@ -52,21 +53,11 @@ export function ContentRows({
             <ArrowUpRight size={16} className="row-arrow" />
           </>
         );
-        return kind === 'canvas' ? (
+        return (
           <Link
-            key={`canvas:${item.id}`}
-            to="/desenhos/$canvasId"
-            params={{ canvasId: item.id }}
-            preload={false}
-            className="document-row"
-          >
-            {body}
-          </Link>
-        ) : (
-          <Link
-            key={`document:${item.id}`}
-            to="/documentos/$documentId"
-            params={{ documentId: item.id }}
+            key={`${kind}:${item.id}`}
+            to={itemPath(kind === 'canvas' ? 'drawing' : 'document', item)}
+            preload={kind === 'canvas' ? false : 'intent'}
             className="document-row"
           >
             {body}
@@ -91,23 +82,19 @@ export function CanvasRows({
   );
 }
 
-export function CanvasesPage() {
+/** The project's drawings. Until the Índice of stage 08 arrives, its address shows this list. */
+export function CanvasesPage({ projectId }: { projectId: string }) {
   const app = useApp();
   const searchParams = useSearch({ strict: false });
   const [query, setQuery] = useState(searchParams.q ?? '');
-  const [filter, setFilter] = useState('all');
   useEffect(() => setQuery(searchParams.q ?? ''), [searchParams.q]);
   const projects = useProjects(true);
-  const canvases = useCanvases({
-    query,
-    ...(filter === 'all' ? {} : { projectId: filter === 'none' ? null : filter }),
-  });
-  const selectedProject = projects.data?.find((project) => project.id === filter);
-  const archivedProject = Boolean(selectedProject?.archivedAt);
+  const canvases = useCanvases({ query, projectId });
+  const archivedProject = Boolean(projects.data?.find((project) => project.id === projectId)?.archivedAt);
   const create = async () => {
-    if (!archivedProject) await app.newCanvas(selectedProject?.id ?? null);
+    if (!archivedProject) await app.newCanvas(projectId);
   };
-  const filtered = Boolean(query.trim()) || filter !== 'all';
+  const filtered = Boolean(query.trim());
   return (
     <div className="page">
       <PageHeader title="Desenhos" description="Rascunhe um fluxo, conecte ideias ou comece por um traço.">
@@ -132,26 +119,10 @@ export function CanvasesPage() {
             maxLength={300}
           />
         </label>
-        <select
-          className="filter-select"
-          aria-label="Filtrar por projeto"
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
-        >
-          <option value="all">Todos os projetos</option>
-          <option value="none">Sem projeto</option>
-          {projects.data?.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-              {project.archivedAt ? ' (arquivado)' : ''}
-            </option>
-          ))}
-        </select>
       </div>
       {archivedProject && (
-        <p className="page-footnote">Este projeto está arquivado. Escolha outro filtro para criar um desenho.</p>
+        <p className="page-footnote">Este projeto está arquivado. Desarquive para criar um desenho.</p>
       )}
-      {projects.error && <ErrorNotice error={projects.error} retry={() => void projects.refetch()} />}
       <div className="list-caption">
         <span>{canvases.data?.length ?? 0} desenhos</span>
         <span>Última edição</span>
@@ -161,15 +132,13 @@ export function CanvasesPage() {
       ) : canvases.error ? (
         <ErrorNotice error={canvases.error} retry={() => void canvases.refetch()} />
       ) : canvases.data?.length ? (
-        <CanvasRows canvases={canvases.data} projects={projects.data ?? []} />
+        <CanvasRows canvases={canvases.data} />
       ) : (
         <EmptyState
           icon={<PenTool size={30} />}
           title={filtered ? 'Nenhum desenho encontrado' : 'Uma ideia também pode começar com um desenho.'}
           description={
-            filtered
-              ? 'Tente outra palavra ou escolha outro projeto.'
-              : 'Use formas, setas e texto para explorar o que você está pensando.'
+            filtered ? 'Tente outra palavra.' : 'Use formas, setas e texto para explorar o que você está pensando.'
           }
         >
           {!filtered && (

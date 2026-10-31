@@ -3,7 +3,7 @@ import { CircleAlert } from 'lucide-react';
 import { errorMessage } from '../lib/api';
 
 /** A failure to load, with the server's message and a retry. */
-export function ErrorNotice({ error, retry }: { error: unknown; retry?: () => void }) {
+export function ErrorNotice({ error, retry }: { error: unknown; retry?: (() => void) | undefined }) {
   return (
     <div className="error-notice" role="alert">
       <CircleAlert size={16} aria-hidden="true" />

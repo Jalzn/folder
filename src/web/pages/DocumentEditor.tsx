@@ -27,11 +27,10 @@ import {
   useComponentsContext,
   useCreateBlockNote,
 } from '@blocknote/react';
-import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import {
   AlertCircle,
   ArrowDownToLine,
-  ArrowLeft,
   ArrowUpFromLine,
   Check,
   ChevronDown,
@@ -50,10 +49,11 @@ import { createInlineMathSpec } from '../components/InlineMath';
 import { api, errorCode, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../lib/api';
 import { AutosaveController, type Snapshot } from '../lib/autosave';
 import { exportMarkdownWithMath, importMarkdownWithMath } from '../lib/markdown';
-import { useDocument, useProjects, useTasks } from '../lib/queries';
+import { useProjects, useTasks } from '../lib/queries';
 import type { Document, DocumentContent } from '../lib/types';
 import { useAction } from '../lib/use-action';
 import { useRequest } from '../lib/use-request';
+import { itemPath, paths } from '../router/paths';
 import { useApp } from '../shell';
 import { useTheme } from '../shell/theme';
 import { ActionMenu, Dialog, EmptyState, ErrorNotice, Spinner, useToast } from '../ui';
@@ -164,27 +164,9 @@ function controllerFor(document: Document, installationId: string) {
   return controller;
 }
 
-export function DocumentPage() {
-  const { documentId } = useParams({ from: '/documentos/$documentId' });
-  const document = useDocument(documentId);
-  if (document.isPending)
-    return (
-      <div className="page">
-        <Spinner label="Abrindo documento…" />
-      </div>
-    );
-  if (document.error)
-    return (
-      <div className="page">
-        <Link to="/documentos" className="text-button">
-          <ArrowLeft size={16} />
-          Documentos
-        </Link>
-        <ErrorNotice error={document.error} retry={() => void document.refetch()} />
-      </div>
-    );
-  if (!document.data) return null;
-  if (document.data.deletedAt)
+/** A document's page, once its route found it under its own project. */
+export function DocumentPage({ document }: { document: Document }) {
+  if (document.deletedAt)
     return (
       <div className="page">
         <EmptyState
@@ -192,13 +174,19 @@ export function DocumentPage() {
           title="Este documento está na lixeira"
           description="Você pode restaurá-lo para continuar escrevendo."
         >
-          <Link to="/lixeira" className="button primary">
-            Abrir lixeira
-          </Link>
+          {document.projectId && (
+            <Link
+              to="/projetos/$projectId/lixeira"
+              params={{ projectId: document.projectId }}
+              className="button primary"
+            >
+              Abrir lixeira
+            </Link>
+          )}
         </EmptyState>
       </div>
     );
-  return <DocumentEditor key={documentId} document={document.data} />;
+  return <DocumentEditor key={document.id} document={document} />;
 }
 
 function SelectionButton({ create }: { create: () => void }) {
@@ -446,7 +434,7 @@ function DocumentEditor({ document }: { document: Document }) {
       }
       await refreshWorkspace();
       toast('Seu rascunho foi salvo em um novo documento.');
-      void navigate({ to: '/documentos/$documentId', params: { documentId: copy.id } });
+      void navigate({ href: itemPath('document', copy) });
     } catch (error) {
       toast(errorMessage(error), 'error');
     } finally {
@@ -508,7 +496,7 @@ function DocumentEditor({ document }: { document: Document }) {
       importRequest.clear();
       await refreshWorkspace();
       toast('Markdown importado como um novo documento.');
-      void navigate({ to: '/documentos/$documentId', params: { documentId: imported.id } });
+      void navigate({ href: itemPath('document', imported) });
     } catch (error) {
       toast(errorMessage(error), 'error');
     }
@@ -525,7 +513,7 @@ function DocumentEditor({ document }: { document: Document }) {
         request.clear();
         setDeleteOpen(false);
         toast('Documento movido para a lixeira.');
-        void navigate({ to: '/documentos' });
+        void navigate({ href: document.projectId ? paths.overview(document.projectId) : paths.start });
       },
     );
   }

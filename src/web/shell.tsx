@@ -5,7 +5,6 @@ import {
   ChevronDown,
   FileText,
   Folder,
-  Home,
   LayoutGrid,
   LoaderCircle,
   Menu as MenuIcon,
@@ -20,6 +19,12 @@ import { api, errorCode, errorMessage, queryClient } from './lib/api';
 import { useProjects } from './lib/queries';
 import { useAction } from './lib/use-action';
 import { useRequest } from './lib/use-request';
+import { useCurrentProjectId } from './router/current-project';
+import { loadNavState } from './router/nav-store';
+import { itemPath } from './router/paths';
+import { listRedirectProject } from './router/redirects';
+import { useLastLocation } from './router/use-last-location';
+import { useRouteFocus } from './router/use-route-focus';
 import { Dialog, ErrorNotice, Logo, Spinner } from './ui';
 
 interface Owner {
@@ -115,8 +120,6 @@ export function Shell() {
   });
   const [owner, setOwner] = useState<Owner | null>(null);
   const [expired, setExpired] = useState(false);
-  const navigate = useNavigate();
-  const path = useRouterState({ select: (s) => s.location.pathname });
   useEffect(() => {
     if (session.data) {
       setOwner(session.data.owner);
@@ -142,7 +145,6 @@ export function Shell() {
     setOwner(value);
     setExpired(false);
     void queryClient.invalidateQueries();
-    if (path === '/login') void navigate({ to: '/' });
   }
   if (!owner && session.isPending)
     return (
@@ -186,7 +188,10 @@ export function Shell() {
 }
 
 function AuthenticatedShell({ owner }: { owner: Owner }) {
-  const projects = useProjects();
+  const projects = useProjects(true);
+  const currentProjectId = useCurrentProjectId(owner.installationId);
+  const announcement = useRouteFocus();
+  useLastLocation(owner.installationId);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -213,7 +218,7 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         if (event.defaultPrevented || (event.target instanceof Element && event.target.closest('.excalidraw'))) return;
         event.preventDefault();
-        setSearchKind(pathname.startsWith('/desenhos') ? 'canvases' : 'documents');
+        setSearchKind(pathname.includes('/desenhos/') ? 'canvases' : 'documents');
         setSearchOpen(true);
       }
       if (event.key === 'Escape') setMobileOpen(false);
@@ -221,28 +226,28 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
     window.addEventListener('keydown', shortcut);
     return () => window.removeEventListener('keydown', shortcut);
   }, [pathname]);
-  async function newDocument(projectId: string | null = null) {
+  async function newDocument(projectId: string | null = currentProjectId) {
     const input = { projectId };
     await createAction.run(
       () => api.workspace.createDocument({ ...input, requestId: createRequest.for(input) }),
       (doc) => {
         createRequest.clear();
-        void navigation({ to: '/documentos/$documentId', params: { documentId: doc.id } });
+        void navigation({ href: itemPath('document', doc) });
       },
     );
   }
-  async function newCanvas(projectId: string | null = null) {
+  async function newCanvas(projectId: string | null = currentProjectId) {
     const input = { projectId };
     await canvasAction.run(
       () => api.workspace.createCanvas({ ...input, requestId: canvasRequest.for(input) }),
       (canvas) => {
         canvasRequest.clear();
-        void navigation({ to: '/desenhos/$canvasId', params: { canvasId: canvas.id } });
+        void navigation({ href: itemPath('drawing', { id: canvas.id, projectId }) });
       },
     );
   }
   function openSearch() {
-    setSearchKind(pathname.startsWith('/desenhos') ? 'canvases' : 'documents');
+    setSearchKind(pathname.includes('/desenhos/') ? 'canvases' : 'documents');
     setSearchOpen(true);
   }
   async function createProject(event: FormEvent) {
@@ -324,15 +329,6 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
             Novo documento
           </button>
           <nav className="primary-nav">
-            <Link
-              to="/"
-              activeOptions={{ exact: true }}
-              className="nav-item"
-              activeProps={{ className: 'nav-item active' }}
-            >
-              <Home size={17} />
-              Início
-            </Link>
             <Link to="/documentos" className="nav-item" activeProps={{ className: 'nav-item active' }}>
               <FileText size={17} />
               Documentos
@@ -358,18 +354,20 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
             </button>
           </div>
           <nav className="project-nav" aria-label="Projetos">
-            {projects.data?.map((project) => (
-              <Link
-                key={project.id}
-                to="/projetos/$projectId"
-                params={{ projectId: project.id }}
-                className="nav-item"
-                activeProps={{ className: 'nav-item active' }}
-              >
-                <Folder size={16} />
-                <span>{project.name}</span>
-              </Link>
-            ))}
+            {projects.data
+              ?.filter((project) => !project.archivedAt)
+              .map((project) => (
+                <Link
+                  key={project.id}
+                  to="/projetos/$projectId"
+                  params={{ projectId: project.id }}
+                  className="nav-item"
+                  activeProps={{ className: 'nav-item active' }}
+                >
+                  <Folder size={16} />
+                  <span>{project.name}</span>
+                </Link>
+              ))}
             {projects.data?.length === 0 && (
               <button type="button" className="quiet-project-create" onClick={() => setProjectOpen(true)}>
                 Seu próximo projeto
@@ -395,6 +393,9 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
         </aside>
         <main className="main-content" id="main-content" inert={mobileOpen}>
           <Outlet />
+          <p className="sr-only" aria-live="polite">
+            {announcement}
+          </p>
         </main>
       </div>
       <Dialog title="Um novo projeto" open={projectOpen} onClose={() => setProjectOpen(false)}>
@@ -431,7 +432,16 @@ function AuthenticatedShell({ owner }: { owner: Owner }) {
           onSubmit={(event) => {
             event.preventDefault();
             setSearchOpen(false);
-            void navigation({ to: searchKind === 'canvases' ? '/desenhos' : '/documentos', search: { q: search } });
+            const projectId = listRedirectProject(
+              projects.data ?? [],
+              currentProjectId ?? loadNavState(owner.installationId).lastProjectId,
+            );
+            const tipo = searchKind === 'canvases' ? 'desenhos' : 'documentos';
+            void navigation(
+              projectId
+                ? { to: '/projetos/$projectId/indice', params: { projectId }, search: { tipo, q: search } }
+                : { to: '/projetos' },
+            );
           }}
         >
           <label className="field">

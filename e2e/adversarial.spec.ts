@@ -1,4 +1,6 @@
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { moveToTrash, newDocument, restoreFromTrash } from './support/items.js';
+import { openBoard, overviewAddress } from './support/navigation.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -17,7 +19,7 @@ async function writeAndSave(page: Page, text: string) {
 }
 
 async function createDocument(page: Page, title: string, text: string) {
-  await page.getByRole('button', { name: 'Começar a escrever' }).click();
+  await newDocument(page);
   await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
   await writeAndSave(page, text);
   return page.url();
@@ -97,25 +99,17 @@ test('a task created from selected text survives document trash and restores its
   await dialog.getByRole('button', { name: 'Criar tarefa', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('button', { name: new RegExp(`${taskTitle}.*A fazer`) })).toBeVisible();
-  await page.getByRole('button', { name: 'Opções do documento', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Mover para a lixeira', exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Mover para a lixeira', exact: true }).click();
-  await expect(page).toHaveURL(/\/documentos$/);
-  await page.goto('/kanban');
+  await moveToTrash(page, 'documento');
+  await expect(page).toHaveURL(overviewAddress);
+  await openBoard(page);
   await page.getByRole('button', { name: taskTitle, exact: true }).click();
   await expect(
     page.getByRole('dialog').getByText('O documento está na lixeira. A tarefa continua aqui.', { exact: true }),
   ).toBeVisible();
   await expect(page.getByRole('dialog').locator('blockquote')).toHaveText('Organizar as referencias do projeto.');
   await page.getByRole('dialog').getByRole('button', { name: 'Cancelar', exact: true }).click();
-  await page.goto('/lixeira');
-  await page
-    .locator('.document-row')
-    .filter({ hasText: title })
-    .getByRole('button', { name: 'Restaurar', exact: true })
-    .click();
-  await expect(page.locator('.document-row').filter({ hasText: title })).toHaveCount(0);
-  await page.goto('/kanban');
+  await restoreFromTrash(page, title);
+  await openBoard(page);
   await page.getByRole('button', { name: taskTitle, exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: title, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${documentUrl}(?:\\?bloco=.+)?$`));
@@ -125,7 +119,7 @@ test('a task created from selected text survives document trash and restores its
 
 test('retrying after a committed task response is lost creates only one task', async ({ page }, info) => {
   await login(page);
-  await page.goto('/kanban');
+  await openBoard(page);
   const title = `Reenvio unico ${info.project.name} ${Date.now()}`;
   let loseFirstResponse = true;
   const requests: string[] = [];

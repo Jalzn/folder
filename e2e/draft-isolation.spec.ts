@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { newDocument } from './support/items.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -6,7 +7,7 @@ const editor = (page: Page) => page.getByTestId('document-content');
 
 async function createDocument(page: Page, title: string) {
   await login(page);
-  await page.getByRole('button', { name: 'Começar a escrever' }).click();
+  await newDocument(page);
   await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
   await writeAndSave(page, 'Ideia original antes de duplicar a aba.');
   return page.url();

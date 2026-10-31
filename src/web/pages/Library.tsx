@@ -1,14 +1,10 @@
-import { Link, useParams, useSearch } from '@tanstack/react-router';
+import { useParams, useSearch } from '@tanstack/react-router';
 import {
   Archive,
   ArrowDownToLine,
-  ArrowRight,
-  ArrowUpRight,
-  Clock3,
   FilePlus2,
   FileText,
   Folder,
-  FolderPlus,
   LayoutGrid,
   PenTool,
   Plus,
@@ -25,7 +21,7 @@ import { useRequest } from '../lib/use-request';
 import { useApp } from '../shell';
 import { ActionMenu, Dialog, EmptyState, ErrorNotice, PageHeader, Spinner } from '../ui';
 import { Kanban } from './Board';
-import { CanvasRows, ContentRows, type ContentSummary } from './Canvases';
+import { CanvasesPage, CanvasRows, ContentRows, type ContentSummary } from './Canvases';
 
 export function DocumentRows({
   documents,
@@ -41,184 +37,23 @@ export function DocumentRows({
   );
 }
 
-export function HomePage() {
-  const app = useApp();
-  const documents = useDocuments();
-  const canvases = useCanvases();
-  const projects = useProjects();
-  const recentItems: ContentSummary[] = [
-    ...(documents.data ?? []).map((item) => ({ kind: 'document' as const, item })),
-    ...(canvases.data ?? []).map((item) => ({ kind: 'canvas' as const, item })),
-  ];
-  recentItems.sort((a, b) => b.item.updatedAt.localeCompare(a.item.updatedAt) || a.item.id.localeCompare(b.item.id));
-  const date = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-  return (
-    <div className="page home-page">
-      <div className="home-topline">
-        <span className="eyebrow">MEU ESPAÇO</span>
-        <span>{date}</span>
-      </div>
-      <PageHeader
-        title="Espaço para suas ideias."
-        description="Tudo o que você está pensando, criando e colocando em movimento."
-      />
-      <section className="capture-card">
-        <div>
-          <span className="capture-kicker">
-            <span className="small-blue-line" />
-            UM NOVO COMEÇO
-          </span>
-          <h2>O que está na sua cabeça?</h2>
-          <p>
-            Uma ideia solta já é um bom começo.
-            <br />A organização pode vir depois.
-          </p>
-          <div className="capture-actions">
-            <button
-              type="button"
-              className="button primary"
-              onClick={() => void app.newDocument()}
-              disabled={app.creatingDocument}
-            >
-              <Plus size={17} />
-              Começar a escrever
-              <ArrowRight size={17} />
-            </button>
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() => void app.newCanvas()}
-              disabled={app.creatingCanvas}
-            >
-              <PenTool size={17} />
-              Começar um desenho
-            </button>
-          </div>
-        </div>
-        <div className="paper-stack" aria-hidden="true">
-          <div className="paper paper-back" />
-          <div className="paper paper-front">
-            <span />
-            <span />
-            <span />
-            <i />
-            <span />
-            <span />
-          </div>
-          <div className="paper-pin">
-            <Plus size={20} />
-          </div>
-        </div>
-      </section>
-      <section className="home-section">
-        <div className="section-heading">
-          <h2>
-            <Clock3 size={17} />
-            Continue de onde parou
-          </h2>
-          <div className="recent-actions">
-            <Link to="/documentos" className="text-button">
-              Documentos
-            </Link>
-            <Link to="/desenhos" className="text-button">
-              Desenhos
-              <ArrowRight size={15} />
-            </Link>
-          </div>
-        </div>
-        {documents.isPending || canvases.isPending ? (
-          <Spinner />
-        ) : documents.error || canvases.error ? (
-          <ErrorNotice
-            error={documents.error ?? canvases.error}
-            retry={() => {
-              void documents.refetch();
-              void canvases.refetch();
-            }}
-          />
-        ) : recentItems.length ? (
-          <ContentRows items={recentItems.slice(0, 5)} projects={projects.data ?? []} showKind />
-        ) : (
-          <div className="first-document">
-            <FileText size={27} />
-            <div>
-              <strong>Seu primeiro documento está a um clique.</strong>
-              <p>Anote uma ideia, faça uma lista ou comece um projeto.</p>
-            </div>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Criar primeiro documento"
-              onClick={() => void app.newDocument()}
-            >
-              <Plus size={20} />
-            </button>
-          </div>
-        )}
-      </section>
-      <section className="home-section">
-        <div className="section-heading">
-          <h2>
-            <Folder size={17} />
-            Seus projetos
-          </h2>
-          <button type="button" className="text-button" onClick={app.openProjectDialog}>
-            <Plus size={15} />
-            Novo projeto
-          </button>
-        </div>
-        <div className="project-grid">
-          {projects.data?.slice(0, 5).map((project) => (
-            <Link
-              key={project.id}
-              to="/projetos/$projectId"
-              params={{ projectId: project.id }}
-              className="project-card"
-            >
-              <div className="project-card-top">
-                <Folder size={22} />
-                <ArrowUpRight size={16} />
-              </div>
-              <h3>{project.name}</h3>
-              <span>
-                {documents.data?.filter((item) => item.projectId === project.id).length ?? 0} documentos ·{' '}
-                {canvases.data?.filter((item) => item.projectId === project.id).length ?? 0} desenhos
-              </span>
-            </Link>
-          ))}
-          <button type="button" className="project-card add-project-card" onClick={app.openProjectDialog}>
-            <FolderPlus size={23} />
-            <strong>Algo novo pela frente?</strong>
-            <span>Crie um projeto para reunir suas ideias.</span>
-          </button>
-        </div>
-      </section>
-      <footer className="page-footnote">Um passo de cada vez.</footer>
-    </div>
-  );
-}
-
-export function DocumentsPage() {
+/** The project's documents. Until the Índice of stage 08 arrives, its address shows this list. */
+function DocumentsPage({ projectId }: { projectId: string }) {
   const app = useApp();
   const searchParams = useSearch({ strict: false });
   const [query, setQuery] = useState(searchParams.q ?? '');
-  const [filter, setFilter] = useState('all');
   useEffect(() => {
     setQuery(searchParams.q ?? '');
   }, [searchParams.q]);
-  const projects = useProjects(true);
-  const documents = useDocuments({
-    query,
-    ...(filter === 'all' ? {} : { projectId: filter === 'none' ? null : filter }),
-  });
+  const documents = useDocuments({ query, projectId });
   return (
     <div className="page">
-      <PageHeader title="Documentos" description="Um lugar para cada ideia, inclusive as que ainda estão soltas.">
+      <PageHeader title="Documentos" description="Um lugar para cada ideia do projeto.">
         <button
           type="button"
           className="button primary"
           disabled={app.creatingDocument}
-          onClick={() => void app.newDocument()}
+          onClick={() => void app.newDocument(projectId)}
         >
           <Plus size={17} />
           Novo documento
@@ -235,21 +70,6 @@ export function DocumentsPage() {
             maxLength={300}
           />
         </label>
-        <select
-          className="filter-select"
-          aria-label="Filtrar por projeto"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        >
-          <option value="all">Todos os projetos</option>
-          <option value="none">Sem projeto</option>
-          {projects.data?.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-              {project.archivedAt ? ' (arquivado)' : ''}
-            </option>
-          ))}
-        </select>
       </div>
       <div className="list-caption">
         <span>{documents.data?.length ?? 0} documentos</span>
@@ -260,19 +80,15 @@ export function DocumentsPage() {
       ) : documents.error ? (
         <ErrorNotice error={documents.error} retry={() => void documents.refetch()} />
       ) : documents.data?.length ? (
-        <DocumentRows documents={documents.data} projects={projects.data ?? []} />
+        <DocumentRows documents={documents.data} />
       ) : (
         <EmptyState
           icon={<FileText size={30} />}
           title={query ? 'Nenhum documento encontrado' : 'Uma página em branco. Muitas possibilidades.'}
-          description={
-            query
-              ? 'Tente outra palavra ou escolha outro projeto.'
-              : 'Comece escrevendo. Você pode organizar em projetos depois.'
-          }
+          description={query ? 'Tente outra palavra.' : 'Comece escrevendo um documento neste projeto.'}
         >
           {!query && (
-            <button type="button" className="button primary" onClick={() => void app.newDocument()}>
+            <button type="button" className="button primary" onClick={() => void app.newDocument(projectId)}>
               <FilePlus2 size={17} />
               Criar documento
             </button>
@@ -281,6 +97,13 @@ export function DocumentsPage() {
       )}
     </div>
   );
+}
+
+/** `/projetos/$projectId/indice`: the project's documents or drawings, by `tipo`. */
+export function ProjectIndexPage() {
+  const { projectId } = useParams({ from: '/projetos/$projectId/indice' });
+  const { tipo } = useSearch({ from: '/projetos/$projectId/indice' });
+  return tipo === 'desenhos' ? <CanvasesPage projectId={projectId} /> : <DocumentsPage projectId={projectId} />;
 }
 
 export function ProjectPage() {
@@ -356,11 +179,6 @@ export function ProjectPage() {
     );
   return (
     <div className={`page project-page ${tab === 'kanban' ? 'board-page' : ''}`}>
-      <div className="breadcrumb">
-        <Link to="/">Meu espaço</Link>
-        <span>/</span>
-        <span>Projetos</span>
-      </div>
       <PageHeader
         title={project.name}
         description={
@@ -536,9 +354,9 @@ export function ProjectPage() {
 }
 
 export function TrashPage() {
-  const documents = useDocuments({ deleted: true });
-  const canvases = useCanvases({ deleted: true });
-  const projects = useProjects(true);
+  const { projectId } = useParams({ from: '/projetos/$projectId/lixeira' });
+  const documents = useDocuments({ deleted: true, projectId });
+  const canvases = useCanvases({ deleted: true, projectId });
   const action = useAction();
   const request = useRequest();
   const items: ContentSummary[] = [
@@ -584,9 +402,8 @@ export function TrashPage() {
               <div className="document-row-body">
                 <strong>{entry.item.title}</strong>
                 <p>
-                  {entry.kind === 'canvas' ? 'Desenho' : 'Documento'} ·{' '}
-                  {projects.data?.find((project) => project.id === entry.item.projectId)?.name ?? 'Sem projeto'} ·
-                  Excluído {relativeDate(entry.item.deletedAt ?? entry.item.updatedAt).toLocaleLowerCase('pt-BR')}
+                  {entry.kind === 'canvas' ? 'Desenho' : 'Documento'} · Excluído{' '}
+                  {relativeDate(entry.item.deletedAt ?? entry.item.updatedAt).toLocaleLowerCase('pt-BR')}
                 </p>
               </div>
               <button
