@@ -244,6 +244,14 @@ describe('server Markdown read back by the BlockNote parser', () => {
       );
     });
 
+    it('keeps the backslash of an escaped $ inside an HTML emphasis pair', async () => {
+      // BlockNote decodes neither `&#36;` nor `&dollar;` there, and a bare `$` could pair with a later
+      // one into a formula for CommonMark readers with math, the import's own parser included.
+      expect(await readBack([paragraph(text('Preço: R$ 10!', { bold: true }), text('Agora'))])).toEqual(
+        shape([paragraph(text('Preço: R\\$ 10!', { bold: true }), text('Agora'))]),
+      );
+    });
+
     it('keeps the backslash of an escaped = line after a hard break', async () => {
       expect(await readBack([paragraph(text('título\n==='))])).toEqual(shape([paragraph(text('título\n \\==='))]));
     });
