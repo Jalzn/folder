@@ -77,12 +77,14 @@ export function updateTask(ctx: WorkspaceContext, input: UpdateTaskInput): Promi
     assertVersion(task.version, input.expectedVersion);
     const projectId = await projectForEditedItem(repo, task.projectId, input.projectId);
     const status = input.status ?? task.status;
+    // Positions count within one project's column: a task joining another column or project goes to its end.
+    const stays = status === task.status && projectId === task.projectId;
     const saved = {
       ...task,
       title: input.title ?? task.title,
       projectId,
       status,
-      position: status === task.status ? task.position : await repo.nextPosition(status),
+      position: stays ? task.position : await repo.nextPosition(status),
       version: task.version + 1,
       updatedAt: ctx.now(),
     };

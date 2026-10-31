@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { DocumentBlock, Project } from '../domain/models.js';
+import type { DocumentBlock, Project, TaskAck } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { testProject } from '../testing/projects.js';
@@ -397,6 +397,37 @@ describe('workspace persistence and adversarial cases', () => {
       [true, true],
       [false, false],
     ]);
+  });
+
+  it('puts a task that changes project at the end of the column there, without repeating a position', async () => {
+    const other = await testProject(service, 'Outro');
+    const tasks: Record<string, TaskAck> = {};
+    for (const [title, projectId] of [
+      ['a0', project.id],
+      ['b0', other.id],
+      ['a1', project.id],
+      ['b1', other.id],
+    ] as const)
+      tasks[title] = await service.createTask({ ...request(), title, projectId });
+    // Each project's column numbered from 0 again, as moves within one board leave it.
+    for (const [moved, before] of [
+      ['a1', 'a0'],
+      ['b1', 'b0'],
+    ] as const) {
+      const { revision } = await service.listTasks({});
+      await service.moveTask({
+        ...request(),
+        id: tasks[moved]?.id ?? '',
+        expectedVersion: 1,
+        expectedRevision: revision,
+        status: 'todo',
+        beforeTaskId: tasks[before]?.id ?? null,
+      });
+    }
+    await service.updateTask({ ...request(), id: tasks.a0?.id ?? '', expectedVersion: 1, projectId: other.id });
+    const column = (await service.listTasks({ projectId: other.id })).tasks.map((task) => [task.title, task.position]);
+    expect(column.map(([title]) => title)).toEqual(['b1', 'b0', 'a0']);
+    expect(new Set(column.map(([, position]) => position)).size).toBe(3);
   });
 
   it('keeps document text unchanged when the linked task is renamed and completed', async () => {
