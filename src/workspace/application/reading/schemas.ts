@@ -26,7 +26,8 @@ export const SearchInput = z.object(
     query: query
       .optional()
       .describe(
-        'Palavras a buscar, todas obrigatórias, sem diferenciar caixa e acentos. Sem ela, lista os itens recentes.',
+        'Palavras a buscar, todas obrigatórias, sem diferenciar caixa, acentos e a pontuação em volta. Sem ela, ' +
+          'lista os itens recentes.',
       ),
     projectId: id.optional().describe('Limita a busca a um projeto.'),
     types: z

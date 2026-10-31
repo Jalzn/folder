@@ -60,8 +60,28 @@ describe('search', () => {
     expect(await ids('token ausente')).toEqual([]);
     expect(await agent.call('search', { query: '\u0301' })).toEqual({
       isError: true,
-      text: 'A busca ficou vazia depois de ignorar acentos. Use outras palavras.',
+      text: 'A busca ficou vazia depois de ignorar acentos e pontuação. Use outras palavras.',
     });
+  });
+
+  it('ranks by the normalized title and ignores punctuation around query words', async () => {
+    const titled = await agent.service.createDocument({ ...request(), title: 'Relatório alfa' });
+    // Four variation selectors make the raw title longer than the stored one, which ends before "alfa".
+    const emoji = await agent.service.createDocument({
+      ...request(),
+      title: '⚠️⚠️⚠️⚠️ Notas',
+      content: [paragraph('alfa no começo do texto.')],
+    });
+    const ids = async (query: string) =>
+      (await agent.json<{ items: { id: string }[] }>('search', { query })).items.map((item) => item.id);
+    expect(await ids('alfa')).toEqual([titled.id, emoji.id]);
+    const token = await agent.service.createDocument({
+      ...request(),
+      title: 'Acesso',
+      content: [paragraph('Use o token pessoal (MCP).')],
+    });
+    for (const query of ['"token pessoal"', 'MCP,', '(MCP)', 'token-pessoal', '«Token» — pessoal'])
+      expect(await ids(query), query).toEqual([token.id]);
   });
 
   it('points the excerpt at the match after emoji with variation selectors', async () => {

@@ -24,10 +24,3 @@ describe('search excerpt', () => {
     }
   });
 });
-
-describe('search terms', () => {
-  it('splits the normalized query into distinct words', () => {
-    expect(searchTerms('  Ideia do  MCP ideia ')).toEqual(['ideia', 'do', 'mcp']);
-    expect(searchTerms('́')).toEqual([]);
-  });
-});

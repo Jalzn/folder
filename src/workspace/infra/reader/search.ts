@@ -5,6 +5,7 @@ import { excerptAround } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
 import type { WorkspaceTables } from '../db.js';
+import { titleLengthInSearchText } from './searchable.js';
 import { projectColumns, projectReference } from './shared.js';
 
 type SearchReads = Pick<WorkspaceReader, 'searchItems'>;
@@ -31,7 +32,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
     const table = tables[type] as 'workspace_documents';
     // search_text starts with the title, so a term first found within the title's length is in the title.
     const missingFromTitle = query.terms.map(
-      (term) => sql<number>`(instr(item.search_text, ${term}) not between 1 and length(item.title))`,
+      (term) => sql<number>`(instr(item.search_text, ${term}) not between 1 and ${titleLengthInSearchText})`,
     );
     const titleRank = missingFromTitle.length ? sql<number>`${sql.join(missingFromTitle, sql` + `)}` : sql<number>`0`;
     let select = db
