@@ -1,16 +1,8 @@
 import { AppError } from '@tinyfold/core/application';
 import { MAX_PINNED } from '../domain/project.js';
-import type { WorkspaceContext, WorkspaceRepository } from './ports.js';
+import { requireLiveItem } from './helpers.js';
+import type { WorkspaceContext } from './ports.js';
 import type { PinItemInput } from './schemas/pins.js';
-
-const missing = { document: 'O documento não está disponível.', drawing: 'O desenho não está disponível.' };
-
-/** A live document or drawing, the only items that can be pinned. */
-async function requirePinnable(repo: WorkspaceRepository, input: PinItemInput) {
-  const item = input.type === 'document' ? await repo.findDocument(input.id) : await repo.findCanvas(input.id);
-  if (!item || item.deletedAt) throw new AppError('NOT_FOUND', missing[input.type]);
-  return item;
-}
 
 /**
  * Pins a document or drawing at the top of its sidebar section, up to MAX_PINNED per project.
@@ -19,7 +11,7 @@ async function requirePinnable(repo: WorkspaceRepository, input: PinItemInput) {
  */
 export function pinItem(ctx: WorkspaceContext, input: PinItemInput): Promise<{ pinnedAt: string | null }> {
   return ctx.writeWithoutRequestRecord(async (repo) => {
-    const item = await requirePinnable(repo, input);
+    const item = await requireLiveItem(repo, input.type, input.id);
     if (item.pinnedAt) return { pinnedAt: item.pinnedAt };
     if ((await repo.pinnedCount(item.projectId)) >= MAX_PINNED)
       throw new AppError('DOMAIN_RULE', `Máximo de ${MAX_PINNED} fixados neste projeto. Desafixe um item antes.`);
@@ -31,7 +23,7 @@ export function pinItem(ctx: WorkspaceContext, input: PinItemInput): Promise<{ p
 
 export function unpinItem(ctx: WorkspaceContext, input: PinItemInput): Promise<{ pinnedAt: string | null }> {
   return ctx.writeWithoutRequestRecord(async (repo) => {
-    const item = await requirePinnable(repo, input);
+    const item = await requireLiveItem(repo, input.type, input.id);
     if (item.pinnedAt) await repo.setPinnedAt(input.type, item.id, null);
     return { pinnedAt: null };
   });

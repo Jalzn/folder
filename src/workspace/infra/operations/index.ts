@@ -4,6 +4,7 @@ import { navigationContext } from '../navigation-context.js';
 import { readingContext } from '../reading-context.js';
 import { canvasOperations } from './canvases.js';
 import { documentOperations } from './documents.js';
+import { moveOperations } from './moves.js';
 import { navigationOperations } from './navigation.js';
 import { pinOperations } from './pins.js';
 import { projectOperations } from './projects.js';
@@ -23,6 +24,7 @@ export function workspaceOperations(db: Database, clock = () => new Date()) {
     ...taskOperations(ctx),
     ...trashOperations(ctx, navigation),
     ...pinOperations(ctx),
+    ...moveOperations(ctx),
     ...navigationOperations(navigation, readingContext(db)),
   };
 }

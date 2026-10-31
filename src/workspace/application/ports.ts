@@ -104,6 +104,12 @@ export interface PinRepository {
   setPinnedAt(type: NavItemType, id: string, pinnedAt: string | null): Promise<void>;
 }
 
+/** Documents and drawings moving between projects. */
+export interface MoveRepository {
+  /** Sets the project, at the expected version, and unpins; the version goes up and the dates stay. */
+  moveItem(type: NavItemType, id: string, projectId: string, expectedVersion: number): Promise<void>;
+}
+
 /** The board revision orders concurrent task moves across devices. */
 export interface BoardRepository {
   revision(): Promise<number>;
@@ -117,6 +123,7 @@ export type WorkspaceRepository = ProjectRepository &
   TaskRepository &
   TrashRepository &
   PinRepository &
+  MoveRepository &
   BoardRepository;
 
 export interface WorkspaceContext {

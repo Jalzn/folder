@@ -1,5 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
+import type { Canvas } from '../domain/canvas.js';
 import type { Document, Project } from '../domain/models.js';
+import type { NavItemType } from '../domain/navigation.js';
 import type { TaskRecord, WorkspaceRepository } from './ports.js';
 
 export function assertVersion(actual: number, expected: number): void {
@@ -42,6 +44,19 @@ export async function requireDocument(
   if (!document || (!includeDeleted && document.deletedAt))
     throw new AppError('NOT_FOUND', 'O documento não está disponível.');
   return document;
+}
+
+const missingItem = { document: 'O documento não está disponível.', drawing: 'O desenho não está disponível.' };
+
+/** A live document or drawing, the items that can be pinned or moved between projects. */
+export async function requireLiveItem(
+  repo: WorkspaceRepository,
+  type: NavItemType,
+  id: string,
+): Promise<Document | Canvas> {
+  const item = type === 'document' ? await repo.findDocument(id) : await repo.findCanvas(id);
+  if (!item || item.deletedAt) throw new AppError('NOT_FOUND', missingItem[type]);
+  return item;
 }
 
 export async function requireTask(repo: WorkspaceRepository, id: string): Promise<TaskRecord> {
