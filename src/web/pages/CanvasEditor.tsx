@@ -1,7 +1,7 @@
 import '../lib/excalidraw-assets';
 import '@excalidraw/excalidraw/index.css';
 import './canvas-editor.css';
-import { CaptureUpdateAction, Excalidraw, exportToBlob, MainMenu } from '@excalidraw/excalidraw';
+import { CaptureUpdateAction, Excalidraw, MainMenu } from '@excalidraw/excalidraw';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawProps } from '@excalidraw/excalidraw/types';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
@@ -39,11 +39,20 @@ import {
   parseCanvasDraft,
   readCanvasImport,
 } from '../lib/canvas-autosave';
+import { renderCanvasPng } from '../lib/canvas-png';
+import { CanvasPreviewUploader } from '../lib/canvas-preview';
 import { useCanvas, useProjects } from '../lib/queries';
 import { useApp } from '../shell';
 import { Dialog, EmptyState, ErrorNotice, Menu, Spinner, useAction, useRequest, useToast } from '../ui';
 
-const controllers = new Map<string, AutosaveController<CanvasSnapshot>>();
+/** The canvas as getCanvas returns it, with the scene version of the stored PNG preview. */
+type EditableCanvas = Canvas & { previewVersion: number | null };
+/** Saving and preview uploads outlive the editor, so leaving right after an edit loses nothing. */
+interface CanvasSession {
+  controller: AutosaveController<CanvasSnapshot>;
+  previews: CanvasPreviewUploader;
+}
+const sessions = new Map<string, CanvasSession>();
 const unsupportedTools = new Set(['image', 'embeddable', 'iframe', 'magicframe']);
 const snapshot = (canvas: Canvas): CanvasSnapshot => ({
   title: canvas.title,
@@ -59,11 +68,19 @@ const revision = (scene: CanvasScene) =>
     )
     .join('|')}`;
 
-function controllerFor(canvas: Canvas, installationId: string) {
+function sessionFor(canvas: EditableCanvas, installationId: string): CanvasSession {
   const identity = `${installationId}:${canvas.id}`;
-  let controller = controllers.get(identity);
-  if (!controller) {
-    controller = new AutosaveController<CanvasSnapshot>({
+  let session = sessions.get(identity);
+  if (!session) {
+    const previews = new CanvasPreviewUploader({
+      id: canvas.id,
+      previewVersion: canvas.previewVersion,
+      // A light rendering with background, whatever the editor theme.
+      render: (scene, maxSide) => renderCanvasPng(scene, { maxSide, darkMode: false }),
+      upload: (input) => api.workspace.saveCanvasPreview(input),
+      ready: () => controller.getState().status === 'saved',
+    });
+    const controller = new AutosaveController<CanvasSnapshot>({
       id: canvas.id,
       snapshot: snapshot(canvas),
       version: canvas.version,
@@ -104,11 +121,15 @@ function controllerFor(canvas: Canvas, installationId: string) {
               },
         );
         void queryClient.invalidateQueries({ queryKey: ['workspace', 'canvases'] });
+        previews.request(ack.version, sent.scene);
       },
     });
-    controllers.set(identity, controller);
+    // Drawings saved before previews existed, imported or copied get one when opened.
+    if (!canvas.deletedAt && canvas.previewVersion !== canvas.version) previews.request(canvas.version, canvas.scene);
+    session = { controller, previews };
+    sessions.set(identity, session);
   }
-  return controller;
+  return session;
 }
 
 function readViewport(key: string): Partial<AppState> {
@@ -160,9 +181,9 @@ export function CanvasPage() {
   return <CanvasEditor key={canvasId} canvas={canvas.data} />;
 }
 
-function CanvasEditor({ canvas }: { canvas: Canvas }) {
+function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const app = useApp();
-  const [controller] = useState(() => controllerFor(canvas, app.owner.installationId));
+  const [{ controller, previews }] = useState(() => sessionFor(canvas, app.owner.installationId));
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   const projects = useProjects(true);
   const toast = useToast();
@@ -222,6 +243,8 @@ function CanvasEditor({ canvas }: { canvas: Canvas }) {
       if (!['saved', 'error', 'conflict'].includes(controller.getState().status)) void controller.flush();
     };
   }, [controller]);
+  // Leaving mid-stroke must not keep the preview waiting for a pointer release.
+  useEffect(() => () => previews.release(), [previews]);
   useEffect(() => {
     document.title = `${state.snapshot.title || 'Sem título'} · Tinyfold`;
     return () => {
@@ -280,14 +303,7 @@ function CanvasEditor({ canvas }: { canvas: Canvas }) {
     }
     setExporting(true);
     try {
-      await document.fonts.ready;
-      const blob = await exportToBlob({
-        elements: current.scene.elements as unknown as ExcalidrawElement[],
-        files: {},
-        appState: { ...current.scene.appState, exportBackground: true, exportWithDarkMode: true },
-        mimeType: 'image/png',
-        maxWidthOrHeight: 4096,
-      });
+      const blob = await renderCanvasPng(current.scene, { maxSide: 4096, darkMode: true });
       downloadCanvasFile(blob, canvasFileName(current.title, 'png'));
       toast('Imagem PNG exportada.');
     } catch (error) {
@@ -643,7 +659,11 @@ function CanvasEditor({ canvas }: { canvas: Canvas }) {
           }}
           validateEmbeddable={false}
           onChange={changed}
-          onPointerUp={() => controller.persistDraft()}
+          onPointerDown={() => previews.hold()}
+          onPointerUp={() => {
+            controller.persistDraft();
+            previews.release();
+          }}
           onPaste={(data) => {
             if (
               (data.files && Object.keys(data.files).length) ||
