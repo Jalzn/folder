@@ -65,6 +65,8 @@ export function mountMcp(app: Hono, deps: McpDependencies): void {
     legacy: 'stateless',
     responseMode: 'json',
     maxRequestBodySize: MCP_LIMITS.bodyBytes,
+    // The tool list never changes, and a listen stream would outlive the revocation of its token.
+    maxSubscriptions: 0,
     onerror: deps.logError,
   });
   const failuresByIp = createSlidingWindow({

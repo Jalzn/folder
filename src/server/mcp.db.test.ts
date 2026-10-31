@@ -161,6 +161,23 @@ describe('MCP protocol', () => {
     expect(invalid.isError).toBe(true);
   });
 
+  it('announces a fixed tool list and refuses subscription streams', async () => {
+    const { connect, post } = await fixture();
+    const client = await connect();
+    expect(client.getServerCapabilities()?.tools).toEqual({ listChanged: false });
+    const meta = {
+      'io.modelcontextprotocol/protocolVersion': '2026-07-28',
+      'io.modelcontextprotocol/clientInfo': { name: 'teste', version: '1.0.0' },
+      'io.modelcontextprotocol/clientCapabilities': {},
+    };
+    const listen = await post(rpc('subscriptions/listen', { _meta: meta, notifications: { toolsListChanged: true } }), {
+      'mcp-protocol-version': '2026-07-28',
+      'mcp-method': 'subscriptions/listen',
+    });
+    expect(listen.headers.get('content-type')).not.toContain('text/event-stream');
+    expect(await message(listen)).toMatchObject({ error: { code: -32603 } });
+  });
+
   it('serves raw 2025 requests without a session, refuses GET and keeps /.well-known out of the SPA', async () => {
     const { post, fetchApp, token } = await fixture();
     const started = await post(initialize);

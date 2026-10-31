@@ -11,7 +11,11 @@ export const MCP_INSTRUCTIONS =
 /** A fresh MCP server per request, as the stateless handler requires, with the given tools. */
 export function mcpServerFactory(tools: readonly AgentTool[]) {
   return () => {
-    const server = new McpServer({ name: 'tinyfold', version: '1.0.0' }, { instructions: MCP_INSTRUCTIONS });
+    // The tools are fixed, so the server never announces list changes.
+    const server = new McpServer(
+      { name: 'tinyfold', version: '1.0.0' },
+      { instructions: MCP_INSTRUCTIONS, capabilities: { tools: { listChanged: false } } },
+    );
     for (const tool of tools) {
       server.registerTool(
         tool.name,
