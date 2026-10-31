@@ -193,22 +193,39 @@ export function workspaceReader(db: Database): WorkspaceReader {
 
     async canvasForReading(id) {
       const { rows } = await sql<
-        ProjectReferenceRow & { id: string; title: string; scene: string; version: number; updated_at: string }
+        ProjectReferenceRow & {
+          id: string;
+          title: string;
+          scene: string;
+          version: number;
+          updated_at: string;
+          preview_version: number | null;
+          preview_width: number | null;
+          preview_height: number | null;
+          preview_png: Uint8Array | null;
+        }
       >`
-        select item.id, item.title, item.scene, item.version, item.updated_at, ${projectColumns}
+        select item.id, item.title, item.scene, item.version, item.updated_at, ${projectColumns},
+          preview.scene_version as preview_version, preview.width as preview_width,
+          preview.height as preview_height, preview.png as preview_png
         from workspace_canvases as item ${projectJoin}
+        left join workspace_canvas_previews as preview on preview.canvas_id = item.id
         where item.id = ${id} and item.deleted_at is null`.execute(db);
       const row = rows[0];
-      return (
-        row && {
-          id: row.id,
-          title: row.title,
-          ...projectReference(row),
-          scene: JSON.parse(row.scene) as CanvasScene,
-          version: row.version,
-          updatedAt: row.updated_at,
-        }
-      );
+      if (!row) return undefined;
+      const { preview_version: sceneVersion, preview_width: width, preview_height: height, preview_png: png } = row;
+      return {
+        id: row.id,
+        title: row.title,
+        ...projectReference(row),
+        scene: JSON.parse(row.scene) as CanvasScene,
+        version: row.version,
+        updatedAt: row.updated_at,
+        preview:
+          sceneVersion !== null && width !== null && height !== null && png !== null
+            ? { sceneVersion, width, height, png: bytes(png) }
+            : null,
+      };
     },
 
     async tasks(query) {
@@ -281,6 +298,9 @@ export function workspaceReader(db: Database): WorkspaceReader {
 }
 
 const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+/** better-sqlite3 returns BLOBs as Buffer; the rest of the module only sees plain bytes. */
+const bytes = (blob: Uint8Array) => new Uint8Array(blob.buffer, blob.byteOffset, blob.byteLength);
 
 /** Marks cut ends with an ellipsis, keeping the excerpt within its length, on one line. */
 function excerpt(text: string, cutBefore: boolean, cutAfter: boolean): string {

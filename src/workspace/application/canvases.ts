@@ -20,9 +20,15 @@ async function requireCanvas(repo: WorkspaceRepository, id: string, includeDelet
 export function listCanvases(ctx: WorkspaceContext, input: ListCanvasesInput) {
   return ctx.read((repo) => repo.listCanvases(input));
 }
+/**
+ * Reading a trashed scene lets the editor recover a local draft or save it as a copy.
+ * `previewVersion` tells the editor whether the stored PNG preview matches the scene.
+ */
 export function getCanvas(ctx: WorkspaceContext, input: GetCanvasInput) {
-  // Reading a trashed scene lets the editor recover a local draft or save it as a copy.
-  return ctx.read((repo) => requireCanvas(repo, input.id, true));
+  return ctx.read(async (repo) => ({
+    ...(await requireCanvas(repo, input.id, true)),
+    previewVersion: await repo.canvasPreviewVersion(input.id),
+  }));
 }
 export function createCanvas(ctx: WorkspaceContext, input: CreateCanvasInput): Promise<CanvasAck> {
   return ctx.write('workspace.createCanvas', input, async (repo) => {

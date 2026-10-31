@@ -118,9 +118,11 @@ export const SaveCanvasInput = z.object({
 });
 export const DeleteCanvasInput = z.object(edit);
 export const RestoreCanvasInput = z.object(edit);
+export const SaveCanvasPreviewInput = z.object({ id, version, png: z.instanceof(Uint8Array) });
 export type ListCanvasesInput = z.infer<typeof ListCanvasesInput>;
 export type GetCanvasInput = z.infer<typeof GetCanvasInput>;
 export type CreateCanvasInput = z.infer<typeof CreateCanvasInput>;
 export type SaveCanvasInput = z.infer<typeof SaveCanvasInput>;
 export type DeleteCanvasInput = z.infer<typeof DeleteCanvasInput>;
 export type RestoreCanvasInput = z.infer<typeof RestoreCanvasInput>;
+export type SaveCanvasPreviewInput = z.infer<typeof SaveCanvasPreviewInput>;

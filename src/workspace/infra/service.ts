@@ -1,4 +1,5 @@
 import type { Database } from '@tinyfold/core/infra';
+import * as canvasPreviews from '../application/canvas-previews.js';
 import * as canvases from '../application/canvases.js';
 import * as documents from '../application/documents.js';
 import * as projects from '../application/projects.js';
@@ -20,6 +21,8 @@ export function createWorkspaceService(db: Database, clock = () => new Date()) {
       canvases.deleteCanvas(ctx, schemas.DeleteCanvasInput.parse(input)),
     restoreCanvas: (input: schemas.RestoreCanvasInput) =>
       canvases.restoreCanvas(ctx, schemas.RestoreCanvasInput.parse(input)),
+    saveCanvasPreview: (input: schemas.SaveCanvasPreviewInput) =>
+      canvasPreviews.saveCanvasPreview(ctx, schemas.SaveCanvasPreviewInput.parse(input)),
     listProjects: (input: schemas.ListProjectsInput = {}) =>
       projects.listProjects(ctx, schemas.ListProjectsInput.parse(input)),
     createProject: (input: schemas.CreateProjectInput) =>

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { drawingFixture } from '../../domain/canvas-fixtures.js';
+import { pngHeader } from '../../domain/canvas-preview-fixtures.js';
 import type { DocumentBlock } from '../../domain/models.js';
 import { workspaceModule } from '../module.js';
 import { createWorkspaceService } from '../service.js';
@@ -225,6 +226,40 @@ describe('agent read tools', () => {
     expect(imageOnly.text).not.toContain('Elementos ativos');
     const empty = await service.createCanvas({ ...request(), title: 'Vazio' });
     expect((await call('read_drawing', { id: empty.id })).text).toContain('Imagem: o desenho está vazio');
+  });
+
+  it('sends the stored preview as an image and flags one from an older version', async () => {
+    const canvas = await service.createCanvas({ ...request(), title: 'Fluxo', scene: drawingFixture() });
+    const png = pngHeader(1200, 800, 500);
+    await service.saveCanvasPreview({ id: canvas.id, version: 1, png });
+    const tool = tools.find((candidate) => candidate.name === 'read_drawing');
+    const read = async (input: Record<string, unknown>) => tool?.handler(tool.inputSchema.parse(input));
+    const current = await read({ id: canvas.id });
+    expect(current?.content[0]).toMatchObject({
+      text: expect.stringContaining('Imagem: versão 1 (atual), 1200×800 px'),
+    });
+    expect(current?.content[1]).toEqual({
+      type: 'image',
+      data: Buffer.from(png).toString('base64'),
+      mimeType: 'image/png',
+    });
+    await service.saveCanvas({
+      ...request(),
+      id: canvas.id,
+      expectedVersion: 1,
+      title: 'Fluxo',
+      scene: drawingFixture(),
+    });
+    const stale = await read({ id: canvas.id });
+    expect(stale?.content[0]).toMatchObject({
+      text: expect.stringContaining(
+        'Imagem: versão 1, 1200×800 px; a cena atual é a 2. A estrutura abaixo está atualizada',
+      ),
+    });
+    expect(stale?.content).toHaveLength(2);
+    const structureOnly = await read({ id: canvas.id, image: false });
+    expect(structureOnly?.content).toHaveLength(1);
+    expect(structureOnly?.content[0]).not.toMatchObject({ text: expect.stringContaining('Imagem:') });
   });
 
   it('lists tasks in board order with filters and a trashed source', async () => {

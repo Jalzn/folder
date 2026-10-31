@@ -84,6 +84,14 @@ export interface CanvasForReading extends ProjectReference {
   scene: CanvasScene;
   version: number;
   updatedAt: string;
+  preview: StoredPreview | null;
+}
+
+export interface StoredPreview {
+  sceneVersion: number;
+  width: number;
+  height: number;
+  png: Uint8Array;
 }
 
 export interface TaskQuery {

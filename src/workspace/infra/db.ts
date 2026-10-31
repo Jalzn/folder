@@ -42,8 +42,18 @@ export interface SourceRow {
   excerpt: string;
 }
 
+export interface CanvasPreviewRow {
+  canvas_id: string;
+  scene_version: number;
+  png: Uint8Array;
+  width: number;
+  height: number;
+  created_at: string;
+}
+
 export interface WorkspaceTables {
   workspace_canvases: CanvasRow;
+  workspace_canvas_previews: CanvasPreviewRow;
   workspace_projects: ProjectRow;
   workspace_documents: DocumentRow;
   workspace_tasks: TaskRow;

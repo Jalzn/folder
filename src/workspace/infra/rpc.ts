@@ -1,4 +1,5 @@
 import { authedProcedure, type Database } from '@tinyfold/core/infra';
+import { z } from 'zod';
 import * as schemas from '../application/schemas.js';
 import { createWorkspaceService } from './service.js';
 
@@ -13,6 +14,12 @@ export function createWorkspaceRouter(db: Database) {
     restoreCanvas: authedProcedure
       .input(schemas.RestoreCanvasInput)
       .handler(({ input }) => service.restoreCanvas(input)),
+    // The browser sends the PNG as a multipart File, within the /rpc body limit.
+    saveCanvasPreview: authedProcedure
+      .input(schemas.SaveCanvasPreviewInput.extend({ png: z.file() }))
+      .handler(async ({ input }) =>
+        service.saveCanvasPreview({ ...input, png: new Uint8Array(await input.png.arrayBuffer()) }),
+      ),
     listProjects: authedProcedure.input(schemas.ListProjectsInput).handler(({ input }) => service.listProjects(input)),
     createProject: authedProcedure
       .input(schemas.CreateProjectInput)

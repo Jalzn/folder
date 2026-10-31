@@ -29,12 +29,22 @@ Projetos, documentos, desenhos, tarefas e seus vínculos no mesmo módulo. A int
 - `documentToMarkdown` serializa o conteúdo persistido no servidor, num formato que o parser do BlockNote lê de volta. Itálico usa `_`, ou `*` dentro de palavras; `$` no texto sai como `\$`. Filhos de parágrafos, títulos, citações e código vêm logo depois do bloco, porque Markdown não os aninha.
 - Documentos são paginados em 60.000 caracteres com cursor `<versão>:<deslocamento>`; listas usam `o:<deslocamento>`. Respostas em JSON perdem itens do fim, com o cursor ajustado, quando passariam de 70.000 caracteres.
 - `outlineCanvasScene` descreve a cena atual com apelidos curtos, coordenadas relativas e ligações das setas, até 800 elementos.
+- `read_drawing` envia a prévia PNG guardada como bloco de imagem e diz se ela é de uma versão anterior da cena.
+
+## Prévias de desenho
+
+O navegador gera uma prévia PNG depois de salvar e a envia por `workspace.saveCanvasPreview({ id, version, png })`, com `png` como arquivo. A gravação não usa o registro de pedidos e não muda a versão, as datas nem a revisão do quadro: repetir o envio da mesma versão é seguro.
+
+- `readPngInfo` confere a assinatura e o IHDR; a prévia tem até 1.568 px no lado maior e 256 KiB.
+- Versão futura, PNG inválido ou acima dos limites: `VALIDATION`. Desenho inexistente ou na lixeira: `NOT_FOUND`.
+- Versão anterior à do desenho, ou mais antiga que a prévia guardada, devolve `{ stored: false, previewVersion }` sem erro.
+- `getCanvas` devolve `previewVersion`, `null` sem prévia. A tabela `workspace_canvas_previews` apaga a prévia junto com o desenho.
 - Erros conhecidos voltam com a própria mensagem e `isError`; falhas inesperadas vão para o log e o agente recebe uma mensagem genérica.
 
 ## Verificação
 
 `domain/document.test.ts` verifica o formato suportado, limites, propriedades e links inválidos. `application/workspace.db.test.ts` usa SQLite real em arquivos temporários para testar reabertura após reinício, dois clientes, conflitos, idempotência, busca, arquivamento, lixeira, ordenação e referências que sobrevivem à remoção do conteúdo de origem.
 
-`domain/markdown.test.ts`, `canvas-outline.test.ts` e `paging.test.ts` verificam a leitura pura; `infra/mcp/tools.db.test.ts` percorre as ferramentas em SQLite temporário, com busca, lixeira, páginas, documentos, desenhos e tarefas.
+`domain/markdown.test.ts`, `canvas-outline.test.ts`, `canvas-preview.test.ts` e `paging.test.ts` verificam a leitura pura; `application/canvas-previews.db.test.ts` cobre as regras das prévias e a migração 003; `infra/mcp/tools.db.test.ts` percorre as ferramentas em SQLite temporário, com busca, lixeira, páginas, documentos, desenhos e tarefas.
 
 `domain/canvas.test.ts` verifica cenas e compactação sem mutação; `application/canvases.db.test.ts` cobre os contratos de desenhos, concorrência, reinício e migração de uma base anterior. `scripts/canvas-backup.db.test.ts` verifica backup e restauração independente com cena e projeto.

@@ -178,6 +178,7 @@ describe('canvas persistence and concurrency', () => {
     const task = await service.createTask({ ...request(), title: 'Preservada' });
     expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
       { module: 'workspace', version: 2, name: 'canvases' },
+      { module: 'workspace', version: 3, name: 'canvas_previews' },
     ]);
     expect(await service.getDocument({ id: document.id })).toEqual(document);
     expect((await service.listTasks()).tasks[0]?.id).toBe(task.task.id);

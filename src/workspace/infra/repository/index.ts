@@ -1,6 +1,7 @@
 import type { Database } from '@tinyfold/core/infra';
 import type { WorkspaceRepository } from '../../application/ports.js';
 import { boardRepository } from './board.js';
+import { canvasPreviewRepository } from './canvas-previews.js';
 import { canvasRepository } from './canvases.js';
 import { documentRepository } from './documents.js';
 import { projectRepository } from './projects.js';
@@ -12,6 +13,7 @@ export function workspaceRepository(connection: Database): WorkspaceRepository {
     ...projectRepository(connection),
     ...documentRepository(connection),
     ...canvasRepository(connection),
+    ...canvasPreviewRepository(connection),
     ...taskRepository(connection),
     ...boardRepository(connection),
   };

@@ -37,6 +37,23 @@ export interface TaskRepository {
   tasksInColumn(status: TaskStatus): Promise<TaskRecord[]>;
 }
 
+export interface CanvasPreviewRecord {
+  canvasId: string;
+  sceneVersion: number;
+  png: Uint8Array;
+  width: number;
+  height: number;
+  createdAt: string;
+}
+
+export interface CanvasPreviewRepository {
+  /** Version and trash state only, without reading the scene. */
+  canvasState(id: string): Promise<{ version: number; deletedAt: string | null } | undefined>;
+  canvasPreviewVersion(canvasId: string): Promise<number | null>;
+  /** Replaces the drawing's preview. */
+  saveCanvasPreview(preview: CanvasPreviewRecord): Promise<void>;
+}
+
 /** The board revision orders concurrent task moves across devices. */
 export interface BoardRepository {
   revision(): Promise<number>;
@@ -46,6 +63,7 @@ export interface BoardRepository {
 export type WorkspaceRepository = ProjectRepository &
   DocumentRepository &
   CanvasRepository &
+  CanvasPreviewRepository &
   TaskRepository &
   BoardRepository;
 
@@ -58,4 +76,6 @@ export interface WorkspaceContext {
     input: { requestId: string },
     work: (repository: WorkspaceRepository) => Promise<T>,
   ): Promise<T>;
+  /** A write that is safe to repeat, so it keeps no request record (and no copy of its input). */
+  repeatableWrite<T>(work: (repository: WorkspaceRepository) => Promise<T>): Promise<T>;
 }

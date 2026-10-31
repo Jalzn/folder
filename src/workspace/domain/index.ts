@@ -8,6 +8,8 @@ export {
   RECOVERY_CANVAS_LIMITS,
   readCanvasScene,
 } from './canvas.js';
+export type { PngInfo } from './canvas-preview.js';
+export { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE, readPngInfo } from './canvas-preview.js';
 export type { DocumentContentLimits } from './document.js';
 export {
   documentPlainText,

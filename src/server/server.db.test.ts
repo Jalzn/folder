@@ -9,6 +9,7 @@ import { isProcedure, type RouterClient } from '@orpc/server';
 import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { afterEach, describe, expect, it } from 'vitest';
+import { pngHeader } from '../workspace/domain/canvas-preview-fixtures.js';
 import { createApp } from './app.js';
 import { readConfig } from './config.js';
 import { modules } from './modules.js';
@@ -162,6 +163,22 @@ describe('server boundaries', () => {
     });
     expect(await client.auth.revokeAccessToken({ id: created.accessToken.id })).toEqual({ ok: true });
     expect(await client.auth.listAccessTokens()).toEqual([]);
+  });
+  it('uploads a drawing preview as a file without changing the drawing', async () => {
+    const { browser } = await fixture();
+    const { client } = browser();
+    await client.auth.login({ password });
+    const created = await client.workspace.createCanvas({ requestId: randomUUID(), title: 'Fluxo' });
+    const png = new File([pngHeader(800, 600, 4096).slice()], 'preview.png', { type: 'image/png' });
+    expect(await client.workspace.saveCanvasPreview({ id: created.id, version: created.version, png })).toEqual({
+      stored: true,
+      previewVersion: 1,
+    });
+    expect(await client.workspace.getCanvas({ id: created.id })).toMatchObject({ version: 1, previewVersion: 1 });
+    const notPng = new File(['<svg/>'], 'preview.png', { type: 'image/png' });
+    await expect(client.workspace.saveCanvasPreview({ id: created.id, version: 1, png: notPng })).rejects.toMatchObject(
+      { status: 400, data: { code: 'VALIDATION' } },
+    );
   });
   it('serves SPA routes without serving HTML for missing assets', async () => {
     const { app } = await fixture();

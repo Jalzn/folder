@@ -1,9 +1,18 @@
 import type { ReadingContext } from '../../application/reading/ports.js';
-import { readDrawing } from '../../application/reading/read-drawing.js';
+import { type DrawingImage, readDrawing } from '../../application/reading/read-drawing.js';
 import { ReadDrawingInput } from '../../application/reading/schemas.js';
-import { projectName, textResult } from './format.js';
+import { projectName } from './format.js';
 import { formatCanvasOutline } from './format-outline.js';
-import { defineTool, readOnlyAnnotations } from './types.js';
+import { type AgentToolContent, defineTool, readOnlyAnnotations } from './types.js';
+
+function imageLine(image: DrawingImage, version: number, withStructure: boolean): string {
+  if (image.state === 'empty') return 'Imagem: o desenho está vazio';
+  if (image.state === 'missing') return 'Imagem: indisponível. Abra o desenho no Tinyfold para gerá-la';
+  const size = `${image.width}×${image.height} px`;
+  if (image.current) return `Imagem: versão ${image.sceneVersion} (atual), ${size}`;
+  const note = withStructure ? '. A estrutura abaixo está atualizada' : '';
+  return `Imagem: versão ${image.sceneVersion}, ${size}; a cena atual é a ${version}${note}`;
+}
 
 export const readDrawingTool = (reading: ReadingContext) =>
   defineTool({
@@ -16,15 +25,16 @@ export const readDrawingTool = (reading: ReadingContext) =>
     inputSchema: ReadDrawingInput,
     annotations: readOnlyAnnotations,
     async handler(input) {
-      const { drawing, empty, outline } = await readDrawing(reading, input);
+      const { drawing, image, outline } = await readDrawing(reading, input);
       const project = projectName(drawing);
       const header = [
         `Desenho ${JSON.stringify(drawing.title)} · ${project ? `Projeto ${project}` : 'sem projeto'} · versão ${drawing.version} · atualizado em ${drawing.updatedAt} · ID ${drawing.id}`,
       ];
-      if (input.image)
-        header.push(
-          `Imagem: ${empty ? 'o desenho está vazio' : 'indisponível. Abra o desenho no Tinyfold para gerá-la'}`,
-        );
-      return textResult([header.join('\n'), ...(outline ? [formatCanvasOutline(outline)] : [])].join('\n\n'));
+      if (image) header.push(imageLine(image, drawing.version, outline !== null));
+      const text = [header.join('\n'), ...(outline ? [formatCanvasOutline(outline)] : [])].join('\n\n');
+      const content: AgentToolContent[] = [{ type: 'text', text }];
+      if (image?.state === 'stored')
+        content.push({ type: 'image', data: Buffer.from(image.png).toString('base64'), mimeType: 'image/png' });
+      return { content };
     },
   });
