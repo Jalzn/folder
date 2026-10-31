@@ -30,3 +30,5 @@ export type {
   TaskSource,
   TaskStatus,
 } from './models.js';
+export { searchText } from './search-text.js';
+export { excerptPresent } from './task-source.js';

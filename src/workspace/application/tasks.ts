@@ -1,5 +1,5 @@
 import { AppError } from '@tinyfold/core/application';
-import { documentPlainText, findBlock } from '../domain/document.js';
+import { excerptPresent } from '../domain/task-source.js';
 import { assertProjectAssignment, assertVersion, requireDocument, requireTask } from './helpers.js';
 import type { TaskRecord, TaskSourceRecord, WorkspaceContext } from './ports.js';
 import type { CreateTaskInput, DeleteTaskInput, ListTasksInput, MoveTaskInput, UpdateTaskInput } from './schemas.js';
@@ -18,20 +18,11 @@ export function createTask(ctx: WorkspaceContext, input: CreateTaskInput) {
       if (input.source.expectedVersion !== undefined) assertVersion(document.version, input.source.expectedVersion);
       if (input.projectId === undefined) projectId = document.projectId;
       const blockId = input.source.blockId ?? null;
-      const block = blockId ? findBlock(document.content, blockId) : undefined;
-      if (blockId && !block)
+      if (!excerptPresent(document, blockId, input.source.excerpt))
         throw new AppError(
           'VERSION_CONFLICT',
           'O trecho de origem mudou. Salve o documento e selecione o trecho novamente.',
         );
-      const referenceText = block ? documentPlainText([block]) : document.plainText;
-      const normalize = (text: string) => text.replace(/\s+/gu, ' ').trim();
-      if (!normalize(referenceText).includes(normalize(input.source.excerpt))) {
-        throw new AppError(
-          'VERSION_CONFLICT',
-          'O trecho de origem mudou. Salve o documento e selecione o trecho novamente.',
-        );
-      }
       source = { taskId: id, documentId: document.id, blockId, excerpt: input.source.excerpt };
     }
     await assertProjectAssignment(repo, projectId);
