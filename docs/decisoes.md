@@ -37,6 +37,16 @@ Acrescentar novas decisões ao histórico e atualizar os documentos afetados. Um
 | 2026-10-30 | Proposta de produto | Itens incorporados excluídos aparecem como indisponíveis. Na exportação `.md`, viram links com o título. |
 | 2026-10-30 | Proposta técnica | Autenticação do MCP por token pessoal somente leitura, criado e revogado no Perfil. Pendente de confirmação. |
 | 2026-10-30 | Conversa com o usuário | Confirma a autenticação do MCP por token pessoal somente leitura, criado e revogado no Perfil. |
+| 2026-10-30 | Conversa com o usuário | Explorar três alternativas de interface com subagentes, identidade visual livre e protótipos navegáveis. Entre Bancada, Sanfona e Lente, a Bancada ficou mais próxima da ideia. Ver [interface](interface/README.md). |
+| 2026-10-30 | Conversa com o usuário | Visual limpo e tipográfico, com tema claro e escuro, iterando sobre uma única proposta. |
+| 2026-10-30 | Conversa com o usuário | Experiência só de projeto: sem Início e sem caixa de entrada, com uma lateral do projeto que organiza os itens. Visual menos parecido com o Notion. |
+| 2026-10-30 | Conversa com o usuário | Tudo sem serifa e sem coluna de margem. |
+| 2026-10-30 | Proposta de produto | Todo item pertence a um projeto, com um projeto geral para o que é avulso; sem quadro geral nem prazos entre projetos; tarefa em gaveta inferior não modal; coluna de conclusão com 14 dias; Lixeira por projeto. Aprovada com o protótipo em 2026-10-31. |
+| 2026-10-31 | Conversa com o usuário | Manter a organização do Sumário e refazer o visual inspirado no Linear: design, cores e tipografia. "Manter o design" se refere à organização, não ao visual. |
+| 2026-10-31 | Conversa com o usuário | Lateral na variante A, Coluna de ícones. |
+| 2026-10-31 | Conversa com o usuário | Pastas mistas para documentos e desenhos, com um único nível; tarefas não entram em pastas. |
+| 2026-10-31 | Conversa com o usuário | Direção Sumário aprovada. Especificações em `docs/interface/`. |
+| 2026-10-31 | Proposta de produto | Cores geradas em OKLCH; destaque `#86A5FB` no escuro e `#3856C8` no claro, fundo escuro `#13161C` e conclusão `#6AD18A` substituem a paleta de 2026-10-29. Inter e JetBrains Mono. Aprovada com o protótipo. |
 
 ## Decisões de implementação
 

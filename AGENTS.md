@@ -15,7 +15,7 @@ Read `docs/produto.md`, `docs/arquitetura.md` and the current stage in `docs/eta
 - Document edits must preserve drafts, detect stale versions and allow safe retries.
 - Applied migrations are immutable; append a new migration to change the database.
 - Adapt Orbis SQL, migrations, locking, backups and request-size limits for Tinyfold. Inspect these explicitly when reusing code.
-- Use the approved graphite, cool gray and subtle blue visual direction.
+- Use the approved Sumário visual direction in `docs/identidade-visual.md`. The next interface is specified in `docs/interface/`.
 - Requested design explorations go through `claude-infinity-0` and Claude's native artifact system, with its returned artifact URL. The current reference is in `docs/identidade-visual.md`.
 - Keep documentation consistent with implemented behavior and distinguish planned checks from executed checks.
 - Database tests use isolated temporary SQLite files. Restore checks never overwrite the main database.

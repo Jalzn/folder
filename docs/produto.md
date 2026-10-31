@@ -1,6 +1,6 @@
 # Tinyfold — Produto
 
-**Estado:** primeira versão implementada localmente. Ver [validação](validacao.md) para evidências e limites. A definição foi revisada em 2026-10-30; itens marcados como **Planejado** ainda não foram implementados.
+**Estado:** primeira versão implementada localmente. Ver [validação](validacao.md) para evidências e limites. A definição foi revisada em 2026-10-30 e 2026-10-31; itens marcados como **Planejado** ainda não foram implementados.
 
 Espaço pessoal e minimalista para conduzir projetos, de software ou não. Reúne escrita, desenho e tarefas, que antes ficavam espalhados entre Notion, Excalidraw e Trello, em um só lugar e sem o excesso dessas ferramentas. O aplicativo funciona no navegador e guarda os dados em um servidor acessível de vários dispositivos.
 
@@ -11,7 +11,7 @@ Espaço pessoal e minimalista para conduzir projetos, de software ou não. Reún
 
 ## Princípios
 
-1. **O projeto é o centro.** Abrir um projeto mostra seus documentos, desenhos e quadro. Um item pode nascer sem projeto, como captura rápida, e ser associado depois.
+1. **O projeto é o centro.** O aplicativo sempre está dentro de um projeto e reabre onde você parou. Todo item pertence a um projeto; o que é avulso fica num projeto geral.
 2. **Cada ferramenta faz menos que a original.** Um recurso novo precisa resolver um uso real nos projetos. A lista de fora do escopo faz parte do produto.
 3. **Ligações vivem nos documentos.** Um documento pode incorporar tarefas e desenhos; as demais ferramentas não criam ligações por enquanto.
 4. **Nada se perde.** Salvamento automático, rascunho recuperável, conflitos explícitos e backup verificado.
@@ -19,7 +19,9 @@ Espaço pessoal e minimalista para conduzir projetos, de software ou não. Reún
 
 ## Fora do escopo
 
-- Bancos de dados, propriedades configuráveis, modelos de página e hierarquias profundas de páginas.
+- Bancos de dados, propriedades configuráveis e modelos de página.
+- Hierarquias profundas: pastas têm um único nível.
+- Visões que atravessam projetos, como quadro geral e listas gerais de documentos ou desenhos. A busca atravessa todos os projetos.
 - Campos personalizados, automações e extensões no quadro.
 - Bibliotecas de formas e colaboração nos desenhos.
 - Outras contas, compartilhamento, links públicos e edição colaborativa simultânea.
@@ -28,7 +30,7 @@ Espaço pessoal e minimalista para conduzir projetos, de software ou não. Reún
 ## Fluxo principal
 
 1. Abrir ou criar um projeto.
-2. Escrever documentos e desenhar dentro dele. Algo solto pode nascer sem projeto e ser associado depois.
+2. Escrever documentos e desenhar dentro dele.
 3. Selecionar um trecho e usar uma ação explícita para criar uma tarefa.
 4. Acompanhar essa tarefa no Kanban e voltar ao contexto de origem.
 5. **Planejado:** consultar documentos, desenhos e tarefas do projeto pelo Claude Code, via MCP.
@@ -44,7 +46,18 @@ Uma tarefa também pode nascer diretamente no Kanban. Um checklist no documento 
 - Kanban: quadro geral, incluindo tarefas sem projeto, com filtro por projeto.
 - Perfil: senha, sessões e sair.
 
-**Planejado:** a página do projeto passa a ser a tela principal do aplicativo. A navegação resultante ainda será definida.
+**Planejado:** a navegação atual dá lugar à lateral do projeto, especificada em [interface](interface/README.md).
+
+- O aplicativo reabre no último projeto, no item e na posição onde você parou. Não há Início, caixa de entrada, quadro geral nem listas gerais de documentos e desenhos.
+- Lateral do projeto:
+  - No topo, o seletor de projetos, com as tarefas atrasadas de cada um e os arquivados.
+  - Em seguida, Buscar, Visão geral, Quadro e os itens do projeto: fixados, pastas e itens soltos.
+  - No pé, a Lixeira e o menu Você, com Perfil, token e tema.
+  - A lateral recolhe numa faixa estreita.
+- Visão geral do projeto: o que pede atenção agora, os itens editados recentemente e as tarefas concluídas nos últimos 14 dias.
+- Índice do projeto com todos os itens, filtrável por tipo e por pasta.
+- A tarefa abre numa gaveta inferior não modal, que empurra o conteúdo e continua aberta durante a navegação.
+- Esc fecha apenas a camada aberta mais recente e nunca navega.
 
 Criar e editar tarefa são estados contextuais da interface. No celular, os fluxos essenciais de escrita, consulta e movimentação de tarefas precisam funcionar com toque e tela estreita.
 
@@ -75,6 +88,16 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 - Cópia de recuperação e importação de um desenho em projeto arquivado criam o novo conteúdo sem projeto, com aviso.
 - Imagens e conteúdo incorporado ficam para entregas futuras.
 
+## Pastas
+
+**Planejado:**
+
+- Pastas agrupam documentos e desenhos do mesmo assunto dentro de um projeto. Têm um único nível: não contêm outras pastas. Tarefas não entram em pastas.
+- Itens podem ficar fora de qualquer pasta, na raiz do projeto. Itens fixados sobem para o topo da raiz ou da própria pasta.
+- Criar, renomear e reordenar pastas. Mover itens arrastando ou pelo menu "Mover para pasta".
+- Excluir uma pasta leva os itens para a raiz, com opção de desfazer. Excluir a pasta com os itens manda os itens para a Lixeira, após confirmação.
+- Restaurar um item cuja pasta foi excluída devolve o item à raiz.
+
 ## Projetos e tarefas
 
 - Projeto: nome e agrupamento de documentos, desenhos e tarefas; arquivar preserva o conteúdo.
@@ -93,17 +116,19 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 - Checklist: os blocos de checklist da descrição. O card mostra o progresso, como 2/5; não há lista separada.
 - Prazo: data opcional, sem hora. O card mostra o prazo e destaca a tarefa atrasada fora da coluna de conclusão. Sem data de início, lembretes ou notificações.
 - Etiquetas: compartilhadas por todo o espaço, com nome e cor de uma paleta curta. O quadro pode ser filtrado por etiqueta.
-- Colunas: um único conjunto para todo o espaço, usado no quadro geral e nos quadros dos projetos. Criar, renomear, reordenar e excluir colunas; excluir uma coluna com tarefas exige escolher o destino delas.
+- Colunas: um único conjunto para todos os projetos. Criar, renomear, reordenar e excluir colunas; excluir uma coluna com tarefas exige escolher o destino delas.
 - Uma coluna é marcada como de conclusão; tarefas nela contam como concluídas. As colunas iniciais são A fazer, Em andamento e Concluído.
+- A coluna de conclusão mostra os últimos 14 dias; as tarefas anteriores ficam na página Concluídas do projeto.
 - Card compacto: título, prazo, etiquetas e progresso do checklist.
+- Lixeira por projeto, com restaurar e excluir de vez.
 
-Colunas diferentes por projeto ficam fora do escopo: mantêm o quadro geral coerente e o modelo simples.
+Colunas diferentes por projeto ficam fora do escopo, para manter o modelo simples.
 
 ## Acesso pelo Claude Code
 
 **Planejado:** servidor MCP somente leitura para o Claude Code consultar o espaço — por exemplo, um documento que descreve uma ideia, um desenho de arquitetura ou as tarefas de um projeto.
 
-- Listar projetos e buscar documentos, desenhos e tarefas.
+- Listar projetos e pastas e buscar documentos, desenhos e tarefas.
 - Ler um documento em Markdown. Tarefas e desenhos incorporados aparecem como referências que podem ser consultadas.
 - Ler um desenho como imagem PNG e como textos e estrutura da cena.
 - Ler tarefas com coluna, prazo, etiquetas e descrição.
@@ -113,7 +138,8 @@ Criar ou alterar conteúdo pelo MCP fica para depois.
 
 ## Em aberto
 
-- Navegação com o projeto no centro: precisa de exploração de design antes da implementação.
+- Versão de celular da nova interface: ainda não desenhada.
+- Projetos já existentes com itens sem projeto: definir para onde vão na migração.
 
 ## Limites atuais
 

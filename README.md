@@ -53,6 +53,7 @@ Se a porta padrão dos testes estiver ocupada, use `E2E_PORT=5172 mise exec -- p
 | [Equações](docs/equacoes.md) | Inserir, editar e importar/exportar fórmulas LaTeX |
 | [Stack](docs/stack.md) | Tecnologias e adaptações do Orbis |
 | [Identidade visual](docs/identidade-visual.md) | Direção escolhida e referência do Claude |
+| [Interface](docs/interface/README.md) | Próxima interface aprovada: especificações e protótipos |
 | [Operação](docs/implantacao.md) | Docker, configuração, senha e backups |
 | [Validação](docs/validacao.md) | Testes executados, Chrome e revisões adversariais |
 | [Etapas](docs/etapas/README.md) | Estado das entregas |

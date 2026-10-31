@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/*.gen.ts", "!**/*.md", "!pnpm-lock.yaml"]
+    "includes": ["**", "!**/*.gen.ts", "!**/*.md", "!pnpm-lock.yaml", "!docs/interface/prototipo"]
   },
   "formatter": {
     "indentStyle": "space",
