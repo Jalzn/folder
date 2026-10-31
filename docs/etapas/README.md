@@ -16,7 +16,7 @@
 
 As evidências executadas estão em [validação](../validacao.md), [revisão de persistência](../revisao-workspace.md) e [revisão de backend](../revisao-backend.md).
 
-As etapas 07 a 11 seguem essa ordem. Cada uma deixa `check`, `test:db`, `build` e `e2e` verdes antes de entrar na `main`. A 07 está detalhada. As etapas 08 a 11 têm o escopo inicial e são detalhadas antes de começar.
+As etapas 07 a 11 seguem essa ordem. Cada uma deixa `check`, `test:db`, `build` e `e2e` verdes antes de entrar na `main`. As etapas 07 e 08 estão detalhadas. As etapas 09 a 11 têm o escopo inicial e são detalhadas antes de começar.
 
 ## Para colocar na nuvem
 

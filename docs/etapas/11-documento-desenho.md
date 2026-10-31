@@ -36,10 +36,11 @@ Levar ao documento as ligações do produto: tarefas e desenhos incorporados, vi
   - O texto de busca ignora os incorporados, e `documentToMarkdown` passa a emiti-los como links.
 - **Consulta em lote:** `resolveEmbeds({ taskIds, canvasIds })` devolve o estado atual de cada item, incluindo indisponível, na lixeira ou excluído. Uma consulta por documento, invalidada quando tarefas ou desenhos mudam.
 - **Imagem do desenho incorporado:**
-  - Proposta: reaproveitar a prévia PNG da etapa 07, por uma rota autenticada de mesma origem (`/arquivos/desenhos/:id/previa.png`, com `Cache-Control` pela versão). O documento não carrega o Excalidraw.
+  - Proposta: reaproveitar a prévia PNG da etapa 07, por uma rota autenticada de mesma origem (`/arquivos/desenhos/:id/previa.png`). O `ETag` vem da impressão digital da cena (`scene_fingerprint`). O documento não carrega o Excalidraw.
   - No tema escuro, aplicar o mesmo filtro de inversão que o Excalidraw usa no próprio modo escuro.
-  - Quando a prévia estiver defasada, o documento pode gerar uma nova sob demanda ao abrir.
-- **Exportação `.md`:** decidir se a exportação da web passa a usar `documentToMarkdown` do domínio, com o teste de equivalência da etapa 07, para que MCP e arquivo `.md` não divirjam.
+  - Quando `previewCurrent` for falso, o documento pode pedir uma nova ao `CanvasPreviewUploader` (`src/web/lib/canvas-preview.ts`) ao abrir.
+- **Exportação `.md`:** decidir se a exportação da web passa a usar `documentToMarkdown` do domínio, para que MCP e arquivo `.md` não divirjam. A base é o teste de ida e volta da etapa 07, `src/web/lib/markdown-roundtrip.test.ts`, que já declara as perdas conhecidas do parser do BlockNote.
+- **MCP:** a forma de link dos incorporados entra nas regras de `domain/markdown*.ts`, com teste de ida e volta. As páginas de 36.000 caracteres e o teto de 45.000 (`domain/reading-limits.ts`) continuam valendo com os incorporados.
 - **Origem:** o marcador usa as origens já guardadas (bloco e trecho), como decoração do ProseMirror, sem mudar o JSON do documento.
 
 ## Organização do código
@@ -48,11 +49,13 @@ Levar ao documento as ligações do produto: tarefas e desenhos incorporados, vi
   - `DocumentPage.tsx`, `DocumentHeader.tsx`, `DocumentTitle.tsx`, `SaveStatus.tsx` e `DocumentBanners.tsx`;
   - `DocumentMenu.tsx`, `SelectionTaskButton.tsx`, `use-document-autosave.ts` e `use-markdown-io.ts`.
 - **Editor:** `src/web/editor/` (criado na etapa 10) ganha `blocks/TaskEmbed.tsx`, `blocks/DrawingEmbed.tsx`, `blocks/UnavailableEmbed.tsx`, `origin-markers.ts` e `insert-menu.ts`.
-- **`src/web/pages/CanvasEditor.tsx`** (706 linhas) vira `pages/drawing/`:
+- **`src/web/pages/CanvasEditor.tsx`** (737 linhas) vira `pages/drawing/`:
   - `DrawingPage.tsx`, `DrawingHeader.tsx` e `ExcalidrawHost.tsx`;
   - `use-canvas-autosave.ts`, `canvas-io.ts` (importar e exportar), `viewport.ts` e `RecoveryBanners.tsx`.
+  - A sessão por desenho atual (controlador de autosave, `CanvasPreviewUploader` e `onAdopted`) fica num `drawing-session.ts`, para a prévia continuar enviando depois de sair do editor.
   - `canvas-png.ts` e `canvas-preview.ts` continuam em `lib/`, desde a etapa 07.
 - **Workspace:** `application/embeds/resolve-embeds.ts`, mais as regras de incorporação no domínio.
+- **Estilos:** `src/web/styles/compat.css`, criado na etapa 08 para as páginas antigas, é removido quando o documento e o desenho passam ao visual novo.
 
 ## Dependências
 

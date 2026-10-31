@@ -30,7 +30,7 @@ Agrupar documentos e desenhos do mesmo assunto em pastas mistas de um único ní
 
 ## Mudanças previstas de dados e contratos
 
-- **Migração `workspace/005`:**
+- **Migração `workspace/006`** (a 004 é da etapa 07 e a 005, da etapa 08):
   - `workspace_folders (id, project_id, name, position, version, created_at, updated_at, deleted_at)`, com nome único por projeto entre as pastas ativas. Comparar sem diferenciar caixa e acentos com `searchText`, guardando uma coluna normalizada.
   - `folder_id` anulável em documentos e desenhos, com chave estrangeira.
 - **Exclusão:**
@@ -42,10 +42,11 @@ Agrupar documentos e desenhos do mesmo assunto em pastas mistas de um único ní
 - **Contratos:**
   - `createFolder`, `renameFolder`, `moveFolder`, `deleteFolder({ withItems })`, `restoreFolder` e `moveItem({ folderId | null })`.
   - Listagens e o Índice devolvem `folderId`, e a árvore da lateral vem numa consulta por projeto.
-- **MCP:**
-  - `list_projects` devolve as pastas de cada projeto, com quantidade de itens.
-  - `search` aceita `folderId` e devolve `folder: { id, name } | null`.
-  - O cabeçalho de `read_document` e de `read_drawing` mostra a pasta.
+- **MCP**, sobre o modelo de leitura atual (`infra/reader/`, `infra/mcp/`):
+  - `list_projects` devolve as pastas de cada projeto, com quantidade de itens. A resposta continua paginada por `p~…` e dentro do teto de 45.000 caracteres (`READING_LIMITS.toolTextChars`). Pastas com nomes longos podem reduzir os projetos por página, nunca passar do teto.
+  - `search` aceita `folderId` e devolve `folder: { id, name } | null`. O cursor `s~…` não muda.
+  - O cabeçalho de `read_document` e de `read_drawing` mostra a pasta numa linha só e dentro do orçamento de 9.000 caracteres do cabeçalho.
+  - O teste do teto em `infra/mcp/tools.db.test.ts` ganha pastas com nomes pesados.
 
 ## Organização do código
 

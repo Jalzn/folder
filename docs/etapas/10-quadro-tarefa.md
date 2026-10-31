@@ -36,13 +36,15 @@ Dar às tarefas os campos e o quadro definidos no [produto](../produto.md):
   - `list_tasks` e `read_task` passam a devolver coluna (`id`, `name`, `isDone`), `dueOn`, `overdue`, etiquetas, `checklist { done, total }` e `completedAt`.
   - `read_task` devolve a descrição em Markdown, pelo serializador do domínio.
   - `list_tasks` filtra por coluna e etiqueta; `search` passa a buscar na descrição.
+  - A ordem do quadro hoje vem de `TASK_STATUSES` (`domain/task-status.ts`), também usado pelo `case` do SQL, pelos esquemas e pelo cursor `t~<revisão>~<coluna>~<posição>~<id>`. Com colunas configuráveis, o posto da coluna passa a ser a posição dela. Como mover coluna incrementa a revisão do quadro, os cursores antigos são recusados.
+  - A descrição em `read_task` respeita o teto de 45.000 caracteres. Se passar, ela é paginada como os documentos ou cortada com aviso.
 
 ## Mudanças previstas de dados e contratos
 
-- **Migração `workspace/006`:**
+- **Migração `workspace/007`** (depois da 006 das pastas):
   - `workspace_columns (id, name, position, is_done, version, …)`, com no máximo uma coluna de conclusão (índice parcial único).
   - Tarefas ganham `column_id`, `completed_at`, `due_on` (`AAAA-MM-DD`), `description` (JSON de documento), `description_plain_text`, `search_text` e `description_version`.
-  - `status` é substituído por `column_id`, mapeando `todo`, `doing` e `done` para as três colunas iniciais. O `CHECK` atual de `status` e a chave vinda de `workspace_task_sources` exigem reconstruir `workspace_tasks`, provavelmente com o suporte do executor de migrações avaliado na etapa 08.
+  - `status` é substituído por `column_id`, mapeando `todo`, `doing` e `done` para as três colunas iniciais. O `CHECK` atual de `status` e a chave vinda de `workspace_task_sources` exigem reconstruir `workspace_tasks`. Como `workspace_task_sources` a referencia, o executor de migrações ganha nesta etapa o procedimento de 12 passos do SQLite: `foreign_keys` desligado fora da transação, seguido de `foreign_key_check`. A etapa 08 evitou essa reconstrução com gatilhos. A tabela nova já pode levar `project_id NOT NULL`.
   - Etiquetas: `workspace_labels (id, name único, color, position)` e `workspace_task_labels (task_id, label_id)`.
 - **Versões:** a descrição tem versão própria (`description_version`). Assim o autosave dela não entra em conflito com mudanças de campo feitas na mesma gaveta (coluna, prazo, etiquetas), que continuam usando `version` e a revisão do quadro.
 - **Atraso:** depende do fuso do dono para o MCP e para as contagens no servidor. Proposta: `time_zone` em `auth_owner`, como o `Owner.timeZone` do Orbis, definido no Perfil a partir do navegador.
@@ -54,12 +56,11 @@ Dar às tarefas os campos e o quadro definidos no [produto](../produto.md):
 
 ## Organização do código
 
-- **`src/web/pages/Board.tsx`** (533 linhas) vira `pages/board/`:
+- **`src/web/pages/Board.tsx`** (531 linhas) vira `pages/board/`:
   - `BoardPage.tsx`, `BoardColumn.tsx`, `ColumnHeader.tsx`, `ColumnMenu.tsx` e `TaskCard.tsx`;
   - `MoveTaskMenu.tsx`, `use-board-dnd.ts` e `use-board-keyboard.ts`;
   - `CompletedPage.tsx`.
-- **`TaskDialog`** sai. Entra `components/task-drawer/`: `TaskDrawer.tsx`, `TaskDrawerHeader.tsx`, `TaskProperties.tsx`, `TaskDescription.tsx` e `use-task-description-autosave.ts`.
-- **`LinkedTask`** vai para `components/task/`.
+- **`TaskDialog`** sai. A etapa 08 já o deixa em `components/task/` e atrás de `openTask` e `newTask` no `AppProvider`. Entra `components/task-drawer/`, no mesmo ponto: `TaskDrawer.tsx`, `TaskDrawerHeader.tsx`, `TaskProperties.tsx`, `TaskDescription.tsx` e `use-task-description-autosave.ts`.
 - **Editor compartilhado:** o esquema e a configuração do BlockNote saem de `DocumentEditor.tsx` para `src/web/editor/schema.ts` e `src/web/editor/BlockEditor.tsx`. A descrição e os documentos passam a usar a mesma peça; a etapa 11 continua a divisão do documento.
 - **`src/workspace/application/tasks.ts`:** um caso de uso por arquivo em `application/tasks/`, `application/columns/` e `application/labels/`.
 - **Regras puras no domínio:** progresso do checklist, atraso por data civil e janela de 14 dias.
