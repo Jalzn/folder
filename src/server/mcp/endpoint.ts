@@ -89,12 +89,13 @@ export function mountMcp(app: Hono, deps: McpDependencies): void {
       return errorResponse(403, 'forbidden_origin', 'A origem desta solicitação não é permitida.');
     if (Number(c.req.header('content-length') ?? 0) > MCP_LIMITS.bodyBytes) return tooLarge();
 
-    const ip = clientIp(c, deps.config.trustProxy);
-    const ipWait = failuresByIp.blockedFor(ip, now);
-    if (ipWait) return rateLimited(ipWait);
     const token = readBearer(c.req.header('authorization'));
     const accessToken = await deps.accessTokens.authenticate(token);
     if (!accessToken) {
+      // Only failures are limited per IP, so others sharing an address never lock a valid token out.
+      const ip = clientIp(c, deps.config.trustProxy);
+      const ipWait = failuresByIp.blockedFor(ip, now);
+      if (ipWait) return rateLimited(ipWait);
       failuresByIp.record(ip, now);
       return errorResponse(401, 'invalid_token', 'Token inválido ou revogado. Gere outro no Perfil do Tinyfold.', {
         'www-authenticate': token ? 'Bearer realm="tinyfold", error="invalid_token"' : 'Bearer realm="tinyfold"',

@@ -267,7 +267,7 @@ describe('MCP origin, size and rate limits', () => {
     expect((await post('{"jsonrpc":')).status).toBe(400);
   });
 
-  it('limits authentication failures per proxied IP', async () => {
+  it('limits authentication failures per proxied IP without ever blocking a valid token', async () => {
     const { post } = await fixture({ trustProxy: true });
     const from = (ip: string, authorization = '') =>
       post(initialize, { 'x-forwarded-for': `10.0.0.1, ${ip}`, authorization });
@@ -276,8 +276,8 @@ describe('MCP origin, size and rate limits', () => {
     expect(blocked.status).toBe(429);
     expect(Number(blocked.headers.get('retry-after'))).toBeGreaterThan(0);
     expect(await blocked.json()).toMatchObject({ error: 'rate_limited' });
-    expect((await post(initialize, { 'x-forwarded-for': '203.0.113.7' })).status).toBe(429);
-    expect((await post(initialize, { 'x-forwarded-for': '203.0.113.8' })).status).toBe(200);
+    expect((await post(initialize, { 'x-forwarded-for': '203.0.113.7' })).status).toBe(200);
+    expect((await from('203.0.113.8')).status).toBe(401);
   });
 
   it('limits requests per token', async () => {
