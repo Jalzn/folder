@@ -2,7 +2,7 @@ import { getConnInfo } from '@hono/node-server/conninfo';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { ORPCError, onError } from '@orpc/server';
 import { BodyLimitPlugin, RPCHandler } from '@orpc/server/fetch';
-import { type AuthService, createAuthService } from '@tinyfold/auth';
+import { type AccessTokenService, type AuthService, createAccessTokens, createAuthService } from '@tinyfold/auth';
 import type { Database, RequestContext } from '@tinyfold/core/infra';
 import { type Context, Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
@@ -16,13 +16,22 @@ export interface AppDependencies {
   db: Database;
   config: Pick<Config, 'appOrigin' | 'secureCookie' | 'trustProxy' | 'webDir'>;
   auth?: AuthService;
+  accessTokens?: AccessTokenService;
   clock?: () => Date;
   logError?: (error: unknown) => void;
 }
 
-export function createApp({ db, config, auth, clock = () => new Date(), logError = console.error }: AppDependencies) {
+export function createApp({
+  db,
+  config,
+  auth,
+  accessTokens,
+  clock = () => new Date(),
+  logError = console.error,
+}: AppDependencies) {
   const authService = auth ?? createAuthService(db, { clock });
-  const rpc = new RPCHandler(createRouter(db, authService), {
+  const accessTokenService = accessTokens ?? createAccessTokens(db, { clock, logError });
+  const rpc = new RPCHandler(createRouter(db, authService, accessTokenService), {
     plugins: [new BodyLimitPlugin({ maxBodySize: 2 * 1024 * 1024 })],
     interceptors: [
       onError((error) => {

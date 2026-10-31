@@ -1,8 +1,9 @@
 import { authedProcedure, pub } from '@tinyfold/core/infra';
 import { z } from 'zod';
 import type { AuthService } from '../application/service.js';
+import type { AccessTokenService } from './access-tokens.js';
 
-export function createAuthRouter(auth: AuthService) {
+export function createAuthRouter(auth: AuthService, accessTokens: AccessTokenService) {
   return {
     login: pub.input(z.object({ password: z.string().min(1).max(256) })).handler(async ({ input, context }) => {
       const result = await auth.login(input, context.client);
@@ -26,5 +27,12 @@ export function createAuthRouter(auth: AuthService) {
       .input(z.object({ sessionId: z.uuid() }))
       .handler(({ input, context }) => auth.revokeSession(context.session.sessionId, input.sessionId)),
     revokeOtherSessions: authedProcedure.handler(({ context }) => auth.revokeOtherSessions(context.session.sessionId)),
+    listAccessTokens: authedProcedure.handler(() => accessTokens.list()),
+    createAccessToken: authedProcedure
+      .input(z.object({ name: z.string().max(300) }))
+      .handler(({ input }) => accessTokens.create(input)),
+    revokeAccessToken: authedProcedure
+      .input(z.object({ id: z.uuid() }))
+      .handler(({ input }) => accessTokens.revoke(input)),
   };
 }

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createORPCClient } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import { isProcedure, type RouterClient } from '@orpc/server';
-import { createAuthService } from '@tinyfold/auth';
+import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createApp } from './app.js';
@@ -66,7 +66,7 @@ describe('server boundaries', () => {
   it('requires authentication on every content and account operation', async () => {
     const { db, auth, browser } = await fixture();
     const { client } = browser();
-    for (const path of paths(createRouter(db, auth))) {
+    for (const path of paths(createRouter(db, auth, createAccessTokens(db)))) {
       if (path.join('.') === 'auth.login') continue;
       let call: unknown = client;
       for (const part of path) call = (call as Record<string, unknown>)[part];
@@ -141,6 +141,27 @@ describe('server boundaries', () => {
         scene: { ...canvas.scene, elements: [{ id: 'bad', type: 'image' }] },
       }),
     ).rejects.toMatchObject({ status: 400, data: { code: 'VALIDATION' } });
+  });
+  it('manages personal access tokens over RPC without listing the secret', async () => {
+    const { browser } = await fixture();
+    const { client } = browser();
+    await client.auth.login({ password });
+    const created = await client.auth.createAccessToken({ name: 'Claude Code' });
+    expect(created.token).toMatch(/^tf_mcp_[\w-]{43}$/);
+    expect(created.accessToken).toMatchObject({
+      name: 'Claude Code',
+      prefix: created.token.slice(0, 13),
+      lastUsedAt: null,
+    });
+    const listed = await client.auth.listAccessTokens();
+    expect(listed).toEqual([created.accessToken]);
+    expect(JSON.stringify(listed)).not.toContain(created.token);
+    await expect(client.auth.createAccessToken({ name: '' })).rejects.toMatchObject({
+      status: 422,
+      data: { code: 'DOMAIN_RULE' },
+    });
+    expect(await client.auth.revokeAccessToken({ id: created.accessToken.id })).toEqual({ ok: true });
+    expect(await client.auth.listAccessTokens()).toEqual([]);
   });
   it('serves SPA routes without serving HTML for missing assets', async () => {
     const { app } = await fixture();

@@ -1,5 +1,7 @@
 import { DomainError } from '@tinyfold/core/domain';
 
+export * from './access-token.js';
+
 export const sessionLifetimeMs = 30 * 86_400_000;
 export const renewalIntervalMs = 86_400_000;
 
