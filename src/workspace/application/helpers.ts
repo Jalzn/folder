@@ -23,27 +23,13 @@ export async function requireActiveProject(repo: WorkspaceRepository, id: string
   return project;
 }
 
-/**
- * The project a new item joins. Null comes from the interface from before every item had a
- * project, and stands for the first active project of the selector.
- */
-export async function projectForNewItem(repo: WorkspaceRepository, projectId: string | null): Promise<Project> {
-  if (projectId !== null) return requireActiveProject(repo, projectId);
-  const [first] = await repo.listProjects(false);
-  if (!first) throw new AppError('VALIDATION', 'Crie ou desarquive um projeto antes de criar itens.');
-  return first;
-}
-
-/**
- * The project an edited item ends up in. Leaving it out keeps the current project, and so does
- * null, from the interface from before every item had a project; another project must be active.
- */
+/** The project an edited item ends up in. Leaving it out keeps the current one; another must be active. */
 export async function projectForEditedItem(
   repo: WorkspaceRepository,
-  current: string | null,
-  requested: string | null | undefined,
-): Promise<string | null> {
-  if (!requested || requested === current) return current;
+  current: string,
+  requested: string | undefined,
+): Promise<string> {
+  if (requested === undefined || requested === current) return current;
   return (await requireActiveProject(repo, requested)).id;
 }
 

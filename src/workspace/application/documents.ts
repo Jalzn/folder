@@ -1,6 +1,6 @@
 import { documentPlainText, withBlockIds } from '../domain/document.js';
 import type { DocumentAck } from '../domain/models.js';
-import { assertVersion, projectForEditedItem, projectForNewItem, requireDocument } from './helpers.js';
+import { assertVersion, projectForEditedItem, requireActiveProject, requireDocument } from './helpers.js';
 import type { WorkspaceContext } from './ports.js';
 import type {
   CreateDocumentInput,
@@ -11,11 +11,8 @@ import type {
   SaveDocumentInput,
 } from './schemas/documents.js';
 
-export async function listDocuments(ctx: WorkspaceContext, input: ListDocumentsInput) {
-  const { projectId, ...query } = input;
-  // Only the interface from before every item had a project filters by null; nothing matches.
-  if (projectId === null) return [];
-  return ctx.read((repo) => repo.listDocuments({ ...query, projectId }));
+export function listDocuments(ctx: WorkspaceContext, input: ListDocumentsInput) {
+  return ctx.read((repo) => repo.listDocuments(input));
 }
 
 export function getDocument(ctx: WorkspaceContext, input: GetDocumentInput) {
@@ -24,7 +21,7 @@ export function getDocument(ctx: WorkspaceContext, input: GetDocumentInput) {
 
 export function createDocument(ctx: WorkspaceContext, input: CreateDocumentInput) {
   return ctx.write('workspace.createDocument', input, async (repo) => {
-    const project = await projectForNewItem(repo, input.projectId);
+    const project = await requireActiveProject(repo, input.projectId);
     const now = ctx.now();
     const content = withBlockIds(input.content ?? [], () => ctx.newId());
     const document = {

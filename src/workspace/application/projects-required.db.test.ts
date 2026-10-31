@@ -22,6 +22,16 @@ const paragraph = (text: string, id: string) => ({
   content: [{ type: 'text', text, styles: {} }],
 });
 
+/** The error a call throws before any work: the service parses its input, as the RPC boundary does. */
+function refusal(call: () => unknown): unknown {
+  try {
+    call();
+  } catch (error) {
+    return error;
+  }
+  throw new Error('The call was accepted.');
+}
+
 let directory: string;
 let db: Database;
 beforeEach(async () => {
@@ -240,77 +250,61 @@ describe('items need a project', () => {
     expect(() => service.createTask({ ...request(), title: 'Sem projeto' })).toThrow('Escolha o projeto da tarefa.');
   });
 
-  it('reads null from the earlier interface as the first active project, the current one or no match', async () => {
-    const first = await testProject(service, 'Primeiro');
-    const second = await testProject(service, 'Segundo');
-    await service.moveProject({ ...request(), id: second.id, beforeProjectId: first.id });
+  it('refuses a null project, except for a task from an excerpt, which joins the document project', async () => {
+    const project = await testProject(service);
     const document = await service.createDocument({
       ...request(),
-      projectId: null,
+      projectId: project.id,
       content: [paragraph('Ideia solta', 'b')],
     });
-    const canvas = await service.createCanvas({ ...request(), projectId: null });
-    const task = await service.createTask({ ...request(), title: 'Solta', projectId: null });
-    expect([document.projectId, (await service.getCanvas({ id: canvas.id })).projectId, task.task.projectId]).toEqual([
-      second.id,
-      second.id,
-      second.id,
-    ]);
+    const canvas = await service.createCanvas({ ...request(), projectId: project.id });
+    const task = await service.createTask({ ...request(), title: 'Tarefa', projectId: project.id });
+    // What a tab still running the interface from before every item had a project may send.
+    const none = null as unknown as string;
+    const edit = { ...request(), expectedVersion: 1, projectId: none };
+    for (const call of [
+      () => service.createDocument({ ...request(), projectId: none }),
+      () => service.createCanvas({ ...request(), projectId: none }),
+      () => service.createTask({ ...request(), title: 'Solta', projectId: null }),
+      () => service.saveDocument({ ...edit, id: document.id, title: 'Salvo', content: [] }),
+      () => service.saveCanvas({ ...edit, id: canvas.id, title: 'Salvo', scene: drawingFixture() }),
+      () => service.updateTask({ ...edit, id: task.task.id, title: 'Editada' }),
+      () => service.listDocuments({ projectId: none }),
+      () => service.listCanvases({ projectId: none }),
+      () => service.listTasks({ projectId: none }),
+    ])
+      expect(refusal(call)).toMatchObject({ issues: [expect.objectContaining({ path: ['projectId'] })] });
     const fromExcerpt = await service.createTask({
       ...request(),
       title: 'Do trecho',
       projectId: null,
       source: { documentId: document.id, excerpt: 'Ideia' },
     });
-    expect(fromExcerpt.task.projectId).toBe(second.id);
-
-    const saved = await service.saveDocument({
-      ...request(),
-      id: document.id,
-      expectedVersion: 1,
-      title: 'Salvo',
-      content: [],
-      projectId: null,
-    });
-    expect((await service.getDocument({ id: document.id })).projectId).toBe(second.id);
-    await service.saveCanvas({
-      ...request(),
-      id: canvas.id,
-      expectedVersion: 1,
-      title: 'Salvo',
-      scene: drawingFixture(),
-      projectId: null,
-    });
-    await service.updateTask({ ...request(), id: task.task.id, expectedVersion: 1, projectId: null, title: 'Editada' });
-    expect((await service.getCanvas({ id: canvas.id })).projectId).toBe(second.id);
-    expect((await service.listTasks({ projectId: second.id })).tasks.map((item) => item.title)).toContain('Editada');
-    expect(saved.version).toBe(2);
-
-    expect(await service.listDocuments({ projectId: null })).toEqual([]);
-    expect(await service.listCanvases({ projectId: null })).toEqual([]);
-    expect((await service.listTasks({ projectId: null })).tasks).toEqual([]);
+    expect(fromExcerpt.task.projectId).toBe(project.id);
   });
 
-  it('allows archiving the last active project and then refuses new items, null included', async () => {
+  it('allows archiving the last active project and then refuses new items in it', async () => {
     const project = await testProject(service);
-    const document = await service.createDocument({ ...request(), projectId: project.id });
+    const document = await service.createDocument({
+      ...request(),
+      projectId: project.id,
+      content: [paragraph('Texto do projeto', 'b')],
+    });
     const archived = await service.updateProject({ ...request(), id: project.id, expectedVersion: 1, archived: true });
     expect(archived.archivedAt).not.toBeNull();
     expect(await service.listProjects()).toEqual([]);
     expect(await service.listProjects({ includeArchived: true })).toEqual([archived]);
     for (const create of [
-      () => service.createDocument({ ...request(), projectId: null }),
-      () => service.createCanvas({ ...request(), projectId: null }),
-      () => service.createTask({ ...request(), title: 'Nova', projectId: null }),
+      () => service.createDocument({ ...request(), projectId: project.id }),
+      () => service.createCanvas({ ...request(), projectId: project.id }),
+      () => service.createTask({ ...request(), title: 'Nova', projectId: project.id }),
+      () =>
+        service.createTask({ ...request(), title: 'Do trecho', source: { documentId: document.id, excerpt: 'Texto' } }),
     ])
       await expect(create()).rejects.toMatchObject({
         code: 'VALIDATION',
-        message: 'Crie ou desarquive um projeto antes de criar itens.',
+        message: 'Desarquive o projeto antes de adicionar conteúdo a ele.',
       });
-    await expect(service.createDocument({ ...request(), projectId: project.id })).rejects.toMatchObject({
-      code: 'VALIDATION',
-      message: 'Desarquive o projeto antes de adicionar conteúdo a ele.',
-    });
     // Existing items stay editable.
     expect(
       await service.saveDocument({

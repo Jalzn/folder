@@ -1,17 +1,20 @@
 import { z } from 'zod';
 import { TASK_STATUSES } from '../../domain/task-status.js';
-import { edit, id, projectId, request, version } from './common.js';
+import { edit, id, request, version } from './common.js';
 
 const title = z.string().trim().min(1, 'Escreva um título.').max(300);
 const status = z.enum(TASK_STATUSES);
 
-export const ListTasksInput = z.object({ projectId: projectId.optional(), documentId: id.optional() });
-/** A task needs a project, unless it comes from a document excerpt and so joins the document's project. */
+export const ListTasksInput = z.object({ projectId: id.optional(), documentId: id.optional() });
+/**
+ * A task needs a project, unless it comes from a document excerpt: with no project, or null, it
+ * joins the document's project.
+ */
 export const CreateTaskInput = z
   .object({
     ...request,
     title,
-    projectId: projectId.optional(),
+    projectId: id.nullable().optional(),
     status: status.optional(),
     source: z
       .object({
@@ -22,14 +25,14 @@ export const CreateTaskInput = z
       })
       .optional(),
   })
-  .refine((input) => input.projectId !== undefined || input.source !== undefined, {
+  .refine((input) => typeof input.projectId === 'string' || input.source !== undefined, {
     message: 'Escolha o projeto da tarefa.',
     path: ['projectId'],
   });
 export const UpdateTaskInput = z.object({
   ...edit,
   title: title.optional(),
-  projectId: projectId.optional(),
+  projectId: id.optional(),
   status: status.optional(),
 });
 export const DeleteTaskInput = z.object(edit);

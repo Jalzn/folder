@@ -99,6 +99,41 @@ describe('server boundaries', () => {
     await client.auth.logout();
     expect(state.cookie).toBeUndefined();
   });
+  it('refuses a null project with VALIDATION, except for a task from an excerpt', async () => {
+    const { browser } = await fixture();
+    const { client } = browser();
+    await client.auth.login({ password });
+    const project = await newProject(client);
+    const document = await client.workspace.createDocument({
+      requestId: randomUUID(),
+      projectId: project.id,
+      content: [{ id: 'b', type: 'paragraph', content: [{ type: 'text', text: 'Texto do trecho', styles: {} }] }],
+    });
+    // What a tab still running the interface from before every item had a project may send.
+    const none = null as unknown as string;
+    for (const call of [
+      () => client.workspace.createDocument({ requestId: randomUUID(), projectId: none }),
+      () =>
+        client.workspace.saveDocument({
+          requestId: randomUUID(),
+          id: document.id,
+          expectedVersion: 1,
+          title: 'Salvo',
+          content: [],
+          projectId: none,
+        }),
+      () => client.workspace.listTasks({ projectId: none }),
+      () => client.workspace.createTask({ requestId: randomUUID(), title: 'Solta', projectId: null }),
+    ])
+      await expect(call()).rejects.toMatchObject({ status: 400, data: { code: 'VALIDATION' } });
+    const fromExcerpt = await client.workspace.createTask({
+      requestId: randomUUID(),
+      title: 'Do trecho',
+      projectId: null,
+      source: { documentId: document.id, blockId: 'b', excerpt: 'Texto' },
+    });
+    expect(fromExcerpt.task.projectId).toBe(project.id);
+  });
   it('saves a document above the old 64KiB limit and rejects excessive request size', async () => {
     const { browser, app } = await fixture();
     const { client } = browser();

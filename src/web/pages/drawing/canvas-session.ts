@@ -1,6 +1,6 @@
 import { type Canvas, type CanvasScene, canvasPlainText, readCanvasScene } from '@tinyfold/workspace/domain';
 import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
-import { AutosaveController } from '../../lib/autosave';
+import { AutosaveController, type SaveInput } from '../../lib/autosave';
 import { type CanvasSnapshot, canvasDraftStorage, parseCanvasDraft, withCleanLinks } from '../../lib/canvas-autosave';
 import { renderCanvasPng } from '../../lib/canvas-png';
 import { CanvasPreviewUploader } from '../../lib/canvas-preview';
@@ -36,14 +36,15 @@ export const sceneRevision = (scene: CanvasScene) =>
     )
     .join('|')}`;
 
-async function send(input: Parameters<typeof api.workspace.saveCanvas>[0]) {
+async function send(input: SaveInput<CanvasSnapshot>) {
   try {
     readCanvasScene(input.scene);
   } catch (error) {
     throw Object.assign(error instanceof Error ? error : new Error('Desenho inválido.'), { code: 'VALIDATION' });
   }
   try {
-    return await api.workspace.saveCanvas(input);
+    // A draft's null project, from before every item had one, is recovered on load (withDraftProject).
+    return await api.workspace.saveCanvas({ ...input, projectId: input.projectId ?? undefined });
   } catch (error) {
     reportSessionError(error);
     throw error;
@@ -84,6 +85,7 @@ export function canvasSession(canvas: EditableCanvas, installationId: string): C
         return {
           ...base,
           ...sent,
+          projectId: sent.projectId ?? base.projectId,
           title: sent.title.trim() || 'Sem título',
           plainText: canvasPlainText(sent.scene),
           version: ack.version,

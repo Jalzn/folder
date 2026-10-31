@@ -28,8 +28,7 @@ export interface Project {
 export interface DocumentSummary {
   id: string;
   title: string;
-  /** Always set since every item has a project; null is still typed while the interface sends it. */
-  projectId: string | null;
+  projectId: string;
   plainText: string;
   formatVersion: number;
   version: number;
@@ -62,8 +61,7 @@ export interface TaskSource {
 export interface Task {
   id: string;
   title: string;
-  /** Always set since every item has a project; null is still typed while the interface sends it. */
-  projectId: string | null;
+  projectId: string;
   status: TaskStatus;
   position: number;
   version: number;

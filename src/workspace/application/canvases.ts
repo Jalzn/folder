@@ -1,7 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
 import { type Canvas, type CanvasAck, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
 import { previewShowsScene } from '../domain/canvas-preview.js';
-import { assertVersion, projectForEditedItem, projectForNewItem } from './helpers.js';
+import { assertVersion, projectForEditedItem, requireActiveProject } from './helpers.js';
 import type { WorkspaceContext, WorkspaceRepository } from './ports.js';
 import type {
   CreateCanvasInput,
@@ -18,11 +18,8 @@ async function requireCanvas(repo: WorkspaceRepository, id: string, includeDelet
     throw new AppError('NOT_FOUND', 'O desenho não está disponível.');
   return canvas;
 }
-export async function listCanvases(ctx: WorkspaceContext, input: ListCanvasesInput) {
-  const { projectId, ...query } = input;
-  // Only the interface from before every item had a project filters by null; nothing matches.
-  if (projectId === null) return [];
-  return ctx.read((repo) => repo.listCanvases({ ...query, projectId }));
+export function listCanvases(ctx: WorkspaceContext, input: ListCanvasesInput) {
+  return ctx.read((repo) => repo.listCanvases(input));
 }
 /**
  * Reading a trashed scene lets the editor recover a local draft or save it as a copy.
@@ -42,7 +39,7 @@ export function getCanvas(ctx: WorkspaceContext, input: GetCanvasInput) {
 }
 export function createCanvas(ctx: WorkspaceContext, input: CreateCanvasInput): Promise<CanvasAck> {
   return ctx.write('workspace.createCanvas', input, async (repo) => {
-    const project = await projectForNewItem(repo, input.projectId);
+    const project = await requireActiveProject(repo, input.projectId);
     const now = ctx.now();
     const scene = input.scene ?? emptyCanvasScene();
     const canvas: Canvas = {

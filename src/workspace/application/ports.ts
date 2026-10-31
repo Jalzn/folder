@@ -97,7 +97,7 @@ export interface TrashRepository {
 /** Documents and drawings pinned at the top of their project's sidebar. */
 export interface PinRepository {
   /** The live pinned documents and drawings of the project, together. */
-  pinnedCount(projectId: string | null): Promise<number>;
+  pinnedCount(projectId: string): Promise<number>;
   /** Pins or unpins an item without making it an edit: version and dates stay. */
   setPinnedAt(type: NavItemType, id: string, pinnedAt: string | null): Promise<void>;
 }

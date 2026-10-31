@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { readDocumentContent } from '../../domain/document.js';
-import { edit, id, projectId, request } from './common.js';
+import { edit, id, request } from './common.js';
 
 const content = z.unknown().transform((value, ctx) => {
   try {
@@ -12,7 +12,7 @@ const content = z.unknown().transform((value, ctx) => {
 });
 
 export const ListDocumentsInput = z.object({
-  projectId: projectId.optional(),
+  projectId: id.optional(),
   query: z.string().max(300).optional(),
   deleted: z.boolean().optional(),
 });
@@ -20,14 +20,14 @@ export const GetDocumentInput = z.object({ id });
 export const CreateDocumentInput = z.object({
   ...request,
   title: z.string().trim().max(300).optional(),
-  projectId,
+  projectId: id,
   content: content.optional(),
 });
 export const SaveDocumentInput = z.object({
   ...edit,
   title: z.string().trim().max(300),
   content,
-  projectId: projectId.optional(),
+  projectId: id.optional(),
 });
 export const DeleteDocumentInput = z.object(edit);
 export const RestoreDocumentInput = z.object(edit);

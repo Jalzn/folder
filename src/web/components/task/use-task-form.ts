@@ -77,7 +77,14 @@ export function useTaskForm({
   async function submit() {
     if (!title.trim() || busy) return;
     if (task) {
-      const input = { id: task.id, expectedVersion: task.version, title: title.trim(), projectId, status };
+      // An existing task always has a project, so the field is never empty here.
+      const input = {
+        id: task.id,
+        expectedVersion: task.version,
+        title: title.trim(),
+        ...(projectId ? { projectId } : {}),
+        status,
+      };
       await write(() => api.workspace.updateTask({ ...input, requestId: request.for(input) }), 'Tarefa atualizada.');
     } else {
       const input = { title: title.trim(), projectId, status, ...(source ? { source } : {}) };

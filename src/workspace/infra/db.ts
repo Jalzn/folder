@@ -14,8 +14,8 @@ export interface ProjectRow {
 
 export interface DocumentRow {
   id: string;
-  /** Never null since migration 005, whose triggers refuse it. */
-  project_id: string | null;
+  /** Required since migration 005, whose triggers refuse null; the column itself stays nullable. */
+  project_id: string;
   title: string;
   content: string;
   plain_text: string;
@@ -30,8 +30,8 @@ export interface DocumentRow {
 
 export interface TaskRow {
   id: string;
-  /** Never null since migration 005, whose triggers refuse it. */
-  project_id: string | null;
+  /** Required since migration 005, whose triggers refuse null; the column itself stays nullable. */
+  project_id: string;
   title: string;
   status: TaskStatus;
   position: number;
@@ -72,8 +72,8 @@ export interface WorkspaceTables {
 
 export interface CanvasRow {
   id: string;
-  /** Never null since migration 005, whose triggers refuse it. */
-  project_id: string | null;
+  /** Required since migration 005, whose triggers refuse null; the column itself stays nullable. */
+  project_id: string;
   title: string;
   scene: string;
   plain_text: string;

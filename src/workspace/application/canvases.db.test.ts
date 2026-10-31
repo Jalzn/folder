@@ -189,16 +189,17 @@ describe('canvas persistence and concurrency', () => {
     ]);
     service = createWorkspaceService(db);
     const [general] = await service.listProjects();
+    if (!general) throw new Error('Migration 005 should move the loose items to Geral.');
     expect(await service.getDocument({ id: document.id })).toMatchObject({
       title: 'Preservado',
-      projectId: general?.id,
+      projectId: general.id,
       version: 1,
       updatedAt: document.updated_at,
     });
-    expect((await service.listTasks()).tasks[0]).toMatchObject({ id: task.id, projectId: general?.id });
+    expect((await service.listTasks()).tasks[0]).toMatchObject({ id: task.id, projectId: general.id });
     const canvas = await service.createCanvas({
       ...request(),
-      projectId: general?.id ?? null,
+      projectId: general.id,
       scene: drawingFixture(),
     });
     expect((await service.getCanvas({ id: canvas.id })).scene).toEqual(drawingFixture());

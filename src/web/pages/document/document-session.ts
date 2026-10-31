@@ -1,5 +1,5 @@
 import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
-import { AutosaveController, parseDraft, type Snapshot } from '../../lib/autosave';
+import { AutosaveController, parseDraft, type SaveInput, type Snapshot } from '../../lib/autosave';
 import { withDraftProject } from '../../lib/draft-project';
 import { invalidateNavigation } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
@@ -50,7 +50,7 @@ function draftStorage(identity: string) {
   };
 }
 
-async function send(input: Parameters<typeof api.workspace.saveDocument>[0]) {
+async function send(input: SaveInput) {
   if (new TextEncoder().encode(JSON.stringify(input.content)).length > MAX_DOCUMENT_BYTES)
     throw Object.assign(
       new Error(
@@ -59,7 +59,8 @@ async function send(input: Parameters<typeof api.workspace.saveDocument>[0]) {
       { code: 'VALIDATION' },
     );
   try {
-    return await api.workspace.saveDocument(input);
+    // A draft's null project, from before every item had one, is recovered on load (withDraftProject).
+    return await api.workspace.saveDocument({ ...input, projectId: input.projectId ?? undefined });
   } catch (error) {
     reportSessionError(error);
     throw error;
@@ -90,6 +91,7 @@ export function documentController(document: Document, installationId: string) {
             : {
                 ...(previous ?? document),
                 ...sent,
+                projectId: sent.projectId ?? (previous ?? document).projectId,
                 title: sent.title.trim() || 'Sem título',
                 version: ack.version,
                 updatedAt: ack.updatedAt,

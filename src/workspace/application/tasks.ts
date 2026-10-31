@@ -1,6 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
 import { excerptPresent } from '../domain/task-source.js';
-import { assertVersion, projectForEditedItem, projectForNewItem, requireDocument, requireTask } from './helpers.js';
+import { assertVersion, projectForEditedItem, requireActiveProject, requireDocument, requireTask } from './helpers.js';
 import type { TaskRecord, TaskSourceRecord, WorkspaceContext } from './ports.js';
 import type {
   CreateTaskInput,
@@ -12,18 +12,13 @@ import type {
 } from './schemas/tasks.js';
 
 export function listTasks(ctx: WorkspaceContext, input: ListTasksInput) {
-  const { projectId, ...query } = input;
-  return ctx.read(async (repo) => ({
-    // Only the interface from before every item had a project filters by null; nothing matches.
-    tasks: projectId === null ? [] : await repo.listTasks({ ...query, projectId }),
-    revision: await repo.revision(),
-  }));
+  return ctx.read(async (repo) => ({ tasks: await repo.listTasks(input), revision: await repo.revision() }));
 }
 
 export function createTask(ctx: WorkspaceContext, input: CreateTaskInput) {
   return ctx.write('workspace.createTask', input, async (repo) => {
     const id = ctx.newId();
-    let projectId = input.projectId ?? null;
+    let projectId = input.projectId ?? undefined;
     let source: TaskSourceRecord | undefined;
     if (input.source) {
       const document = await requireDocument(repo, input.source.documentId);
@@ -44,7 +39,9 @@ export function createTask(ctx: WorkspaceContext, input: CreateTaskInput) {
         excerpt: input.source.excerpt,
       };
     }
-    const project = await projectForNewItem(repo, projectId);
+    // CreateTaskInput lets the project be missing only with a source, whose document has one.
+    if (projectId === undefined) throw new AppError('VALIDATION', 'Escolha o projeto da tarefa.');
+    const project = await requireActiveProject(repo, projectId);
     const now = ctx.now();
     const status = input.status ?? 'todo';
     const task: TaskRecord = {

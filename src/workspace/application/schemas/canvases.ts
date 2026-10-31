@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { readCanvasScene } from '../../domain/canvas.js';
-import { edit, id, projectId, request, version } from './common.js';
+import { edit, id, request, version } from './common.js';
 
 const scene = z.unknown().transform((value, ctx) => {
   try {
@@ -12,7 +12,7 @@ const scene = z.unknown().transform((value, ctx) => {
 });
 
 export const ListCanvasesInput = z.object({
-  projectId: projectId.optional(),
+  projectId: id.optional(),
   query: z.string().max(300).optional(),
   deleted: z.boolean().optional(),
 });
@@ -20,13 +20,13 @@ export const GetCanvasInput = z.object({ id });
 export const CreateCanvasInput = z.object({
   ...request,
   title: z.string().trim().max(300).optional(),
-  projectId,
+  projectId: id,
   scene: scene.optional(),
 });
 export const SaveCanvasInput = z.object({
   ...edit,
   title: z.string().trim().max(300),
-  projectId: projectId.optional(),
+  projectId: id.optional(),
   scene,
 });
 export const DeleteCanvasInput = z.object(edit);
