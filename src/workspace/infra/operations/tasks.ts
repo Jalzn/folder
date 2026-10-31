@@ -4,9 +4,10 @@ import {
   DeleteTaskInput,
   ListTasksInput,
   MoveTaskInput,
+  RestoreTaskInput,
   UpdateTaskInput,
 } from '../../application/schemas/tasks.js';
-import { createTask, deleteTask, listTasks, moveTask, updateTask } from '../../application/tasks.js';
+import { createTask, deleteTask, listTasks, moveTask, restoreTask, updateTask } from '../../application/tasks.js';
 import { operation } from './operation.js';
 
 export const taskOperations = (ctx: WorkspaceContext) => ({
@@ -14,5 +15,6 @@ export const taskOperations = (ctx: WorkspaceContext) => ({
   createTask: operation(CreateTaskInput, (input) => createTask(ctx, input)),
   updateTask: operation(UpdateTaskInput, (input) => updateTask(ctx, input)),
   deleteTask: operation(DeleteTaskInput, (input) => deleteTask(ctx, input)),
+  restoreTask: operation(RestoreTaskInput, (input) => restoreTask(ctx, input)),
   moveTask: operation(MoveTaskInput, (input) => moveTask(ctx, input)),
 });

@@ -69,6 +69,36 @@ describe('list_tasks and read_task', () => {
     });
   });
 
+  it('keeps the title of a source document deleted for good', async () => {
+    const document = await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Plano antigo',
+      content: [paragraph('Revisar o orçamento', 'b')],
+    });
+    const { task } = await agent.service.createTask({
+      ...request(),
+      title: 'Revisar',
+      source: { documentId: document.id, blockId: 'b', excerpt: 'Revisar o orçamento' },
+    });
+    const trashed = await agent.service.deleteDocument({ ...request(), id: document.id, expectedVersion: 1 });
+    await agent.service.purgeDocument({ ...request(), id: document.id, expectedVersion: trashed.version });
+
+    const { tasks } = await agent.json<{ tasks: { source: unknown }[] }>('list_tasks');
+    expect(tasks[0]?.source).toEqual({ documentId: null, documentTitle: 'Plano antigo', available: false });
+    expect(await agent.json('read_task', { id: task.id })).toMatchObject({
+      source: {
+        documentId: null,
+        documentTitle: 'Plano antigo',
+        blockId: 'b',
+        excerpt: 'Revisar o orçamento',
+        available: false,
+        blockAvailable: false,
+      },
+    });
+    expect(await agent.json('list_tasks', { documentId: document.id })).toEqual({ tasks: [], nextCursor: null });
+  });
+
   it('refuses a cursor from before the board changed', async () => {
     const created = [];
     for (let index = 0; index < 5; index += 1)

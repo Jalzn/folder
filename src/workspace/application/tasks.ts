@@ -7,6 +7,7 @@ import type {
   DeleteTaskInput,
   ListTasksInput,
   MoveTaskInput,
+  RestoreTaskInput,
   UpdateTaskInput,
 } from './schemas/tasks.js';
 
@@ -94,6 +95,28 @@ export function deleteTask(ctx: WorkspaceContext, input: DeleteTaskInput) {
     const now = ctx.now();
     await repo.saveTask({ ...task, deletedAt: now, updatedAt: now, version: task.version + 1 }, task.version);
     return { id: task.id, revision: await repo.bumpRevision() };
+  });
+}
+
+/** Brings a task back from the trash, to the end of its column. */
+export function restoreTask(ctx: WorkspaceContext, input: RestoreTaskInput) {
+  return ctx.write('workspace.restoreTask', input, async (repo) => {
+    const task = await repo.findTask(input.id);
+    if (!task) throw new AppError('NOT_FOUND', 'A tarefa não foi encontrada.');
+    assertVersion(task.version, input.expectedVersion);
+    if (!task.deletedAt) throw new AppError('DOMAIN_RULE', 'A tarefa não está na lixeira.');
+    await repo.saveTask(
+      {
+        ...task,
+        deletedAt: null,
+        position: await repo.nextPosition(task.status),
+        version: task.version + 1,
+        updatedAt: ctx.now(),
+      },
+      task.version,
+    );
+    const revision = await repo.bumpRevision();
+    return { task: await repo.taskView(task.id), revision };
   });
 }
 

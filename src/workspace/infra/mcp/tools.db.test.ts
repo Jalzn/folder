@@ -101,13 +101,22 @@ describe('agent read tools', () => {
       projectId,
       content: [paragraph(`alvo ${heavy(3_000)}`), code, paragraph('palavra '.repeat(8_000))],
     });
-    for (let index = 0; index < 100; index += 1)
+    // Every third task comes from a document deleted for good, whose sources keep its long title.
+    const gone = await agent.service.createDocument({
+      ...request(),
+      title: heavy(300),
+      projectId,
+      content: [paragraph(heavy(3_000))],
+    });
+    for (let index = 0; index < 150; index += 1)
       await agent.service.createTask({
         ...request(),
         title: `${heavy(290)} alvo ${index}`,
         projectId,
-        source: { documentId: document.id, excerpt: heavy(3_000) },
+        source: { documentId: index % 3 === 2 ? gone.id : document.id, excerpt: heavy(3_000) },
       });
+    const trashed = await agent.service.deleteDocument({ ...request(), id: gone.id, expectedVersion: gone.version });
+    await agent.service.purgeDocument({ ...request(), id: gone.id, expectedVersion: trashed.version });
     const labels = Array.from({ length: 60 }, (_, index) =>
       shape(`t${index}`, 'text', {
         text: heavy(500),
@@ -130,9 +139,11 @@ describe('agent read tools', () => {
     }
     await record('search', { query: 'alvo', limit: 50 });
     await record('search', { limit: 50 });
-    await record('list_tasks', { limit: 100 });
-    const { tasks } = JSON.parse((await record('list_tasks', { limit: 1 })).text) as { tasks: { id: string }[] };
-    await record('read_task', { id: tasks[0]?.id });
+    const page = JSON.parse((await record('list_tasks', { limit: 100 })).text) as {
+      tasks: { id: string; source: { documentId: string | null } }[];
+    };
+    expect(page.tasks.some((task) => task.source.documentId === null)).toBe(true);
+    for (const task of page.tasks.slice(0, 3)) await record('read_task', { id: task.id });
     expect((await record('read_drawing', { id: drawing.id, image: false })).text).toContain('… omitidos:');
     await record('read_document', { id: document.id, cursor: '1:5' });
 

@@ -33,6 +33,7 @@ export const UpdateTaskInput = z.object({
   status: status.optional(),
 });
 export const DeleteTaskInput = z.object(edit);
+export const RestoreTaskInput = z.object(edit);
 export const MoveTaskInput = z.object({
   ...edit,
   expectedRevision: z.number().int().nonnegative(),
@@ -44,4 +45,5 @@ export type ListTasksInput = z.infer<typeof ListTasksInput>;
 export type CreateTaskInput = z.infer<typeof CreateTaskInput>;
 export type UpdateTaskInput = z.infer<typeof UpdateTaskInput>;
 export type DeleteTaskInput = z.infer<typeof DeleteTaskInput>;
+export type RestoreTaskInput = z.infer<typeof RestoreTaskInput>;
 export type MoveTaskInput = z.infer<typeof MoveTaskInput>;

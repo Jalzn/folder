@@ -6,6 +6,7 @@ import { canvasRepository } from './canvases.js';
 import { documentRepository } from './documents.js';
 import { projectRepository } from './projects.js';
 import { taskRepository } from './tasks.js';
+import { trashRepository } from './trash.js';
 
 /** Every aggregate's queries bound to one connection or transaction. */
 export function workspaceRepository(connection: Database): WorkspaceRepository {
@@ -15,6 +16,7 @@ export function workspaceRepository(connection: Database): WorkspaceRepository {
     ...canvasRepository(connection),
     ...canvasPreviewRepository(connection),
     ...taskRepository(connection),
+    ...trashRepository(connection),
     ...boardRepository(connection),
   };
 }
