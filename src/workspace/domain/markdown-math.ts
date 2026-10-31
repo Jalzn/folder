@@ -1,3 +1,5 @@
+import { fenceFor } from './markdown-fence.js';
+
 /**
  * Markdown fences for LaTeX, shared by the server serializer and the web `.md` export.
  * Sources are written raw, so incomplete formulas survive a round trip.
@@ -10,9 +12,7 @@ const normalizeLineEndings = (source: string) => source.replace(/\r\n?/gu, '\n')
 
 /** One dollar more than the longest run inside, with at least `$` inline and `$$` for display. */
 export function mathFence(source: string, display: boolean): string {
-  let longestRun = 0;
-  for (const run of source.matchAll(/\$+/gu)) longestRun = Math.max(longestRun, run[0].length);
-  return '$'.repeat(Math.max(display ? 2 : 1, longestRun + 1));
+  return fenceFor(source, '$', display ? 2 : 1);
 }
 
 /** The fenced inline formula. Markdown turns inline line endings into spaces. */

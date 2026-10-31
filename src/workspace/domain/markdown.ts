@@ -1,3 +1,4 @@
+import { fenceFor } from './markdown-fence.js';
 import { inlineMarkdown } from './markdown-inline.js';
 import { displayMathLines } from './markdown-math.js';
 import type { DocumentBlock, JsonValue } from './models.js';
@@ -114,9 +115,7 @@ function heading(block: DocumentBlock): string[] {
 
 function codeFence(code: string, language: string | undefined): string[] {
   const normalized = code.replace(/\r\n?/gu, '\n');
-  let longestRun = 0;
-  for (const run of normalized.matchAll(/`+/gu)) longestRun = Math.max(longestRun, run[0].length);
-  const fence = '`'.repeat(Math.max(3, longestRun + 1));
+  const fence = fenceFor(normalized, '`', 3);
   return [`${fence}${language ?? ''}`, ...(normalized ? normalized.split('\n') : []), fence];
 }
 

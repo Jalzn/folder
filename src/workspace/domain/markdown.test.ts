@@ -114,4 +114,14 @@ describe('document to Markdown', () => {
     );
     expect(markdown(block('mathBlock', '\\begin{a}\n$$\n\\end{a}'))).toBe('$$$\n\\begin{a}\n$$\n\\end{a}\n$$$\n');
   });
+
+  it('stays linear in the pieces of one block', () => {
+    const math = { type: 'math', props: {}, content: 'x' };
+    const started = performance.now();
+    const breaks = markdown(paragraph(text('a\n'.repeat(100_000))));
+    const formulas = markdown(paragraph(...Array.from({ length: 100_000 }, () => math)));
+    expect(performance.now() - started).toBeLessThan(1000);
+    expect(breaks.split('\n')).toHaveLength(100_001);
+    expect(formulas.startsWith('$x$<!-- -->$x$')).toBe(true);
+  });
 });
