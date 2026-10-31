@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@orpc/server": "1.16.1",
+    "@tinyfold/auth": "workspace:*",
     "@tinyfold/server": "workspace:*",
     "@tinyfold/workspace": "workspace:*",
     "@types/react": "19.3.0",

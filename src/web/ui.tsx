@@ -37,20 +37,24 @@ export function Dialog({
   onClose,
   className = '',
   dismissable = true,
+  closeOnOutsideClick = dismissable,
 }: {
   title: string;
   children: ReactNode;
   open: boolean;
   onClose: () => void;
   className?: string;
+  /** Whether Esc and the close button dismiss the dialog. */
   dismissable?: boolean;
+  /** Turn off for content that a stray click must not discard. */
+  closeOnOutsideClick?: boolean;
 }) {
   return (
     <ModalOverlay
       className="modal-overlay"
       isOpen={open}
       onOpenChange={(v) => !v && onClose()}
-      isDismissable={dismissable}
+      isDismissable={closeOnOutsideClick}
       isKeyboardDismissDisabled={!dismissable}
     >
       <Modal className={`modal ${className}`}>

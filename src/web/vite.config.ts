@@ -19,13 +19,16 @@ function excalidrawFonts(): Plugin {
 
 export default defineConfig(({ mode }) => {
   const env = { ...loadEnv(mode, '../..', ''), ...process.env };
+  const server = `http://127.0.0.1:${env.PORT ?? 3370}`;
   return {
     plugins: [react(), excalidrawFonts()],
     server: {
       host: 'localhost',
       port: Number(env.WEB_PORT ?? 5170),
       strictPort: true,
-      proxy: { '/rpc': `http://127.0.0.1:${env.PORT ?? 3370}` },
+      // Same paths as in production: Claude Code uses /mcp, and /.well-known must answer its OAuth
+      // discovery with the server's JSON 404 instead of the SPA's index.html.
+      proxy: { '/rpc': server, '/mcp': server, '/.well-known': server },
     },
     // Keep font URLs on this origin, as required by the server's font-src policy.
     build: { outDir: 'dist', assetsInlineLimit: 0 },

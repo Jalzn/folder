@@ -173,6 +173,9 @@ importers:
       '@orpc/server':
         specifier: 1.16.1
         version: 1.16.1(ws@8.22.0)
+      '@tinyfold/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@tinyfold/server':
         specifier: workspace:*
         version: link:../server

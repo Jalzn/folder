@@ -10,7 +10,7 @@ import { queryClient } from './lib/api';
 import { BoardPage } from './pages/Board';
 import { CanvasesPage } from './pages/Canvases';
 import { DocumentsPage, HomePage, ProjectPage, TrashPage } from './pages/Library';
-import { ProfilePage } from './pages/Profile';
+import { ProfilePage } from './pages/profile/ProfilePage';
 import { Shell } from './shell';
 import { Spinner, ToastProvider } from './ui';
 

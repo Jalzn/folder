@@ -1,0 +1,90 @@
+/* "Acesso pelo Claude Code" in the Perfil. The list rows reuse .session-row from styles.css. */
+.access-token-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+.access-token-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.access-token-prefix,
+.access-token-copy input,
+.access-token-command pre {
+  /* JetBrains Mono arrives with the Sumário interface; Chrome ignores ui-monospace, hence Menlo. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+.access-token-prefix {
+  color: #b9c4d5;
+}
+.access-token-empty {
+  margin-top: 21px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.access-token-limit {
+  margin-top: 10px;
+}
+
+.access-token-dialog {
+  max-width: 540px;
+}
+.access-token-dialog .field {
+  margin-bottom: 18px;
+}
+.access-token-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.access-token-copy input {
+  font-size: 13px;
+}
+.access-token-command figure {
+  margin: 0;
+}
+.access-token-command figcaption {
+  font-size: 12px;
+  font-weight: 550;
+  color: #d3d9e4;
+  margin-bottom: 8px;
+}
+.access-token-command pre {
+  margin: 0;
+  padding: 11px 12px;
+  background: #20252c;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.6;
+  /* The command wraps instead of scrolling, so it stays readable on a phone. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.access-token-command .button {
+  margin-top: 10px;
+}
+.access-token-command .field-hint {
+  display: block;
+  margin-top: 12px;
+  line-height: 1.6;
+}
+.access-token-status {
+  min-height: 20px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media (max-width: 600px) {
+  /* Keep the 16px that stops iOS from zooming into a focused field. */
+  .access-token-copy input {
+    font-size: 16px;
+  }
+  .access-token-command pre {
+    font-size: 11px;
+  }
+}
