@@ -1,4 +1,5 @@
 import { boardCursor, readBoardCursor } from '../../domain/paging.js';
+import { keysetPage } from './keyset-page.js';
 import { boardKey } from './list-order.js';
 import type { ReadingContext } from './ports.js';
 import { queryTerms } from './query-terms.js';
@@ -18,12 +19,5 @@ export async function listTasks(ctx: ReadingContext, input: ListTasksInput) {
       after,
     }),
   );
-  return {
-    tasks: page.items,
-    /** The cursor after the first `shown` tasks, which may be fewer than the page; null at the end. */
-    nextCursor(shown: number) {
-      const last = page.items[shown - 1];
-      return last && (shown < page.items.length || page.hasMore) ? boardCursor(boardKey(last)) : null;
-    },
-  };
+  return keysetPage(page, (task) => boardCursor(boardKey(task)));
 }

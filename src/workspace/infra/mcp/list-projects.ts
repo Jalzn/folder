@@ -16,7 +16,7 @@ export const listProjectsTool = (reading: ReadingContext) =>
     annotations: readOnlyAnnotations,
     async handler(input) {
       const page = await listProjects(reading, input);
-      const text = fitItems(page.projects, (shown) =>
+      const text = fitItems(page.items, (shown) =>
         compactJson({
           projects: shown,
           withoutProject: page.withoutProject,

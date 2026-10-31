@@ -1,5 +1,6 @@
 import { projectCursor, readProjectCursor } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
+import { keysetPage } from './keyset-page.js';
 import type { ReadingContext } from './ports.js';
 import type { ListProjectsInput } from './schemas.js';
 
@@ -14,13 +15,5 @@ export async function listProjects(ctx: ReadingContext, input: ListProjectsInput
     }),
     withoutProject: await reader.withoutProjectCounts(),
   }));
-  return {
-    projects: page.items,
-    withoutProject,
-    /** The cursor after the first `shown` projects, which may be fewer than the page; null at the end. */
-    nextCursor(shown: number) {
-      const last = page.items[shown - 1];
-      return last && (shown < page.items.length || page.hasMore) ? projectCursor(last) : null;
-    },
-  };
+  return { ...keysetPage(page, projectCursor), withoutProject };
 }

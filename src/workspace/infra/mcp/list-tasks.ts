@@ -27,7 +27,7 @@ export const listTasksTool = (reading: ReadingContext) =>
     annotations: readOnlyAnnotations,
     async handler(input) {
       const page = await listTasks(reading, input);
-      const text = fitItems(page.tasks, (shown) =>
+      const text = fitItems(page.items, (shown) =>
         compactJson({ tasks: shown.map(taskView), nextCursor: page.nextCursor(shown.length) }),
       );
       return textResult(text);

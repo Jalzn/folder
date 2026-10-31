@@ -1,4 +1,5 @@
 import { readSearchCursor, SEARCH_ITEM_TYPES, searchCursor } from '../../domain/paging.js';
+import { keysetPage } from './keyset-page.js';
 import { searchKey } from './list-order.js';
 import type { ReadingContext } from './ports.js';
 import { queryTerms } from './query-terms.js';
@@ -20,12 +21,5 @@ export async function search(ctx: ReadingContext, input: SearchInput) {
       after,
     }),
   );
-  return {
-    items: page.items,
-    /** The cursor after the first `shown` items, which may be fewer than the page; null at the end. */
-    nextCursor(shown: number) {
-      const last = page.items[shown - 1];
-      return last && (shown < page.items.length || page.hasMore) ? searchCursor(searchKey(last)) : null;
-    },
-  };
+  return keysetPage(page, (hit) => searchCursor(searchKey(hit)));
 }
