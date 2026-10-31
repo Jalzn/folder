@@ -3,7 +3,8 @@ import { useCreateBlockNote } from '@blocknote/react';
 import { useSearch } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import type { AutosaveController, SaveState } from '../../lib/autosave';
-import type { Document } from '../../lib/types';
+import { lacksBlockIds } from '../../lib/block-ids';
+import type { Document, DocumentContent } from '../../lib/types';
 import { documentDictionary, documentSchema, type EditorBlocks } from './document-schema';
 import { documentSnapshot } from './document-session';
 
@@ -25,6 +26,15 @@ export function useDocumentEditor(controller: AutosaveController, document: Docu
   useEffect(() => {
     controller.receiveRemote(documentSnapshot(document), document.version);
   }, [controller, document]);
+  // A document stored before every block had an id is saved once with the editor's ids, so a task made
+  // from a selection points at a block the server has.
+  const idsChecked = useRef(false);
+  useEffect(() => {
+    if (idsChecked.current) return;
+    idsChecked.current = true;
+    if (lacksBlockIds(document.content))
+      controller.change({ ...controller.getState().snapshot, content: editor.document as unknown as DocumentContent });
+  }, [controller, document, editor]);
   useEffect(() => {
     if (lastEpoch.current === state.remoteEpoch) return;
     lastEpoch.current = state.remoteEpoch;

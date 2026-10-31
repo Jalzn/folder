@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from '../lib/types';
-import { parseProjectPath, paths } from './paths';
+import { isAppPath, parseProjectPath, paths, safeDecode } from './paths';
 import {
   itemRedirectPath,
   type LegacyAddress,
@@ -76,5 +76,46 @@ describe('project paths', () => {
     expect(parseProjectPath('/projetos')).toBeNull();
     expect(parseProjectPath('/projetos/p/outra')).toBeNull();
     expect(parseProjectPath('/perfil')).toBeNull();
+  });
+
+  it('refuses hostile and broken addresses instead of throwing', () => {
+    for (const path of [
+      '/projetos/%E0%A4%A',
+      '/projetos/p/documentos/%E0%A4%A',
+      'x/projetos/p',
+      'https:evil.example/projetos/p',
+      '//evil.example/projetos/p',
+      '/\\evil.example/projetos/p',
+      '/projetos\\p',
+      'projetos/p',
+      '',
+    ])
+      expect(parseProjectPath(path), path).toBeNull();
+  });
+});
+
+describe('app paths', () => {
+  it('accepts only the app’s own routes, with one leading slash', () => {
+    expect(isAppPath('/')).toBe(true);
+    expect(isAppPath('/perfil')).toBe(true);
+    expect(isAppPath('/projetos')).toBe(true);
+    expect(isAppPath('/projetos/p/indice?tipo=documentos')).toBe(true);
+    expect(isAppPath('/projetos/p/documentos/d?bloco=b')).toBe(true);
+    for (const path of [
+      'https:evil.example/projetos/p',
+      '//evil.example/projetos/p',
+      '/\\evil.example',
+      'javascript:alert(1)',
+      '/qualquer-coisa',
+      '/projetos/%E0%A4%A',
+    ])
+      expect(isAppPath(path), path).toBe(false);
+  });
+});
+
+describe('safe decoding', () => {
+  it('reads an encoded segment, and a broken one as null', () => {
+    expect(safeDecode('Ol%C3%A1')).toBe('Olá');
+    expect(safeDecode('%E0%A4%A')).toBeNull();
   });
 });

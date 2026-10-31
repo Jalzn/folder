@@ -59,8 +59,9 @@ async function send(input: SaveInput) {
       { code: 'VALIDATION' },
     );
   try {
-    // A draft's null project, from before every item had one, is recovered on load (withDraftProject).
-    return await api.workspace.saveDocument({ ...input, projectId: input.projectId ?? undefined });
+    // A save never moves the item: moving goes through moveItem, so the project stays out of it.
+    const { projectId: _project, ...save } = input;
+    return await api.workspace.saveDocument(save);
   } catch (error) {
     reportSessionError(error);
     throw error;

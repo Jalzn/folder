@@ -3,6 +3,7 @@ export type {
   CanvasScene,
   CanvasSummary,
   Document,
+  DocumentBlock,
   DocumentContent,
   DocumentSummary,
   Project,

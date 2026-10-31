@@ -43,8 +43,9 @@ async function send(input: SaveInput<CanvasSnapshot>) {
     throw Object.assign(error instanceof Error ? error : new Error('Desenho inválido.'), { code: 'VALIDATION' });
   }
   try {
-    // A draft's null project, from before every item had one, is recovered on load (withDraftProject).
-    return await api.workspace.saveCanvas({ ...input, projectId: input.projectId ?? undefined });
+    // A save never moves the item: moving goes through moveItem, so the project stays out of it.
+    const { projectId: _project, ...save } = input;
+    return await api.workspace.saveCanvas(save);
   } catch (error) {
     reportSessionError(error);
     throw error;

@@ -1,6 +1,6 @@
 import { expect, type Locator, test } from '@playwright/test';
 import { newDocument } from './support/items.js';
-import { pressCommand } from './support/keyboard.js';
+import { runCommand } from './support/keyboard.js';
 import {
   createProject,
   currentProjectId,
@@ -9,7 +9,7 @@ import {
   projectNavigation,
   showSidebar,
 } from './support/navigation.js';
-import { answers } from './support/rpc.js';
+import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 /**
@@ -49,14 +49,8 @@ test('the switcher, G chords, ⌘K and old addresses move between projects and p
   await expect(page).toHaveURL(overview);
 
   // ⌘K finds a page of the current project by name.
-  await pressCommand(page, 'k');
-  const palette = page.getByRole('dialog', { name: 'Buscar e comandar' });
-  await palette.getByRole('textbox', { name: 'Buscar ou comandar' }).fill('indice');
   // Items that mention "índice" may come first; the command is in Comandos.
-  await palette
-    .getByRole('menuitem')
-    .filter({ has: page.getByText('Índice', { exact: true }) })
-    .click();
+  await runCommand(page, 'Índice');
   await expect(page).toHaveURL(new RegExp(`/projetos/${project}/indice$`));
 
   // An address from before stage 08 opens the Índice of the last project.
@@ -84,7 +78,7 @@ test('the switcher, G chords, ⌘K and old addresses move between projects and p
   await expect(page).toHaveURL(new RegExp(`/projetos/${home}$`));
 });
 
-test('an open document moves with its unsaved text, keeps its address canonical and comes back', async ({
+test('an open document moves with its unsaved text, stays in the new project and comes back', async ({
   page,
 }, info) => {
   const suffix = `${info.project.name} ${Date.now()}`;
@@ -92,38 +86,67 @@ test('an open document moves with its unsaved text, keeps its address canonical 
   const destination = `Destino ${suffix}`;
   await login(page);
   const home = currentProjectId(page);
+  await page.goto(`/projetos/${home}`);
+  const homeName = (await page.getByRole('heading', { level: 1 }).textContent()) ?? '';
   const target = await createProject(page, destination);
   await page.goto(`/projetos/${home}`);
   await newDocument(page);
   await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   const editor = page.locator('[contenteditable="true"]').first();
+  const documentId = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+  const stored = () => rpc<{ projectId: string; plainText: string }>(page, 'workspace/getDocument', { id: documentId });
+  const nextSave = () =>
+    page.waitForResponse((response) => answers(response, 'workspace/saveDocument') && response.status() === 200);
   await editor.click();
   await page.keyboard.type('Escrito antes de mover.');
 
   // M on the document's own row in the sidebar, while the edit may still be on its way.
-  const saved = page.waitForResponse(
-    (response) =>
-      answers(response, 'workspace/saveDocument') &&
-      response.status() === 200 &&
-      Boolean(response.request().postData()?.includes(target)),
+  const moved = page.waitForResponse(
+    (response) => answers(response, 'workspace/moveItem') && response.status() === 200,
   );
   await showSidebar(page);
   const row = projectNavigation(page).getByRole('link', { name: new RegExp(`^${title}, documento`) });
   await row.focus();
   await page.keyboard.press('m');
   await page.getByRole('menuitemradio', { name: destination }).click();
-  expect((await saved).request().postData()).toContain('Escrito antes de mover.');
+  expect((await moved).request().postData()).not.toContain('Escrito antes de mover.');
   await expect(page).toHaveURL(new RegExp(`/projetos/${target}/documentos/`));
   await expect(page.getByText(`“${title}” foi para ${destination}.`)).toBeVisible();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0);
   await expect(editor).toContainText('Escrito antes de mover.');
+  expect(await stored()).toMatchObject({
+    projectId: target,
+    plainText: expect.stringContaining('Escrito antes de mover.'),
+  });
 
+  // The next autosave keeps the document where it went, and so does a reload.
   await hideSidebar(page);
-  await page.getByRole('button', { name: 'Desfazer', exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/projetos/${home}/documentos/`));
+  await editor.click();
+  await page.keyboard.press('End');
+  const afterMove = nextSave();
+  await page.keyboard.type(' Depois da mudança.');
+  await afterMove;
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+  expect((await stored()).projectId).toBe(target);
   await page.reload();
-  await expect(page.locator('[contenteditable="true"]').first()).toContainText('Escrito antes de mover.');
+  await expect(page).toHaveURL(new RegExp(`/projetos/${target}/documentos/`));
+  await expect(page.locator('[contenteditable="true"]').first()).toContainText('Depois da mudança.');
+
+  // Moved from the ⋯ menu, Desfazer brings it back, and it stays back.
+  await page.getByRole('button', { name: 'Opções do documento', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Mover para projeto/ }).click();
+  await page.getByRole('menuitemradio', { name: homeName }).click();
   await expect(page).toHaveURL(new RegExp(`/projetos/${home}/documentos/`));
+  await page.getByRole('button', { name: 'Desfazer', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/projetos/${target}/documentos/`));
+  const afterUndo = nextSave();
+  await page.locator('[contenteditable="true"]').first().click();
+  await page.keyboard.press('End');
+  await page.keyboard.type(' Ainda aqui.');
+  await afterUndo;
+  expect((await stored()).projectId).toBe(target);
+  await page.reload();
+  await expect(page).toHaveURL(new RegExp(`/projetos/${target}/documentos/`));
+  await expect(page.locator('[contenteditable="true"]').first()).toContainText('Ainda aqui.');
 });

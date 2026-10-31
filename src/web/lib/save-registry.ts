@@ -1,4 +1,5 @@
 import type { SaveStatus } from './autosave';
+import type { Moved } from './editor-move';
 import type { ItemType } from './types';
 
 /** What the registry needs of an AutosaveController: its status and change notifications. */
@@ -51,8 +52,11 @@ export const isPendingSave = (saves: ReadonlySet<string>, type: ItemType, id: st
 
 /** An editor open in this tab: moving its item goes through its own autosave. */
 export interface OpenEditor {
-  /** Saves the current content, unsaved edits included, under another project; false when it cannot save. */
-  moveTo: (projectId: string) => Promise<boolean>;
+  /**
+   * Saves what is pending, then runs `move` at the saved version and takes the project and version it
+   * answers; false when the content cannot be saved first.
+   */
+  moveTo: (move: (version: number) => Promise<Moved>) => Promise<boolean>;
 }
 
 const openEditors = new Map<string, OpenEditor>();

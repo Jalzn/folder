@@ -1,8 +1,11 @@
-/* Toasts at the bottom right of the content area, 16 px from its edges (docs/interface/refino.md, 20). */
+/*
+ * Toasts at the bottom right of the content area, 16 px from its edges (docs/interface/refino.md, 20). A page
+ * with controls at its bottom, such as the drawing editor, raises them with --toast-bottom.
+ */
 .toast-region {
   position: fixed;
   right: 16px;
-  bottom: 16px;
+  bottom: calc(var(--toast-bottom, 16px) + env(safe-area-inset-bottom, 0px));
   z-index: 600;
   display: flex;
   justify-content: flex-end;

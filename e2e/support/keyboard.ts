@@ -11,3 +11,14 @@ export async function pressCommand(page: Page, key: string) {
   });
   await page.keyboard.press(`${apple ? 'Meta' : 'Control'}+${key}`);
 }
+
+/** Runs a command of the palette by its exact label, as a person picks it from the list. */
+export async function runCommand(page: Page, label: string) {
+  await pressCommand(page, 'k');
+  const palette = page.getByRole('dialog', { name: 'Buscar e comandar' });
+  await palette.getByRole('textbox', { name: 'Buscar ou comandar' }).fill(label);
+  await palette
+    .getByRole('menuitem')
+    .filter({ has: page.getByText(label, { exact: true }) })
+    .click();
+}

@@ -1,17 +1,23 @@
 import type { AutosaveController } from './autosave';
 
+/** Where a move left the item, as moveItem answers. */
+export interface Moved {
+  projectId: string;
+  version: number;
+}
+
 /**
- * Moves the item of an open editor: the snapshot takes the new project and the autosave sends it with the
- * pending edits, at the version the editor holds, so nothing conflicts and nothing is lost. A second flush
- * sends what a failed earlier request left behind. A conflict refuses the move.
+ * Moves the item of an open editor without its content: the editor saves what is pending, `move` writes
+ * the new project at the saved version, and the editor takes the project and version it answers, so the
+ * next save goes on from there. A conflict refuses the move; an error from `move` is thrown.
  */
 export async function moveThroughController<T extends { projectId: string | null }>(
   controller: AutosaveController<T>,
-  projectId: string,
+  move: (version: number) => Promise<Moved>,
 ) {
   if (controller.getState().status === 'conflict') return false;
-  controller.change({ ...controller.getState().snapshot, projectId });
-  if (!(await controller.flush())) return false;
-  if (controller.getState().status !== 'saved') await controller.flush();
-  return controller.getState().status === 'saved' && controller.getState().snapshot.projectId === projectId;
+  return controller.relocate(async (version) => {
+    const moved = await move(version);
+    return { version: moved.version, patch: { projectId: moved.projectId } as Partial<T> };
+  });
 }

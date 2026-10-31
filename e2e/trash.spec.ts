@@ -24,15 +24,18 @@ test('the project trash groups, filters, restores, deletes for good and empties'
   const drawing = `Desenho ${suffix}`;
   const born = `Nasceu do documento ${suffix}`;
   const loose = `Tarefa solta ${suffix}`;
+  const kept = `Desenho que fica ${suffix}`;
   await login(page);
   await createProject(page, project);
 
   await documentWithTask(page, document, born);
   await moveToTrash(page, 'documento');
-  await newDrawing(page);
-  await page.getByRole('textbox', { name: 'Título do desenho' }).fill(drawing);
-  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
-  await moveToTrash(page, 'desenho');
+  for (const title of [drawing, kept]) {
+    await newDrawing(page);
+    await page.getByRole('textbox', { name: 'Título do desenho' }).fill(title);
+    await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+    await moveToTrash(page, 'desenho');
+  }
   await newTask(page, loose);
   await page.getByRole('button', { name: loose, exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Excluir tarefa', exact: true }).click();
@@ -40,17 +43,23 @@ test('the project trash groups, filters, restores, deletes for good and empties'
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   await openTrash(page);
-  // A fresh page, so the toasts of the setup, shown one at a time, do not hold the ones checked below.
-  await page.reload();
   const today = page.getByRole('region', { name: 'Hoje' });
-  await expect(today.getByRole('listitem')).toHaveCount(3);
+  await expect(today.getByRole('listitem')).toHaveCount(4);
+  await page.screenshot({ path: info.outputPath('lixeira.png'), fullPage: true });
+
+  // With a filter on, emptying deletes only what the filter shows.
   await page.getByRole('button', { name: 'Tipo: Todos' }).click();
   await page.getByRole('menuitemradio', { name: 'Tarefas' }).click();
   await expect(today.getByRole('listitem')).toHaveCount(1);
   await expect(today.getByRole('listitem')).toContainText(loose);
+  await page.getByRole('button', { name: 'Excluir os mostrados', exact: true }).click();
+  const shown = page.getByRole('alertdialog', { name: 'Excluir de vez os itens mostrados?' });
+  await expect(shown).toContainText('O item mostrado será excluído de vez; os outros continuam na lixeira.');
+  await shown.getByRole('button', { name: 'Excluir de vez', exact: true }).click();
+  await expect(page.getByText('Itens mostrados excluídos de vez.')).toBeVisible();
   await page.getByRole('button', { name: 'Tipo: Tarefas' }).click();
   await page.getByRole('menuitemradio', { name: 'Todos' }).click();
-  await page.screenshot({ path: info.outputPath('lixeira.png'), fullPage: true });
+  await expect(today.getByRole('listitem')).toHaveCount(3);
 
   // Restaurar puts the drawing back; the toast opens it.
   await page.getByRole('button', { name: `Restaurar ${drawing}`, exact: true }).click();
@@ -62,13 +71,15 @@ test('the project trash groups, filters, restores, deletes for good and empties'
   await openTrash(page);
   await page.getByRole('button', { name: `Excluir de vez ${document}`, exact: true }).click();
   const purge = page.getByRole('alertdialog', { name: `Excluir de vez “${document}”?` });
-  await expect(purge).toContainText('Tarefas que nasceram deste documento continuam, com o trecho guardado.');
+  await expect(purge).toContainText(
+    'Tarefas que nasceram deste documento continuam, com o título do documento e o trecho guardados.',
+  );
   await expect(purge.getByRole('button', { name: 'Cancelar' })).toBeFocused();
   await purge.getByRole('button', { name: 'Excluir de vez', exact: true }).click();
   await expect(page.getByText('Excluído de vez.')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Lixeira', level: 1 })).toBeFocused();
 
-  // Esvaziar lixeira deletes what is left: the loose task.
+  // Esvaziar lixeira deletes what is left: the other drawing.
   await page.getByRole('button', { name: 'Esvaziar lixeira', exact: true }).click();
   const empty = page.getByRole('alertdialog', { name: `Esvaziar a lixeira de ${project}?` });
   await expect(empty).toContainText('1 item será excluído de vez. Não dá para desfazer.');

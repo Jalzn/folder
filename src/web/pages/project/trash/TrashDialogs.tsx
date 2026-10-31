@@ -1,7 +1,6 @@
-import type { TrashItem } from '../../../lib/queries';
 import { AlertDialog } from '../../../ui';
 import { emptyTrashBody } from './trash-text';
-import { type Confirmation, type PurgeTarget, trashTitle } from './use-trash-actions';
+import { type Confirmation, type EmptyTarget, type PurgeTarget, trashTitle } from './use-trash-actions';
 
 /** "Excluir de vez “<título>”?", saying that a document's tasks stay when it had any. */
 export function PurgeDialog({
@@ -27,13 +26,17 @@ export function PurgeDialog({
     >
       <p>
         Não dá para desfazer.
-        {target?.originated && ' Tarefas que nasceram deste documento continuam, com o trecho guardado.'}
+        {target?.originated &&
+          ' Tarefas que nasceram deste documento continuam, com o título do documento e o trecho guardados.'}
       </p>
     </AlertDialog>
   );
 }
 
-/** "Esvaziar a lixeira de <projeto>?", counting the items it deletes. */
+/**
+ * "Esvaziar a lixeira de <projeto>?", counting the items it deletes; with a filter on, "Excluir de vez os
+ * itens mostrados?", since the others stay.
+ */
 export function EmptyTrashDialog({
   projectName,
   confirmation,
@@ -42,7 +45,7 @@ export function EmptyTrashDialog({
   onClose,
 }: {
   projectName: string;
-  confirmation: Confirmation<TrashItem[]> | null;
+  confirmation: Confirmation<EmptyTarget> | null;
   pending: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -50,13 +53,15 @@ export function EmptyTrashDialog({
   return (
     <AlertDialog
       open={confirmation?.open ?? false}
-      title={`Esvaziar a lixeira de ${projectName}?`}
-      confirmLabel="Esvaziar lixeira"
+      title={
+        confirmation?.value.filtered ? 'Excluir de vez os itens mostrados?' : `Esvaziar a lixeira de ${projectName}?`
+      }
+      confirmLabel={confirmation?.value.filtered ? 'Excluir de vez' : 'Esvaziar lixeira'}
       isPending={pending}
       onConfirm={onConfirm}
       onClose={onClose}
     >
-      <p>{emptyTrashBody(confirmation?.value.length ?? 0)}</p>
+      <p>{emptyTrashBody(confirmation?.value.items.length ?? 0, confirmation?.value.filtered ?? false)}</p>
     </AlertDialog>
   );
 }

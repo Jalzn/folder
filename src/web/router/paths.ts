@@ -34,18 +34,47 @@ export interface ProjectPath {
 const itemSegments: Record<string, ItemType> = { documentos: 'document', desenhos: 'drawing' };
 const projectPages = new Set(['quadro', 'indice', 'lixeira']);
 
-/** Reads an address inside a project, or null for any other address. Search and hash are ignored. */
+/** A percent-encoded segment as text, or null when its encoding is broken (`%E0%A4%A`). */
+export function safeDecode(segment: string): string | null {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether an address is one of the app's own paths: one leading "/" (not "//"), no backslash, and a
+ * path its routes know. A stored or pasted value that fails this never reaches navigation, which would
+ * otherwise follow a scheme or a host to another origin.
+ */
+export function isAppPath(path: string): boolean {
+  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) return false;
+  const pathname = path.split(/[?#]/, 1)[0] ?? '';
+  return (
+    pathname === paths.start ||
+    pathname === paths.noProject ||
+    pathname === paths.profile ||
+    parseProjectPath(path) !== null
+  );
+}
+
+/**
+ * Reads an address inside a project, or null for any other address: one that does not start with
+ * "/projetos/", has a broken encoding, or names a page the routes do not have. Search and hash are ignored.
+ */
 export function parseProjectPath(path: string): ProjectPath | null {
   const pathname = path.split(/[?#]/, 1)[0] ?? '';
+  if (!pathname.startsWith('/projetos/') || pathname.includes('\\')) return null;
   const segments = pathname.split('/').slice(1);
-  if (segments[0] !== 'projetos' || !segments[1]) return null;
-  const projectId = decodeURIComponent(segments[1]);
+  const projectId = safeDecode(segments[1] ?? '');
+  if (!projectId) return null;
   const rest = segments.slice(2).filter(Boolean);
   if (rest.length === 0) return { projectId, item: null };
   if (rest.length === 1 && projectPages.has(rest[0] ?? '')) return { projectId, item: null };
   const type = itemSegments[rest[0] ?? ''];
-  if (rest.length === 2 && type) return { projectId, item: { type, id: decodeURIComponent(rest[1] ?? '') } };
-  return null;
+  const id = rest.length === 2 && type ? safeDecode(rest[1] ?? '') : null;
+  return type && id ? { projectId, item: { type, id } } : null;
 }
 
 /**

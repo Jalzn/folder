@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { runCommand } from './support/keyboard.js';
 import { showSidebar } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -16,6 +17,14 @@ test('the theme follows the system until a choice, which stays on the device fro
   await page.getByRole('menuitemradio', { name: 'Claro' }).click();
   await expect(page.getByText('Tema: Claro.')).toBeVisible();
   await expect(html).toHaveAttribute('data-theme', 'light');
+
+  // A new toast replaces the one on screen: the latest action is the one shown.
+  await runCommand(page, 'Tema: Escuro');
+  await expect(page.getByText('Tema: Escuro.')).toBeVisible();
+  await expect(page.getByText('Tema: Claro.')).toHaveCount(0);
+  await runCommand(page, 'Tema: Claro');
+  await expect(page.getByText('Tema: Claro.')).toBeVisible();
+  await expect(page.getByText('Tema: Escuro.')).toHaveCount(0);
   await expect(page.locator('meta[name="theme-color"]').first()).toHaveAttribute('content', /#/);
 
   // theme.js applies the choice before the app loads.

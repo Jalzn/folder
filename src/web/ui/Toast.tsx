@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { focusPageTitle } from './PageHeader';
 
 export type ToastKind = 'success' | 'error';
 export interface ToastAction {
@@ -23,7 +24,7 @@ export interface ToastOptions {
 /** Shows a toast; `'error'` is short for `{ kind: 'error' }`. */
 export type Notify = (text: string, options?: ToastKind | ToastOptions) => void;
 
-interface QueuedToast {
+interface ShownToast {
   id: number;
   text: string;
   kind: ToastKind;
@@ -38,32 +39,41 @@ const ToastContext = createContext<Notify>(() => undefined);
 export const useToast = () => useContext(ToastContext);
 
 /**
- * One toast at a time, the others queued, at the bottom right of the content area. Each stays 6 s, paused
- * while the pointer or the focus is on it. Success is a status and failure an alert.
+ * The latest toast, at the bottom right of the content area: a new one replaces the one on screen, so the
+ * Desfazer of the last action is always at hand. It stays 6 s, paused while the pointer or the focus is on
+ * it. It shows inside one of two live regions mounted once, status for success and alert for failure, so
+ * each toast is a change a screen reader announces; the regions stay readable while a modal is open.
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [queue, setQueue] = useState<QueuedToast[]>([]);
+  const [current, setCurrent] = useState<ShownToast | null>(null);
   const nextId = useRef(0);
   const notify = useCallback<Notify>((text, options) => {
     const { kind = 'success', action } = typeof options === 'string' ? { kind: options } : (options ?? {});
-    const id = nextId.current++;
-    setQueue((current) => [...current, { id, text, kind, action }]);
+    setCurrent({ id: nextId.current++, text, kind, action });
   }, []);
-  const remove = useCallback((id: number) => setQueue((current) => current.filter((toast) => toast.id !== id)), []);
-  const current = queue[0];
+  const remove = useCallback((id: number) => setCurrent((shown) => (shown?.id === id ? null : shown)), []);
+  const toast = (kind: ToastKind) =>
+    current?.kind === kind && <Toast key={current.id} toast={current} onRemove={remove} />;
   return (
     <ToastContext.Provider value={notify}>
       {children}
-      <div className="toast-region">{current && <Toast key={current.id} toast={current} onRemove={remove} />}</div>
+      {/* React Aria leaves elements marked as top layer readable while a modal hides the rest. */}
+      <div className="toast-region" data-react-aria-top-layer="true">
+        <div role="status">{toast('success')}</div>
+        <div role="alert">{toast('error')}</div>
+      </div>
     </ToastContext.Provider>
   );
 }
 
-function Toast({ toast, onRemove }: { toast: QueuedToast; onRemove: (id: number) => void }) {
+function Toast({ toast, onRemove }: { toast: ShownToast; onRemove: (id: number) => void }) {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const remaining = useRef(VISIBLE_MS);
+  const element = useRef<HTMLDivElement>(null);
+  // Where focus was before it came into the toast, to go back there after the action.
+  const returnTo = useRef<HTMLElement | null>(null);
   const leave = useCallback(() => setLeaving(true), []);
 
   useEffect(() => {
@@ -81,31 +91,36 @@ function Toast({ toast, onRemove }: { toast: QueuedToast; onRemove: (id: number)
     return () => clearTimeout(timer);
   }, [leaving, onRemove, toast.id]);
 
-  const blur = (event: FocusEvent<HTMLDivElement>) => {
-    if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
-  };
+  function act() {
+    const hadFocus = element.current?.contains(document.activeElement) ?? false;
+    toast.action?.onAction();
+    leave();
+    if (!hadFocus) return;
+    const back = returnTo.current;
+    if (back?.isConnected) back.focus();
+    else focusPageTitle();
+  }
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: Hover and focus only pause the timer; the action is a button.
     <div
+      ref={element}
       className="toast"
-      role={toast.kind === 'error' ? 'alert' : 'status'}
       data-kind={toast.kind}
       data-leaving={leaving || undefined}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
-      onFocus={() => setFocused(true)}
-      onBlur={blur}
+      onFocus={(event: FocusEvent<HTMLDivElement>) => {
+        if (!event.currentTarget.contains(event.relatedTarget))
+          returnTo.current = event.relatedTarget instanceof HTMLElement ? event.relatedTarget : null;
+        setFocused(true);
+      }}
+      onBlur={(event: FocusEvent<HTMLDivElement>) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+      }}
     >
       <span className="toast__text">{toast.text}</span>
       {toast.action && (
-        <button
-          type="button"
-          className="toast__action"
-          onClick={() => {
-            toast.action?.onAction();
-            leave();
-          }}
-        >
+        <button type="button" className="toast__action" onClick={act}>
           {toast.action.label}
         </button>
       )}

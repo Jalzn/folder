@@ -299,6 +299,27 @@ $$
     expect(JSON.stringify(blocks)).not.toContain('TINYFOLDMATH');
   });
 
+  it('gives an id to every block a display formula splits off, nested ones included', async () => {
+    let next = 0;
+    const blocks = await importMarkdownWithMath(
+      '> Antes\n>\n> $$\n> x^2\n> $$\n>\n> depois\n\nParágrafo seguinte',
+      parse,
+      () => `new-${next++}`,
+    );
+    const ids: (string | undefined)[] = [];
+    const visit = (list: DocumentContent) => {
+      for (const block of list) {
+        ids.push(block.id);
+        if (block.children) visit(block.children);
+      }
+    };
+    visit(blocks);
+    expect(formulas(blocks, 'mathBlock')).toEqual(['x^2']);
+    expect(next).toBeGreaterThan(0);
+    expect(ids.every((id) => typeof id === 'string' && id.length > 0)).toBe(true);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('retains parser-generated ids, children and neighboring content without mutating the parser result', async () => {
     let original: DocumentContent = [];
     let originalJson = '';

@@ -27,7 +27,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const theme = useTheme();
   const [{ controller, previews }] = useState(() => canvasSession(canvas, app.owner.installationId));
   useEffect(
-    () => registerOpenEditor('drawing', canvas.id, { moveTo: (to) => moveThroughController(controller, to) }),
+    () => registerOpenEditor('drawing', canvas.id, { moveTo: (move) => moveThroughController(controller, move) }),
     [controller, canvas.id],
   );
   // ⌘S saves now and, after a failure, tries again.

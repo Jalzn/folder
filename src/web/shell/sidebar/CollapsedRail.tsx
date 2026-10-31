@@ -2,10 +2,12 @@ import './sidebar.css';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { LayoutDashboard, PanelLeftOpen, Search, SquareKanban, Trash2 } from 'lucide-react';
 import { Button as AriaButton } from 'react-aria-components';
+import { useProjects } from '../../lib/queries';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { IconButton, Logo, ProjectMark } from '../../ui';
 import { ProjectSwitcher } from '../project/ProjectSwitcher';
+import { switcherLabel } from '../project/switcher-label';
 import { useShellUi } from '../shell-ui';
 import { RailPopover } from './RailPopover';
 import { Avatar } from './SidebarFooter';
@@ -28,6 +30,7 @@ export function CollapsedRail({
   const pathname = useLocation({ select: (location) => location.pathname });
   const go = (href: string) => void navigate({ href });
   const on = (href: string) => (pathname === href ? 'true' : undefined);
+  const label = switcherLabel(project, useProjects(true).data ?? []);
   return (
     <div className="rail" data-region="sidebar">
       <ProjectSwitcher
@@ -35,13 +38,7 @@ export function CollapsedRail({
         place="rail"
         placement="right top"
         trigger={
-          <AriaButton
-            className="btn btn-icon rail__button"
-            data-variant="icon"
-            aria-label={
-              project ? `Projeto ${project.name}. Trocar de projeto` : 'Nenhum projeto ativo. Abrir o seletor'
-            }
-          >
+          <AriaButton className="btn btn-icon rail__button" data-variant="icon" aria-label={label.label}>
             {project ? <ProjectMark name={project.name} color={project.color} /> : <Logo compact />}
           </AriaButton>
         }

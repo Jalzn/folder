@@ -29,7 +29,7 @@ export function DocumentEditor({ document }: { document: Document }) {
   const theme = useTheme();
   const [controller] = useState(() => documentController(document, app.owner.installationId));
   useEffect(
-    () => registerOpenEditor('document', document.id, { moveTo: (to) => moveThroughController(controller, to) }),
+    () => registerOpenEditor('document', document.id, { moveTo: (move) => moveThroughController(controller, move) }),
     [controller, document.id],
   );
   // ⌘S saves now and, after a failure, tries again.

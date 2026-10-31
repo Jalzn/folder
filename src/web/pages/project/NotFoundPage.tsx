@@ -1,18 +1,32 @@
+import { Link } from '@tanstack/react-router';
 import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { downloadFile } from '../../lib/download';
 import { draftDownload, localDrafts } from '../../lib/local-drafts';
 import type { ItemType } from '../../lib/types';
+import { paths } from '../../router/paths';
 import { PageStatus, useApp } from '../../shell';
 import { Button, PageHeader } from '../../ui';
 
-/** A missing address inside the shell: an item deleted for good, or a project that does not exist. */
+/**
+ * A missing address inside the shell: an unknown page, an item deleted for good, or a project that does
+ * not exist. The way back is the start, which opens the last place.
+ */
 export function NotFoundPage({ title, description }: { title: string; description: string }) {
   return (
     <PageStatus>
-      <PageHeader title={title} description={description} />
+      <PageHeader title={title} description={description}>
+        <Link to={paths.start} className="btn" data-variant="secondary" data-size="md">
+          Ir para o início
+        </Link>
+      </PageHeader>
     </PageStatus>
   );
+}
+
+/** Any address the routes do not know. */
+export function RouteNotFound() {
+  return <NotFoundPage title="Esta página não existe" description="Confira o endereço ou volte ao início." />;
 }
 
 /** An item deleted for good. A draft this browser still keeps for it can be downloaded. */

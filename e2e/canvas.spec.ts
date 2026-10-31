@@ -264,7 +264,7 @@ test('unsupported media import preserves the open drawing and its editable expor
       JSON.stringify({ type: 'excalidraw', version: 2, elements: [{ id: 'image', type: 'image' }], files: {} }),
     ),
   });
-  await expect(page.getByRole('alert').first()).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: /\S/ }).first()).toBeVisible();
   await expect(page).toHaveURL(original);
   await expect(titleField(page)).toHaveValue(title);
   expect((await exportDrawing(page)).data.elements).toEqual(before.data.elements);

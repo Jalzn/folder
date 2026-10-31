@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { errorCode } from '../lib/api';
 import { useCanvas, useDocument, useProjects } from '../lib/queries';
-import { ItemNotFound } from '../pages/project/NotFoundPage';
+import { ItemNotFound, NotFoundPage } from '../pages/project/NotFoundPage';
 import { PageStatus, useApp } from '../shell';
 import { ErrorNotice, Spinner } from '../ui';
 import { loadNavState } from './nav-store';
@@ -68,7 +68,11 @@ export function LegacyRedirect() {
   const location = useLocation();
   // Read once: while the redirect runs, the location already shows the new address.
   const [address] = useState(() => parseLegacyAddress(location.pathname, location.search));
-  if (!address || address.kind === 'login') return <Redirecting to="/entrar" />;
+  if (!address)
+    return (
+      <NotFoundPage title="Esta página não existe" description="O endereço está incompleto ou foi digitado errado." />
+    );
+  if (address.kind === 'login') return <Redirecting to="/entrar" />;
   if (address.kind === 'list') return <ListRedirect target={address.target} />;
   if (address.kind === 'document') return <DocumentRedirect address={address} />;
   return <DrawingRedirect address={address} />;

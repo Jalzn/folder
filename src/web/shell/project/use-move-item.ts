@@ -2,6 +2,7 @@ import { api, queryClient } from '../../lib/api';
 import { useProjects } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
 import { useAction } from '../../lib/use-action';
+import { useRequest } from '../../lib/use-request';
 import { useToast } from '../../ui';
 import { moveItem } from './move-item';
 
@@ -13,10 +14,13 @@ export function useMoveItem() {
   const projects = useProjects(true).data ?? [];
   const action = useAction();
   const toast = useToast();
+  // A retried move sends the same request, so the server replays it instead of refusing a stale version.
+  const request = useRequest();
   async function move(type: ItemType, id: string, from: string, to: string) {
     if (to === from) return;
-    const moved = await action.run(() => moveItem(type, id, to));
+    const moved = await action.run(() => moveItem(type, id, to, request.for));
     if (!moved) return;
+    request.clear();
     void queryClient.invalidateQueries({ queryKey: ['workspace', type === 'document' ? 'document' : 'canvas', id] });
     const destination = projects.find((project) => project.id === to)?.name ?? 'outro projeto';
     toast(`“${moved.title || 'Sem título'}” foi para ${destination}.`, {
@@ -24,7 +28,8 @@ export function useMoveItem() {
         label: 'Desfazer',
         onAction: () =>
           void action.run(async () => {
-            await moveItem(type, id, from);
+            await moveItem(type, id, from, request.for);
+            request.clear();
             // A full project keeps the item unpinned.
             if (moved.pinned) await api.workspace.pinItem({ type, id }).catch(() => undefined);
           }),

@@ -4,8 +4,9 @@ import { errorMessage, reportSessionError } from '../../../lib/api';
 import type { TrashItem } from '../../../lib/queries';
 import type { Project } from '../../../lib/types';
 import { useAction } from '../../../lib/use-action';
+import { useRequest } from '../../../lib/use-request';
 import { focusPageTitle, useToast } from '../../../ui';
-import { emptyTrash, hasOriginatedTasks, itemAddress, purgeItem, restoreItem } from './trash-api';
+import { emptyTrash, hasOriginatedTasks, itemAddress, keptAfterEmptying, purgeItem, restoreItem } from './trash-api';
 import { emptiedText } from './trash-text';
 
 export const trashTitle = (item: TrashItem) => item.title || 'Sem título';
@@ -14,6 +15,12 @@ export const trashTitle = (item: TrashItem) => item.title || 'Sem título';
 export interface Confirmation<Value> {
   open: boolean;
   value: Value;
+}
+
+/** The items an emptying deletes: the ones shown, which a filter may narrow. */
+export interface EmptyTarget {
+  items: TrashItem[];
+  filtered: boolean;
 }
 
 export interface PurgeTarget {
@@ -33,15 +40,21 @@ export function useTrashActions(project: Project) {
   // Not a disabled state: disabling the pressed button would drop its focus before the dialog opens.
   const checking = useRef(false);
   const [purge, setPurge] = useState<Confirmation<PurgeTarget> | null>(null);
-  const [empty, setEmpty] = useState<Confirmation<TrashItem[]> | null>(null);
+  const [empty, setEmpty] = useState<Confirmation<EmptyTarget> | null>(null);
+  // One request per intent: retrying a restore, a purge or an emptying replays it instead of failing.
+  const restoreRequest = useRequest();
+  const purgeRequest = useRequest();
+  const emptyRequest = useRequest();
 
   async function restore(item: TrashItem) {
     await action.run(
-      () => restoreItem(item),
-      () =>
+      () => restoreItem(item, restoreRequest.for),
+      () => {
+        restoreRequest.clear();
         toast(`“${trashTitle(item)}” restaurado.`, {
           action: { label: 'Abrir', onAction: () => void navigate({ href: itemAddress(project.id, item) }) },
-        }),
+        });
+      },
     );
     focusPageTitle();
   }
@@ -62,8 +75,11 @@ export function useTrashActions(project: Project) {
   async function confirmPurge() {
     if (!purge) return;
     await action.run(
-      () => purgeItem(purge.value.item),
-      () => toast('Excluído de vez.'),
+      () => purgeItem(purge.value.item, purgeRequest.for),
+      () => {
+        purgeRequest.clear();
+        toast('Excluído de vez.');
+      },
     );
     setPurge({ ...purge, open: false });
     focusPageTitle();
@@ -71,10 +87,13 @@ export function useTrashActions(project: Project) {
 
   async function confirmEmpty() {
     if (!empty) return;
-    await action.run(
-      () => emptyTrash(project.id, empty.value),
-      (result) => toast(emptiedText(result.skipped)),
-    );
+    const { items, filtered } = empty.value;
+    const result = await action.run(() => emptyTrash(project.id, items, emptyRequest.for));
+    if (result) {
+      emptyRequest.clear();
+      const kept = result.skipped ? await keptAfterEmptying(project.id, items).catch(() => 0) : 0;
+      toast(emptiedText(kept, filtered));
+    }
     setEmpty({ ...empty, open: false });
     focusPageTitle();
   }
@@ -86,7 +105,7 @@ export function useTrashActions(project: Project) {
     purge,
     confirmPurge,
     cancelPurge: () => setPurge((current) => current && { ...current, open: false }),
-    askEmpty: (items: TrashItem[]) => setEmpty({ open: true, value: items }),
+    askEmpty: (target: EmptyTarget) => setEmpty({ open: true, value: target }),
     empty,
     confirmEmpty,
     cancelEmpty: () => setEmpty((current) => current && { ...current, open: false }),

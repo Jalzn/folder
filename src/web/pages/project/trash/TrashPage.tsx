@@ -5,11 +5,12 @@ import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useProjects, useTrash } from '../../../lib/queries';
 import type { Project } from '../../../lib/types';
-import { PageFrame } from '../../../shell';
+import { PageFrame, useTrashCount } from '../../../shell';
 import { Button, ErrorNotice, FilterMenu, type FilterOption, PageHeader, Spinner } from '../../../ui';
 import { EmptyTrashDialog, PurgeDialog } from './TrashDialogs';
 import { TrashGroups } from './TrashGroups';
 import { filterTrash, groupTrash, type TrashFilter } from './trash-groups';
+import { shownOfTotal } from './trash-text';
 import { useTrashActions } from './use-trash-actions';
 
 const filterOptions: FilterOption<TrashFilter>[] = [
@@ -46,12 +47,20 @@ function TrashContent({
 }) {
   const actions = useTrashActions(project);
   const items = trash.data?.items ?? [];
+  const total = useTrashCount(project);
+  // What emptying deletes is exactly what the page shows: the listing, narrowed by the filter.
+  const shown = filterTrash(items, filter);
+  const filtered = filter !== 'all';
   return (
     <PageFrame
       actions={
-        items.length > 0 && (
-          <Button variant="ghost-danger" icon={<Trash2 size={16} />} onPress={() => actions.askEmpty(items)}>
-            Esvaziar lixeira
+        shown.length > 0 && (
+          <Button
+            variant="ghost-danger"
+            icon={<Trash2 size={16} />}
+            onPress={() => actions.askEmpty({ items: shown, filtered })}
+          >
+            {filtered ? 'Excluir os mostrados' : 'Esvaziar lixeira'}
           </Button>
         )
       }
@@ -59,7 +68,10 @@ function TrashContent({
       <div className="project-page">
         <PageHeader title="Lixeira" />
         <div className="project-filters trash-filters">
-          <p className="project-summary">Itens excluídos de {project.name} podem ser restaurados.</p>
+          <p className="project-summary">
+            Itens excluídos de {project.name} podem ser restaurados.
+            {total !== undefined && total > items.length && ` ${shownOfTotal(items.length, total)}`}
+          </p>
           <FilterMenu label="Tipo" options={filterOptions} value={filter} onChange={onFilter} placement="bottom end" />
         </div>
         <hr className="project-hair" />
@@ -69,7 +81,7 @@ function TrashContent({
           <ErrorNotice error={trash.error} retry={() => void trash.refetch()} />
         ) : (
           <TrashGroups
-            groups={groupTrash(filterTrash(items, filter))}
+            groups={groupTrash(shown)}
             busy={actions.busy}
             onRestore={(item) => void actions.restore(item)}
             onPurge={(item) => void actions.askPurge(item)}

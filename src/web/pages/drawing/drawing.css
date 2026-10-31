@@ -76,3 +76,12 @@
     border-radius: 0;
   }
 }
+/* Excalidraw keeps zoom, undo and help along the frame's bottom; toasts rise above them. */
+:root:has(.drawing__frame) {
+  --toast-bottom: 88px;
+}
+@media (max-width: 760px) {
+  :root:has(.drawing__frame) {
+    --toast-bottom: 72px;
+  }
+}

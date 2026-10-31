@@ -5,11 +5,10 @@ import { parseProjectPath, paths } from '../../router/paths';
 import { useToast } from '../../ui';
 import { useApp } from '../AppProvider';
 import { activeProjects } from '../project/project-order';
+import { noProjectText } from '../project/switcher-label';
 import { usePins } from '../project/use-pins';
 import { type SwitcherPlace, useShellUi } from '../shell-ui';
 import type { ChordCommand } from './chords';
-
-const NO_PROJECT = 'Nenhum projeto ativo.';
 
 export interface ShortcutLayout {
   project: Project | null;
@@ -55,10 +54,10 @@ export function useShortcutActions(layout: ShortcutLayout) {
     if (command.kind === 'project') {
       const target = activeProjects(layout.projects)[command.index];
       if (target) go(paths.overview(target.id));
-      else if (!activeProjects(layout.projects).length) ui.announce(NO_PROJECT);
+      else if (!activeProjects(layout.projects).length) ui.announce(noProjectText(layout.projects));
       return;
     }
-    if (!project) return ui.announce(NO_PROJECT);
+    if (!project) return ui.announce(noProjectText(layout.projects));
     if (command.kind === 'overview') go(paths.overview(project.id));
     else if (command.kind === 'board') go(paths.board(project.id));
     else go(paths.trash(project.id));
@@ -74,7 +73,7 @@ export function useShortcutActions(layout: ShortcutLayout) {
     else ui.setOverlay(true, { search: true });
   }
   function pinCurrent() {
-    if (!project) return ui.announce(NO_PROJECT);
+    if (!project) return ui.announce(noProjectText(layout.projects));
     if (!item) return;
     const cached = queryClient.getQueryData<{ pinnedAt: string | null }>([
       'workspace',
@@ -85,7 +84,7 @@ export function useShortcutActions(layout: ShortcutLayout) {
     else void pins.pin(item.type, item.id);
   }
   function moveCurrent() {
-    if (!project) return ui.announce(NO_PROJECT);
+    if (!project) return ui.announce(noProjectText(layout.projects));
     if (item) ui.setMoveOpen(true);
   }
   return {

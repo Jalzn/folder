@@ -1,5 +1,5 @@
 import type { Project } from '../lib/types';
-import { type IndexType, paths } from './paths';
+import { type IndexType, paths, safeDecode } from './paths';
 
 /** The addresses before stage 08, which keep working by redirecting (docs/etapas/08-fundacao.md). */
 export type LegacyAddress =
@@ -8,7 +8,7 @@ export type LegacyAddress =
   | { kind: 'document'; id: string; block: string | null }
   | { kind: 'drawing'; id: string };
 
-/** Reads an address of the old navigation. The `q` of the old lists is dropped. */
+/** Reads an address of the old navigation, or null; a broken encoding is not one. The `q` of the old lists is dropped. */
 export function parseLegacyAddress(pathname: string, search: Record<string, unknown> = {}): LegacyAddress | null {
   const segments = pathname.replace(/\/+$/, '').split('/').slice(1);
   const [first, second, ...rest] = segments;
@@ -18,15 +18,13 @@ export function parseLegacyAddress(pathname: string, search: Record<string, unkn
   if (first === 'lixeira' && !second) return { kind: 'list', target: 'trash' };
   if (first === 'documentos') {
     if (!second) return { kind: 'list', target: 'documents' };
-    return {
-      kind: 'document',
-      id: decodeURIComponent(second),
-      block: typeof search.bloco === 'string' ? search.bloco : null,
-    };
+    const id = safeDecode(second);
+    return id ? { kind: 'document', id, block: typeof search.bloco === 'string' ? search.bloco : null } : null;
   }
   if (first === 'desenhos') {
     if (!second) return { kind: 'list', target: 'drawings' };
-    return { kind: 'drawing', id: decodeURIComponent(second) };
+    const id = safeDecode(second);
+    return id ? { kind: 'drawing', id } : null;
   }
   return null;
 }

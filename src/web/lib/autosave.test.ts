@@ -54,6 +54,50 @@ describe('document autosave', () => {
     expect(calls[2]?.requestId).not.toBe(calls[0]?.requestId);
     expect(controller.getState().status).toBe('saved');
   });
+  it('relocates after saving pending edits, takes the moved version and project, then saves later edits', async () => {
+    const calls: SaveInput[] = [];
+    let release: (() => void) | undefined;
+    const { controller } = setup(async (input) => {
+      calls.push(input);
+      return { id: input.id, version: input.expectedVersion + 1, updatedAt: 'now' };
+    });
+    controller.change(changed);
+    const moving = controller.relocate(async (version) => {
+      expect(version).toBe(2);
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return { version: version + 1, patch: { projectId: 'b' } };
+    });
+    await vi.waitFor(() => expect(release).toBeDefined());
+    controller.change({ ...changed, title: 'Escrito durante a mudança' });
+    release?.();
+    expect(await moving).toBe(true);
+    expect(controller.getState().snapshot.projectId).toBe('b');
+    expect(controller.getState().version).toBe(3);
+    await controller.flush();
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.expectedVersion).toBe(3);
+    expect(calls[1]?.title).toBe('Escrito durante a mudança');
+    expect(controller.getState().status).toBe('saved');
+  });
+
+  it('keeps everything as it was when the move is refused', async () => {
+    const { controller } = setup(async (input) => ({
+      id: input.id,
+      version: input.expectedVersion + 1,
+      updatedAt: 'now',
+    }));
+    await expect(
+      controller.relocate(async () => {
+        throw Object.assign(new Error('arquivado'), { code: 'VALIDATION' });
+      }),
+    ).rejects.toThrow('arquivado');
+    expect(controller.getState().snapshot.projectId).toBe(null);
+    expect(controller.getState().version).toBe(1);
+    expect(controller.getState().status).toBe('saved');
+  });
+
   it('preserves a local draft when a newer remote version is observed', () => {
     const { controller, stored } = setup(vi.fn());
     controller.change(changed);

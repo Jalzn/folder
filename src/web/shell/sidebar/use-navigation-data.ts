@@ -11,3 +11,6 @@ export function useNavigationData(project: Project | null) {
   };
   return useProjectNavigation(project?.id ?? null, sorts).data;
 }
+
+/** The exact number of items in a project's trash, which a trash listing may cut. */
+export const useTrashCount = (project: Project | null) => useNavigationData(project)?.trashCount;

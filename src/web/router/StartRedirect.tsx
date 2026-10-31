@@ -6,7 +6,7 @@ import type { Project } from '../lib/types';
 import { PageStatus, useApp } from '../shell';
 import { ErrorNotice, Spinner } from '../ui';
 import { loadNavState } from './nav-store';
-import { parseProjectPath, paths } from './paths';
+import { isAppPath, parseProjectPath, paths } from './paths';
 import { scheduleScrollRestore } from './scroll';
 import { resolveStartPath, type StartLocation } from './start-path';
 
@@ -25,6 +25,8 @@ async function itemIsOpen(type: 'document' | 'drawing', id: string) {
 
 async function startLocation(installationId: string, projects: Project[]): Promise<StartLocation> {
   const start = resolveStartPath(loadNavState(installationId), projects);
+  // A stored path is checked when it is read; this keeps anything else from leaving the app.
+  if (!isAppPath(start.path)) return { path: paths.noProject, scrollTop: 0 };
   const place = parseProjectPath(start.path);
   if (!place?.item || (await itemIsOpen(place.item.type, place.item.id))) return start;
   return { path: paths.overview(place.projectId), scrollTop: 0 };

@@ -284,6 +284,40 @@ export class AutosaveController<T = Snapshot> {
     if (success && this.state.status === 'dirty') return this.flush();
     return success;
   }
+  /**
+   * Changes where the item lives without sending its content: saves what is pending, then lets `apply`
+   * write the change at the saved version (a move to another project) and takes the version and fields it
+   * returns. Edits made meanwhile wait and go out afterwards at the new version. False when the content
+   * cannot be saved first; an error from `apply` leaves everything as it was and is thrown.
+   */
+  async relocate(apply: (version: number) => Promise<{ version: number; patch: Partial<T> }>): Promise<boolean> {
+    if (!(await this.flush()) || this.state.status !== 'saved') return false;
+    clearTimeout(this.timer);
+    let failure: unknown = null;
+    const work = async () => {
+      try {
+        const { version, patch } = await apply(this.state.version);
+        this.savedSnapshot = { ...this.savedSnapshot, ...patch };
+        this.remote = { snapshot: { ...this.remote.snapshot, ...patch }, version };
+        const snapshot = { ...this.state.snapshot, ...patch };
+        this.emit({ snapshot, version, status: this.equal(snapshot, this.savedSnapshot) ? 'saved' : 'dirty' });
+        return true;
+      } catch (error) {
+        failure = error;
+        this.emit({ status: this.equal(this.state.snapshot, this.savedSnapshot) ? 'saved' : 'dirty' });
+        return false;
+      } finally {
+        this.inFlight = null;
+        this.persist();
+      }
+    };
+    this.inFlight = work();
+    const moved = await this.inFlight;
+    // Edits made while the move ran go out now, at the new version.
+    if (this.getState().status === 'dirty') this.schedule();
+    if (!moved) throw failure;
+    return true;
+  }
   receiveRemote(snapshot: T, version: number) {
     if (version <= this.remote.version) return;
     this.remote = { snapshot: clone(snapshot), version };

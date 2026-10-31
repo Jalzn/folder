@@ -186,6 +186,8 @@ function tokenPrefix(source: string): string {
 export async function importMarkdownWithMath(
   markdown: string,
   parseMarkdown: (source: string) => DocumentContent | Promise<DocumentContent>,
+  /** Ids for the blocks a display formula splits off, so every block has one, as the editor's do. */
+  newId: () => string = () => crypto.randomUUID(),
 ): Promise<DocumentContent> {
   const prefix = tokenPrefix(markdown);
   const found: Found = { equations: [], escapes: [] };
@@ -245,7 +247,7 @@ export async function importMarkdownWithMath(
           last.text = last.text.replace(/[\r\n \t]+$/u, '');
           if (!last.text) content.pop();
         }
-        if (content.length) pieces.push({ type: 'paragraph', content });
+        if (content.length) pieces.push({ id: newId(), type: 'paragraph', content });
         content = [];
       };
       for (const item of inline) {
@@ -263,7 +265,7 @@ export async function importMarkdownWithMath(
           } else {
             displayFound = true;
             flushParagraph();
-            pieces.push({ type: 'mathBlock', props: {}, content: equation.source });
+            pieces.push({ id: newId(), type: 'mathBlock', props: {}, content: equation.source });
             afterDisplay = true;
           }
           start = match.index + match[0].length;
@@ -273,9 +275,11 @@ export async function importMarkdownWithMath(
       if (!displayFound) return [{ ...block, content, ...(children ? { children } : {}) }];
       flushParagraph();
       if (block.type === 'paragraph') {
+        // The first piece keeps the block's own id; a task may point at it.
         return pieces.map((piece, index) => ({
           ...(index === 0 ? block : {}),
           ...piece,
+          ...(index === 0 && block.id !== undefined ? { id: block.id } : {}),
           ...(index === 0 && children ? { children } : {}),
         }));
       }

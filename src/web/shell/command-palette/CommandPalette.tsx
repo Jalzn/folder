@@ -240,7 +240,8 @@ function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & {
                 label={result.title || 'Sem título'}
                 query={query}
                 archived={result.projectArchived}
-                excerpt={'excerpt' in result ? result.excerpt : undefined}
+                // Recent items show no excerpt, as in the prototype; a search shows where the words are.
+                excerpt={typed && 'excerpt' in result ? result.excerpt : undefined}
                 right={
                   <>
                     {result.type === 'task' && 'status' in result && <span>{taskStatusLabels[result.status]} ·</span>}
