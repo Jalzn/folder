@@ -8,7 +8,7 @@ A etapa foi implementada em 2026-10-31 por dois subagentes em sequência: backen
 
 | Verificação | Resultado |
 | --- | --- |
-| `mise exec -- pnpm check` | Biome, tipos de todos os pacotes, E2E e scripts, dependency-cruiser sem violações em 244 módulos e 235 testes unitários em 26 arquivos |
+| `mise exec -- pnpm check` | Biome, tipos de todos os pacotes, E2E e scripts, dependency-cruiser sem violações em 246 módulos e 240 testes unitários em 27 arquivos |
 | `mise exec -- pnpm test:db` | 88 testes em 16 arquivos, com SQLite temporário |
 | `mise exec -- pnpm build` | Bundle de produção aprovado |
 | `mise exec -- pnpm e2e` | 50 testes aprovados: 25 desktop e 25 emulação Pixel 7, incluindo os 6 novos de `e2e/mcp.spec.ts` |
@@ -113,9 +113,36 @@ Repetida em 2026-10-31, nas mesmas condições: banco temporário, portas 3471 e
    - `search` com "MCP ideia", palavras fora da ordem do texto ("a ideia do MCP"), achou o documento.
    - `read_drawing` trouxe a imagem da versão atual depois da renomeação (cerca de 15 KiB). O modelo respondeu que a seta liga Editor a Servidor.
    - `list_tasks` com `documentId` trouxe só as duas tarefas originadas do documento.
-   - `read_document` paginou em duas páginas. **O Claude Code não manteve a primeira página na conversa:** com 58,9 KB, ela foi gravada num arquivo local ("Output too large"), e o modelo recebeu só uma prévia de 2.332 caracteres. Sem permissão para ler esse arquivo na sessão não interativa, ele não chegou ao cursor da página seguinte. Numa segunda sessão com a ferramenta Read permitida, leu o arquivo, seguiu o cursor `1:59569` e recebeu a página 2 (10.307 caracteres) inline, até a última linha do documento.
+   - `read_document`, ainda com páginas de 60.000 caracteres, paginou em duas páginas. **O Claude Code não manteve a primeira página na conversa:** com 58,9 KB, ela foi gravada num arquivo local ("Output too large"), e o modelo recebeu só uma prévia de 2.332 caracteres. Sem permissão para ler esse arquivo na sessão não interativa, ele não chegou ao cursor da página seguinte. Numa segunda sessão com a ferramenta Read permitida, leu o arquivo, seguiu o cursor `1:59569` e recebeu a página 2 (10.307 caracteres) inline, até a última linha do documento.
    - Depois da revogação, o servidor apareceu como `failed`, com "Token inválido ou revogado…", e uma chamada direta recebeu 401 com `error="invalid_token"`.
    - Nenhuma ocorrência do token no log do servidor, nas transcrições nem nos logs de depuração. Banco, token e configuração temporária foram removidos.
+
+#### Limite de saída do Claude Code 2.1.310
+
+Medido em 2026-10-31 sobre `cc1d051`, nas mesmas condições isoladas, com documentos e listas de tamanhos escolhidos, uma chamada por vez e só as ferramentas MCP permitidas. Também foi lido o código do próprio Claude Code, embutido no executável instalado.
+
+| Resultado | Caracteres de texto | No Claude Code |
+| --- | --- | --- |
+| `read_document` em português acentuado | 11.932 a 48.932 | Na conversa |
+| `read_document` em ASCII | 48.935 | Na conversa |
+| `read_document` com letras e dígitos aleatórios | 29.935 e 48.935 | Na conversa, sem corte |
+| `read_document` em português ou ASCII | 50.932 e 50.935 | Arquivo: "Output too large" |
+| `search` em JSON | 27.314 | Na conversa |
+| `list_tasks` em JSON | 32.704 a 49.574 | Na conversa |
+| `list_tasks` em JSON | 54.464 e 69.374 | Arquivo: "exceeds maximum allowed tokens" |
+
+- **Regra de caracteres:** um resultado cujos blocos de texto somam mais de 50.000 caracteres vai para um arquivo, e o modelo recebe uma prévia de cerca de 2.000. A medida são caracteres, não bytes nem tokens: o documento em português de 48.932 caracteres (56.892 bytes) ficou na conversa, e o ASCII de 50.935 não. Resultados com imagem, como `read_drawing`, ficam isentos.
+- **Regra de tokens:** `MAX_MCP_OUTPUT_TOKENS`, de 25.000 tokens por padrão, também manda o resultado para um arquivo. Com o padrão, ela só apareceu acima de 50.000 caracteres, no JSON de tarefas. Com `MAX_MCP_OUTPUT_TOKENS=5000`, um documento de 29.932 caracteres foi para um arquivo; com `100000`, o de 50.932 continuou indo pela regra de caracteres, que a variável não muda.
+- **Variações:** o executável também lê um limite por ferramenta definido remotamente, e uma ferramenta pode declarar `_meta["anthropic/maxResultSizeChars"]` para subir o seu. Por isso o Tinyfold fica em 45.000, com margem.
+
+#### Leitura longa sobre `4feae9c`
+
+Repetida em 2026-10-31, nas mesmas condições isoladas, depois de as respostas passarem a caber em 45.000 caracteres e as páginas de documento em 36.000.
+
+- **Documento:** um documento de 122.516 caracteres em Markdown saiu em quatro páginas: 44.100 caracteres na primeira, com o cabeçalho, depois 35.634, 35.614 e 7.168.
+- **Claude Code 2.1.310:** com só as ferramentas MCP permitidas e a revisão 2026-07-28 negociada, todas as páginas ficaram na conversa. O modelo seguiu os cursores `1:35514`, `1:71037` e `1:106539` e respondeu com a última linha do documento.
+- **Lista:** `list_tasks` perto do teto, com 44.682 caracteres, ficou na conversa com 68 tarefas e um `nextCursor`.
+- **Limpeza:** nenhuma ocorrência do token nos logs. Banco, token e configuração temporária foram removidos.
 
 ### Rodadas adversariais
 
@@ -147,7 +174,7 @@ Nenhum achado crítico ou alto. Corrigidos e retestados:
 - Acesso de dois aparelhos físicos na origem pública.
 - `headersHelper` e a variável de ambiente no `.mcp.json`, documentados em [operação](implantacao.md#claude-code), não foram exercitados.
 - O registro pelo próprio `claude mcp add` e `claude mcp list` não foram executados, para não alterar a configuração do usuário. A conexão usou o mesmo endereço e cabeçalho.
-- Tamanho da página de `read_document`: com 60.000 caracteres, o Claude Code 2.1.310 grava a página num arquivo e mostra uma prévia, e o agente precisa de permissão para ler esse arquivo. Falta decidir se a página diminui para caber inline.
+- Um usuário que baixe `MAX_MCP_OUTPUT_TOKENS` muito abaixo do padrão, ou um limite remoto menor no Claude Code, ainda faz respostas grandes irem para um arquivo. O Tinyfold não controla esses valores.
 
 ## Canvas e regressão no worktree
 

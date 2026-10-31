@@ -13,8 +13,8 @@ A etapa usa a interface atual. A lateral do projeto, as pastas e os itens incorp
 - `/mcp` serve as seis ferramentas na mesma origem da SPA, com token pessoal somente leitura e as verificações de origem, tamanho, autenticação e taxa.
 - O Perfil gera o token com nome, mostra-o uma vez com o comando do Claude Code, lista prefixo, criação e último uso e revoga. O token não entra em cache, armazenamento do navegador nem logs.
 - Documentos saem em Markdown do serializador do domínio, paginados; desenhos, como PNG gerado no navegador e estrutura textual da cena atual; tarefas, em JSON com a origem.
-- O Claude Code 2.1.310 real conectou, leu projetos, documento, desenho como imagem e tarefas, e perdeu o acesso na revogação. A validação foi repetida sobre `709da1d`, depois das rodadas adversariais.
-- **Em aberto:** o Claude Code grava num arquivo uma página de `read_document` com 60.000 caracteres, em vez de mantê-la na conversa, e o agente precisa de permissão para lê-lo. Com essa permissão, a paginação chegou ao fim do documento. Depois da medição, as respostas passaram a caber em 45.000 caracteres (ver [Desvios](#desvios-do-plano)); falta repetir a leitura com o Claude Code. Ver [validação](../validacao.md#repetição-sobre-709da1d-depois-das-rodadas-adversariais).
+- O Claude Code 2.1.310 real conectou, leu projetos, documento, desenho como imagem e tarefas, e perdeu o acesso na revogação. A validação foi repetida sobre `709da1d`, depois das rodadas adversariais, e a leitura longa sobre `4feae9c`.
+- Com páginas de 60.000 caracteres, o Claude Code gravava a página num arquivo, fora da conversa. Medido o limite dele (50.000 caracteres de texto por resultado), as respostas passaram a caber em 45.000 (ver [Desvios](#desvios-do-plano)). Na repetição, um documento de 122.516 caracteres foi lido página a página sem sair da conversa, até a última linha. Ver [validação](../validacao.md#leitura-longa-sobre-4feae9c).
 
 ## Desvios do plano
 
