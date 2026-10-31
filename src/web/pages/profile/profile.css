@@ -11,7 +11,7 @@
 }
 .access-token-prefix,
 .access-token-copy input,
-.access-token-command pre {
+.access-token-command code {
   /* JetBrains Mono arrives with the Sumário interface; Chrome ignores ui-monospace, hence Menlo. */
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
