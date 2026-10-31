@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CanvasOutline } from '../../domain/canvas-outline.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import { compactJson, documentHeader, fitItems, nextPageCursor } from './format.js';
+import { compactJson, documentHeader, fitItems } from './format.js';
 import { formatCanvasOutline } from './format-outline.js';
 
 const outline: CanvasOutline = {
@@ -124,16 +124,12 @@ describe('tool text helpers', () => {
       ].join('\n'),
     );
   });
-  it('drops trailing items that exceed the output budget and moves the cursor back', () => {
+  it('drops trailing items that exceed the output budget and points the cursor at the last one shown', () => {
     const items = Array.from({ length: 50 }, (_, index) => ({ index, padding: 'x'.repeat(3000) }));
-    const page = { offset: 20, nextOffset: 70 };
-    const text = fitItems(items, (shown) =>
-      compactJson({ items: shown, nextCursor: nextPageCursor(page, shown.length, items.length) }),
-    );
+    const text = fitItems(items, (shown) => compactJson({ items: shown, nextCursor: `after-${shown.at(-1)?.index}` }));
     const parsed = JSON.parse(text) as { items: unknown[]; nextCursor: string };
     expect(text.length).toBeLessThanOrEqual(READING_LIMITS.toolTextChars);
-    expect(parsed.nextCursor).toBe(`o:${20 + parsed.items.length}`);
-    expect(nextPageCursor(page, 50, 50)).toBe('o:70');
-    expect(nextPageCursor({ offset: 0, nextOffset: null }, 3, 3)).toBeNull();
+    expect(parsed.items.length).toBeLessThan(50);
+    expect(parsed.nextCursor).toBe(`after-${parsed.items.length - 1}`);
   });
 });

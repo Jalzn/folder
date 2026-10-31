@@ -4,7 +4,7 @@ import { READING_LIMITS } from '../../domain/reading-limits.js';
 /** Inputs of the agent read tools. The descriptions reach the agent through the tool schemas. */
 
 const id = z.uuid();
-const cursor = z.string().max(40).describe('O nextCursor da página anterior.');
+const cursor = z.string().max(100).describe('O nextCursor da página anterior.');
 const query = z.string().trim().min(1).max(300);
 
 export const ListProjectsInput = z.object({

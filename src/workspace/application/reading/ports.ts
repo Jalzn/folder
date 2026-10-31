@@ -1,5 +1,6 @@
 import type { CanvasScene } from '../../domain/canvas.js';
 import type { DocumentBlock, TaskSource, TaskStatus } from '../../domain/models.js';
+import type { BoardKey, SearchKey } from '../../domain/paging.js';
 
 /**
  * Queries of the agent read model. Nothing in the trash is ever returned: a trashed item reads as
@@ -55,13 +56,17 @@ export interface SearchQuery {
   projectId: string | undefined;
   types: readonly SearchItemType[];
   limit: number;
-  offset: number;
+  /** The key of the last item of the previous page. */
+  after: SearchKey | undefined;
 }
 
-export type SearchHit = ProjectReference & { id: string; title: string; updatedAt: string } & (
-    | { type: 'document' | 'drawing'; excerpt: string }
-    | { type: 'task'; status: TaskStatus }
-  );
+export type SearchHit = ProjectReference & {
+  id: string;
+  title: string;
+  updatedAt: string;
+  /** How many query words the title lacks; it orders the results and is not shown. */
+  titleRank: number;
+} & ({ type: 'document' | 'drawing'; excerpt: string } | { type: 'task'; status: TaskStatus });
 
 export interface DocumentForReading extends ProjectReference {
   id: string;
@@ -100,19 +105,20 @@ export interface TaskQuery {
   /** Normalized words from searchTerms, all required in the title. */
   terms: readonly string[];
   limit: number;
-  offset: number;
+  /** The key of the last task of the previous page. */
+  after: BoardKey | undefined;
 }
 
 export interface TaskListing extends ProjectReference {
   id: string;
   title: string;
   status: TaskStatus;
+  position: number;
   updatedAt: string;
   source: { documentId: string; documentTitle: string | null; available: boolean } | null;
 }
 
 export interface TaskDetail extends Omit<TaskListing, 'source'> {
   createdAt: string;
-  position: number;
   source: (Omit<TaskSource, 'documentTitle'> & { documentTitle: string | null }) | null;
 }

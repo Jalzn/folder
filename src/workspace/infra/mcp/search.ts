@@ -1,10 +1,10 @@
 import type { ReadingContext, SearchHit } from '../../application/reading/ports.js';
 import { SearchInput } from '../../application/reading/schemas.js';
 import { search } from '../../application/reading/search.js';
-import { compactJson, fitItems, nextPageCursor, statusFields, textResult } from './format.js';
+import { compactJson, fitItems, statusFields, textResult } from './format.js';
 import { defineTool, readOnlyAnnotations } from './types.js';
 
-const hitView = ({ projectId, projectName, projectArchived, updatedAt, ...hit }: SearchHit) =>
+const hitView = ({ projectId, projectName, projectArchived, updatedAt, titleRank: _rank, ...hit }: SearchHit) =>
   hit.type === 'task'
     ? {
         type: hit.type,
@@ -41,7 +41,7 @@ export const searchTool = (reading: ReadingContext) =>
     async handler(input) {
       const page = await search(reading, input);
       const text = fitItems(page.items, (shown) =>
-        compactJson({ items: shown.map(hitView), nextCursor: nextPageCursor(page, shown.length, page.items.length) }),
+        compactJson({ items: shown.map(hitView), nextCursor: page.nextCursor(shown.length) }),
       );
       return textResult(text);
     },

@@ -1,4 +1,4 @@
-import type { Kysely } from 'kysely';
+import { type Kysely, sql } from 'kysely';
 import type { TaskListing, WorkspaceReader } from '../../application/reading/ports.js';
 import type { DocumentBlock } from '../../domain/models.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
@@ -31,19 +31,23 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
       let select = withSource().orderBy(columnRank).orderBy('item.position').orderBy('item.id');
       if (query.projectId) select = select.where('item.project_id', '=', query.projectId);
       if (query.statuses?.length) select = select.where('item.status', 'in', [...query.statuses]);
+      const after = query.after;
+      if (after)
+        select = select.where(
+          sql<boolean>`(${columnRank}, item.position, item.id) > (${after.columnRank}, ${after.position}, ${after.id})`,
+        );
       // Titles have no stored search column, so the normalized match runs here, after the query.
-      if (!query.terms.length) select = select.limit(query.limit + 1).offset(query.offset);
+      if (!query.terms.length) select = select.limit(query.limit + 1);
       const rows = await select.execute();
       const matching = query.terms.length
-        ? rows
-            .filter((row) => matchesAllTerms(searchText(row.title), query.terms))
-            .slice(query.offset, query.offset + query.limit + 1)
+        ? rows.filter((row) => matchesAllTerms(searchText(row.title), query.terms)).slice(0, query.limit + 1)
         : rows;
       const items = matching.slice(0, query.limit).map(
         (row): TaskListing => ({
           id: row.id,
           title: row.title,
           status: row.status,
+          position: row.position,
           ...projectReference(row),
           updatedAt: row.updated_at,
           source: row.document_id

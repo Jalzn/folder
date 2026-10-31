@@ -1,5 +1,6 @@
-import { type Kysely, sql } from 'kysely';
-import type { SearchHit, SearchItemType, SearchQuery, WorkspaceReader } from '../../application/reading/ports.js';
+import { type Kysely, type RawBuilder, sql } from 'kysely';
+import { compareSearchKeys, searchKey, searchTypeRankOf } from '../../application/reading/list-order.js';
+import type { SearchHit, SearchQuery, WorkspaceReader } from '../../application/reading/ports.js';
 import { excerptAround } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
@@ -9,18 +10,20 @@ import { projectColumns, projectReference } from './shared.js';
 type SearchReads = Pick<WorkspaceReader, 'searchItems'>;
 type TextType = 'document' | 'drawing';
 type WithoutExcerpt<Hit> = Hit extends unknown ? Omit<Hit, 'excerpt'> : never;
-/** A hit before its excerpt is cut, ranked by how many query words its title lacks. */
-type RankedHit = WithoutExcerpt<SearchHit> & { titleRank: number };
+type RankedHit = WithoutExcerpt<SearchHit>;
 
 const tables = { document: 'workspace_documents', drawing: 'workspace_canvases' } as const;
-const typeOrder: Record<SearchItemType, number> = { document: 0, drawing: 1, task: 2 };
-const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
-/** More query words in the title first, then the most recently edited; type and ID keep ties stable. */
-const searchOrder = (a: RankedHit, b: RankedHit) =>
-  a.titleRank - b.titleRank ||
-  compare(b.updatedAt, a.updatedAt) ||
-  typeOrder[a.type] - typeOrder[b.type] ||
-  compare(a.id, b.id);
+
+/**
+ * Rows of one item type that sort after the cursor key: a higher title rank, or the same rank and an
+ * older edit, or the same edit time and a later type or ID.
+ */
+function afterKey(query: SearchQuery, typeRank: number, titleRank: RawBuilder<number>) {
+  const key = query.after;
+  if (!key) return sql<boolean>`1`;
+  const sameTime = typeRank === key.typeRank ? sql`item.id > ${key.id}` : sql`${typeRank > key.typeRank ? 1 : 0}`;
+  return sql<boolean>`(${titleRank} > ${key.titleRank} or (${titleRank} = ${key.titleRank} and (item.updated_at < ${key.updatedAt} or (item.updated_at = ${key.updatedAt} and ${sameTime}))))`;
+}
 
 export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
   async function textHits(type: TextType, query: SearchQuery, limit: number): Promise<RankedHit[]> {
@@ -37,6 +40,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
       .select(['item.id', 'item.title', 'item.updated_at', titleRank.as('title_rank')])
       .select(projectColumns)
       .where('item.deleted_at', 'is', null)
+      .where(afterKey(query, searchTypeRankOf(type), titleRank))
       .orderBy('title_rank')
       .orderBy('item.updated_at', 'desc')
       .orderBy('item.id')
@@ -53,7 +57,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
     }));
   }
 
-  /** Task titles have no stored search column, so the normalized match runs here. */
+  /** Task titles have no stored search column, so the normalized match runs here. A task matches by title. */
   async function taskHits(query: SearchQuery, limit: number): Promise<RankedHit[]> {
     let select = db
       .selectFrom('workspace_tasks as item')
@@ -61,6 +65,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
       .select(['item.id', 'item.title', 'item.status', 'item.updated_at'])
       .select(projectColumns)
       .where('item.deleted_at', 'is', null)
+      .where(afterKey(query, searchTypeRankOf('task'), sql<number>`0`))
       .orderBy('item.updated_at', 'desc')
       .orderBy('item.id');
     if (query.projectId) select = select.where('item.project_id', '=', query.projectId);
@@ -89,26 +94,27 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
 
   return {
     async searchItems(query) {
-      // Each source returns enough rows for the requested page; merging them keeps the global order.
-      const needed = query.offset + query.limit + 1;
+      // Each source returns enough rows for one page; merging them keeps the global order.
+      const needed = query.limit + 1;
       const ranked = [
         ...(query.types.includes('document') ? await textHits('document', query, needed) : []),
         ...(query.types.includes('drawing') ? await textHits('drawing', query, needed) : []),
         ...(query.types.includes('task') ? await taskHits(query, needed) : []),
-      ].sort(searchOrder);
-      const shown = ranked.slice(query.offset, query.offset + query.limit);
+      ];
+      ranked.sort((a, b) => compareSearchKeys(searchKey(a), searchKey(b)));
+      const shown = ranked.slice(0, query.limit);
       const idsOf = (type: TextType) => shown.filter((hit) => hit.type === type).map((hit) => hit.id);
       const texts = new Map([
         ...(await plainTexts('document', idsOf('document'))),
         ...(await plainTexts('drawing', idsOf('drawing'))),
       ]);
       const { excerptChars, excerptLeadChars } = READING_LIMITS.search;
-      const items = shown.map(({ titleRank: _rank, ...hit }): SearchHit => {
+      const items = shown.map((hit): SearchHit => {
         if (hit.type === 'task') return hit;
         const text = texts.get(hit.id) ?? '';
         return { ...hit, excerpt: excerptAround(text, query.terms, excerptChars, excerptLeadChars) };
       });
-      return { items, hasMore: ranked.length > query.offset + query.limit };
+      return { items, hasMore: ranked.length > query.limit };
     },
   };
 }

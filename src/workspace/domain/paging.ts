@@ -47,17 +47,50 @@ export function readDocumentCursor(cursor: string): { version: number; offset: n
   return { version: Number(match[1]), offset: Number(match[2]) };
 }
 
-/** List cursors are plain offsets, bounded so a deep page never scans the whole table. */
-export function offsetCursor(offset: number): string {
-  return `o:${offset}`;
+/**
+ * Lists page by keyset: a cursor holds the sort key of the last item shown, so edits elsewhere in
+ * the list never repeat or skip the items that follow it.
+ */
+export interface SearchKey {
+  /** How many query words the title lacks; title matches come first. */
+  titleRank: number;
+  updatedAt: string;
+  typeRank: number;
+  id: string;
 }
 
-export function readOffsetCursor(cursor: string | undefined, maxOffset: number): number {
-  if (cursor === undefined) return 0;
-  const match = /^o:(\d{1,15})$/u.exec(cursor);
+export interface BoardKey {
+  columnRank: number;
+  position: number;
+  id: string;
+}
+
+const isoDate = String.raw`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z`;
+const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+const searchCursorPattern = new RegExp(`^s~(\\d{1,3})~(${isoDate})~([0-2])~(${uuid})$`, 'u');
+const boardCursorPattern = new RegExp(`^t~([0-2])~(\\d{1,15})~(${uuid})$`, 'u');
+
+export function searchCursor(key: SearchKey): string {
+  return `s~${key.titleRank}~${key.updatedAt}~${key.typeRank}~${key.id}`;
+}
+
+export function readSearchCursor(cursor: string): SearchKey {
+  const match = searchCursorPattern.exec(cursor);
   if (!match) throw invalidCursor();
-  const offset = Number(match[1]);
-  if (offset > maxOffset)
-    throw new DomainError('A consulta passou do limite de páginas. Use filtros mais específicos.');
-  return offset;
+  return {
+    titleRank: Number(match[1]),
+    updatedAt: match[2] as string,
+    typeRank: Number(match[3]),
+    id: match[4] as string,
+  };
+}
+
+export function boardCursor(key: BoardKey): string {
+  return `t~${key.columnRank}~${key.position}~${key.id}`;
+}
+
+export function readBoardCursor(cursor: string): BoardKey {
+  const match = boardCursorPattern.exec(cursor);
+  if (!match) throw invalidCursor();
+  return { columnRank: Number(match[1]), position: Number(match[2]), id: match[3] as string };
 }

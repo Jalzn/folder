@@ -1,5 +1,5 @@
-import { readOffsetCursor } from '../../domain/paging.js';
-import { READING_LIMITS } from '../../domain/reading-limits.js';
+import { readSearchCursor, searchCursor } from '../../domain/paging.js';
+import { searchKey } from './list-order.js';
 import type { ReadingContext } from './ports.js';
 import { queryTerms } from './query-terms.js';
 import type { SearchInput } from './schemas.js';
@@ -9,7 +9,7 @@ import type { SearchInput } from './schemas.js';
  * words in the title first, then the most recently edited; without a query, lists the most recent items.
  */
 export async function search(ctx: ReadingContext, input: SearchInput) {
-  const offset = readOffsetCursor(input.cursor, READING_LIMITS.search.maxOffset);
+  const after = input.cursor === undefined ? undefined : readSearchCursor(input.cursor);
   const terms = queryTerms(input.query);
   const page = await ctx.read((reader) =>
     reader.searchItems({
@@ -17,8 +17,15 @@ export async function search(ctx: ReadingContext, input: SearchInput) {
       projectId: input.projectId,
       types: input.types ?? ['document', 'drawing', 'task'],
       limit: input.limit,
-      offset,
+      after,
     }),
   );
-  return { items: page.items, offset, nextOffset: page.hasMore ? offset + page.items.length : null };
+  return {
+    items: page.items,
+    /** The cursor after the first `shown` items, which may be fewer than the page; null at the end. */
+    nextCursor(shown: number) {
+      const last = page.items[shown - 1];
+      return last && (shown < page.items.length || page.hasMore) ? searchCursor(searchKey(last)) : null;
+    },
+  };
 }

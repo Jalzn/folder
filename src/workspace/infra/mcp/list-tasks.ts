@@ -1,7 +1,7 @@
 import { listTasks } from '../../application/reading/list-tasks.js';
 import type { ReadingContext, TaskListing } from '../../application/reading/ports.js';
 import { ListTasksInput } from '../../application/reading/schemas.js';
-import { compactJson, fitItems, nextPageCursor, statusFields, textResult } from './format.js';
+import { compactJson, fitItems, statusFields, textResult } from './format.js';
 import { defineTool, readOnlyAnnotations } from './types.js';
 
 const taskView = (task: TaskListing) => ({
@@ -28,7 +28,7 @@ export const listTasksTool = (reading: ReadingContext) =>
     async handler(input) {
       const page = await listTasks(reading, input);
       const text = fitItems(page.tasks, (shown) =>
-        compactJson({ tasks: shown.map(taskView), nextCursor: nextPageCursor(page, shown.length, page.tasks.length) }),
+        compactJson({ tasks: shown.map(taskView), nextCursor: page.nextCursor(shown.length) }),
       );
       return textResult(text);
     },

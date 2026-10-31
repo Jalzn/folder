@@ -1,6 +1,5 @@
 import type { OriginTask, ProjectReference } from '../../application/reading/ports.js';
 import type { TaskStatus } from '../../domain/models.js';
-import { offsetCursor } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { taskStatusLabels } from '../../domain/task-status.js';
 import type { AgentToolResult } from './types.js';
@@ -28,12 +27,6 @@ export function fitItems<T>(items: readonly T[], render: (shown: readonly T[]) =
 }
 
 /** The project's name, flagged when archived; null for an item outside any project. */
-/** The cursor after the items shown, which may be fewer than the page when the output budget cut it. */
-export function nextPageCursor(page: { offset: number; nextOffset: number | null }, shown: number, total: number) {
-  if (shown < total) return offsetCursor(page.offset + shown);
-  return page.nextOffset === null ? null : offsetCursor(page.nextOffset);
-}
-
 export function projectName(reference: ProjectReference): string | null {
   return reference.projectName && `${reference.projectName}${reference.projectArchived ? ' (arquivado)' : ''}`;
 }

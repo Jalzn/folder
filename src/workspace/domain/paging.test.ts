@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { documentCursor, offsetCursor, pageText, readDocumentCursor, readOffsetCursor } from './paging.js';
+import {
+  boardCursor,
+  documentCursor,
+  pageText,
+  readBoardCursor,
+  readDocumentCursor,
+  readSearchCursor,
+  searchCursor,
+} from './paging.js';
 
 describe('text pages', () => {
   it('returns short text as a single page', () => {
@@ -26,14 +34,19 @@ describe('text pages', () => {
 });
 
 describe('cursors', () => {
-  it('round trips document and offset cursors', () => {
+  const id = '3f9e2c1a-0b4d-4e5f-8a6b-7c8d9e0f1a2b';
+  it('round trips document, search and board cursors', () => {
     expect(readDocumentCursor(documentCursor(12, 60_000))).toEqual({ version: 12, offset: 60_000 });
-    expect(readOffsetCursor(offsetCursor(40), 1000)).toBe(40);
-    expect(readOffsetCursor(undefined, 1000)).toBe(0);
+    const searchKey = { titleRank: 2, updatedAt: '2026-10-31T06:41:25.403Z', typeRank: 1, id };
+    expect(searchCursor(searchKey)).toBe(`s~2~2026-10-31T06:41:25.403Z~1~${id}`);
+    expect(readSearchCursor(searchCursor(searchKey))).toEqual(searchKey);
+    const boardKey = { columnRank: 1, position: 7, id };
+    expect(readBoardCursor(boardCursor(boardKey))).toEqual(boardKey);
   });
-  it('refuses malformed cursors and offsets past the limit', () => {
+  it('refuses malformed cursors and cursors of another list', () => {
     for (const cursor of ['', '12', 'a:1', '1:-2']) expect(() => readDocumentCursor(cursor)).toThrow('Cursor inválido');
-    expect(() => readOffsetCursor('40', 1000)).toThrow('Cursor inválido');
-    expect(() => readOffsetCursor('o:1001', 1000)).toThrow('limite de páginas');
+    for (const cursor of ['o:40', `t~1~7~${id}`, `s~1~2026-10-31~0~${id}`, `s~1~2026-10-31T06:41:25.403Z~3~${id}`])
+      expect(() => readSearchCursor(cursor)).toThrow('Cursor inválido');
+    expect(() => readBoardCursor(`s~0~2026-10-31T06:41:25.403Z~0~${id}`)).toThrow('Cursor inválido');
   });
 });

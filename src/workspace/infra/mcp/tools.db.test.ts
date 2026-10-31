@@ -149,10 +149,35 @@ describe('agent read tools', () => {
       cursor = page.nextCursor;
     } while (cursor);
     expect(seen).toEqual([...created].reverse());
-    expect(await call('search', { cursor: 'o:1001' })).toMatchObject({
+    expect(await call('search', { cursor: 'o:40' })).toEqual({
       isError: true,
-      text: expect.stringContaining('limite'),
+      text: 'Cursor inválido. Repita a consulta sem cursor.',
     });
+  });
+
+  it('keeps paging after the last item shown when an earlier item is edited', async () => {
+    const created = [];
+    for (let index = 0; index < 5; index += 1)
+      created.push(await service.createDocument({ ...request(), title: `Página ${index}` }));
+    const page = (cursor?: string) =>
+      json<{ items: { id: string }[]; nextCursor: string | null }>('search', {
+        limit: 2,
+        ...(cursor ? { cursor } : {}),
+      });
+    const first = await page();
+    const oldest = created[0];
+    if (!oldest || !first.nextCursor) throw new Error('missing page');
+    await service.saveDocument({
+      ...request(),
+      id: oldest.id,
+      expectedVersion: 1,
+      title: 'Página 0 editada',
+      content: [],
+    });
+    const second = await page(first.nextCursor);
+    const ids = [...first.items, ...second.items].map((item) => item.id);
+    expect(ids).toEqual([created[4], created[3], created[2], created[1]].map((document) => document?.id));
+    expect(second.nextCursor).toBeNull();
   });
 
   it('leaves trashed items out and flags archived projects', async () => {
@@ -335,10 +360,13 @@ describe('agent read tools', () => {
       projectId: project.id,
       limit: 2,
     });
-    expect(paged.nextCursor).toBe('o:2');
-    expect(
-      (await json<{ tasks: { id: string }[] }>('list_tasks', { projectId: project.id, cursor: 'o:2' })).tasks[0]?.id,
-    ).toBe(doing.task.id);
+    expect(paged.nextCursor).toBe(`t~0~${first.task.position}~${first.task.id}`);
+    const next = await json<{ tasks: { id: string }[]; nextCursor: null }>('list_tasks', {
+      projectId: project.id,
+      cursor: paged.nextCursor,
+    });
+    expect(next.tasks.map((task) => task.id)[0]).toBe(doing.task.id);
+    expect(next.nextCursor).toBeNull();
 
     await service.deleteDocument({ ...request(), id: document.id, expectedVersion: document.version });
     const listed = await json<{ tasks: { id: string; source: unknown }[] }>('list_tasks', { query: 'trecho' });
