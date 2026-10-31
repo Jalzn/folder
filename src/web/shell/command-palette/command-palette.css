@@ -82,7 +82,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  min-height: 36px;
+  min-height: var(--height-palette-result);
   margin: 0 6px;
   padding: 6px 12px;
   border-radius: var(--radius-sm);

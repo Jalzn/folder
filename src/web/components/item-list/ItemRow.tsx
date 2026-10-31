@@ -1,7 +1,7 @@
 import './item-row.css';
 import { Link } from '@tanstack/react-router';
 import { shortDate } from '../../lib/dates';
-import { type ItemType, itemTypeLabels } from '../../lib/types';
+import { displayTitle, type ItemType, itemTypeLabels } from '../../lib/types';
 
 /**
  * A document or drawing in a list (docs/interface/refino.md §8): the title, then its type and one line of
@@ -24,7 +24,7 @@ export function ItemRow({
     <li>
       <Link to={href} className="item-row">
         <span className="item-row__main">
-          <span className="item-row__title">{title || 'Sem título'}</span>
+          <span className="item-row__title">{displayTitle(title)}</span>
           <span className="item-row__meta">
             <span className="item-row__kind">{itemTypeLabels[type]}</span>
             {excerpt ? ` · ${excerpt}` : ''}

@@ -3,7 +3,7 @@ import './trash.css';
 import { useParams } from '@tanstack/react-router';
 import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { useProjects, useTrash } from '../../../lib/queries';
+import { useProject, useTrash } from '../../../lib/queries';
 import type { Project } from '../../../lib/types';
 import { PageFrame, useTrashCount } from '../../../shell';
 import { Button, ErrorNotice, FilterMenu, type FilterOption, PageHeader, Spinner } from '../../../ui';
@@ -26,7 +26,7 @@ const filterOptions: FilterOption<TrashFilter>[] = [
  */
 export function TrashPage() {
   const { projectId } = useParams({ from: '/projetos/$projectId/lixeira' });
-  const project = useProjects(true).data?.find((item) => item.id === projectId);
+  const project = useProject(projectId);
   const trash = useTrash(projectId);
   const [filter, setFilter] = useState<TrashFilter>('all');
   if (!project) return null;

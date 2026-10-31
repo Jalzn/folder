@@ -1,5 +1,5 @@
 import './dialog.css';
-import type { ReactNode } from 'react';
+import { type ReactNode, useId } from 'react';
 import { Dialog as AriaDialog, Heading, Modal, ModalOverlay } from 'react-aria-components';
 import { Button } from './Button';
 
@@ -28,16 +28,26 @@ export function AlertDialog({
   destructive = true,
   isPending = false,
 }: AlertDialogProps) {
+  const bodyId = useId();
   return (
     <ModalOverlay className="modal-overlay" isOpen={open} onOpenChange={(value) => !value && onClose()} isDismissable>
       <Modal className="modal">
-        <AriaDialog role="alertdialog" className="dialog">
+        <AriaDialog
+          role="alertdialog"
+          className="dialog"
+          // The body is what the person must read before confirming: "Não dá para desfazer."
+          {...(children ? { 'aria-describedby': bodyId } : {})}
+        >
           <header className="dialog__header">
             <Heading slot="title" className="dialog__title">
               {title}
             </Heading>
           </header>
-          {children && <div className="dialog__body">{children}</div>}
+          {children && (
+            <div id={bodyId} className="dialog__body">
+              {children}
+            </div>
+          )}
           <div className="dialog-actions">
             <Button autoFocus onPress={onClose}>
               {cancelLabel}

@@ -2,7 +2,7 @@ import './board.css';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { useProjects, useTasks } from '../../lib/queries';
+import { useProject, useTasks } from '../../lib/queries';
 import { PageFrame, useApp } from '../../shell';
 import { Button, ErrorNotice, PageHeader, Spinner, useToast } from '../../ui';
 import { Kanban } from './Kanban';
@@ -19,7 +19,7 @@ export function BoardPage() {
   const navigate = useNavigate({ from: '/projetos/$projectId/quadro' });
   const app = useApp();
   const toast = useToast();
-  const project = useProjects(true).data?.find((item) => item.id === projectId);
+  const project = useProject(projectId);
   const tasks = useTasks({ projectId });
   const list = tasks.data?.tasks;
   const { openTask } = app;

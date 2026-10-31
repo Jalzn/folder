@@ -1,7 +1,7 @@
 import '../project-page.css';
 import './overview.css';
 import { useParams } from '@tanstack/react-router';
-import { useProjectOverview, useProjects } from '../../../lib/queries';
+import { useProject, useProjectOverview } from '../../../lib/queries';
 import { PageFrame, ProjectMenu, useProjectActions } from '../../../shell';
 import { Banner, Button, ErrorNotice, PageHeader, Spinner } from '../../../ui';
 import { NowSection } from './NowSection';
@@ -15,7 +15,7 @@ import { StartSection } from './StartSection';
  */
 export function OverviewPage() {
   const { projectId } = useParams({ from: '/projetos/$projectId/' });
-  const project = useProjects(true).data?.find((item) => item.id === projectId);
+  const project = useProject(projectId);
   const overview = useProjectOverview(projectId);
   const actions = useProjectActions();
   if (!project) return null;

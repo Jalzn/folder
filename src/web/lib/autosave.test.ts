@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AutosaveController, parseDraft, type SaveAck, type SaveInput, type Snapshot } from './autosave';
 
-const initial: Snapshot = { title: 'Ideia', projectId: null, content: [] };
+const initial: Snapshot = { title: 'Ideia', projectId: 'p', content: [] };
 const changed = { ...initial, title: 'Nova ideia' };
 function setup(
   send: (input: SaveInput) => Promise<{ id: string; version: number; updatedAt: string }>,
@@ -93,7 +93,7 @@ describe('document autosave', () => {
         throw Object.assign(new Error('arquivado'), { code: 'VALIDATION' });
       }),
     ).rejects.toThrow('arquivado');
-    expect(controller.getState().snapshot.projectId).toBe(null);
+    expect(controller.getState().snapshot.projectId).toBe('p');
     expect(controller.getState().version).toBe(1);
     expect(controller.getState().status).toBe('saved');
   });

@@ -1,6 +1,6 @@
 import { ArrowRightLeft, Pin, PinOff, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { Project } from '../../lib/types';
+import type { ItemType, Project } from '../../lib/types';
 import { usePins } from '../project/use-pins';
 import { useShellUi } from '../shell-ui';
 import type { HereAction } from './palette-sections';
@@ -16,7 +16,7 @@ export function useHereActions({
   project,
   pinned,
 }: {
-  item: { type: 'document' | 'drawing'; id: string } | null;
+  item: { type: ItemType; id: string } | null;
   project: Project | null;
   pinned: boolean;
 }): RunnableHereAction[] {

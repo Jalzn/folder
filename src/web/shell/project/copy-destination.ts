@@ -12,11 +12,7 @@ export interface CopyDestination {
  * Where a copy or an import of an item goes: the item's project while it is active; otherwise the active
  * project this device opened last, or the first of the selector. None without an active project.
  */
-export function copyDestination(
-  projects: Project[],
-  ownProjectId: string | null,
-  nav: NavState,
-): CopyDestination | null {
+export function copyDestination(projects: Project[], ownProjectId: string, nav: NavState): CopyDestination | null {
   const active = activeProjects(projects);
   const own = active.find((project) => project.id === ownProjectId);
   if (own) return { project: own, redirected: false };

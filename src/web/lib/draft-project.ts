@@ -1,17 +1,19 @@
-import type { SavedDraft } from './autosave';
+import type { Legacy, SavedDraft } from './autosave';
 
 /**
  * A draft kept from before every item had a project carries `projectId: null`. It is recovered into the
- * item's project, in its snapshot and in its pending save, so the server never receives the null.
+ * item's project, in its snapshot and in its pending save, so the editor never holds the null.
  */
-export function withDraftProject<T extends { projectId: string | null }>(
-  draft: SavedDraft<T> | null,
-  projectId: string | null,
+export function withDraftProject<T extends { projectId: string }>(
+  draft: SavedDraft<Legacy<T>> | null,
+  projectId: string,
 ): SavedDraft<T> | null {
-  if (!draft || !projectId) return draft;
+  if (!draft) return null;
+  const own = <S extends { projectId: string | null }>(value: S) =>
+    ({ ...value, projectId: value.projectId ?? projectId }) as unknown as Omit<S, 'projectId'> & { projectId: string };
   return {
     ...draft,
-    snapshot: draft.snapshot.projectId === null ? { ...draft.snapshot, projectId } : draft.snapshot,
-    pending: draft.pending?.projectId === null ? { ...draft.pending, projectId } : draft.pending,
+    snapshot: own(draft.snapshot) as unknown as T,
+    pending: draft.pending ? (own(draft.pending) as unknown as SavedDraft<T>['pending']) : null,
   };
 }

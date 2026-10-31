@@ -27,7 +27,7 @@
   display: none;
 }
 .project-switcher__list .menu-item {
-  min-height: 30px;
+  min-height: var(--height-menu-item);
 }
 .project-switcher__current {
   color: var(--accent);

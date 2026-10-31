@@ -1,6 +1,6 @@
 /**
  * The theme-independent part of the Sumário system (docs/interface/visual.md §3, §4 and §7): type scale,
- * spacing, radii, heights, durations and easing.
+ * radii, heights, durations and easing. Spacing follows the 4 px grid of §4 as plain values.
  */
 
 export const fontFamilies = {
@@ -18,7 +18,7 @@ export interface TextRole {
   family?: keyof typeof fontFamilies;
 }
 
-/** The roles of visual.md §3, by class name: `.t-<role>`. There is no weight 700. */
+/** The roles of visual.md §3, as `--type-<role>` and `--tracking-<role>`. There is no weight 700. */
 export const textRoles = {
   title: { size: 30, line: 36, weight: 600, tracking: -0.021 },
   'task-title': { size: 20, line: 28, weight: 600, tracking: -0.017 },
@@ -35,15 +35,13 @@ export const textRoles = {
   mono: { size: 13, line: 20, weight: 400, tracking: 0, family: 'mono' },
 } as const satisfies Record<string, TextRole>;
 
-/** The 4 px grid. */
-export const spacing = [4, 8, 12, 16, 24, 32, 48] as const;
-
 /** Radii by role: chip, kbd and checkbox; buttons, fields and rows; cards and toasts; menus; dialogs. */
 export const radii = { xs: 4, sm: 6, md: 8, lg: 10, xl: 12 } as const;
 
 export const heights = {
   'sidebar-row': 28,
   'menu-item': 30,
+  'palette-result': 36,
   'list-row': 36,
   button: 28,
   'button-dense': 24,

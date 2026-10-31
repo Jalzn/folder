@@ -2,14 +2,14 @@ import { useNavigate } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { errorMessage, reportSessionError } from '../../../lib/api';
 import type { TrashItem } from '../../../lib/queries';
-import type { Project } from '../../../lib/types';
+import { displayTitle, type Project } from '../../../lib/types';
 import { useAction } from '../../../lib/use-action';
 import { useRequest } from '../../../lib/use-request';
 import { focusPageTitle, useToast } from '../../../ui';
 import { emptyTrash, hasOriginatedTasks, itemAddress, keptAfterEmptying, purgeItem, restoreItem } from './trash-api';
 import { emptiedText } from './trash-text';
 
-export const trashTitle = (item: TrashItem) => item.title || 'Sem título';
+export const trashTitle = (item: TrashItem) => displayTitle(item.title);
 
 /** A confirmation kept while it closes, so its text does not change on the way out. */
 export interface Confirmation<Value> {

@@ -2,7 +2,7 @@ import { useLocation } from '@tanstack/react-router';
 import type { NavSection } from '@tinyfold/workspace/domain';
 import { FileText, Shapes } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { Project } from '../../lib/types';
+import { displayTitle, type Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { IconButton, Popover, PopoverTrigger } from '../../ui';
 import { SectionList } from './SectionList';
@@ -33,7 +33,7 @@ function RailList({ project, kind, section }: { project: Project; kind: SectionK
       <SidebarRow
         href={paths.item(project.id, type, item.id)}
         icon={<Icon size={16} />}
-        label={item.title || 'Sem título'}
+        label={displayTitle(item.title)}
         current={open?.id === item.id}
       />
     </li>

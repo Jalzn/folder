@@ -4,7 +4,7 @@ import { api, errorMessage, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { downloadFile, fileNameFrom } from '../../lib/download';
 import { exportMarkdownWithMath, importMarkdownWithMath } from '../../lib/markdown';
-import type { DocumentContent } from '../../lib/types';
+import { type DocumentContent, displayTitle } from '../../lib/types';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { redirectedCopyText, useCopyDestination } from '../../shell';
@@ -35,7 +35,7 @@ export function useDocumentFiles(
       );
       const title = controller.getState().snapshot.title;
       downloadFile(
-        new Blob([`# ${title || 'Sem título'}\n\n${markdown}`], { type: 'text/markdown;charset=utf-8' }),
+        new Blob([`# ${displayTitle(title)}\n\n${markdown}`], { type: 'text/markdown;charset=utf-8' }),
         fileNameFrom(title, 'documento', 'md'),
       );
       toast('Documento exportado em Markdown.');

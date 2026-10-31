@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { errorCode } from '../lib/api';
 import { useCanvas, useDocument, useProjects } from '../lib/queries';
+import type { ItemType } from '../lib/types';
 import { ItemNotFound, NotFoundPage } from '../pages/project/NotFoundPage';
 import { PageStatus, useApp } from '../shell';
 import { ErrorNotice, Spinner } from '../ui';
@@ -41,8 +42,8 @@ function ItemRedirect({
   address,
   item,
 }: {
-  address: Extract<LegacyAddress, { kind: 'document' | 'drawing' }>;
-  item: { data?: { projectId: string | null } | undefined; error: unknown; refetch: () => unknown };
+  address: Extract<LegacyAddress, { kind: ItemType }>;
+  item: { data?: { projectId: string } | undefined; error: unknown; refetch: () => unknown };
 }) {
   if (item.error && errorCode(item.error) === 'NOT_FOUND') return <ItemNotFound type={address.kind} id={address.id} />;
   const projectId = item.data?.projectId;

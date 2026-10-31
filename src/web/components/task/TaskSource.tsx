@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { FileText } from 'lucide-react';
 import type { Task } from '../../lib/types';
-import { itemPath } from '../../router/paths';
+import { paths } from '../../router/paths';
 
 type Source = NonNullable<Task['source']>;
 
@@ -27,7 +27,7 @@ export function TaskSource({
 }: {
   excerpt: string;
   source?: Source | null | undefined;
-  projectId?: string | null | undefined;
+  projectId?: string | undefined;
   onLeave: () => void;
 }) {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ export function TaskSource({
     <section className="task-source" aria-label="Origem">
       <h3 className="task-source__label">Origem</h3>
       <blockquote className="task-source__excerpt">{excerpt}</blockquote>
-      {source && documentId && (
+      {source && documentId && projectId && (
         <button
           type="button"
           className="task-source__link"
@@ -44,7 +44,7 @@ export function TaskSource({
             onLeave();
             // The task's project is the best guess; the document page moves to its own if it differs.
             void navigate({
-              href: itemPath('document', { id: documentId, projectId: projectId ?? null }, source.blockId ?? undefined),
+              href: paths.document(projectId, documentId, source.blockId ?? undefined),
             });
           }}
         >

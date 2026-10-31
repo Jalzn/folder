@@ -1,4 +1,4 @@
-import { type ItemType, itemTypeLabels } from '../../../lib/types';
+import { displayTitle, type ItemType, itemTypeLabels } from '../../../lib/types';
 import type { IndexType } from '../../../router/paths';
 
 /** A sortable column of the Índice. Trecho does not sort; Ligações arrives in stage 11. */
@@ -45,7 +45,7 @@ export function indexRows(documents: readonly Listed[], drawings: readonly Liste
 }
 
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
-const titleOf = (row: IndexRow) => row.title || 'Sem título';
+const titleOf = (row: IndexRow) => displayTitle(row.title);
 const byEdited = (a: IndexRow, b: IndexRow) => b.updatedAt.localeCompare(a.updatedAt);
 const compare: Record<IndexColumn, (a: IndexRow, b: IndexRow) => number> = {
   title: (a, b) => collator.compare(titleOf(a), titleOf(b)),

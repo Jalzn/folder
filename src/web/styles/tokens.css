@@ -28,13 +28,6 @@
   --tracking-micro: 0.005em;
   --type-mono: 400 13px / 20px var(--font-mono);
   --tracking-mono: 0;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -42,6 +35,7 @@
   --radius-xl: 12px;
   --height-sidebar-row: 28px;
   --height-menu-item: 30px;
+  --height-palette-result: 36px;
   --height-list-row: 36px;
   --height-button: 28px;
   --height-button-dense: 24px;

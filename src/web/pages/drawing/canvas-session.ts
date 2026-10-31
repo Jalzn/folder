@@ -7,6 +7,7 @@ import { CanvasPreviewUploader } from '../../lib/canvas-preview';
 import { withDraftProject } from '../../lib/draft-project';
 import { invalidateNavigation } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
+import { displayTitle } from '../../lib/types';
 
 /** The canvas as getCanvas returns it, including whether the stored PNG preview shows its scene. */
 export type EditableCanvas = Awaited<ReturnType<typeof api.workspace.getCanvas>>;
@@ -86,8 +87,7 @@ export function canvasSession(canvas: EditableCanvas, installationId: string): C
         return {
           ...base,
           ...sent,
-          projectId: sent.projectId ?? base.projectId,
-          title: sent.title.trim() || 'Sem título',
+          title: displayTitle(sent.title.trim()),
           plainText: canvasPlainText(sent.scene),
           version: ack.version,
           updatedAt: ack.updatedAt,

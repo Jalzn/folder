@@ -3,7 +3,7 @@ import { AutosaveController, parseDraft, type SaveInput, type Snapshot } from '.
 import { withDraftProject } from '../../lib/draft-project';
 import { invalidateNavigation } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
-import type { Document } from '../../lib/types';
+import { type Document, displayTitle } from '../../lib/types';
 
 const MAX_DOCUMENT_BYTES = 1_048_576;
 const controllers = new Map<string, AutosaveController>();
@@ -92,8 +92,7 @@ export function documentController(document: Document, installationId: string) {
             : {
                 ...(previous ?? document),
                 ...sent,
-                projectId: sent.projectId ?? (previous ?? document).projectId,
-                title: sent.title.trim() || 'Sem título',
+                title: displayTitle(sent.title.trim()),
                 version: ack.version,
                 updatedAt: ack.updatedAt,
               },

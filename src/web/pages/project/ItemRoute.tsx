@@ -21,7 +21,7 @@ const loadingLabels: Record<ItemType, string> = { document: 'Abrindo documento‚Ä
  * Loads an item, shows "Este item n√£o existe mais" for one deleted for good, and keeps the address
  * canonical: when the item now belongs to another project, the page replaces it with that project's address.
  */
-function ItemFrame<T extends { projectId: string | null }>({
+function ItemFrame<T extends { projectId: string }>({
   type,
   id,
   projectId,

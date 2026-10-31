@@ -8,6 +8,7 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AutosaveController, type SaveInput } from './autosave';
 import { type CanvasSnapshot, canvasFile, parseCanvasDraft, readCanvasImport, withCleanLinks } from './canvas-autosave';
+import { withDraftProject } from './draft-project';
 
 const element = {
   id: 'rectangle',
@@ -21,7 +22,7 @@ const element = {
   isDeleted: false,
 };
 const drawing: CanvasScene = { elements: [element], appState: { viewBackgroundColor: '#202329' } };
-const initial: CanvasSnapshot = { title: 'Ideia', projectId: null, scene: emptyCanvasScene() };
+const initial: CanvasSnapshot = { title: 'Ideia', projectId: 'p', scene: emptyCanvasScene() };
 const edited = { ...initial, scene: drawing };
 function setup(
   send: (input: SaveInput<CanvasSnapshot>) => Promise<{ id: string; version: number; updatedAt: string }>,
@@ -37,7 +38,7 @@ function setup(
     id: 'canvas',
     snapshot: initial,
     version,
-    readDraft: parseCanvasDraft,
+    readDraft: (raw) => withDraftProject<CanvasSnapshot>(parseCanvasDraft(raw), 'p'),
     storage: {
       read: () => stored,
       write,

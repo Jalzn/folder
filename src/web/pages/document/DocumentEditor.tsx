@@ -4,9 +4,9 @@ import { SaveBanners, SaveState, useItemActions } from '../../components/editor'
 import { api } from '../../lib/api';
 import type { Snapshot } from '../../lib/autosave';
 import { moveThroughController } from '../../lib/editor-move';
-import { documentQuery, useProjects, useTasks } from '../../lib/queries';
+import { documentQuery, useHasActiveProject, useTasks } from '../../lib/queries';
 import { registerOpenEditor } from '../../lib/save-registry';
-import type { Document, DocumentContent } from '../../lib/types';
+import { type Document, type DocumentContent, displayTitle, UNTITLED } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
 import { paths } from '../../router/paths';
@@ -39,7 +39,7 @@ export function DocumentEditor({ document }: { document: Document }) {
   const editor = useDocumentEditor(controller, document, state);
   const anchor = useBlockAnchor(editor);
   const tasks = useTasks({ documentId: document.id });
-  const hasActiveProject = (useProjects(true).data ?? []).some((project) => !project.archivedAt);
+  const hasActiveProject = useHasActiveProject();
   const [tasksOpen, setTasksOpen] = useState(false);
   const [selection, setSelection] = useState('');
   const [trashOpen, setTrashOpen] = useState(false);
@@ -47,7 +47,7 @@ export function DocumentEditor({ document }: { document: Document }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const files = useDocumentFiles(editor, controller, document.id);
   const taskFromSelection = useTaskFromSelection(editor, controller, document, () => setTasksOpen(true));
-  const projectId = state.snapshot.projectId ?? document.projectId;
+  const projectId = state.snapshot.projectId;
   const actions = useItemActions(controller, {
     id: document.id,
     projectId,
@@ -85,7 +85,7 @@ export function DocumentEditor({ document }: { document: Document }) {
   const update = (patch: Partial<Snapshot>) => controller.change({ ...controller.getState().snapshot, ...patch });
   const linked = tasks.data?.tasks ?? [];
   const openCount = linked.filter((task) => task.status !== 'done').length;
-  const title = state.snapshot.title === 'Sem título' ? '' : state.snapshot.title;
+  const title = state.snapshot.title === UNTITLED ? '' : state.snapshot.title;
 
   return (
     <PageFrame
@@ -153,7 +153,7 @@ export function DocumentEditor({ document }: { document: Document }) {
           </SaveBanners>
           <article className="document">
             <h1 className="sr-only" tabIndex={-1}>
-              {title || 'Sem título'}
+              {displayTitle(title)}
             </h1>
             <DocumentTitle
               value={title}

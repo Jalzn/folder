@@ -1,4 +1,4 @@
-import type { Project } from '../lib/types';
+import type { ItemType, Project } from '../lib/types';
 import { type IndexType, paths, safeDecode } from './paths';
 
 /** The addresses before stage 08, which keep working by redirecting (docs/etapas/08-fundacao.md). */
@@ -49,7 +49,7 @@ export function listRedirectPath(target: 'documents' | 'drawings' | 'board' | 't
 }
 
 /** Where an old item address goes, once the item's project is known. */
-export function itemRedirectPath(address: Extract<LegacyAddress, { kind: 'document' | 'drawing' }>, projectId: string) {
+export function itemRedirectPath(address: Extract<LegacyAddress, { kind: ItemType }>, projectId: string) {
   return address.kind === 'document'
     ? paths.document(projectId, address.id, address.block ?? undefined)
     : paths.drawing(projectId, address.id);

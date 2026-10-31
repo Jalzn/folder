@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { NavItem } from '@tinyfold/workspace/domain';
 import { FileText, PinOff, Shapes } from 'lucide-react';
 import { type KeyboardEvent, useRef, useState } from 'react';
-import type { ItemType } from '../../lib/types';
+import { displayTitle, type ItemType } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { focusPageTitle } from '../../ui';
 import { MoveToProjectMenu } from '../project/MoveToProjectMenu';
@@ -62,11 +62,11 @@ export function SidebarItem({
         data-roving
         tabIndex={-1}
         aria-current={current ? 'page' : undefined}
-        aria-label={`${item.title || 'Sem título'}, ${nouns[type]}${pinned ? ', fixado' : ''}${pending ? ', não salvo' : ''}`}
+        aria-label={`${displayTitle(item.title)}, ${nouns[type]}${pinned ? ', fixado' : ''}${pending ? ', não salvo' : ''}`}
         onKeyDown={keyDown}
       >
         <Icon size={16} />
-        <span className="sidebar-row__name">{item.title || 'Sem título'}</span>
+        <span className="sidebar-row__name">{displayTitle(item.title)}</span>
         {pending && <span className="sidebar-row__pending" aria-hidden="true" />}
       </Link>
       {pinned && (
@@ -74,7 +74,7 @@ export function SidebarItem({
           type="button"
           className="sidebar-item__unpin"
           tabIndex={-1}
-          aria-label={`Desafixar ${item.title || 'Sem título'}`}
+          aria-label={`Desafixar ${displayTitle(item.title)}`}
           title="Desafixar · P"
           onClick={onUnpin}
         >

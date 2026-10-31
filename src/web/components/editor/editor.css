@@ -13,7 +13,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 28px;
+  height: var(--height-button);
   padding: 0 4px;
   font: var(--type-meta);
   font-variant-numeric: tabular-nums;

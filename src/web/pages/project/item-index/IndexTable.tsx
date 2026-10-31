@@ -4,7 +4,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import { Cell, Column, Row, Table, TableBody, TableHeader } from 'react-aria-components';
 import { cx } from '../../../lib/cx';
 import { shortDate } from '../../../lib/dates';
-import { type ItemType, itemTypeLabels } from '../../../lib/types';
+import { displayTitle, type ItemType, itemTypeLabels } from '../../../lib/types';
 import { paths } from '../../../router/paths';
 import type { IndexColumn, IndexRow, IndexSort } from './index-rows';
 
@@ -88,13 +88,13 @@ export function IndexTable({
               <Row
                 id={row.key}
                 className="index-table__row"
-                textValue={row.title || 'Sem título'}
+                textValue={displayTitle(row.title)}
                 onAction={() => void navigate({ href })}
               >
                 <Cell className="index-table__cell">
                   <Link to={href} className="index-table__link">
                     <Icon size={16} aria-hidden="true" />
-                    <span>{row.title || 'Sem título'}</span>
+                    <span>{displayTitle(row.title)}</span>
                   </Link>
                 </Cell>
                 <Cell className="index-table__cell index-table__type">{itemTypeLabels[row.type]}</Cell>

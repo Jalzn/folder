@@ -11,7 +11,7 @@
 }
 .app-layout[data-mode="narrow"] {
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 44px minmax(0, 1fr);
+  grid-template-rows: var(--height-header) minmax(0, 1fr);
 }
 .app-layout__main {
   position: relative;
@@ -26,7 +26,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 44px;
+  height: var(--height-header);
   padding: 0 8px;
   border-bottom: 1px solid var(--line);
   background: var(--sidebar-bg);

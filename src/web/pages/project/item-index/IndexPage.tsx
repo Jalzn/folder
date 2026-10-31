@@ -2,7 +2,7 @@ import '../project-page.css';
 import './item-index.css';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
-import { useCanvases, useDocuments, useProjects } from '../../../lib/queries';
+import { useCanvases, useDocuments, useProject } from '../../../lib/queries';
 import type { IndexType } from '../../../router/paths';
 import { NewItemMenu, PageFrame } from '../../../shell';
 import { Button, ErrorNotice, FilterMenu, type FilterOption, PageHeader, Spinner } from '../../../ui';
@@ -27,7 +27,7 @@ export function IndexPage() {
   const { projectId } = useParams({ from: '/projetos/$projectId/indice' });
   const { tipo } = useSearch({ from: '/projetos/$projectId/indice' });
   const navigate = useNavigate({ from: '/projetos/$projectId/indice' });
-  const project = useProjects(true).data?.find((item) => item.id === projectId);
+  const project = useProject(projectId);
   const documents = useDocuments({ projectId });
   const drawings = useCanvases({ projectId });
   const [sort, setSort] = useIndexSort();

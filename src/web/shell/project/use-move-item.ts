@@ -1,6 +1,6 @@
 import { api, queryClient } from '../../lib/api';
 import { useProjects } from '../../lib/queries';
-import type { ItemType } from '../../lib/types';
+import { displayTitle, type ItemType } from '../../lib/types';
 import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { useToast } from '../../ui';
@@ -24,7 +24,7 @@ export function useMoveItem() {
     request.clear();
     void queryClient.invalidateQueries({ queryKey: ['workspace', type === 'document' ? 'document' : 'canvas', id] });
     const destination = projects.find((project) => project.id === to)?.name ?? 'outro projeto';
-    toast(`“${moved.title || 'Sem título'}” foi para ${destination}.`, {
+    toast(`“${displayTitle(moved.title)}” foi para ${destination}.`, {
       action: {
         label: 'Desfazer',
         onAction: () =>

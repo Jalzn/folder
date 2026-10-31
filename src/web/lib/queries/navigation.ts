@@ -7,10 +7,10 @@ export interface NavigationSorts {
   drawings: NavSort;
 }
 
-/** How many items each sidebar section lists besides its pinned ones. */
-export const SECTION_LIMIT = 8;
-
-/** The sidebar of a project: each section's total, pinned items and first items, open tasks and the trash. */
+/**
+ * The sidebar of a project: each section's total, pinned items and first items (the server's default of
+ * eight), open tasks and the trash.
+ */
 export function useProjectNavigation(projectId: string | null, sorts: NavigationSorts) {
   return useQuery({
     queryKey: ['workspace', 'navigation', projectId, sorts],
@@ -19,7 +19,6 @@ export function useProjectNavigation(projectId: string | null, sorts: Navigation
         projectId: projectId ?? '',
         documentsSort: sorts.documents,
         drawingsSort: sorts.drawings,
-        limit: SECTION_LIMIT,
       }),
     enabled: projectId !== null,
   });

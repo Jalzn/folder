@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { queryClient } from '../lib/api';
 import { canvasQuery, documentQuery, useProjects } from '../lib/queries';
-import type { Project } from '../lib/types';
+import type { ItemType, Project } from '../lib/types';
 import { PageStatus, useApp } from '../shell';
 import { ErrorNotice, Spinner } from '../ui';
 import { loadNavState } from './nav-store';
@@ -11,7 +11,7 @@ import { scheduleScrollRestore } from './scroll';
 import { resolveStartPath, type StartLocation } from './start-path';
 
 /** Whether an item can still open: a path to one deleted for good or in the trash is dropped silently. */
-async function itemIsOpen(type: 'document' | 'drawing', id: string) {
+async function itemIsOpen(type: ItemType, id: string) {
   try {
     const item =
       type === 'document'

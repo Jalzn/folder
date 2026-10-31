@@ -76,15 +76,3 @@ export function parseProjectPath(path: string): ProjectPath | null {
   const id = rest.length === 2 && type ? safeDecode(rest[1] ?? '') : null;
   return type && id ? { projectId, item: { type, id } } : null;
 }
-
-/**
- * An item's address under its project. Every item has a project; until the server stops typing it as
- * nullable, an item without one goes through its old address, which redirects.
- */
-export function itemPath(type: ItemType, item: { id: string; projectId: string | null }, block?: string) {
-  if (type === 'document') {
-    const query = block ? `?bloco=${encode(block)}` : '';
-    return item.projectId ? paths.document(item.projectId, item.id, block) : `/documentos/${encode(item.id)}${query}`;
-  }
-  return item.projectId ? paths.drawing(item.projectId, item.id) : `/desenhos/${encode(item.id)}`;
-}

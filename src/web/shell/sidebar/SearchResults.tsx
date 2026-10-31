@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { FileText, Search, Shapes } from 'lucide-react';
 import { errorMessage } from '../../lib/api';
 import type { SearchResult } from '../../lib/queries';
-import type { ItemType } from '../../lib/types';
+import { displayTitle, type ItemType } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { Highlight, Shortcut } from '../../ui';
 import { useShellUi } from '../shell-ui';
@@ -50,7 +50,7 @@ export function SearchResults({
                     >
                       <Icon size={16} />
                       <span className="sidebar-row__name">
-                        <Highlight text={item.title || 'Sem título'} query={query} />
+                        <Highlight text={displayTitle(item.title)} query={query} />
                       </span>
                       {'excerpt' in item && item.excerpt && (
                         <span className="sidebar-row__excerpt">

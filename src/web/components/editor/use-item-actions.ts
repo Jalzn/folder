@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { errorCode, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
+import { displayTitle } from '../../lib/types';
 import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
@@ -12,7 +13,7 @@ import { useToast } from '../../ui';
 const FINAL_ERRORS = ['VALIDATION', 'DOMAIN_RULE', 'BAD_REQUEST', 'PAYLOAD_TOO_LARGE'];
 
 /** What the shared actions need to know about one kind of item. */
-export interface ItemAdapter<Snapshot extends { title: string; projectId: string | null }, Item> {
+export interface ItemAdapter<Snapshot extends { title: string; projectId: string }, Item> {
   id: string;
   /** The item's project, where the page goes after the item leaves for the trash. */
   projectId: string;
@@ -46,7 +47,7 @@ interface PendingCopy<Snapshot> {
  * leaving an edit made meanwhile recoverable on the original), and move the item to the trash. A session
  * that expired on the way is reported, so the login can come back over the page.
  */
-export function useItemActions<Snapshot extends { title: string; projectId: string | null }, Item>(
+export function useItemActions<Snapshot extends { title: string; projectId: string }, Item>(
   controller: AutosaveController<Snapshot>,
   item: ItemAdapter<Snapshot, Item>,
 ) {
@@ -98,7 +99,7 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
         return;
       }
       const copied = pending.snapshot;
-      const title = `${copied.title || 'Sem título'} — cópia`.slice(0, 300);
+      const title = `${displayTitle(copied.title)} — cópia`.slice(0, 300);
       const copy = await item.createCopy(copied, pending.projectId, title, pending.requestId);
       pendingCopy.current = null;
       // A newer local edit made during copying must remain recoverable on the original.

@@ -12,7 +12,7 @@
   justify-content: flex-end;
   gap: 6px;
   min-width: 0;
-  height: 44px;
+  height: var(--height-header);
   padding: 0 12px 0 32px;
 }
 .page-frame__body {

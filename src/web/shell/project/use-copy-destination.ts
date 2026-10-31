@@ -10,7 +10,7 @@ import { copyDestination } from './copy-destination';
  */
 export function useCopyDestination() {
   const installationId = useApp().owner.installationId;
-  return async (ownProjectId: string | null) => {
+  return async (ownProjectId: string) => {
     const projects = await queryClient.fetchQuery({ ...projectsQuery(true), staleTime: 0 });
     return { destination: copyDestination(projects, ownProjectId, loadNavState(installationId)), projects };
   };

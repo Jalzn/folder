@@ -43,7 +43,7 @@ export function useTaskFromSelection(
       return;
     }
     const excerpt = text.slice(0, 4000);
-    app.newTask(controller.getState().snapshot.projectId ?? document.projectId, {
+    app.newTask(controller.getState().snapshot.projectId, {
       source: { documentId: document.id, blockId, excerpt, expectedVersion: controller.getState().version },
       title: excerpt.slice(0, 300),
       onClose: onTaskClosed,

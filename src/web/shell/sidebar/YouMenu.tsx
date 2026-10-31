@@ -27,10 +27,6 @@ export function YouMenu({
   const ui = useShellUi();
   const [leaving, setLeaving] = useState(false);
   const [busy, setBusy] = useState(false);
-  function chooseTheme(choice: ThemeChoice) {
-    theme.setChoice(choice);
-    toast(`Tema: ${themeChoiceLabels[choice]}.`);
-  }
   async function logout() {
     setBusy(true);
     try {
@@ -62,7 +58,7 @@ export function YouMenu({
               placement="end top"
               selectionMode="single"
               selectedKeys={[theme.choice]}
-              onAction={(key) => chooseTheme(key as ThemeChoice)}
+              onAction={(key) => theme.choose(key as ThemeChoice)}
             >
               {THEME_CHOICES.map((choice) => (
                 <MenuItem key={choice} id={choice} icon={themeIcons[choice]}>

@@ -6,18 +6,18 @@ import {
   RECOVERY_CANVAS_LIMITS,
   readCanvasScene,
 } from '@tinyfold/workspace/domain';
-import type { DraftStorage, SavedDraft, SaveInput } from './autosave';
+import type { DraftStorage, Legacy, SavedDraft, SaveInput } from './autosave';
 import { fileNameFrom } from './download';
 
 export interface CanvasSnapshot {
   title: string;
-  projectId: string | null;
+  projectId: string;
   scene: CanvasScene;
 }
 
-function readSnapshot(value: unknown): CanvasSnapshot {
+function readSnapshot(value: unknown): Legacy<CanvasSnapshot> {
   if (!value || typeof value !== 'object') throw new Error('Rascunho inválido.');
-  const snapshot = value as CanvasSnapshot;
+  const snapshot = value as Legacy<CanvasSnapshot>;
   if (
     typeof snapshot.title !== 'string' ||
     snapshot.title.length > 300 ||
@@ -31,15 +31,15 @@ function readSnapshot(value: unknown): CanvasSnapshot {
   };
 }
 
-export function parseCanvasDraft(raw: string | null): SavedDraft<CanvasSnapshot> | null {
+export function parseCanvasDraft(raw: string | null): SavedDraft<Legacy<CanvasSnapshot>> | null {
   if (!raw) return null;
   try {
-    const value = JSON.parse(raw) as SavedDraft<CanvasSnapshot>;
+    const value = JSON.parse(raw) as SavedDraft<Legacy<CanvasSnapshot>>;
     if (value.format !== 1 || !Number.isSafeInteger(value.baseVersion) || value.baseVersion < 1) return null;
     const snapshot = readSnapshot(value.snapshot);
     if (value.recoveryData !== undefined && value.recoveryData !== null && typeof value.recoveryData !== 'string')
       return null;
-    let pending: SaveInput<CanvasSnapshot> | null = null;
+    let pending: SaveInput<Legacy<CanvasSnapshot>> | null = null;
     if (value.pending) {
       try {
         if (
@@ -145,7 +145,7 @@ export function readCanvasImport(raw: string): CanvasScene {
   );
 }
 
-export function canvasFile(snapshot: CanvasSnapshot): string {
+export function canvasFile(snapshot: Pick<CanvasSnapshot, 'scene'>): string {
   const scene = compactCanvasScene(snapshot.scene);
   return JSON.stringify(
     {

@@ -11,7 +11,7 @@ export interface Moved {
  * the new project at the saved version, and the editor takes the project and version it answers, so the
  * next save goes on from there. A conflict refuses the move; an error from `move` is thrown.
  */
-export async function moveThroughController<T extends { projectId: string | null }>(
+export async function moveThroughController<T extends { projectId: string }>(
   controller: AutosaveController<T>,
   move: (version: number) => Promise<Moved>,
 ) {

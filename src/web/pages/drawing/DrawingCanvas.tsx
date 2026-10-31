@@ -3,6 +3,7 @@ import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import type { CanvasScene } from '@tinyfold/workspace/domain';
 import type { RefObject } from 'react';
+import { displayTitle } from '../../lib/types';
 import type { useSceneChanges } from './use-scene-changes';
 import type { useViewport } from './use-viewport';
 
@@ -65,7 +66,7 @@ export function DrawingCanvas({
         }}
         langCode="pt-BR"
         theme={theme}
-        name={title || 'Sem título'}
+        name={displayTitle(title)}
         handleKeyboardGlobally={false}
         aiEnabled={false}
         UIOptions={{

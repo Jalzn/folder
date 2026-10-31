@@ -3,7 +3,7 @@ import type { DocumentContent } from './types';
 
 export interface Snapshot {
   title: string;
-  projectId: string | null;
+  projectId: string;
   content: DocumentContent;
 }
 export type SaveInput<T = Snapshot> = T & {
@@ -17,6 +17,8 @@ export interface SaveAck {
   updatedAt: string;
 }
 export type SaveStatus = 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
+/** A snapshot as a draft from before every item had a project may hold it: with `projectId: null`. */
+export type Legacy<T extends { projectId: string }> = Omit<T, 'projectId'> & { projectId: string | null };
 export interface SavedDraft<T = Snapshot> {
   format: 1;
   baseVersion: number;
@@ -46,10 +48,11 @@ function clone<T>(value: T): T {
 export function sameSnapshot(a: unknown, b: unknown) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
-export function parseDraft(value: string | null): SavedDraft | null {
+/** Reads a stored draft; one from before every item had a project may have `projectId: null` (withDraftProject). */
+export function parseDraft(value: string | null): SavedDraft<Legacy<Snapshot>> | null {
   if (!value) return null;
   try {
-    const data = JSON.parse(value) as SavedDraft;
+    const data = JSON.parse(value) as SavedDraft<Legacy<Snapshot>>;
     if (
       data.format !== 1 ||
       !Number.isInteger(data.baseVersion) ||

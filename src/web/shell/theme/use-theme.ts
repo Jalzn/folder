@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { useToast } from '../../ui';
 import {
   parseThemeChoice,
   type ResolvedTheme,
@@ -6,6 +7,7 @@ import {
   THEME_STORAGE_KEY,
   type ThemeChoice,
   themeBarColors,
+  themeChoiceLabels,
 } from './theme';
 
 interface ThemeState {
@@ -75,8 +77,16 @@ export function setThemeChoice(choice: ThemeChoice) {
   update(stateFor(choice));
 }
 
-/** The theme choice (Sistema, Claro or Escuro) and the theme it resolves to now. */
+/**
+ * The theme choice (Sistema, Claro or Escuro) and the theme it resolves to now. `choose` keeps a choice the
+ * person made and confirms it with a toast, the same from the Você menu, ⌘K and Perfil.
+ */
 export function useTheme() {
   const current = useSyncExternalStore(subscribe, () => state);
-  return { choice: current.choice, resolved: current.resolved, setChoice: setThemeChoice };
+  const toast = useToast();
+  function choose(choice: ThemeChoice) {
+    setThemeChoice(choice);
+    toast(`Tema: ${themeChoiceLabels[choice]}.`);
+  }
+  return { choice: current.choice, resolved: current.resolved, choose };
 }

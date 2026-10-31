@@ -87,60 +87,6 @@ svg.lucide {
   letter-spacing: var(--tracking-title);
   font-optical-sizing: auto;
 }
-.t-task-title {
-  font: var(--type-task-title);
-  letter-spacing: var(--tracking-task-title);
-  font-optical-sizing: auto;
-}
-.t-h1 {
-  font: var(--type-h1);
-  letter-spacing: var(--tracking-h1);
-  font-optical-sizing: auto;
-}
-.t-h2 {
-  font: var(--type-h2);
-  letter-spacing: var(--tracking-h2);
-  font-optical-sizing: auto;
-}
-.t-h3 {
-  font: var(--type-h3);
-  letter-spacing: var(--tracking-h3);
-}
-.t-body {
-  font: var(--type-body);
-  letter-spacing: var(--tracking-body);
-}
-.t-desc {
-  font: var(--type-desc);
-  letter-spacing: var(--tracking-desc);
-}
-.t-ui {
-  font: var(--type-ui);
-  letter-spacing: var(--tracking-ui);
-}
-.t-card {
-  font: var(--type-card);
-  letter-spacing: var(--tracking-card);
-}
-.t-label {
-  font: var(--type-label);
-  letter-spacing: var(--tracking-label);
-  color: var(--text-3);
-}
-.t-meta {
-  font: var(--type-meta);
-  letter-spacing: var(--tracking-meta);
-  font-variant-numeric: tabular-nums;
-}
-.t-micro {
-  font: var(--type-micro);
-  letter-spacing: var(--tracking-micro);
-  font-feature-settings: "cv05", "ss03", "case", "tnum";
-}
-.t-mono {
-  font: var(--type-mono);
-  letter-spacing: var(--tracking-mono);
-}
 .sr-only {
   position: absolute;
   width: 1px;

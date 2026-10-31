@@ -1,7 +1,7 @@
 import { searchText, type TaskStatus } from '@tinyfold/workspace/domain';
 import { queryWords } from '../../lib/highlight';
 import type { SearchResult } from '../../lib/queries';
-import type { Project } from '../../lib/types';
+import { displayTitle, type Project } from '../../lib/types';
 import { activeProjects } from '../project/project-order';
 import { type Command, type CommandId, filterCommands } from './commands';
 
@@ -81,7 +81,7 @@ export function paletteSections({ query, here, results, projects, commands }: Pa
       title: typed ? 'Itens' : 'Editados recentemente',
       rows: results.map((result) => ({
         key: `item:${result.type}:${result.id}`,
-        label: result.title || 'Sem título',
+        label: displayTitle(result.title),
         action: { kind: 'item', type: result.type, id: result.id, projectId: result.projectId },
         archived: result.projectArchived,
         // A search shows where its words are; the recent items show none, as in the prototype.

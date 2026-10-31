@@ -1,5 +1,5 @@
 import { type Palette, palette } from './palette';
-import { durations, easings, fontFamilies, heights, radii, spacing, type TextRole, textRoles } from './scale';
+import { durations, easings, fontFamilies, heights, radii, type TextRole, textRoles } from './scale';
 
 export const GENERATED_HEADER = '/* Gerado por `pnpm tokens`. Não editar. */';
 
@@ -32,7 +32,6 @@ function scaleEntries(): [string, string][] {
   return [
     ...Object.entries(fontFamilies).map(([name, value]): [string, string] => [`font-${name}`, value]),
     ...textRoleEntries(),
-    ...spacing.map((value, index): [string, string] => [`space-${index + 1}`, `${value}px`]),
     ...named('radius', radii, 'px'),
     ...named('height', heights, 'px'),
     ...named('duration', durations, 'ms'),

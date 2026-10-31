@@ -1,10 +1,10 @@
 import { Circle, FileText, Shapes } from 'lucide-react';
 import type { ReactElement, RefObject } from 'react';
-import type { Project } from '../../lib/types';
+import type { ItemType, Project } from '../../lib/types';
 import { Menu, MenuItem, MenuList, MenuSection, MenuTrigger, PopoverSurface, useToast } from '../../ui';
 import { useApp } from '../AppProvider';
 
-type NewKind = 'document' | 'drawing' | 'task';
+type NewKind = ItemType | 'task';
 
 function useCreate(project: Project) {
   const app = useApp();

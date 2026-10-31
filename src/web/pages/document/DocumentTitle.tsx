@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
+import { UNTITLED } from '../../lib/types';
 
 /**
  * The document's title as a field that grows with its text. Enter moves into the content instead of
@@ -42,7 +43,7 @@ export function DocumentTitle({
       rows={1}
       wrap="soft"
       maxLength={300}
-      placeholder="Sem título"
+      placeholder={UNTITLED}
       onChange={(event) => onChange(event.target.value.replace(/[\r\n]+/g, ' '))}
       onKeyDown={(event) => {
         if (event.key === 'Enter' && !event.nativeEvent.isComposing) {

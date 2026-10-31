@@ -1,5 +1,5 @@
 import { shortDate } from '../../../lib/dates';
-import { type ItemType, type TaskStatus, taskStatusLabels } from '../../../lib/types';
+import { displayTitle, type ItemType, type TaskStatus, taskStatusLabels } from '../../../lib/types';
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -15,7 +15,7 @@ export function overviewSummary(
   const tasks = openTasks ? `${count(openTasks, 'tarefa aberta', 'tarefas abertas')}.` : 'Nenhuma tarefa aberta.';
   if (!lastEdited) return tasks;
   const noun = lastEdited.type === 'document' ? 'texto' : 'desenho';
-  return `${tasks} Último ${noun} editado: ${lastEdited.title || 'Sem título'}, ${shortDate(lastEdited.updatedAt, now)}.`;
+  return `${tasks} Último ${noun} editado: ${displayTitle(lastEdited.title)}, ${shortDate(lastEdited.updatedAt, now)}.`;
 }
 
 /** What Agora leaves out, per column in board order: "Mais 3 em A fazer." */

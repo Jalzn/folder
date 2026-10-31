@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { SaveBanners, SaveState, TrashedItem, useItemActions } from '../../components/editor';
 import { api } from '../../lib/api';
 import { moveThroughController } from '../../lib/editor-move';
-import { canvasQuery, useProjects } from '../../lib/queries';
+import { canvasQuery, useHasActiveProject } from '../../lib/queries';
 import { registerOpenEditor } from '../../lib/save-registry';
+import { displayTitle, UNTITLED } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
 import { paths } from '../../router/paths';
@@ -39,7 +40,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const files = useCanvasFiles(controller, canvas.id, theme.resolved === 'dark');
   const actions = useItemActions(controller, {
     id: canvas.id,
-    projectId: state.snapshot.projectId ?? canvas.projectId,
+    projectId: state.snapshot.projectId,
     queryKey: canvasQuery(canvas.id).queryKey,
     read: () => api.workspace.getCanvas({ id: canvas.id }),
     snapshot: canvasSnapshot,
@@ -50,7 +51,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
     path: (to, id) => paths.drawing(to, id),
     words: { the: 'o desenho', aNew: 'um novo desenho', capital: 'Desenho' },
   });
-  const hasActiveProject = (useProjects(true).data ?? []).some((project) => !project.archivedAt);
+  const hasActiveProject = useHasActiveProject();
   const [trashOpen, setTrashOpen] = useState(false);
   const [reloadOpen, setReloadOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -106,8 +107,8 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
         />
       </PageFrame>
     );
-  const projectId = state.snapshot.projectId ?? canvas.projectId ?? '';
-  const title = state.snapshot.title === 'Sem título' ? '' : state.snapshot.title;
+  const projectId = state.snapshot.projectId;
+  const title = state.snapshot.title === UNTITLED ? '' : state.snapshot.title;
   return (
     <PageFrame
       fill
@@ -153,14 +154,14 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
       />
       <div className="drawing__top">
         <h1 className="sr-only" tabIndex={-1}>
-          {title || 'Sem título'}
+          {displayTitle(title)}
         </h1>
         <input
           className="drawing__title"
           aria-label="Título do desenho"
           value={title}
           maxLength={300}
-          placeholder="Sem título"
+          placeholder={UNTITLED}
           onChange={(event) => controller.change({ ...controller.getState().snapshot, title: event.target.value })}
         />
       </div>

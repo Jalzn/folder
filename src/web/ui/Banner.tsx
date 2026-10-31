@@ -1,6 +1,6 @@
 import './banner.css';
 import { Archive, CircleAlert, FileWarning, GitCompareArrows, Info } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useId } from 'react';
 
 export type BannerTone = 'failure' | 'conflict' | 'draft' | 'archived' | 'info';
 
@@ -14,7 +14,8 @@ const icons: Record<BannerTone, ReactNode> = {
 
 /**
  * A band under the page header: save failure, conflict, recovered draft or archived project. An `urgent`
- * band, such as a failed save, is announced as an alert.
+ * band, such as a failed save, announces its text as an alert; a lasting one, such as the archived project,
+ * announces nothing. The actions stay out of the live region, grouped under the band's text.
  */
 export function Banner({
   tone,
@@ -27,11 +28,18 @@ export function Banner({
   children: ReactNode;
   actions?: ReactNode;
 }) {
+  const textId = useId();
   return (
-    <div className="banner" role={urgent ? 'alert' : 'status'} data-tone={tone}>
+    <div className="banner" data-tone={tone}>
       {icons[tone]}
-      <div className="banner__text">{children}</div>
-      {actions && <div className="banner__actions">{actions}</div>}
+      <div id={textId} className="banner__text" {...(urgent ? { role: 'alert' } : {})}>
+        {children}
+      </div>
+      {actions && (
+        <fieldset className="banner__actions" aria-labelledby={textId}>
+          {actions}
+        </fieldset>
+      )}
     </div>
   );
 }

@@ -1,11 +1,10 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
-import { useToast } from '../../ui';
 import { useApp } from '../AppProvider';
 import { useProjectActions } from '../project/use-project-actions';
 import { type SwitcherPlace, useShellUi } from '../shell-ui';
-import { type ThemeChoice, themeChoiceLabels, useTheme } from '../theme';
+import { type ThemeChoice, useTheme } from '../theme';
 import type { CommandId } from './commands';
 import type { PaletteAction } from './palette-sections';
 
@@ -32,7 +31,6 @@ export function usePaletteActions({
   const ui = useShellUi();
   const app = useApp();
   const navigate = useNavigate();
-  const toast = useToast();
   const theme = useTheme();
   const projectActions = useProjectActions();
   const go = (href: string) => void navigate({ href });
@@ -40,8 +38,7 @@ export function usePaletteActions({
   function runCommand(id: CommandId) {
     const choice = themes[id];
     if (choice) {
-      theme.setChoice(choice);
-      toast(`Tema: ${themeChoiceLabels[choice]}.`);
+      theme.choose(choice);
       return;
     }
     const current = project;

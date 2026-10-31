@@ -12,16 +12,14 @@ export function TrashedItem({
 }: {
   title: string;
   description: string;
-  projectId: string | null;
+  projectId: string;
 }) {
   return (
     <div className="trashed-item">
       <EmptyState icon={<Trash2 size={24} />} title={title} description={description}>
-        {projectId && (
-          <Link to={paths.trash(projectId)} className="btn" data-variant="primary" data-size="md">
-            Abrir lixeira
-          </Link>
-        )}
+        <Link to={paths.trash(projectId)} className="btn" data-variant="primary" data-size="md">
+          Abrir lixeira
+        </Link>
       </EmptyState>
     </div>
   );
