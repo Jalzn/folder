@@ -19,16 +19,6 @@
   font-variant-numeric: tabular-nums;
   color: var(--text-3);
 }
-.editor-banners {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 680px;
-  margin: 0 auto;
-}
-.editor-banners:empty {
-  display: none;
-}
 .document {
   max-width: 680px;
   margin: 0 auto;

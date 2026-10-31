@@ -1,19 +1,19 @@
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { ArrowDownToLine, ArrowUpFromLine, ImageDown } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { SaveState, TrashedItem } from '../../components/editor';
+import { SaveBanners, SaveState, TrashedItem, useItemActions } from '../../components/editor';
+import { api } from '../../lib/api';
 import { moveThroughController } from '../../lib/editor-move';
-import { useProjects } from '../../lib/queries';
+import { canvasQuery, useProjects } from '../../lib/queries';
 import { registerOpenEditor } from '../../lib/save-registry';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
+import { paths } from '../../router/paths';
 import { ItemMenu, type ItemMenuAction, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
 import { AlertDialog } from '../../ui';
-import { CanvasBanners } from './CanvasBanners';
 import { canvasSession, canvasSnapshot, type EditableCanvas } from './canvas-session';
 import { DrawingCanvas } from './DrawingCanvas';
-import { useCanvasActions } from './use-canvas-actions';
 import { useCanvasFiles } from './use-canvas-files';
 import { useSceneChanges } from './use-scene-changes';
 import { useViewport } from './use-viewport';
@@ -37,7 +37,19 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const scene = useSceneChanges(controller, state, editor);
   const viewport = useViewport(`tinyfold:canvas-view:${app.owner.installationId}:${canvas.id}`);
   const files = useCanvasFiles(controller, canvas.id, theme.resolved === 'dark');
-  const actions = useCanvasActions(controller, canvas);
+  const actions = useItemActions(controller, {
+    id: canvas.id,
+    projectId: state.snapshot.projectId ?? canvas.projectId,
+    queryKey: canvasQuery(canvas.id).queryKey,
+    read: () => api.workspace.getCanvas({ id: canvas.id }),
+    snapshot: canvasSnapshot,
+    version: (current) => current.version,
+    createCopy: (snapshot, to, title, requestId) =>
+      api.workspace.createCanvas({ title, scene: snapshot.scene, projectId: to, requestId }),
+    remove: (input) => api.workspace.deleteCanvas(input),
+    path: (to, id) => paths.drawing(to, id),
+    words: { the: 'o desenho', aNew: 'um novo desenho', capital: 'Desenho' },
+  });
   const hasActiveProject = (useProjects(true).data ?? []).some((project) => !project.archivedAt);
   const [trashOpen, setTrashOpen] = useState(false);
   const [reloadOpen, setReloadOpen] = useState(false);
@@ -125,8 +137,10 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
           if (file) void files.importDrawing(file);
         }}
       />
-      <CanvasBanners
+      <SaveBanners
+        className="editor-banners editor-banners--wide"
         state={state}
+        noun="Este desenho"
         trashed={Boolean(canvas.deletedAt)}
         projectId={canvas.projectId}
         canCopy={hasActiveProject}

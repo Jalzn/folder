@@ -1,19 +1,22 @@
+import './editor.css';
 import { Link } from '@tanstack/react-router';
-import { RotateCcw } from 'lucide-react';
+import { ArrowDownToLine, RotateCcw } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { errorMessage } from '../../lib/api';
 import type { SaveState } from '../../lib/autosave';
-import type { CanvasSnapshot } from '../../lib/canvas-autosave';
 import { paths } from '../../router/paths';
 import { Banner, Button } from '../../ui';
 
 /**
- * The drawing's bands: a draft that could not open, an edit made elsewhere or a move to the trash while
- * drawing, a failed save, and a draft the browser could not keep. A copy goes to a project; without an
- * active one, the draft can only be downloaded.
+ * The bands of an open document or drawing, under the page bar: a draft that could not open, an edit made
+ * elsewhere or a move to the trash while editing, a failed save, and a draft the browser could not keep.
+ * A copy goes to a project; without an active one, the draft can only be downloaded. `children` adds the
+ * page's own bands, such as a task's excerpt that is gone.
  */
-export function CanvasBanners({
+export function SaveBanners({
   state,
-  trashed,
+  noun,
+  trashed = false,
   projectId,
   canCopy,
   copying,
@@ -22,10 +25,14 @@ export function CanvasBanners({
   onSaveCopy,
   onRetry,
   onExport,
+  className,
+  children,
 }: {
-  state: SaveState<CanvasSnapshot>;
-  trashed: boolean;
-  projectId: string | null;
+  state: SaveState<unknown>;
+  /** "Este documento", "Este desenho". */
+  noun: string;
+  trashed?: boolean;
+  projectId: string;
   canCopy: boolean;
   copying: boolean;
   onDownloadRecovery: () => void;
@@ -33,6 +40,8 @@ export function CanvasBanners({
   onSaveCopy: () => void;
   onRetry: () => void;
   onExport: () => void;
+  className?: string;
+  children?: ReactNode;
 }) {
   const copy = canCopy ? (
     <Button size="sm" variant="primary" isPending={copying} onPress={onSaveCopy}>
@@ -44,19 +53,19 @@ export function CanvasBanners({
     </Button>
   );
   return (
-    <div className="editor-banners editor-banners--wide">
+    <div className={className ?? 'editor-banners'}>
       {state.recoveryData && (
         <Banner
           tone="draft"
           urgent
           actions={
-            <Button size="sm" onPress={onDownloadRecovery}>
+            <Button size="sm" icon={<ArrowDownToLine size={14} />} onPress={onDownloadRecovery}>
               Baixar rascunho original
             </Button>
           }
         >
-          <strong>Encontramos um rascunho que não pôde ser aberto.</strong> Baixe o rascunho original para preservar seu
-          conteúdo.
+          <strong>Encontramos um rascunho que não pôde ser aberto.</strong> Você está vendo a versão salva. Baixe o
+          rascunho original para preservar seu conteúdo.
         </Banner>
       )}
       {(state.status === 'conflict' || trashed) && (
@@ -66,11 +75,9 @@ export function CanvasBanners({
           actions={
             <>
               {trashed ? (
-                projectId && (
-                  <Link to={paths.trash(projectId)} className="btn" data-variant="secondary" data-size="sm">
-                    Abrir lixeira
-                  </Link>
-                )
+                <Link to={paths.trash(projectId)} className="btn" data-variant="secondary" data-size="sm">
+                  Abrir lixeira
+                </Link>
               ) : (
                 <Button size="sm" onPress={onReload}>
                   Carregar versão salva
@@ -80,10 +87,8 @@ export function CanvasBanners({
             </>
           }
         >
-          <strong>
-            {trashed ? 'Este desenho foi movido para a lixeira.' : 'Este desenho mudou em outro dispositivo.'}
-          </strong>{' '}
-          Seu rascunho está preservado. Escolha como continuar.
+          <strong>{trashed ? `${noun} foi movido para a lixeira.` : `${noun} mudou em outro dispositivo.`}</strong> Seu
+          rascunho está preservado. Escolha como continuar.
         </Banner>
       )}
       {state.status === 'error' && (
@@ -120,6 +125,7 @@ export function CanvasBanners({
           uma cópia.
         </Banner>
       )}
+      {children}
     </div>
   );
 }

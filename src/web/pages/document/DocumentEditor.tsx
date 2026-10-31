@@ -1,24 +1,25 @@
-import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { SaveState } from '../../components/editor';
+import { SaveBanners, SaveState, useItemActions } from '../../components/editor';
+import { api } from '../../lib/api';
 import type { Snapshot } from '../../lib/autosave';
 import { moveThroughController } from '../../lib/editor-move';
-import { useProjects, useTasks } from '../../lib/queries';
+import { documentQuery, useProjects, useTasks } from '../../lib/queries';
 import { registerOpenEditor } from '../../lib/save-registry';
 import type { Document, DocumentContent } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
+import { paths } from '../../router/paths';
 import { ItemMenu, type ItemMenuAction, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
-import { AlertDialog, Button } from '../../ui';
-import { DocumentBanners } from './DocumentBanners';
+import { AlertDialog, Banner, Button, IconButton } from '../../ui';
 import { DocumentContentEditor } from './DocumentContentEditor';
 import { DocumentTitle } from './DocumentTitle';
-import { documentController } from './document-session';
+import { documentController, documentSnapshot } from './document-session';
 import { LinkedTasksPanel } from './LinkedTasksPanel';
-import { selectedText, useDocumentActions } from './use-document-actions';
 import { useBlockAnchor, useDocumentEditor } from './use-document-editor';
 import { useDocumentFiles } from './use-document-files';
+import { selectedText, useTaskFromSelection } from './use-task-from-selection';
 
 /**
  * An open document: the page bar with the save state, the tasks born here and the ⋯; the bands; the title
@@ -45,7 +46,21 @@ export function DocumentEditor({ document }: { document: Document }) {
   const [reloadOpen, setReloadOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const files = useDocumentFiles(editor, controller, document.id);
-  const actions = useDocumentActions(editor, controller, document, () => setTasksOpen(true));
+  const taskFromSelection = useTaskFromSelection(editor, controller, document, () => setTasksOpen(true));
+  const projectId = state.snapshot.projectId ?? document.projectId;
+  const actions = useItemActions(controller, {
+    id: document.id,
+    projectId,
+    queryKey: documentQuery(document.id).queryKey,
+    read: () => api.workspace.getDocument({ id: document.id }),
+    snapshot: documentSnapshot,
+    version: (current) => current.version,
+    createCopy: (snapshot, to, title, requestId) =>
+      api.workspace.createDocument({ title, content: snapshot.content, projectId: to, requestId }),
+    remove: (input) => api.workspace.deleteDocument(input),
+    path: (to, id) => paths.document(to, id),
+    words: { the: 'o documento', aNew: 'um novo documento', capital: 'Documento' },
+  });
   const fileActions: ItemMenuAction[] = [
     {
       id: 'import',
@@ -70,7 +85,6 @@ export function DocumentEditor({ document }: { document: Document }) {
   const update = (patch: Partial<Snapshot>) => controller.change({ ...controller.getState().snapshot, ...patch });
   const linked = tasks.data?.tasks ?? [];
   const openCount = linked.filter((task) => task.status !== 'done').length;
-  const projectId = state.snapshot.projectId ?? document.projectId ?? '';
   const title = state.snapshot.title === 'Sem título' ? '' : state.snapshot.title;
 
   return (
@@ -112,18 +126,31 @@ export function DocumentEditor({ document }: { document: Document }) {
       />
       <div className="document-page" data-tasks={tasksOpen || undefined}>
         <div className="document-page__main">
-          <DocumentBanners
+          <SaveBanners
             state={state}
-            anchorMissing={anchor.missing}
+            noun="Este documento"
+            projectId={projectId}
             canCopy={hasActiveProject}
             copying={actions.copying}
-            onDismissAnchor={anchor.dismiss}
             onDownloadRecovery={files.downloadRecovery}
             onReload={() => setReloadOpen(true)}
             onSaveCopy={() => void actions.saveCopy()}
             onRetry={() => void controller.flush()}
             onExport={() => void files.exportMarkdown()}
-          />
+          >
+            {anchor.missing && (
+              <Banner
+                tone="info"
+                actions={
+                  <IconButton label="Fechar aviso" size="sm" onPress={anchor.dismiss}>
+                    <X size={14} />
+                  </IconButton>
+                }
+              >
+                O trecho de origem mudou. Você está no documento original.
+              </Banner>
+            )}
+          </SaveBanners>
           <article className="document">
             <h1 className="sr-only" tabIndex={-1}>
               {title || 'Sem título'}
@@ -139,7 +166,7 @@ export function DocumentEditor({ document }: { document: Document }) {
               theme={theme.resolved}
               onChange={() => update({ content: editor.document as unknown as DocumentContent })}
               onSelectionChange={() => setSelection(selectedText(editor))}
-              onCreateTask={() => void actions.createTaskFromSelection()}
+              onCreateTask={() => void taskFromSelection.create()}
             />
             <footer className="document__hint">
               <span>
@@ -149,13 +176,13 @@ export function DocumentEditor({ document }: { document: Document }) {
                 <button
                   type="button"
                   className="document__task-button"
-                  disabled={actions.preparingTask}
+                  disabled={taskFromSelection.preparing}
                   // A mouse press keeps the focus, and so the selection, in the editor.
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => void actions.createTaskFromSelection()}
+                  onClick={() => void taskFromSelection.create()}
                 >
                   <Plus size={14} aria-hidden="true" />
-                  {actions.preparingTask ? 'Preparando…' : 'Criar tarefa da seleção'}
+                  {taskFromSelection.preparing ? 'Preparando…' : 'Criar tarefa da seleção'}
                 </button>
               )}
             </footer>

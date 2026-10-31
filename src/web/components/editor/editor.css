@@ -1,4 +1,14 @@
-/* What the document and drawing editors share: the save state and the trashed item. */
+/* What the document and drawing editors share: the save state, the bands and the trashed item. */
+.editor-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+.editor-banners:empty {
+  display: none;
+}
 .save-state {
   display: inline-flex;
   align-items: center;
