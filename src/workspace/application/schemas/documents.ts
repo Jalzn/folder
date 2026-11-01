@@ -4,7 +4,8 @@ import { edit, id, request, visible } from './common.js';
 
 /** Empty, or of only characters that draw nothing, it becomes "Sem título". */
 const title = visible(z.string().max(300));
-const content = z.unknown().transform((value, ctx) => {
+/** Content in the document block format, checked and limited by readDocumentContent. */
+export const documentContent = z.unknown().transform((value, ctx) => {
   try {
     return readDocumentContent(value);
   } catch (error) {
@@ -25,13 +26,13 @@ export const CreateDocumentInput = z.object({
   projectId: id,
   /** An active folder of the project; at the root without it. */
   folderId: id.optional(),
-  content: content.optional(),
+  content: documentContent.optional(),
 });
 /** A save never moves the document: moveItem does. A `projectId` sent anyway is dropped, as any unknown key. */
 export const SaveDocumentInput = z.object({
   ...edit,
   title,
-  content,
+  content: documentContent,
 });
 export const DeleteDocumentInput = z.object(edit);
 export const RestoreDocumentInput = z.object(edit);

@@ -98,6 +98,13 @@ export function taskRepository(connection: Database): TaskRepository {
       const row = await db.selectFrom('workspace_tasks').selectAll().where('id', '=', id).executeTakeFirst();
       return row && taskModel(row);
     },
+    async taskDetail(id) {
+      const row = await db.selectFrom('workspace_tasks').selectAll().where('id', '=', id).executeTakeFirst();
+      if (!row) return undefined;
+      const [task] = await hydrateTasks(db, [row]);
+      const { description, deletedAt } = taskModel(row);
+      return task && { ...task, description, deletedAt };
+    },
     async insertTask(task) {
       await db.insertInto('workspace_tasks').values(taskRow(task)).execute();
     },

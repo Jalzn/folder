@@ -4,6 +4,7 @@ import type { Folder } from '../domain/folders.js';
 import type { Label } from '../domain/labels.js';
 import type { Document, DocumentContent, DocumentSummary, Project, Task, TaskSource } from '../domain/models.js';
 import type { NavItemType } from '../domain/navigation.js';
+import type { TaskDetail } from '../domain/tasks.js';
 
 /** A task as stored, live or trashed, with its description and without its labels or source. */
 export interface TaskRecord {
@@ -122,6 +123,8 @@ export interface CanvasRepository {
 export interface TaskRepository {
   listTasks(query: TaskListQuery): Promise<Task[]>;
   findTask(id: string): Promise<TaskRecord | undefined>;
+  /** A task, live or trashed, as the drawer opens it: with its labels, source and description. */
+  taskDetail(id: string): Promise<TaskDetail | undefined>;
   insertTask(task: TaskRecord): Promise<void>;
   /**
    * Writes the fields only (project, column, position, due date, completion, trash, version and
