@@ -7,6 +7,7 @@ import { ItemsHeader } from './ItemsHeader';
 import { defaultProjectPrefs } from './sidebar-prefs';
 import { ItemsTree } from './tree/ItemsTree';
 import { useItemsTree } from './tree/use-items-tree';
+import { useTreeEditing } from './tree/use-tree-editing';
 import { useSidebarPrefs } from './use-sidebar-prefs';
 
 /** Itens in the sidebar: the header, with the order and "+", over the project's tree. */
@@ -23,6 +24,7 @@ export function ItemsSection({
 }) {
   const prefs = useSidebarPrefs();
   const items = useItemsTree(project, tree);
+  const editing = useTreeEditing({ project, rows: items.rows, expanded: items.expanded, tree: treeRef });
   const moveToFolder = useMoveToFolder();
   const sort = (prefs.project(project.id) ?? defaultProjectPrefs).sort;
   return (
@@ -41,7 +43,7 @@ export function ItemsSection({
           project={project}
           rows={items.rows}
           expanded={items.expanded}
-          variant="sidebar"
+          editing={editing}
           treeRef={treeRef}
           onLeaveUp={onLeaveUp}
         />

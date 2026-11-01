@@ -40,6 +40,27 @@ export function returnFocus(target: HTMLElement | null, { from }: { from?: Eleme
 }
 
 /**
+ * Focuses an element once it shows, as a row the server just created or a folder's child that opens: looks
+ * again at each frame, for `frames` frames, and runs `fallback` if it never shows. Returns a cancel.
+ */
+export function focusWhenPresent(
+  find: (() => HTMLElement | null) | { readonly current: HTMLElement | null },
+  { frames = 40, fallback }: { frames?: number; fallback?: () => void } = {},
+) {
+  const look = typeof find === 'function' ? find : () => find.current;
+  let left = frames;
+  let frame = 0;
+  const attempt = () => {
+    const element = look();
+    if (element?.isConnected) element.focus();
+    else if (left-- > 0) frame = requestAnimationFrame(attempt);
+    else fallback?.();
+  };
+  frame = requestAnimationFrame(attempt);
+  return () => cancelAnimationFrame(frame);
+}
+
+/**
  * Moves focus to the page's title once nothing holds it, as when the row that had it went away, or a dialog
  * closed over a row that is gone.
  */

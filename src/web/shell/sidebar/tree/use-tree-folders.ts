@@ -1,7 +1,7 @@
 import type { NavFolder } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
 import type { Project } from '../../../lib/types';
-import { focusPageTitle, useToast } from '../../../ui';
+import { focusPageTitle, focusWhenPresent, useToast } from '../../../ui';
 import type { FolderMenuAction } from '../../folders/FolderMenu';
 import { useFolderActions } from '../../folders/use-folder-actions';
 import { useShellUi } from '../../shell-ui';
@@ -47,16 +47,7 @@ export function useTreeFolders({
   const draft = enabled && ui.folderDraft?.projectId === project.id ? ui.folderDraft : null;
 
   /** Focuses a row once the tree shows it, as a folder the server just created. */
-  function focusWhenThere(key: string, fallback = focusPageTitle) {
-    let tries = 0;
-    const attempt = () => {
-      const row = rowByKey(key);
-      if (row) row.focus();
-      else if (tries++ < 40) requestAnimationFrame(attempt);
-      else fallback();
-    };
-    requestAnimationFrame(attempt);
-  }
+  const focusWhenThere = (key: string) => focusWhenPresent(() => rowByKey(key), { fallback: focusPageTitle });
   /** The row after a folder and its children, or the one before it, for the focus after it goes. */
   function neighbourOf(folder: NavFolder) {
     const all = [
@@ -167,7 +158,6 @@ export function useTreeFolders({
 
   return {
     place,
-    focusWhenThere,
     busy: actions.busy,
     draft,
     folders,
@@ -195,5 +185,4 @@ export function useTreeFolders({
   };
 }
 
-export type TreeFolders = ReturnType<typeof useTreeFolders>;
 export type { FolderNode };

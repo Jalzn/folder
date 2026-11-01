@@ -45,7 +45,6 @@ export function ItemsPopover({ project, tree }: { project: Project; tree: NavTre
             project={project}
             rows={items.rows}
             expanded={items.expanded}
-            variant="popover"
             treeRef={treeRef}
             onChoose={() => {
               const button = trigger.current?.querySelector('button') ?? null;
