@@ -1,0 +1,21 @@
+/* A label (docs/interface/visual.md, "Quadro"): a 20 px chip with a 7 px square of its color. */
+.label-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 6px 0 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-2);
+  font: var(--weight-ui) 12px / 16px var(--font-sans);
+  white-space: nowrap;
+}
+.label-chip > i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--label-color);
+}

@@ -11,12 +11,17 @@ export interface AlertDialogProps {
   confirmLabel: string;
   onConfirm: () => void;
   cancelLabel?: string;
-  /** A destructive action takes the danger button; focus always starts on Cancelar. */
+  /** A destructive action takes the danger button. */
   destructive?: boolean;
   isPending?: boolean;
+  /** Where the focus starts: on Cancelar, or on a choice of the body that takes it, as a radio. */
+  initialFocus?: 'cancel' | 'body';
 }
 
-/** A confirmation before an action: Cancelar has the initial focus, so Enter never confirms by accident. */
+/**
+ * A confirmation before an action: Cancelar has the initial focus, so Enter never confirms by accident, unless
+ * the body holds a choice that takes it.
+ */
 export function AlertDialog({
   title,
   children,
@@ -27,6 +32,7 @@ export function AlertDialog({
   cancelLabel = 'Cancelar',
   destructive = true,
   isPending = false,
+  initialFocus = 'cancel',
 }: AlertDialogProps) {
   const bodyId = useId();
   return (
@@ -49,7 +55,7 @@ export function AlertDialog({
             </div>
           )}
           <div className="dialog-actions">
-            <Button autoFocus onPress={onClose}>
+            <Button autoFocus={initialFocus === 'cancel'} onPress={onClose}>
               {cancelLabel}
             </Button>
             <Button variant={destructive ? 'danger' : 'primary'} isPending={isPending} onPress={onConfirm}>

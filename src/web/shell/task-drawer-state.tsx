@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, useContext, useMemo, useRef, useState } from 'react';
-import type { Task, TaskStatus } from '../lib/types';
+import type { Task } from '../lib/types';
 import { pageFocus, returnFocus } from '../ui';
 
 /** Where a task created from a document's selection came from. */
@@ -12,7 +12,8 @@ export interface TaskOrigin {
 }
 
 export interface NewTaskOptions {
-  status?: TaskStatus;
+  /** The column it goes to; without it, the first open column. */
+  columnId?: string;
   source?: TaskOrigin;
   title?: string;
   /** Runs once the new task's drawer leaves, created or not. */

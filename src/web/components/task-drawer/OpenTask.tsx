@@ -1,10 +1,11 @@
 import { type RefObject, useEffect, useState } from 'react';
-import { useProject, useTasks } from '../../lib/queries';
+import { useColumns, useProject, useTasks } from '../../lib/queries';
 import type { Task } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { type DrawerContent, useTaskDrawer } from '../../shell/task-drawer-state';
-import { AlertDialog, Banner, useToast } from '../../ui';
+import { Banner, useToast } from '../../ui';
 import { TaskSource } from '../task/TaskSource';
+import { TrashTaskDialog } from '../task/TrashTaskDialog';
 import type { DrawerCommands } from './drawer-commands';
 import { TaskDrawerHeader } from './TaskDrawerHeader';
 import { ColumnField, ProjectField, TaskProperties } from './TaskProperties';
@@ -31,6 +32,7 @@ export function OpenTask({
   const tasks = useTasks({ projectId: content.projectId });
   const task = tasks.data?.tasks.find((each) => each.id === content.id);
   const project = useProject(content.projectId);
+  const columns = useColumns().data?.columns ?? [];
   const editable = Boolean(project && !project.archivedAt);
   const fields = useTaskFields(task);
   const [trashing, setTrashing] = useState(false);
@@ -59,10 +61,11 @@ export function OpenTask({
   return (
     <>
       <TaskDrawerHeader
-        task={task}
+        columnId={task.columnId}
+        columns={columns}
         editable={editable}
         title={<TitleOf task={task} editable={editable} region={region} onRename={fields.rename} />}
-        onMove={(status) => void fields.setStatus(status)}
+        onMove={(columnId, name) => void fields.setColumn(columnId, name)}
         onToggleDone={() => void fields.toggleDone()}
         onCopyLink={() => void copyLink(task)}
         onTrash={() => setTrashing(true)}
@@ -78,9 +81,10 @@ export function OpenTask({
               label: 'Coluna',
               value: (
                 <ColumnField
-                  status={task.status}
+                  columnId={task.columnId}
+                  columns={columns}
                   editable={editable}
-                  onChange={(status) => void fields.setStatus(status)}
+                  onChange={(columnId, name) => void fields.setColumn(columnId, name)}
                 />
               ),
             },
@@ -107,16 +111,13 @@ export function OpenTask({
           )}
         </TaskProperties>
       </div>
-      <AlertDialog
+      <TrashTaskDialog
+        task={task}
         open={trashing}
-        title="Mover a tarefa para a lixeira?"
-        confirmLabel="Mover para a lixeira"
-        isPending={fields.busy}
+        pending={fields.busy}
         onClose={() => setTrashing(false)}
         onConfirm={() => void fields.trash().then(() => setTrashing(false))}
-      >
-        <p>Você pode restaurar a tarefa depois.{task.source && ' O trecho do documento continua lá.'}</p>
-      </AlertDialog>
+      />
     </>
   );
 }

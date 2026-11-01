@@ -1,9 +1,11 @@
 export { type CanvasListOptions, canvasQuery, useCanvas, useCanvases } from './canvases';
+export { type ColumnSummary, cachedColumns, columnsQuery, useColumns } from './columns';
 export { type DocumentListOptions, documentQuery, useDocument, useDocuments } from './documents';
 export { type FolderSummary, foldersQuery, useAllFolders, useFolders } from './folders';
+export { type LabelSummary, labelsQuery, useLabels } from './labels';
 export { invalidateNavigation, useProjectNavigation } from './navigation';
 export { type ProjectOverview, useProjectOverview } from './overview';
 export { projectsQuery, useHasActiveProject, useProject, useProjects } from './projects';
 export { type SearchInput, type SearchResult, useSearch } from './search';
-export { type TaskListOptions, useTasks } from './tasks';
+export { cachedTasks, type TaskList, type TaskListOptions, tasksKey, useTasks } from './tasks';
 export { type TrashItem, trashQuery, useTrash } from './trash';

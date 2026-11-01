@@ -1,63 +1,85 @@
-import { type DragEvent, useState } from 'react';
-import type { Task, TaskStatus } from '../../lib/types';
+import { type DragEvent, useEffect, useState } from 'react';
+import { boardDrop, type DropColumn, type DropSpot } from './board-drop';
+
+/** Whether the main pointer is a fine one, as a mouse: only then do cards drag (decision 19). */
+function useFinePointer() {
+  const [fine, setFine] = useState(() => window.matchMedia('(pointer: fine)').matches);
+  useEffect(() => {
+    const query = window.matchMedia('(pointer: fine)');
+    const update = () => setFine(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  return fine;
+}
+
+const sameSpot = (a: DropSpot | null, b: DropSpot | null) =>
+  a === b ||
+  (a !== null && b !== null && a.columnId === b.columnId && a.beforeTaskId === b.beforeTaskId && a.same === b.same);
 
 /**
- * Dragging cards on the board, with the browser's native drag: the card being dragged, the column under it,
- * and the handlers of a column and of a card. A drop on a card puts the dragged one before it; a drop on the
- * column, at its end.
+ * Dragging cards with the browser's own drag (docs/etapas/10-quadro-tarefa.md, "Arrastar"): the card being
+ * dragged, and where it would land, which `board-drop.ts` works out from the columns' and cards' boxes under
+ * the pointer. The row of columns takes the drop; a drop on the card's own place does nothing, and Esc cancels
+ * the drag in the browser, which ends it here too.
  */
-export function useBoardDnd(
-  tasks: readonly Task[],
-  onDrop: (task: Task, status: TaskStatus, before: string | null) => void,
-) {
-  const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [overColumn, setOverColumn] = useState<TaskStatus | null>(null);
-  function drop(status: TaskStatus, beforeTaskId: string | null = null) {
-    const dragged = tasks.find((task) => task.id === draggedId);
-    if (dragged) onDrop(dragged, status, beforeTaskId);
-    setDraggedId(null);
-    setOverColumn(null);
-  }
+export function useBoardDnd({
+  enabled,
+  geometry,
+  onDrop,
+}: {
+  enabled: boolean;
+  /** The columns' boxes and their cards', in order, at the time of the event. */
+  geometry: () => DropColumn[];
+  onDrop: (id: string, spot: DropSpot) => void;
+}) {
+  const fine = useFinePointer();
+  const [dragged, setDragged] = useState<string | null>(null);
+  const [spot, setSpot] = useState<DropSpot | null>(null);
+  const end = () => {
+    setDragged(null);
+    setSpot(null);
+  };
+  const at = (event: DragEvent) =>
+    dragged ? boardDrop(geometry(), { x: event.clientX, y: event.clientY }, dragged) : null;
   return {
-    draggedId,
-    overColumn,
-    /** The handlers of a column, which takes a drop at its end. */
-    column: (status: TaskStatus) => ({
+    dragged,
+    spot,
+    /** The handlers of the row of columns. */
+    board: {
       onDragOver: (event: DragEvent) => {
-        if (!draggedId) return;
-        event.preventDefault();
-        setOverColumn(status);
+        if (!dragged) return;
+        const next = at(event);
+        if (next) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+        }
+        setSpot((previous) => (sameSpot(previous, next) ? previous : next));
       },
       onDragLeave: (event: DragEvent) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOverColumn(null);
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setSpot(null);
       },
       onDrop: (event: DragEvent) => {
         event.preventDefault();
-        drop(status);
+        const id = dragged;
+        const target = at(event);
+        end();
+        if (id && target && !target.same) onDrop(id, target);
       },
-    }),
-    /** The handlers of a card, which is dragged, and takes a drop before itself. */
-    card: (task: Task) => ({
-      onDragStart: (event: DragEvent) => {
-        setDraggedId(task.id);
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', task.id);
-      },
-      onDragEnd: () => {
-        setDraggedId(null);
-        setOverColumn(null);
-      },
-      onDragOver: (event: DragEvent) => {
-        if (!draggedId || draggedId === task.id) return;
-        event.preventDefault();
-        event.stopPropagation();
-      },
-      onDrop: (event: DragEvent) => {
-        event.preventDefault();
-        event.stopPropagation();
-        drop(task.status, task.id);
-      },
-    }),
+    },
+    /** The handlers of a card, which drags only with a fine pointer on an active project. */
+    card: (id: string) =>
+      enabled && fine
+        ? {
+            draggable: true,
+            onDragStart: (event: DragEvent) => {
+              setDragged(id);
+              event.dataTransfer.effectAllowed = 'move';
+              event.dataTransfer.setData('text/plain', id);
+            },
+            onDragEnd: end,
+          }
+        : { draggable: false },
   };
 }
 

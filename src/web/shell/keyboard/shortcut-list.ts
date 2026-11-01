@@ -54,6 +54,26 @@ export const shortcutGroups: ShortcutGroup[] = [
     ],
   },
   {
+    title: 'Quadro',
+    rows: [
+      { label: 'Card ou coluna vizinha', alternatives: [['↑'], ['↓'], ['←'], ['→']] },
+      {
+        label: 'Mover o card; no nome, mover a coluna',
+        alternatives: [
+          ['⇧', '↑'],
+          ['⇧', '↓'],
+          ['⇧', '←'],
+          ['⇧', '→'],
+        ],
+      },
+      { label: 'Abrir a tarefa; no nome, renomear a coluna', alternatives: [['↵']] },
+      { label: 'Mover o card para outra coluna', alternatives: [['M']] },
+      { label: 'Concluir ou reabrir', alternatives: [['mod', '↵']] },
+      { label: 'Menu do card ou da coluna', alternatives: [['⇧', 'F10']] },
+      { label: 'Nova tarefa na coluna em foco', alternatives: [['N']] },
+    ],
+  },
+  {
     title: 'Documento e desenho',
     rows: [
       { label: 'Fixar ou desafixar', alternatives: [['P']] },

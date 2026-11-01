@@ -1,75 +1,73 @@
 import { Plus } from 'lucide-react';
-import { type Task, type TaskStatus, taskStatusLabels } from '../../lib/types';
-import { useDrawerContent, useTaskDrawer } from '../../shell';
-import { ColumnHeader } from './ColumnHeader';
-import { TaskCard } from './TaskCard';
-import type { useBoardDnd } from './use-board-dnd';
-import type { useBoardMoves } from './use-board-moves';
+import { Fragment, type ReactNode } from 'react';
+import type { BoardColumnView } from './board-columns';
+import type { DropSpot } from './board-drop';
 
-const emptyCopy: Record<TaskStatus, string> = {
-  todo: 'Tudo começa com um pequeno passo.',
-  doing: 'O que merece sua atenção agora?',
-  done: 'Cada conclusão conta.',
-};
-
-/** One column: its header, its cards in order, and "Adicionar tarefa" while the project is active. */
+/**
+ * One column of the board (docs/etapas/10-quadro-tarefa.md, "Colunas"): its header, its cards in order with the
+ * drop line where a dragged card would land, "Nada aqui." when empty, and "+ Nova tarefa", shown on hover or
+ * focus and always in an empty column, except in the done column and in an archived project.
+ */
 export function BoardColumn({
-  projectId,
-  status,
-  index,
-  tasks,
-  archived,
-  moves,
-  dnd,
+  view,
+  header,
+  cards,
+  spot,
+  editable,
+  sectionRef,
+  onAdd,
 }: {
-  projectId: string;
-  status: TaskStatus;
-  /** Its place on the board, for the ring. */
-  index: number;
-  tasks: Task[];
-  archived: boolean;
-  moves: ReturnType<typeof useBoardMoves>;
-  dnd: ReturnType<typeof useBoardDnd>;
+  view: BoardColumnView;
+  header: ReactNode;
+  /** The cards, by task ID, in the column's order. */
+  cards: ReadonlyMap<string, ReactNode>;
+  /** Where a dragged card would land, when in this column. */
+  spot: DropSpot | null;
+  editable: boolean;
+  sectionRef: (element: HTMLElement | null) => () => void;
+  onAdd: () => void;
 }) {
-  const drawer = useTaskDrawer();
-  const open = useDrawerContent();
-  const openId = open?.mode === 'task' ? open.id : null;
-  const label = taskStatusLabels[status];
-  const add = () => drawer.newTask(projectId, { status });
+  const { column, tasks } = view;
+  const line = <li className="board-drop-line" aria-hidden="true" />;
+  const showLine = spot !== null && !spot.same;
   return (
     <section
-      className="kanban-column"
-      data-drag-over={dnd.overColumn === status || undefined}
-      aria-label={label}
-      {...dnd.column(status)}
+      ref={sectionRef}
+      className="board-column"
+      aria-label={column.name}
+      data-column-id={column.id}
+      data-done={column.isDone || undefined}
+      data-empty={tasks.length === 0 || undefined}
+      data-drop={spot !== null || undefined}
     >
-      <ColumnHeader status={status} index={index} count={tasks.length} onAdd={archived ? undefined : add} />
-      <div className="kanban-column__body">
-        {tasks.map((task, position) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            busy={moves.busy}
-            dragging={dnd.draggedId === task.id}
-            open={openId === task.id}
-            onOpen={() => drawer.openTask(task)}
-            onComplete={() => void moves.complete(task)}
-            moves={{
-              toColumn: (to) => void moves.move(task, to),
-              up: position > 0 ? () => void moves.move(task, status, tasks[position - 1]?.id ?? null) : undefined,
-              down:
-                position < tasks.length - 1
-                  ? () => void moves.move(task, status, tasks[position + 2]?.id ?? null)
-                  : undefined,
-            }}
-            drag={dnd.card(task)}
-          />
-        ))}
-        {tasks.length === 0 && <p className="kanban-column__empty">{emptyCopy[status]}</p>}
-        {!archived && (
-          <button type="button" className="kanban-column__new" onClick={add}>
+      {header}
+      <div className="board-column__body">
+        {tasks.length > 0 ? (
+          <ul className="board-column__cards" aria-label={`Tarefas em ${column.name}`}>
+            {tasks.map((task) => (
+              <Fragment key={task.id}>
+                {showLine && spot.beforeTaskId === task.id && line}
+                {cards.get(task.id)}
+              </Fragment>
+            ))}
+            {showLine && spot.beforeTaskId === null && line}
+          </ul>
+        ) : (
+          <>
+            {showLine && <ul className="board-column__cards">{line}</ul>}
+            <p className="board-column__empty">Nada aqui.</p>
+          </>
+        )}
+        {editable && !column.isDone && (
+          <button
+            type="button"
+            className="board-column__add"
+            tabIndex={-1}
+            aria-label={`Nova tarefa em ${column.name}`}
+            onClick={onAdd}
+          >
             <Plus size={14} aria-hidden="true" />
-            Adicionar tarefa
+            Nova tarefa
           </button>
         )}
       </div>

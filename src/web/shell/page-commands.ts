@@ -15,6 +15,7 @@ export function usePageCommands(commands: PageCommands) {
       get trash() {
         return latest.current.trash;
       },
+      newTaskColumn: () => latest.current.newTaskColumn?.(),
     };
     page.current = current;
     return () => {

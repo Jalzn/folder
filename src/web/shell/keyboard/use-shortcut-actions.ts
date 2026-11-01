@@ -66,7 +66,8 @@ export function useShortcutActions(layout: ShortcutLayout) {
   function newItem() {
     if (!project || !activeProjects(layout.projects).length) return app.openProjectDialog();
     if (project.archivedAt) return toast('Projeto arquivado: desarquive para criar itens.', 'error');
-    ui.setNewItemOpen(true);
+    // The board's column in focus is read now, before the menu takes the focus.
+    ui.setNewItemOpen(true, ui.page.current.newTaskColumn?.());
   }
   function search() {
     if (!project) return ui.openPalette();

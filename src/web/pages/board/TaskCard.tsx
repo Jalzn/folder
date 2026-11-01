@@ -1,64 +1,109 @@
 import './card.css';
-import { CheckCircle2, Circle, FileText } from 'lucide-react';
-import type { Task } from '../../lib/types';
-import { CardMenu, type CardMoves } from './CardMenu';
+import { useId } from 'react';
+import type { ColumnSummary, LabelSummary } from '../../lib/queries';
+import { displayTitle, type Task } from '../../lib/types';
+import { ColumnRing } from '../../ui';
+import { CardMenu } from './CardMenu';
+import { CardMeta } from './CardMeta';
+import type { MoveChoice } from './MoveTaskMenu';
 import type { CardDrag } from './use-board-dnd';
+import { CARD_ATTRIBUTE } from './use-board-keyboard';
+
+/** A card's place on the board, for its ring and its menu. */
+export interface CardColumn {
+  column: ColumnSummary;
+  index: number;
+  count: number;
+  columns: readonly ColumnSummary[];
+}
 
 /**
- * A task on the board: the check that completes it, the title that opens it, its ⋯ with the moves a
- * keyboard needs, and the document it came from. Dragging moves it as well.
+ * A task on the board (docs/etapas/10-quadro-tarefa.md, "Card"): the column's ring, the title, which is the
+ * button that takes the focus and whose press anywhere on the card opens the drawer, the meta line and the ⋯.
+ * The ring only shows the column (decision 18): Concluir is in the ⋯ and on ⌘↵. An archived project's card
+ * only opens.
  */
 export function TaskCard({
   task,
-  busy,
-  dragging,
+  place,
+  labels,
+  late,
   open,
-  moves,
-  onOpen,
-  onComplete,
+  active,
+  editable,
+  dragging,
   drag,
+  menuOpen,
+  cardRef,
+  titleRef,
+  onMenuOpenChange,
+  onOpen,
+  onMove,
+  onToggleDone,
+  onTrash,
 }: {
   task: Task;
-  busy: boolean;
-  dragging: boolean;
+  place: CardColumn;
+  labels: ReadonlyMap<string, LabelSummary>;
+  late: boolean;
   /** It is the task open in the drawer. */
   open: boolean;
-  moves: CardMoves;
-  onOpen: () => void;
-  onComplete: () => void;
+  /** Its title is the board's Tab stop. */
+  active: boolean;
+  editable: boolean;
+  dragging: boolean;
   drag: CardDrag;
+  menuOpen: boolean;
+  cardRef: (element: HTMLLIElement | null) => () => void;
+  titleRef: (element: HTMLButtonElement | null) => () => void;
+  onMenuOpenChange: (open: boolean) => void;
+  onOpen: () => void;
+  onMove: (choice: MoveChoice) => void;
+  onToggleDone: () => void;
+  onTrash: () => void;
 }) {
-  const done = task.status === 'done';
+  const metaId = useId();
+  const { column } = place;
+  const title = displayTitle(task.title);
   return (
-    <article
+    <li
+      ref={cardRef}
       className="task-card"
-      data-done={done || undefined}
-      data-dragging={dragging || undefined}
+      data-done={column.isDone || undefined}
       data-open={open || undefined}
-      draggable={!busy}
+      data-dragging={dragging || undefined}
       {...drag}
     >
-      <div className="task-card__top">
-        <button
-          type="button"
-          className="task-card__check"
-          disabled={busy}
-          onClick={onComplete}
-          aria-label={done ? `Reabrir ${task.title}` : `Concluir ${task.title}`}
-        >
-          {done ? <CheckCircle2 size={16} /> : <Circle size={16} />}
-        </button>
-        <button type="button" className="task-card__title" onClick={onOpen}>
-          {task.title}
-        </button>
-        <CardMenu task={task} moves={moves} onOpen={onOpen} />
-      </div>
-      {task.source && (
-        <button type="button" className="task-card__source" onClick={onOpen}>
-          <FileText size={12} aria-hidden="true" />
-          <span>{task.source.documentTitle}</span>
-        </button>
+      <span className="task-card__ring">
+        <ColumnRing index={place.index} count={place.count} isDone={column.isDone} />
+      </span>
+      <button
+        ref={titleRef}
+        type="button"
+        className="task-card__title"
+        tabIndex={active ? 0 : -1}
+        aria-describedby={metaId}
+        aria-current={open || undefined}
+        {...{ [CARD_ATTRIBUTE]: task.id }}
+        onClick={onOpen}
+      >
+        {title}
+      </button>
+      <CardMeta id={metaId} task={task} late={late} labels={labels} />
+      {editable && (
+        <CardMenu
+          title={title}
+          columns={place.columns}
+          columnId={task.columnId}
+          done={column.isDone}
+          open={menuOpen}
+          onOpenChange={onMenuOpenChange}
+          onOpen={onOpen}
+          onMove={onMove}
+          onToggleDone={onToggleDone}
+          onTrash={onTrash}
+        />
       )}
-    </article>
+    </li>
   );
 }

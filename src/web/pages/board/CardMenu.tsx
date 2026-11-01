@@ -1,34 +1,76 @@
-import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react';
-import { TASK_STATUSES, type Task, taskStatusLabels } from '../../lib/types';
-import { ActionMenu } from '../../ui';
+import { ArrowRight, CircleCheck, Ellipsis, PanelBottomOpen, RotateCcw, Trash2 } from 'lucide-react';
+import type { ColumnSummary } from '../../lib/queries';
+import { IconButton, Menu, MenuItem, MenuSeparator, MenuTrigger, SubmenuTrigger } from '../../ui';
+import { type MoveChoice, moveChoice, moveTaskSections } from './MoveTaskMenu';
 
-export interface CardMoves {
-  /** To another column, at its end. */
-  toColumn: (status: Task['status']) => void;
-  up?: (() => void) | undefined;
-  down?: (() => void) | undefined;
-}
-
-/** A card's ⋯: open it, and the moves a keyboard needs, to another column or up and down in its own. */
-export function CardMenu({ task, moves, onOpen }: { task: Task; moves: CardMoves; onOpen: () => void }) {
+/**
+ * A card's ⋯ (docs/etapas/10-quadro-tarefa.md, "⋯ do card"), also opened by ⇧F10 or the Menu key: Abrir, Mover
+ * para ▸, Concluir or Reabrir, and Mover para a lixeira. Its button stays out of the Tab order: the card's
+ * title is the board's stop.
+ */
+export function CardMenu({
+  title,
+  columns,
+  columnId,
+  done,
+  open,
+  onOpenChange,
+  onOpen,
+  onMove,
+  onToggleDone,
+  onTrash,
+}: {
+  title: string;
+  columns: readonly ColumnSummary[];
+  columnId: string;
+  done: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOpen: () => void;
+  onMove: (choice: MoveChoice) => void;
+  onToggleDone: () => void;
+  onTrash: () => void;
+}) {
   return (
-    <ActionMenu
-      label={`Opções de ${task.title}`}
-      items={[
-        { label: 'Editar tarefa', action: onOpen },
-        ...TASK_STATUSES.filter((status) => status !== task.status).map((status) => ({
-          label: `Mover para ${taskStatusLabels[status]}`,
-          icon: <ArrowRight size={16} />,
-          action: () => moves.toColumn(status),
-        })),
-        { label: 'Mover para cima', icon: <ArrowUp size={16} />, disabled: !moves.up, action: () => moves.up?.() },
-        {
-          label: 'Mover para baixo',
-          icon: <ArrowDown size={16} />,
-          disabled: !moves.down,
-          action: () => moves.down?.(),
-        },
-      ]}
-    />
+    <MenuTrigger isOpen={open} onOpenChange={onOpenChange}>
+      <IconButton label={`Opções de ${title}`} size="sm" className="task-card__more" excludeFromTabOrder>
+        <Ellipsis size={14} />
+      </IconButton>
+      <Menu
+        aria-label={title}
+        autoFocus="first"
+        onAction={(key) => {
+          if (key === 'open') onOpen();
+          else if (key === 'toggle') onToggleDone();
+          else if (key === 'trash') onTrash();
+        }}
+      >
+        <MenuItem id="open" icon={<PanelBottomOpen size={16} />} shortcut={['↵']}>
+          Abrir
+        </MenuItem>
+        <SubmenuTrigger>
+          <MenuItem id="move" icon={<ArrowRight size={16} />} shortcut={['M']}>
+            Mover para
+          </MenuItem>
+          <Menu
+            aria-label="Mover para"
+            placement="end top"
+            onAction={(key) => {
+              const choice = moveChoice(key);
+              if (choice) onMove(choice);
+            }}
+          >
+            {moveTaskSections(columns, columnId)}
+          </Menu>
+        </SubmenuTrigger>
+        <MenuItem id="toggle" icon={done ? <RotateCcw size={16} /> : <CircleCheck size={16} />} shortcut={['mod', '↵']}>
+          {done ? 'Reabrir' : 'Concluir'}
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem id="trash" icon={<Trash2 size={16} />} danger>
+          Mover para a lixeira
+        </MenuItem>
+      </Menu>
+    </MenuTrigger>
   );
 }

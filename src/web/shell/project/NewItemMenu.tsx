@@ -15,7 +15,7 @@ export interface NewItemFolder {
   name: string;
 }
 
-function useCreate(project: Project, folder: NewItemFolder | undefined) {
+function useCreate(project: Project, folder: NewItemFolder | undefined, taskColumnId?: string) {
   const app = useApp();
   const drawer = useTaskDrawer();
   const ui = useShellActions();
@@ -27,7 +27,7 @@ function useCreate(project: Project, folder: NewItemFolder | undefined) {
     else if (kind === 'document') void app.newDocument(project.id);
     else if (kind === 'drawing') void app.newCanvas(project.id);
     else if (kind === 'folder') ui.startFolder({ projectId: project.id });
-    else drawer.newTask(project.id);
+    else drawer.newTask(project.id, taskColumnId ? { columnId: taskColumnId } : {});
   };
 }
 
@@ -88,6 +88,7 @@ export function NewItemMenu({
 export function NewItemPopover({
   project,
   folder,
+  taskColumnId,
   triggerRef,
   isOpen,
   onOpenChange,
@@ -95,12 +96,14 @@ export function NewItemPopover({
 }: {
   project: Project;
   folder?: NewItemFolder | undefined;
+  /** The board's column in focus when N was pressed, where "Tarefa" creates. */
+  taskColumnId?: string | undefined;
   triggerRef: RefObject<HTMLElement | null>;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   placement?: 'bottom end' | 'bottom start';
 }) {
-  const create = useCreate(project, folder);
+  const create = useCreate(project, folder, taskColumnId);
   return (
     <PopoverSurface
       triggerRef={triggerRef}

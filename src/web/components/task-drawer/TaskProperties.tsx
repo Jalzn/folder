@@ -1,10 +1,10 @@
 import { ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
-import { useProjects } from '../../lib/queries';
-import { TASK_STATUSES, type TaskStatus, taskStatusLabels } from '../../lib/types';
+import { inBoardOrder } from '../../lib/board-order';
+import { type ColumnSummary, useProjects } from '../../lib/queries';
 import { activeProjects } from '../../shell/project/project-order';
-import { Menu, MenuItem, MenuTrigger, ProjectMark } from '../../ui';
+import { ColumnRing, Menu, MenuItem, MenuTrigger, ProjectMark } from '../../ui';
 
 /** A value of the properties grid: a ghost button that opens its menu, or its text when it cannot change. */
 function PropertyValue({
@@ -30,35 +30,53 @@ function PropertyValue({
   );
 }
 
+/**
+ * The board's columns as radios in board order, each with its ring, the done one marked; each item's ID is
+ * the column's, after `prefix` in a menu that has other items.
+ */
+export function columnMenuItems(columns: readonly ColumnSummary[], prefix = '') {
+  return inBoardOrder(columns).map((column, index, all) => (
+    <MenuItem
+      key={column.id}
+      id={`${prefix}${column.id}`}
+      icon={<ColumnRing index={index} count={all.length} isDone={column.isDone} />}
+      detail={column.isDone ? 'conclusão' : undefined}
+    >
+      {column.name}
+    </MenuItem>
+  ));
+}
+
 /** The column, as radios in board order. */
 export function ColumnField({
-  status,
+  columnId,
+  columns,
   editable,
   onChange,
 }: {
-  status: TaskStatus;
+  columnId: string | undefined;
+  columns: readonly ColumnSummary[];
   editable: boolean;
-  onChange: (status: TaskStatus) => void;
+  onChange: (columnId: string, name: string) => void;
 }) {
-  const name = taskStatusLabels[status];
+  const name = columns.find((column) => column.id === columnId)?.name ?? '—';
   return (
     <PropertyValue
       label={`Coluna: ${name}`}
       value={name}
-      editable={editable}
+      editable={editable && columns.length > 0}
       menu={
         <Menu
           aria-label="Coluna"
           placement="bottom start"
           selectionMode="single"
-          selectedKeys={[status]}
-          onAction={(key) => key !== status && onChange(key as TaskStatus)}
+          selectedKeys={columnId ? [columnId] : []}
+          onAction={(key) => {
+            const chosen = columns.find((column) => column.id === key);
+            if (chosen && chosen.id !== columnId) onChange(chosen.id, chosen.name);
+          }}
         >
-          {TASK_STATUSES.map((each) => (
-            <MenuItem key={each} id={each}>
-              {taskStatusLabels[each]}
-            </MenuItem>
-          ))}
+          {columnMenuItems(columns)}
         </Menu>
       }
     />

@@ -1,8 +1,8 @@
 import { Plus } from 'lucide-react';
 import { type RefObject, useEffect, useId, useRef, useState } from 'react';
 import { api, errorMessage, refreshWorkspace, reportSessionError } from '../../lib/api';
-import { useProjects } from '../../lib/queries';
-import { type TaskStatus, taskStatusLabels } from '../../lib/types';
+import { doneAndFirstOpen } from '../../lib/board-order';
+import { useColumns, useProjects } from '../../lib/queries';
 import { useRequest } from '../../lib/use-request';
 import { type DrawerContent, useTaskDrawer } from '../../shell/task-drawer-state';
 import { AlertDialog, Button, useToast } from '../../ui';
@@ -33,15 +33,18 @@ export function NewTaskForm({
   const errorId = useId();
   const field = useRef<HTMLTextAreaElement>(null);
   const initialTitle = content.title ?? '';
-  const initialStatus = content.status ?? 'todo';
+  const columns = useColumns().data?.columns ?? [];
   const [title, setTitle] = useState(initialTitle);
   const [projectId, setProjectId] = useState(content.projectId);
-  const [status, setStatus] = useState<TaskStatus>(initialStatus);
+  // Without a column of its own, the task goes to the first open one, as the server does.
+  const [chosenColumn, setColumn] = useState(content.columnId);
+  const columnId = chosenColumn ?? doneAndFirstOpen(columns).open?.id;
+  const column = columns.find((each) => each.id === columnId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const project = projects.find((each) => each.id === projectId);
-  const dirty = title !== initialTitle || projectId !== content.projectId || status !== initialStatus;
+  const dirty = title !== initialTitle || projectId !== content.projectId || chosenColumn !== content.columnId;
   const latestDirty = useRef(dirty);
   latestDirty.current = dirty;
 
@@ -70,7 +73,12 @@ export function NewTaskForm({
       ...(content.source.blockId === undefined ? {} : { blockId: content.source.blockId }),
       ...(content.source.expectedVersion === undefined ? {} : { expectedVersion: content.source.expectedVersion }),
     };
-    const input = { title: name, projectId, status, ...(source ? { source } : {}) };
+    const input = {
+      title: name,
+      projectId,
+      ...(chosenColumn ? { columnId: chosenColumn } : {}),
+      ...(source ? { source } : {}),
+    };
     setBusy(true);
     setError(null);
     try {
@@ -78,7 +86,7 @@ export function NewTaskForm({
       request.clear();
       await refreshWorkspace();
       drawer.showTask({ id: created.id, projectId: created.projectId, title: name });
-      toast(`Tarefa criada em ${taskStatusLabels[status]} · ${project?.name ?? 'o projeto'}.`);
+      toast(`Tarefa criada em ${column?.name ?? 'o quadro'} · ${project?.name ?? 'o projeto'}.`);
     } catch (failure) {
       reportSessionError(failure);
       setError(errorMessage(failure));
@@ -152,7 +160,11 @@ export function NewTaskForm({
               label: 'Projeto',
               value: <ProjectField projectId={projectId} editable onChange={(id) => setProjectId(id)} />,
             },
-            { id: 'column', label: 'Coluna', value: <ColumnField status={status} editable onChange={setStatus} /> },
+            {
+              id: 'column',
+              label: 'Coluna',
+              value: <ColumnField columnId={columnId} columns={columns} editable onChange={(id) => setColumn(id)} />,
+            },
           ]}
         />
       </div>

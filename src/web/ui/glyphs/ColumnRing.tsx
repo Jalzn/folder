@@ -1,7 +1,7 @@
 import './glyphs.css';
 
-function ringShape(index: number, count: number) {
-  if (count > 1 && index >= count - 1)
+function ringShape(index: number, count: number, isDone: boolean | undefined) {
+  if (isDone ?? (count > 1 && index >= count - 1))
     return {
       state: 'done',
       shape: (
@@ -31,12 +31,23 @@ function ringShape(index: number, count: number) {
 }
 
 /**
- * The column ring (docs/interface/visual.md §5): a task's state drawn by its column's position. The first
- * column is an empty circle, the middle ones fill a sector of index ÷ (n − 1), and the last is a full
- * circle with a check. Decorative: the column's name always goes with it.
+ * The column ring (docs/interface/visual.md §5): a task's state drawn by its column's position. The done
+ * column is a full circle with a check; the others fill a sector of index ÷ (n − 1), up to 0.85, from the
+ * empty circle of the first. Without `isDone`, the last column is the done one. Decorative: the column's name
+ * always goes with it.
  */
-export function ColumnRing({ index, count, size = 14 }: { index: number; count: number; size?: number }) {
-  const { state, shape } = ringShape(index, count);
+export function ColumnRing({
+  index,
+  count,
+  isDone,
+  size = 14,
+}: {
+  index: number;
+  count: number;
+  isDone?: boolean;
+  size?: number;
+}) {
+  const { state, shape } = ringShape(index, count, isDone);
   return (
     <svg className="column-ring" data-state={state} width={size} height={size} viewBox="0 0 14 14" aria-hidden="true">
       {shape}

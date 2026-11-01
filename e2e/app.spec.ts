@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
+import { cardMenu, column } from './support/board.js';
 import { newDocument, newTask } from './support/items.js';
 import { createProject, searchProject } from './support/navigation.js';
 import { login } from './support/session.js';
@@ -71,16 +72,15 @@ test('create project, create and move task with accessible controls', async ({ p
   await login(page);
   await createProject(page, name);
   await newTask(page, 'Definir o primeiro passo');
-  await page.getByRole('button', { name: 'Opções de Definir o primeiro passo' }).click();
-  await page.getByRole('menuitem', { name: 'Mover para Em andamento' }).click();
-  const doing = page.getByRole('region', { name: 'Em andamento', exact: true });
-  await expect(doing.getByRole('button', { name: 'Definir o primeiro passo', exact: true })).toBeVisible();
-  await doing.getByRole('button', { name: 'Concluir Definir o primeiro passo' }).click();
+  await cardMenu(page, 'Definir o primeiro passo', 'Mover para', 'Em andamento');
   await expect(
-    page
-      .getByRole('region', { name: 'Concluído', exact: true })
-      .getByRole('button', { name: 'Definir o primeiro passo', exact: true }),
+    column(page, 'Em andamento').getByRole('button', { name: 'Definir o primeiro passo', exact: true }),
   ).toBeVisible();
+  await cardMenu(page, 'Definir o primeiro passo', 'Concluir');
+  await expect(
+    column(page, 'Concluído').getByRole('button', { name: 'Definir o primeiro passo', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Concluída: Definir o primeiro passo.')).toBeVisible();
   await page.screenshot({ path: info.outputPath('kanban.png'), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

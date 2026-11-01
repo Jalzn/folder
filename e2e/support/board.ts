@@ -14,8 +14,25 @@ export const newTaskDrawer = (page: Page) => page.getByRole('region', { name: 'N
 export const card = (page: Page, title: string) =>
   page
     .getByRole('main')
-    .getByRole('article')
+    .getByRole('listitem')
     .filter({ has: page.getByRole('button', { name: title, exact: true }) });
+
+/** A column of the board, by its name. */
+export const column = (page: Page, name: string) => page.getByRole('region', { name, exact: true });
+
+/** Chooses an item of a card's ⋯, and of its "Mover para" when `to` names a column, "Topo" or "Fim". */
+export async function cardMenu(page: Page, title: string, item: string, to?: string) {
+  await page.getByRole('button', { name: `Opções de ${title}`, exact: true }).click();
+  // An item's name also carries its shortcut, as "Concluir Ctrl↵".
+  const menuItem = page.getByRole('menuitem').filter({ has: page.getByText(item, { exact: true }) });
+  if (!to) return menuItem.click();
+  await menuItem.press('ArrowRight');
+  await page
+    .getByRole('menu', { name: 'Mover para' })
+    .getByRole('menuitemradio')
+    .filter({ has: page.getByText(to, { exact: true }) })
+    .click();
+}
 
 /** Opens a task in the drawer from its card on the board. */
 export async function openDrawer(page: Page, title: string) {

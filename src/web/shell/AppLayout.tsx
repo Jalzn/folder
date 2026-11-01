@@ -140,9 +140,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <NewItemPopover
           project={project}
           folder={itemFolder && { id: itemFolder.id, name: itemFolder.name }}
+          taskColumnId={ui.newTaskColumn ?? undefined}
           triggerRef={anchor}
           isOpen
-          onOpenChange={ui.setNewItemOpen}
+          onOpenChange={(open) => ui.setNewItemOpen(open)}
         />
       )}
       {project && openItem && ui.moveOpen && (

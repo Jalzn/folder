@@ -21,6 +21,8 @@ export interface PageCommands {
   saveNow?: () => void;
   files?: PageAction[] | undefined;
   trash?: (() => void) | undefined;
+  /** The board's column in focus, where N's "Tarefa" creates, read when N is pressed. */
+  newTaskColumn?: (() => string | undefined) | undefined;
 }
 
 /** A folder being named in the sidebar, before it exists: from "+", N, ⌘K or "Mover para pasta…". */
@@ -48,7 +50,8 @@ export interface ShellActions {
   openPalette: (text?: string) => void;
   closePalette: () => void;
   setShortcutsOpen: (open: boolean) => void;
-  setNewItemOpen: (open: boolean) => void;
+  /** Opens or closes N's menu; its "Tarefa" creates in `taskColumnId` when given. */
+  setNewItemOpen: (open: boolean, taskColumnId?: string) => void;
   setMoveOpen: (open: false | 'folder' | 'project') => void;
   /** Asks the sidebar's Buscar for the focus. */
   requestSearch: () => void;
@@ -73,6 +76,8 @@ export interface ShellState {
   palette: string | null;
   shortcutsOpen: boolean;
   newItemOpen: boolean;
+  /** The column N's "Tarefa" creates in, as the board's column in focus when N was pressed. */
+  newTaskColumn: string | null;
   /** The open item's move menu: "Mover para pasta…" (M), "Mover para projeto…", or closed. */
   moveOpen: false | 'folder' | 'project';
   /** Grows by one at each request to focus the sidebar's Buscar. */
@@ -126,6 +131,7 @@ function ShellUiState({ children }: { children: ReactNode }) {
   const [palette, setPalette] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [newItemOpen, setNewItemOpen] = useState(false);
+  const [newTaskColumn, setNewTaskColumn] = useState<string | null>(null);
   const [moveOpen, setMoveOpen] = useState<false | 'folder' | 'project'>(false);
   const [searchRequest, setSearchRequest] = useState(0);
   const [folderDraft, setFolderDraft] = useState<FolderDraft | null>(null);
@@ -143,7 +149,10 @@ function ShellUiState({ children }: { children: ReactNode }) {
       openPalette: (text = '') => setPalette(text),
       closePalette: () => setPalette(null),
       setShortcutsOpen,
-      setNewItemOpen,
+      setNewItemOpen: (open, taskColumnId) => {
+        setNewItemOpen(open);
+        setNewTaskColumn(open ? (taskColumnId ?? null) : null);
+      },
       setMoveOpen,
       requestSearch: () => setSearchRequest((count) => count + 1),
       announce,
@@ -172,6 +181,7 @@ function ShellUiState({ children }: { children: ReactNode }) {
       palette,
       shortcutsOpen,
       newItemOpen,
+      newTaskColumn,
       moveOpen,
       searchRequest,
       folderDraft,
@@ -184,6 +194,7 @@ function ShellUiState({ children }: { children: ReactNode }) {
       palette,
       shortcutsOpen,
       newItemOpen,
+      newTaskColumn,
       moveOpen,
       searchRequest,
       folderDraft,

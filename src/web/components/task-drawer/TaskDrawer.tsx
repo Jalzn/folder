@@ -18,8 +18,8 @@ const editable = (target: EventTarget) =>
 /**
  * The task drawer (docs/etapas/10-quadro-tarefa.md, "Gaveta da tarefa"): a region below the page, which it
  * pushes up, with its handle and either an open task or a new one. It takes the focus when a task opens, and
- * its keys are its own: ⌘↵ from anywhere in it, and ⌥↑ and ⌥↓ outside the text to step its height. Below
- * 720 px it covers the page, without the handle.
+ * its keys are its own: ⌘↵ from anywhere in it, ⌥↑ and ⌥↓ outside the text to step its height, and P,
+ * which does nothing here. Below 720 px it covers the page, without the handle.
  */
 export function TaskDrawer({
   content,
@@ -94,6 +94,12 @@ export function TaskDrawer({
     primary();
   }
   function keyDown(event: KeyboardEvent<HTMLElement>) {
+    // P pins the open document or drawing elsewhere; a task is not pinned, so in the drawer it does nothing.
+    const plain = !event.altKey && !event.metaKey && !event.ctrlKey;
+    if (plain && event.key.toLowerCase() === 'p' && !editable(event.target)) {
+      event.preventDefault();
+      return;
+    }
     if (!event.altKey || event.metaKey || event.ctrlKey || narrow) return;
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
     if (editable(event.target)) return;

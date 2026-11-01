@@ -77,19 +77,33 @@ export const pageTitle = () => document.querySelector<HTMLElement>('main h1[tabi
  * Gives the focus back once nothing holds it, as when the row that had it went away or a dialog closed and
  * its trigger is gone: to `target` while it is on the page, otherwise to the page's title. A focus on `from`
  * counts as lost too: the trigger a popover gave it back to. Waits for open overlays, and gives up after
- * about half a second if the focus lands somewhere on its own.
+ * about half a second if the focus lands somewhere on its own, or at once when the person presses a key or
+ * the pointer: from then on the focus is theirs, as a menu they open and close on a card that just moved.
  */
 export function returnFocus(target: HTMLElement | null, { from }: { from?: Element | null } = {}) {
-  whenPresent(
+  const stop = () => {
+    cancel();
+    end();
+  };
+  const end = () => {
+    document.removeEventListener('keydown', stop, true);
+    document.removeEventListener('pointerdown', stop, true);
+  };
+  const cancel = whenPresent(
     () => {
       const active = document.activeElement;
       const lost = !active || active === document.body || !active.isConnected || (from != null && active === from);
       const place = target?.isConnected ? target : pageTitle();
       return lost && place && !document.querySelector(holding) ? place : null;
     },
-    (place) => place.focus({ preventScroll: true }),
-    { frames: 30 },
+    (place) => {
+      end();
+      place.focus({ preventScroll: true });
+    },
+    { frames: 30, missing: end },
   );
+  document.addEventListener('keydown', stop, true);
+  document.addEventListener('pointerdown', stop, true);
 }
 
 /**

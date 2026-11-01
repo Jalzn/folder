@@ -1,7 +1,8 @@
 import { ArrowRight, CircleCheck, Ellipsis, Link2, RotateCcw, Trash2, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
-import { TASK_STATUSES, type Task, type TaskStatus, taskStatusLabels } from '../../lib/types';
+import { inBoardOrder } from '../../lib/board-order';
+import type { ColumnSummary } from '../../lib/queries';
 import {
   Button,
   ColumnRing,
@@ -15,12 +16,7 @@ import {
   TooltipTrigger,
 } from '../../ui';
 
-/** The columns in board order, as radios with the task's own checked. */
-const columnItems = TASK_STATUSES.map((status) => (
-  <MenuItem key={status} id={status}>
-    {taskStatusLabels[status]}
-  </MenuItem>
-));
+import { columnMenuItems } from './TaskProperties';
 
 /**
  * The drawer's 52 px header (docs/interface/visual.md, "Gaveta da tarefa"): the column ring, which opens
@@ -28,7 +24,8 @@ const columnItems = TASK_STATUSES.map((status) => (
  * ring, the title and ✕.
  */
 export function TaskDrawerHeader({
-  task,
+  columnId,
+  columns,
   title,
   editable,
   onMove,
@@ -37,20 +34,27 @@ export function TaskDrawerHeader({
   onTrash,
   onClose,
 }: {
-  task: Task;
+  columnId: string;
+  columns: readonly ColumnSummary[];
   /** The title field. */
   title: ReactNode;
   editable: boolean;
-  onMove: (status: TaskStatus) => void;
+  onMove: (columnId: string, name: string) => void;
   onToggleDone: () => void;
   onCopyLink: () => void;
   onTrash: () => void;
   onClose: () => void;
 }) {
-  const done = task.status === 'done';
-  const index = TASK_STATUSES.indexOf(task.status);
-  const ring = <ColumnRing index={index} count={TASK_STATUSES.length} size={16} />;
-  const state = done ? 'Concluída' : taskStatusLabels[task.status];
+  const ordered = inBoardOrder(columns);
+  const index = ordered.findIndex((column) => column.id === columnId);
+  const column = ordered[index];
+  const done = Boolean(column?.isDone);
+  const ring = <ColumnRing index={index} count={ordered.length} isDone={done} size={16} />;
+  const state = done ? 'Concluída' : (column?.name ?? '');
+  const move = (key: unknown) => {
+    const chosen = ordered.find((each) => each.id === key);
+    if (chosen && chosen.id !== columnId) onMove(chosen.id, chosen.name);
+  };
   return (
     <header className="task-drawer__head">
       {editable ? (
@@ -62,10 +66,10 @@ export function TaskDrawerHeader({
             aria-label="Mover para"
             placement="bottom start"
             selectionMode="single"
-            selectedKeys={[task.status]}
-            onAction={(key) => key !== task.status && onMove(key as TaskStatus)}
+            selectedKeys={[columnId]}
+            onAction={move}
           >
-            {columnItems}
+            {columnMenuItems(ordered)}
           </Menu>
         </MenuTrigger>
       ) : (
@@ -104,10 +108,10 @@ export function TaskDrawerHeader({
                   aria-label="Mover para"
                   placement="end top"
                   selectionMode="single"
-                  selectedKeys={[task.status]}
-                  onAction={(key) => key !== task.status && onMove(key as TaskStatus)}
+                  selectedKeys={[columnId]}
+                  onAction={move}
                 >
-                  {columnItems}
+                  {columnMenuItems(ordered)}
                 </Menu>
               </SubmenuTrigger>
             )}

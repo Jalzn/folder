@@ -1,108 +1,258 @@
 /*
- * The board until its stage 10 restyle, on the Sumário tokens (docs/interface/visual.md, "Quadro"):
- * columns without a background 12 px apart, 28 px headers, cards on level 1 with radius 8.
+ * The board (docs/interface/visual.md, "Quadro", and docs/etapas/10-quadro-tarefa.md, "Quadro"): a head with the
+ * title and the count, then the columns in a row that scrolls sideways, 208 to 280 px wide, 12 px apart,
+ * without a background; each column scrolls its own cards.
  */
 .board-page {
-  padding: 28px 0 64px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
-.board-page > .page-header {
-  margin-bottom: 20px;
+.board-head {
+  flex: none;
+  padding: 8px 32px 0;
 }
-.kanban {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
+.board-head__row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 28px;
+  margin-top: 12px;
+}
+.board-head__title {
+  margin: 0;
+  color: var(--text);
+}
+.board-head__count {
+  margin: 0;
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+.board-head__late {
+  color: var(--late);
+}
+.board-columns {
+  flex: 1;
+  min-height: 0;
+  display: flex;
   gap: 12px;
-  align-items: start;
+  padding: 16px 32px 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
-.kanban-column {
-  min-width: 0;
-  min-height: 240px;
-  margin: 0 -6px;
-  padding: 0 6px 6px;
+
+.board-column {
+  flex: 0 0 clamp(208px, calc((100% - (var(--board-columns, 4) - 1) * 12px) / var(--board-columns, 4)), 280px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border-radius: var(--radius-lg);
   transition: background-color var(--duration-hover) var(--ease-out);
 }
-.kanban-column[data-drag-over] {
+/* Under a dragged card. */
+.board-column[data-drop] {
   background: var(--hover);
 }
-.kanban-column__header {
+.board-column__head {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 8px;
   height: 28px;
   margin-bottom: 6px;
+  padding: 0 2px;
 }
-.kanban-column__name {
-  margin: 0;
+.board-column__name {
+  min-width: 0;
+  margin-left: -2px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--text);
   font: 500 13px / 20px var(--font-sans);
   letter-spacing: var(--tracking-ui);
-  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
 }
-.kanban-column__count {
+.board-column__name:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.board-column__count {
   font: var(--type-meta);
   font-variant-numeric: tabular-nums;
   color: var(--text-3);
 }
-.kanban-column__add {
-  margin-left: auto;
-  opacity: 0;
+.board-column__grow {
+  flex: 1;
 }
-.kanban-column:hover .kanban-column__add,
-.kanban-column__add[data-focus-visible] {
+.board-column__more {
+  opacity: 0;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+.board-column:hover .board-column__more,
+.board-column__head:focus-within .board-column__more,
+.board-column__more[aria-expanded="true"] {
   opacity: 1;
 }
-.kanban-column__body {
+.board-column__body {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin: 0 -4px;
+  padding: 4px 4px 12px;
+  overflow-y: auto;
 }
-.kanban-column__empty {
+.board-column__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin: 0;
-  padding: 8px 2px;
-  font: var(--type-ui);
+  padding: 0;
+  list-style: none;
+}
+/* The drop line between cards: 2 px of accent that takes no room. */
+.board-drop-line {
+  height: 2px;
+  margin: -5px 0;
+  border-radius: 1px;
+  background: var(--accent);
+}
+.board-column__empty {
+  margin: 0;
+  padding: 6px 2px;
+  font: var(--type-meta);
   color: var(--text-3);
 }
-.kanban-column__new {
+.board-column__add {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: var(--height-button);
+  height: 28px;
   padding: 0 6px;
   border: 0;
   border-radius: var(--radius-sm);
   background: none;
   color: var(--text-3);
+  font: var(--type-meta);
+  text-align: left;
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    opacity var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
+}
+.board-column__add svg {
+  color: var(--icon);
+}
+.board-column:hover .board-column__add,
+.board-column:focus-within .board-column__add,
+.board-column[data-empty] .board-column__add {
+  opacity: 1;
+}
+.board-column__add:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.board-add-column {
+  flex: 0 0 120px;
+  margin-left: 8px;
+}
+
+/* A column's name in place: 28 px on level 1 with the accent's border and halo, as a folder's. */
+.column-name-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.column-name-field__input {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--raised-1);
+  box-shadow: 0 0 0 3px var(--accent-25);
+  color: var(--text);
+  font: 500 13px / 20px var(--font-sans);
+  outline: none;
+}
+.column-name-field__error {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 2;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--raised-2);
+  box-shadow: var(--shadow-float);
+  color: var(--danger);
+  font: var(--type-meta);
+  white-space: nowrap;
+}
+
+/* The destination of a deleted column's tasks. */
+.column-destinations {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+}
+.column-destination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
   font: var(--type-ui);
   letter-spacing: var(--tracking-ui);
   cursor: pointer;
 }
-.kanban-column__new:hover {
+.column-destination[data-hovered] {
   background: var(--hover);
-  color: var(--text-2);
 }
-
-.kanban-column__new:focus-visible {
+.column-destination[data-focus-visible] {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline-offset: -2px;
+}
+.column-destination__dot {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 50%;
+}
+.column-destination[data-selected] .column-destination__dot {
+  border: 4px solid var(--accent);
+}
+.column-destination__note {
+  color: var(--text-3);
+  font: var(--type-meta);
 }
 
 @media (max-width: 760px) {
-  .kanban {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    margin-right: -16px;
-    padding-right: 16px;
+  .board-head {
+    padding: 8px 16px 0;
   }
-  .kanban-column {
-    flex: none;
-    width: min(300px, calc(100vw - 64px));
-    scroll-snap-align: start;
+  .board-columns {
+    padding: 16px;
   }
 }
-/* Touch screens have no hover: the column's + stays visible. */
+/* Touch screens have no hover: the column's + and ⋯ stay visible. */
 @media (hover: none) {
-  .kanban-column__add {
+  .board-column__more,
+  .board-column__add {
     opacity: 1;
   }
 }
