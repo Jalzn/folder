@@ -1,0 +1,142 @@
+import { ChevronDown } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Button as AriaButton } from 'react-aria-components';
+import { useProjects } from '../../lib/queries';
+import { TASK_STATUSES, type TaskStatus, taskStatusLabels } from '../../lib/types';
+import { activeProjects } from '../../shell/project/project-order';
+import { Menu, MenuItem, MenuTrigger, ProjectMark } from '../../ui';
+
+/** A value of the properties grid: a ghost button that opens its menu, or its text when it cannot change. */
+function PropertyValue({
+  label,
+  value,
+  editable,
+  menu,
+}: {
+  label: string;
+  value: ReactNode;
+  editable: boolean;
+  menu: ReactNode;
+}) {
+  if (!editable) return <span className="task-prop task-prop--static">{value}</span>;
+  return (
+    <MenuTrigger>
+      <AriaButton className="task-prop" aria-label={label}>
+        {value}
+        <ChevronDown size={14} className="task-prop__chevron" aria-hidden="true" />
+      </AriaButton>
+      {menu}
+    </MenuTrigger>
+  );
+}
+
+/** The column, as radios in board order. */
+export function ColumnField({
+  status,
+  editable,
+  onChange,
+}: {
+  status: TaskStatus;
+  editable: boolean;
+  onChange: (status: TaskStatus) => void;
+}) {
+  const name = taskStatusLabels[status];
+  return (
+    <PropertyValue
+      label={`Coluna: ${name}`}
+      value={name}
+      editable={editable}
+      menu={
+        <Menu
+          aria-label="Coluna"
+          placement="bottom start"
+          selectionMode="single"
+          selectedKeys={[status]}
+          onAction={(key) => key !== status && onChange(key as TaskStatus)}
+        >
+          {TASK_STATUSES.map((each) => (
+            <MenuItem key={each} id={each}>
+              {taskStatusLabels[each]}
+            </MenuItem>
+          ))}
+        </Menu>
+      }
+    />
+  );
+}
+
+/** The project, with its mark; the menu has the active projects. */
+export function ProjectField({
+  projectId,
+  editable,
+  onChange,
+}: {
+  projectId: string;
+  editable: boolean;
+  onChange: (projectId: string, name: string) => void;
+}) {
+  const projects = useProjects(true).data ?? [];
+  const project = projects.find((each) => each.id === projectId);
+  const value = project ? (
+    <>
+      <ProjectMark name={project.name} color={project.color} />
+      {project.name}
+    </>
+  ) : (
+    '—'
+  );
+  return (
+    <PropertyValue
+      label={`Projeto: ${project?.name ?? ''}`}
+      value={value}
+      editable={editable && Boolean(project)}
+      menu={
+        <Menu
+          aria-label="Projeto"
+          placement="bottom start"
+          selectionMode="single"
+          selectedKeys={[projectId]}
+          onAction={(key) => {
+            const chosen = projects.find((each) => each.id === key);
+            if (chosen && chosen.id !== projectId) onChange(chosen.id, chosen.name);
+          }}
+        >
+          {activeProjects(projects).map((each) => (
+            <MenuItem key={each.id} id={each.id} icon={<ProjectMark name={each.name} color={each.color} />}>
+              {each.name}
+            </MenuItem>
+          ))}
+        </Menu>
+      }
+    />
+  );
+}
+
+/**
+ * The properties grid of 88 px + 1fr with 30 px rows (docs/interface/visual.md, "Gaveta da tarefa"): a label
+ * in 12/16 and a value in 13/20 for each row given, in order.
+ */
+export function TaskProperties({
+  label,
+  rows,
+  children,
+}: {
+  label: string;
+  rows: { id: string; label: string; value: ReactNode }[];
+  /** What follows the grid, as the origin. */
+  children?: ReactNode;
+}) {
+  return (
+    <aside className="task-drawer__props" aria-label={label}>
+      <dl className="task-props">
+        {rows.map((row) => (
+          <div key={row.id} className="task-props__row">
+            <dt>{row.label}</dt>
+            <dd>{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {children}
+    </aside>
+  );
+}

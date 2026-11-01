@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react';
 import { type Task, type TaskStatus, taskStatusLabels } from '../../lib/types';
-import { useApp } from '../../shell';
+import { useDrawerContent, useTaskDrawer } from '../../shell';
 import { ColumnHeader } from './ColumnHeader';
 import { TaskCard } from './TaskCard';
 import type { useBoardDnd } from './use-board-dnd';
@@ -31,9 +31,11 @@ export function BoardColumn({
   moves: ReturnType<typeof useBoardMoves>;
   dnd: ReturnType<typeof useBoardDnd>;
 }) {
-  const app = useApp();
+  const drawer = useTaskDrawer();
+  const open = useDrawerContent();
+  const openId = open?.mode === 'task' ? open.id : null;
   const label = taskStatusLabels[status];
-  const add = () => app.newTask(projectId, { status });
+  const add = () => drawer.newTask(projectId, { status });
   return (
     <section
       className="kanban-column"
@@ -49,7 +51,8 @@ export function BoardColumn({
             task={task}
             busy={moves.busy}
             dragging={dnd.draggedId === task.id}
-            onOpen={() => app.openTask(task)}
+            open={openId === task.id}
+            onOpen={() => drawer.openTask(task)}
             onComplete={() => void moves.complete(task)}
             moves={{
               toColumn: (to) => void moves.move(task, to),

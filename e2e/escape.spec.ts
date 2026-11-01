@@ -78,23 +78,28 @@ test('keys of an IME composition, Esc included, stay with the composition', asyn
   await expect(search).toHaveValue('にほ');
 });
 
-test('Esc in a changed task dialog asks before discarding, and Esc there goes back to it', async ({ page }) => {
+test('Esc in a new task with a typed title asks before discarding, and Esc there goes back to it', async ({ page }) => {
   await login(page);
   await openBoard(page);
   await page.getByRole('button', { name: 'Nova tarefa', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Um próximo passo' });
-  await dialog.getByRole('textbox', { name: 'Título da tarefa' }).fill('Ainda não salva');
+  const form = page.getByRole('region', { name: 'Nova tarefa', exact: true });
+  const title = form.getByRole('textbox', { name: 'Título da nova tarefa' });
+  await expect(title).toBeFocused();
+  await page.keyboard.type('Ainda não salva');
+  // The first Esc leaves the title for the drawer; the next one would close it, and asks first.
   await page.keyboard.press('Escape');
-  const discard = page.getByRole('alertdialog', { name: 'Descartar alterações?' });
+  await expect(form).toBeFocused();
+  await page.keyboard.press('Escape');
+  const discard = page.getByRole('alertdialog', { name: 'Descartar a nova tarefa?' });
   await expect(discard).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(discard).toBeHidden();
-  await expect(dialog.getByRole('textbox', { name: 'Título da tarefa' })).toHaveValue('Ainda não salva');
-  await expect(dialog.getByRole('textbox', { name: 'Título da tarefa' })).toBeFocused();
+  await expect(title).toHaveValue('Ainda não salva');
+  await expect(form).toBeFocused();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await discard.getByRole('button', { name: 'Descartar', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(form).toHaveCount(0);
 });
 
 test('the rail’s Itens tree works from the keyboard and closes on a choice', async ({ page }, info) => {
@@ -133,7 +138,7 @@ test('the rail’s Itens tree works from the keyboard and closes on a choice', a
   await pressCommand(page, 'Backslash');
 });
 
-test('a dialog opened from N gives the focus back to where it was', async ({ page }, info) => {
+test('a new task opened from N gives the focus back to where it was', async ({ page }, info) => {
   await login(page);
   const phone = info.project.name === 'chrome-mobile';
   const before = phone
@@ -142,9 +147,12 @@ test('a dialog opened from N gives the focus back to where it was', async ({ pag
   await before.focus();
   await page.keyboard.press('n');
   await page.getByRole('menuitem', { name: 'Tarefa' }).click();
-  await expect(page.getByRole('dialog', { name: 'Um próximo passo' })).toBeVisible();
+  const form = page.getByRole('region', { name: 'Nova tarefa', exact: true });
+  await expect(form.getByRole('textbox', { name: 'Título da nova tarefa' })).toBeFocused();
+  // Esc leaves the empty title, and the next one closes the drawer: nothing was typed to ask about.
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(form).toHaveCount(0);
   await expect(before).toBeFocused();
 });
 

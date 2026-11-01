@@ -5,6 +5,7 @@ import { useApp } from '../AppProvider';
 import { useProjectActions } from '../project/use-project-actions';
 import { type SwitcherPlace, useShellActions } from '../shell-ui';
 import { useSidebarPrefs } from '../sidebar/use-sidebar-prefs';
+import { useTaskDrawer } from '../task-drawer-state';
 import { type ThemeChoice, useTheme } from '../theme';
 import type { CommandId } from './commands';
 import type { PaletteAction } from './palette-sections';
@@ -31,6 +32,7 @@ export function usePaletteActions({
 }) {
   const ui = useShellActions();
   const app = useApp();
+  const drawer = useTaskDrawer();
   const navigate = useNavigate();
   const theme = useTheme();
   const projectActions = useProjectActions();
@@ -55,7 +57,7 @@ export function usePaletteActions({
       'new-document': () => current && void app.newDocument(current.id),
       'new-drawing': () => current && void app.newCanvas(current.id),
       'new-folder': () => current && ui.startFolder({ projectId: current.id }),
-      'new-task': () => current && app.newTask(current.id),
+      'new-task': () => current && drawer.newTask(current.id),
       'switch-project': () => ui.setSwitcherAt(switcherPlace),
       overview: () => current && go(paths.overview(current.id)),
       board: () => current && go(paths.board(current.id)),

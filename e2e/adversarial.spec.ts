@@ -1,4 +1,5 @@
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer, openDrawer } from './support/board.js';
 import { moveToTrash, newDocument, restoreFromTrash } from './support/items.js';
 import { openBoard, overviewAddress } from './support/navigation.js';
 import { answers } from './support/rpc.js';
@@ -91,27 +92,26 @@ test('a task created from selected text survives document trash and restores its
   await editor(page).click();
   await editor(page).press('ControlOrMeta+a');
   await page.getByRole('button', { name: 'Criar tarefa da seleção', exact: true }).click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.getByRole('textbox', { name: 'Título da tarefa' })).toHaveValue(
+  await expect(newTaskDrawer(page).getByRole('textbox', { name: 'Título da nova tarefa' })).toHaveValue(
     'Organizar as referencias do projeto.',
   );
-  await dialog.getByRole('textbox', { name: 'Título da tarefa' }).fill(taskTitle);
-  await dialog.getByRole('button', { name: 'Criar tarefa', exact: true }).click();
-  await expect(dialog).toHaveCount(0);
+  await createInDrawer(page, taskTitle);
+  await closeDrawer(page);
   await expect(page.getByRole('button', { name: new RegExp(`${taskTitle}.*A fazer`) })).toBeVisible();
   await moveToTrash(page, 'documento');
   await expect(page).toHaveURL(overviewAddress);
   await openBoard(page);
-  await page.getByRole('button', { name: taskTitle, exact: true }).click();
+  await openDrawer(page, taskTitle);
   await expect(
-    page.getByRole('dialog').getByText('O documento está na lixeira. A tarefa continua aqui.', { exact: true }),
+    drawer(page).getByText('O documento está na lixeira. A tarefa continua aqui.', { exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole('dialog').locator('blockquote')).toHaveText('Organizar as referencias do projeto.');
-  await page.getByRole('dialog').getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await expect(drawer(page).locator('blockquote')).toHaveText('Organizar as referencias do projeto.');
+  await closeDrawer(page);
   await restoreFromTrash(page, title);
   await openBoard(page);
-  await page.getByRole('button', { name: taskTitle, exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: title, exact: true }).click();
+  await openDrawer(page, taskTitle);
+  // The origin opens its document in the excerpt, and the drawer stays.
+  await drawer(page).getByRole('button', { name: title, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${documentUrl}(?:\\?bloco=.+)?$`));
   await expect(editor(page)).toContainText('Organizar as referencias do projeto.');
   await page.screenshot({ path: info.outputPath('origem-restaurada.png'), fullPage: true });
@@ -135,11 +135,13 @@ test('retrying after a committed task response is lost creates only one task', a
     }
   });
   await page.getByRole('button', { name: 'Nova tarefa', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Título da tarefa' }).fill(title);
-  await page.getByRole('dialog').getByRole('button', { name: 'Criar tarefa', exact: true }).click();
-  await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();
-  await page.getByRole('dialog').getByRole('button', { name: 'Criar tarefa', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const form = newTaskDrawer(page);
+  await expect(form.getByRole('textbox', { name: 'Título da nova tarefa' })).toBeFocused();
+  await page.keyboard.type(title);
+  await form.getByRole('button', { name: 'Criar', exact: true }).click();
+  await expect(form.getByRole('alert')).toBeVisible();
+  await form.getByRole('button', { name: 'Criar', exact: true }).click();
+  await expect(drawerOf(page, title)).toBeVisible();
   expect(requests).toHaveLength(2);
   expect(requests[0]).toBe(requests[1]);
   await expect(page.getByRole('button', { name: title, exact: true })).toHaveCount(1);

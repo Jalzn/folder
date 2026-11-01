@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { TaskRow } from '../../../components/item-list/TaskRow';
 import type { ProjectOverview } from '../../../lib/queries';
 import { paths } from '../../../router/paths';
-import { useApp } from '../../../shell';
+import { useTaskDrawer } from '../../../shell';
 import { leftOutLine } from './overview-text';
 
 /**
@@ -10,7 +10,7 @@ import { leftOutLine } from './overview-text';
  * footer sums up what stayed out and links to the board. Late and due-soon tasks join in stage 10.
  */
 export function NowSection({ projectId, overview }: { projectId: string; overview: ProjectOverview }) {
-  const app = useApp();
+  const drawer = useTaskDrawer();
   return (
     <section className="project-section" aria-labelledby="overview-now">
       <h2 className="project-section__label" id="overview-now">
@@ -19,7 +19,7 @@ export function NowSection({ projectId, overview }: { projectId: string; overvie
       {overview.now.length ? (
         <ul className="item-list">
           {overview.now.map((task) => (
-            <TaskRow key={task.id} task={task} onOpen={() => app.openTask(task)} />
+            <TaskRow key={task.id} task={task} onOpen={() => drawer.openTask(task)} />
           ))}
         </ul>
       ) : (

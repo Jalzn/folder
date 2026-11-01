@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { closeDrawer, createInDrawer, drawer } from './support/board.js';
 import { newDocument } from './support/items.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -60,17 +61,16 @@ test('saving changed source text refreshes linked-task availability without leav
   await editor(page).press('ControlOrMeta+a');
   await page.getByRole('button', { name: 'Criar tarefa da seleção', exact: true }).click();
   const taskTitle = `Tarefa com origem ${Date.now()}`;
-  await page.getByRole('dialog').getByRole('textbox', { name: 'Título da tarefa' }).fill(taskTitle);
-  await page.getByRole('dialog').getByRole('button', { name: 'Criar tarefa', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await createInDrawer(page, taskTitle);
+  await closeDrawer(page);
   await expect(page.getByRole('button', { name: new RegExp(`${taskTitle}.*A fazer`) })).toBeVisible();
   await writeAndSave(page, 'Texto substituido depois da criacao da tarefa.');
   await page.getByRole('button', { name: new RegExp(`${taskTitle}.*A fazer`) }).click();
   await expect(
     page
-      .getByRole('dialog')
+      .getByRole('region', { name: `Tarefa: ${taskTitle}`, exact: true })
       .getByText('O trecho original foi removido. Você ainda pode abrir o documento.', { exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole('dialog').locator('blockquote')).toHaveText('Ideia original antes de duplicar a aba.');
+  await expect(drawer(page).locator('blockquote')).toHaveText('Ideia original antes de duplicar a aba.');
   await page.screenshot({ path: info.outputPath('origem-atualizada-sem-navegar.png'), fullPage: true });
 });

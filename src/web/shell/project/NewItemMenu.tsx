@@ -4,6 +4,7 @@ import type { ItemType, Project } from '../../lib/types';
 import { Menu, MenuItem, MenuList, MenuSection, MenuTrigger, PopoverSurface, useToast } from '../../ui';
 import { useApp } from '../AppProvider';
 import { useShellActions } from '../shell-ui';
+import { useTaskDrawer } from '../task-drawer-state';
 
 /** What "Novo" creates: an item at the project's root or in a folder, a folder or a task. */
 type NewKind = ItemType | 'folder' | 'task' | `here:${ItemType}`;
@@ -16,6 +17,7 @@ export interface NewItemFolder {
 
 function useCreate(project: Project, folder: NewItemFolder | undefined) {
   const app = useApp();
+  const drawer = useTaskDrawer();
   const ui = useShellActions();
   const toast = useToast();
   return (kind: NewKind) => {
@@ -25,7 +27,7 @@ function useCreate(project: Project, folder: NewItemFolder | undefined) {
     else if (kind === 'document') void app.newDocument(project.id);
     else if (kind === 'drawing') void app.newCanvas(project.id);
     else if (kind === 'folder') ui.startFolder({ projectId: project.id });
-    else app.newTask(project.id);
+    else drawer.newTask(project.id);
   };
 }
 

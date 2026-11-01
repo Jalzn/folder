@@ -1,3 +1,4 @@
+import './task-source.css';
 import { useNavigate } from '@tanstack/react-router';
 import { FileText } from 'lucide-react';
 import type { Task } from '../../lib/types';

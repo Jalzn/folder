@@ -13,3 +13,9 @@ export { useCurrentProject } from './project/use-current-project';
 export { useProjectActions } from './project/use-project-actions';
 export { useOptionalShellUi } from './shell-ui';
 export { useTrashCount } from './sidebar/use-navigation-data';
+export {
+  type NewTaskOptions,
+  type TaskOrigin,
+  useDrawerContent,
+  useTaskDrawer,
+} from './task-drawer-state';

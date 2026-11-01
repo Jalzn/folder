@@ -12,6 +12,7 @@ export function TaskCard({
   task,
   busy,
   dragging,
+  open,
   moves,
   onOpen,
   onComplete,
@@ -20,6 +21,8 @@ export function TaskCard({
   task: Task;
   busy: boolean;
   dragging: boolean;
+  /** It is the task open in the drawer. */
+  open: boolean;
   moves: CardMoves;
   onOpen: () => void;
   onComplete: () => void;
@@ -31,6 +34,7 @@ export function TaskCard({
       className="task-card"
       data-done={done || undefined}
       data-dragging={dragging || undefined}
+      data-open={open || undefined}
       draggable={!busy}
       {...drag}
     >

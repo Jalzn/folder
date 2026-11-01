@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { LinkedTask } from '../../components/task';
 import { countOf } from '../../lib/count';
 import type { Task } from '../../lib/types';
-import { useApp } from '../../shell';
+import { useTaskDrawer } from '../../shell';
 import { ErrorNotice, IconButton, Spinner } from '../../ui';
 
 /** The tasks born in this document, open first; the done ones fold under a toggle. */
@@ -18,11 +18,11 @@ export function LinkedTasksPanel({
   error: Error | null;
   onClose: () => void;
 }) {
-  const app = useApp();
+  const drawer = useTaskDrawer();
   const [showDone, setShowDone] = useState(false);
   const open = tasks.filter((task) => task.status !== 'done');
   const done = tasks.filter((task) => task.status === 'done');
-  const row = (task: Task) => <LinkedTask key={task.id} task={task} onOpen={() => app.openTask(task)} />;
+  const row = (task: Task) => <LinkedTask key={task.id} task={task} onOpen={() => drawer.openTask(task)} />;
   return (
     <aside id="linked-tasks-panel" className="linked-tasks" aria-labelledby="linked-tasks-title">
       <header className="linked-tasks__header">

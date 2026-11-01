@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { closeDrawer, createInDrawer } from './board.js';
 import { openBoard, openTrash, projectNavigation, showSidebar } from './navigation.js';
 
 /** Creates an item at the root of the current project, from the "+" of the sidebar's Itens. */
@@ -20,13 +21,12 @@ export async function newDrawing(page: Page) {
   await expect(page.getByTestId('canvas-editor')).toBeVisible();
 }
 
-/** Creates a task in the current project's first column, from its board. */
+/** Creates a task in the current project's first column, from its board, through the drawer, and closes it. */
 export async function newTask(page: Page, title: string) {
   await openBoard(page);
   await page.getByRole('button', { name: 'Nova tarefa', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Título da tarefa' }).fill(title);
-  await page.getByRole('dialog').getByRole('button', { name: 'Criar tarefa', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await createInDrawer(page, title);
+  await closeDrawer(page);
 }
 
 /** Moves the open document or drawing to the trash, confirming. */

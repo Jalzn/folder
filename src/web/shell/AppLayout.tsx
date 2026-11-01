@@ -7,6 +7,7 @@ import { useLastLocation } from '../router/use-last-location';
 import { useRouteFocus } from '../router/use-route-focus';
 import { useApp } from './AppProvider';
 import { CommandPalette } from './command-palette/CommandPalette';
+import { DrawerRegion } from './DrawerRegion';
 import { FOLDER_LABEL } from './folders/FolderLabel';
 import { MoveMenus } from './folders/MoveMenus';
 import { ShortcutsDialog } from './keyboard/ShortcutsDialog';
@@ -24,9 +25,9 @@ import { TopBar } from './TopBar';
 import { useLayoutMode } from './use-layout-mode';
 
 /**
- * The shell's regions: the sidebar, fixed or as a rail, and the page (`main`, scrolling on its own). Below
- * 1100 px the full sidebar opens over the page, on a scrim, and closes when the page changes. The keyboard
- * model, the palette and the shortcuts dialog live here.
+ * The shell's regions: the sidebar, fixed or as a rail, the page (`main`, scrolling on its own) and, below it,
+ * the task drawer, which pushes the page up. Below 1100 px the full sidebar opens over the page, on a scrim,
+ * and closes when the page changes. The keyboard model, the palette and the shortcuts dialog live here.
  */
 export function AppLayout({ children }: { children: ReactNode }) {
   const app = useApp();
@@ -101,9 +102,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
             onCollapse={() => prefs.setCollapsed(true)}
           />
         ))}
-      <main id="main-content" className="app-layout__main" data-region="page" tabIndex={-1}>
-        {children}
-      </main>
+      <div className="app-layout__work">
+        <main id="main-content" className="app-layout__main" data-region="page" tabIndex={-1}>
+          {children}
+        </main>
+        <DrawerRegion narrow={mode === 'narrow'} />
+      </div>
       <span ref={anchor} className="app-layout__anchor" aria-hidden="true" />
       <ModalOverlay
         className="sidebar-overlay"

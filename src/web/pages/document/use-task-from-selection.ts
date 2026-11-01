@@ -1,8 +1,8 @@
 import type { BlockNoteEditor } from '@blocknote/core';
 import { useState } from 'react';
 import type { AutosaveController } from '../../lib/autosave';
-import type { Document } from '../../lib/types';
-import { useApp } from '../../shell';
+import { type Document, displayTitle } from '../../lib/types';
+import { useTaskDrawer } from '../../shell';
 import { useToast } from '../../ui';
 
 /** The text selected in the editor, as plain text. */
@@ -14,7 +14,7 @@ export function selectedText(editor: BlockNoteEditor<any, any, any>) {
 
 /**
  * "Criar tarefa da seleção": saves the document first, so the task points at the version that has the
- * excerpt, then opens the task dialog with the excerpt as its origin and title.
+ * excerpt, then opens the drawer on a new task with the excerpt as its origin and title.
  */
 export function useTaskFromSelection(
   // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
@@ -23,7 +23,7 @@ export function useTaskFromSelection(
   document: Document,
   onTaskClosed: () => void,
 ) {
-  const app = useApp();
+  const drawer = useTaskDrawer();
   const toast = useToast();
   const [preparing, setPreparing] = useState(false);
 
@@ -43,8 +43,15 @@ export function useTaskFromSelection(
       return;
     }
     const excerpt = text.slice(0, 4000);
-    app.newTask(controller.getState().snapshot.projectId, {
-      source: { documentId: document.id, blockId, excerpt, expectedVersion: controller.getState().version },
+    const { projectId, title } = controller.getState().snapshot;
+    drawer.newTask(projectId, {
+      source: {
+        documentId: document.id,
+        documentTitle: displayTitle(title),
+        blockId,
+        excerpt,
+        expectedVersion: controller.getState().version,
+      },
       title: excerpt.slice(0, 300),
       onClose: onTaskClosed,
     });

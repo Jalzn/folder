@@ -1,10 +1,11 @@
 import { Plus } from 'lucide-react';
-import { useApp } from '../../../shell';
+import { useApp, useTaskDrawer } from '../../../shell';
 import { Button } from '../../../ui';
 
 /** Começar, for a project with nothing in it yet: one button per kind of item. */
 export function StartSection({ projectId }: { projectId: string }) {
   const app = useApp();
+  const drawer = useTaskDrawer();
   const plus = <Plus size={16} />;
   return (
     <section className="project-section" aria-labelledby="overview-start">
@@ -19,7 +20,7 @@ export function StartSection({ projectId }: { projectId: string }) {
         <Button icon={plus} isPending={app.creatingCanvas} onPress={() => void app.newCanvas(projectId)}>
           Desenho
         </Button>
-        <Button icon={plus} onPress={() => app.newTask(projectId)}>
+        <Button icon={plus} onPress={() => drawer.newTask(projectId)}>
           Tarefa
         </Button>
       </div>

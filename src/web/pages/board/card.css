@@ -14,6 +14,11 @@
   border-color: var(--line-strong);
   background: var(--hover-raised);
 }
+/* The task open in the drawer (docs/interface/visual.md, "Quadro"). */
+.task-card[data-open] {
+  border-color: var(--accent-35);
+  background: var(--selected);
+}
 .task-card[data-dragging] {
   opacity: 0.35;
 }

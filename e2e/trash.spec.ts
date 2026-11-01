@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { closeDrawer, createInDrawer, drawer, openDrawer } from './support/board.js';
 import { moveToTrash, newDocument, newDrawing, newTask } from './support/items.js';
 import { createProject, openBoard, openTrash } from './support/navigation.js';
 import { login } from './support/session.js';
@@ -12,9 +13,8 @@ async function documentWithTask(page: Page, title: string, task: string) {
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   await editor.press('ControlOrMeta+a');
   await page.getByRole('button', { name: 'Criar tarefa da seleção', exact: true }).click();
-  await page.getByRole('dialog').getByRole('textbox', { name: 'Título da tarefa' }).fill(task);
-  await page.getByRole('dialog').getByRole('button', { name: 'Criar tarefa', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await createInDrawer(page, task);
+  await closeDrawer(page);
 }
 
 test('the project trash groups, filters, restores, deletes for good and empties', async ({ page }, info) => {
@@ -37,10 +37,11 @@ test('the project trash groups, filters, restores, deletes for good and empties'
     await moveToTrash(page, 'desenho');
   }
   await newTask(page, loose);
-  await page.getByRole('button', { name: loose, exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Excluir tarefa', exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Excluir tarefa', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await openDrawer(page, loose);
+  await drawer(page).getByRole('button', { name: 'Mais ações da tarefa', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Mover para a lixeira', exact: true }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Mover para a lixeira', exact: true }).click();
+  await expect(drawer(page)).toHaveCount(0);
 
   await openTrash(page);
   const today = page.getByRole('region', { name: 'Hoje' });
@@ -93,7 +94,7 @@ test('the project trash groups, filters, restores, deletes for good and empties'
 
   // The task keeps its excerpt after its document is gone.
   await openBoard(page);
-  await page.getByRole('button', { name: born, exact: true }).click();
-  await expect(page.getByRole('dialog').locator('blockquote')).toHaveText('Trecho que vira tarefa.');
-  await expect(page.getByRole('dialog')).toContainText(`“${document}” foi excluído de vez.`);
+  await openDrawer(page, born);
+  await expect(drawer(page).locator('blockquote')).toHaveText('Trecho que vira tarefa.');
+  await expect(drawer(page)).toContainText(`“${document}” foi excluído de vez.`);
 });

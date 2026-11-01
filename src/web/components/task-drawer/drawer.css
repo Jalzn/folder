@@ -1,0 +1,278 @@
+/*
+ * The task drawer (docs/interface/visual.md, "Gaveta da tarefa", and refino §6): level 2 in the dark theme
+ * and white in the light one, with the top corners at radius 12, a hairline on top, the top light and a
+ * shadow upward. It rises 16 px in 200 ms; closing, a ghost slides down in 160 ms.
+ */
+.task-drawer {
+  container: drawer / inline-size;
+  position: relative;
+  z-index: 5;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 12px 12px 0 0;
+  background: var(--raised-2);
+  box-shadow: var(--shadow-drawer), var(--top-light);
+  outline: none;
+  animation: drawer-in var(--duration-drawer-in) var(--ease-standard);
+}
+.task-drawer--ghost {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  animation: drawer-out var(--duration-drawer-out) var(--ease-standard) forwards;
+}
+@keyframes drawer-in {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+@keyframes drawer-out {
+  to {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .task-drawer {
+    animation: drawer-fade-in var(--duration-reduced) linear;
+  }
+  .task-drawer--ghost {
+    animation: drawer-fade-out var(--duration-reduced) linear forwards;
+  }
+}
+@keyframes drawer-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes drawer-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* The handle: 32×4 px in --line-strong, --field-border on hover and focus. */
+.drawer-handle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  height: 12px;
+  border-radius: 12px 12px 0 0;
+  cursor: ns-resize;
+  touch-action: none;
+  outline: none;
+}
+.drawer-handle > span {
+  width: 32px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-strong);
+  transition: background-color var(--duration-hover) var(--ease-out);
+}
+.drawer-handle:hover > span,
+.drawer-handle:focus-visible > span {
+  background: var(--field-border);
+}
+.drawer-handle:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* The 52 px header: the ring or "+", the title in 20/28 600, the actions. */
+.task-drawer__form {
+  display: contents;
+}
+.task-drawer__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 16px 0 32px;
+}
+.task-drawer__state {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--icon);
+  transition: background-color var(--duration-hover) var(--ease-out);
+}
+button.task-drawer__state {
+  cursor: pointer;
+}
+.task-drawer__state[data-hovered] {
+  background: var(--hover-raised);
+}
+.task-drawer__state[data-focus-visible] {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.task-drawer__title {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text);
+  font: 600 20px / 28px var(--font-sans);
+  letter-spacing: -0.017em;
+  white-space: pre;
+  resize: none;
+  outline: none;
+}
+.task-drawer__title:focus-visible {
+  box-shadow: 0 2px 0 var(--accent);
+}
+.task-drawer__title::placeholder {
+  color: var(--text-3);
+}
+.task-drawer__title[aria-invalid="true"] {
+  box-shadow: 0 2px 0 var(--late);
+}
+.task-drawer__actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* The body scrolls on its own: the properties, and later the description beside them. */
+.task-drawer__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 32px 28px;
+}
+.task-drawer__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: var(--type-ui);
+  color: var(--text-3);
+}
+.task-drawer__intro p {
+  margin: 0;
+}
+.task-drawer__error {
+  color: var(--late);
+}
+.task-drawer__origin-name {
+  color: var(--text-2);
+}
+.task-drawer__missing p {
+  margin: 0;
+  font: var(--type-ui);
+  color: var(--text-3);
+}
+
+/* Properties: 300 px, a grid of 88 px + 1fr with 30 px rows; label 12/16 --text-3, value 13/20. */
+.task-drawer__props {
+  width: min(300px, 100%);
+  min-width: 0;
+}
+.task-props {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  grid-auto-rows: minmax(30px, auto);
+  align-items: center;
+  column-gap: 8px;
+  margin: 0;
+}
+.task-props__row {
+  display: contents;
+}
+.task-props dt {
+  font: var(--weight-ui) 12px / 16px var(--font-sans);
+  color: var(--text-3);
+}
+.task-props dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+  margin: 0;
+  font: var(--weight-ui) 13px / 20px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.task-prop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  margin-left: -6px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: var(--weight-ui) 13px / 20px var(--font-sans);
+  letter-spacing: -0.003em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--duration-hover) var(--ease-out);
+}
+.task-prop--static {
+  cursor: default;
+}
+.task-prop[data-hovered] {
+  background: var(--hover-raised);
+}
+.task-prop[data-focus-visible] {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.task-prop__chevron {
+  color: var(--icon);
+  opacity: 0;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+.task-prop[data-hovered] .task-prop__chevron,
+.task-prop[data-focus-visible] .task-prop__chevron {
+  opacity: 1;
+}
+
+/* Where the task came from, after a hairline. */
+.task-drawer__props .task-source {
+  margin-top: 8px;
+  padding: 10px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+}
+
+/* Below 720 px the drawer covers the page, with no handle, and its actions stay visible. */
+.app-layout[data-mode="narrow"] .task-drawer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  border-radius: 0;
+}
+@media (max-width: 719px) {
+  .task-drawer__head {
+    padding: 0 8px 0 16px;
+  }
+  .task-drawer__body {
+    padding: 4px 16px 24px;
+  }
+}

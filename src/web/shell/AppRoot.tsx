@@ -6,6 +6,7 @@ import { AppProvider } from './AppProvider';
 import { AuthGate } from './AuthGate';
 import { ItemChangesProvider } from './item-changes';
 import { ShellUiProvider } from './shell-ui';
+import { TaskDrawerProvider } from './task-drawer-state';
 
 /** The root route: the session, then the app's context and shell around the page. */
 export function AppRoot() {
@@ -17,9 +18,11 @@ export function AppRoot() {
         <AppProvider owner={owner}>
           <ItemChangesProvider>
             <ShellUiProvider>
-              <AppLayout>
-                <Outlet />
-              </AppLayout>
+              <TaskDrawerProvider>
+                <AppLayout>
+                  <Outlet />
+                </AppLayout>
+              </TaskDrawerProvider>
             </ShellUiProvider>
           </ItemChangesProvider>
         </AppProvider>
