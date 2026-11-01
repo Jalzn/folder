@@ -33,6 +33,7 @@ function stateFor(choice: ThemeChoice): ThemeState {
 /** The same work as public/theme.js, which already ran before the first paint. */
 function apply({ resolved }: ThemeState) {
   document.documentElement.dataset.theme = resolved;
+  document.documentElement.style.colorScheme = resolved;
   for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'))
     meta.content = themeBarColors[resolved];
 }

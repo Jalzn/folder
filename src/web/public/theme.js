@@ -15,6 +15,8 @@
     }
     const theme = choice === 'light' || choice === 'dark' ? choice : media.matches ? 'dark' : 'light';
     document.documentElement.dataset.theme = theme;
+    // The page's canvas takes the theme before any stylesheet arrives, as under the Vite dev server.
+    document.documentElement.style.colorScheme = theme;
     for (const meta of document.querySelectorAll('meta[name="theme-color"]')) meta.content = barColors[theme];
   };
   apply();
