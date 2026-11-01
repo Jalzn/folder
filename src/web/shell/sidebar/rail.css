@@ -63,18 +63,19 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Itens: the dot of unsaved items sits on the button's corner. */
+/* Itens: the dot of unsaved items sits on the button's corner, ringed in the rail's colour as in the prototype. */
 .rail__items {
   position: relative;
   display: grid;
 }
 .rail__pending {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 5px;
+  right: 5px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--late);
+  box-shadow: 0 0 0 2px var(--sidebar-bg);
   pointer-events: none;
 }

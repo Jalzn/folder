@@ -27,7 +27,8 @@
   max-height: min(360px, 60vh);
   overflow-y: auto;
 }
-.move-folder__current {
+/* The ✓ of the item's place stays in the accent, also on the highlighted row, as in the prototype. */
+.move-folder .menu-item > .move-folder__current {
   color: var(--accent);
 }
 .move-folder__count {

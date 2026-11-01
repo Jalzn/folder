@@ -197,6 +197,9 @@ test('a closed folder and the rail show the dot of an item not yet saved, and th
   await pressCommand(page, 'Backslash');
   const items = page.getByRole('button', { name: /^Itens/ });
   await expect(items).toBeVisible();
+  // It says what the dot shows, and is the current place on an item's page.
+  await expect(items).toHaveAccessibleName('Itens, 1 item não salvo');
+  await expect(items).toHaveAttribute('data-on', 'true');
   await items.click();
   const popover = page.getByRole('dialog', { name: /^Itens de / });
   await expect(popover.getByRole('treegrid')).toBeVisible();

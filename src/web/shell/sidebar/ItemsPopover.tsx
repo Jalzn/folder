@@ -2,7 +2,7 @@ import './tree/tree.css';
 import type { NavTree } from '@tinyfold/workspace/domain';
 import { FolderTree } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { formatCount } from '../../lib/count';
+import { countOf, formatCount } from '../../lib/count';
 import type { Project } from '../../lib/types';
 import { IconButton, Popover, PopoverTrigger, returnFocus } from '../../ui';
 import { ItemsTree, type TreeHandle } from './tree/ItemsTree';
@@ -11,10 +11,11 @@ import { useItemsTree } from './tree/use-items-tree';
 /**
  * Itens on the collapsed rail: one button, with the dot of unsaved items, that opens the sidebar's tree in a
  * 280 px popover, without its "+" and "⋯". Choosing an item, even the one already open, closes it, and the
- * page's title takes the focus.
+ * page's title takes the focus. On a document, a drawing or the Índice, the button shows as the current place.
  */
-export function ItemsPopover({ project, tree }: { project: Project; tree: NavTree | undefined }) {
+export function ItemsPopover({ project, tree, on }: { project: Project; tree: NavTree | undefined; on: boolean }) {
   const items = useItemsTree(project, tree);
+  const pending = items.pending.length;
   const [isOpen, setOpen] = useState(false);
   const handle = useRef<TreeHandle>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -26,10 +27,15 @@ export function ItemsPopover({ project, tree }: { project: Project; tree: NavTre
   return (
     <PopoverTrigger isOpen={isOpen} onOpenChange={setOpen}>
       <span className="rail__items">
-        <IconButton label="Itens" className="rail__button" ref={trigger}>
+        <IconButton
+          label={pending > 0 ? `Itens, ${countOf(pending, 'item não salvo', 'itens não salvos')}` : 'Itens'}
+          className="rail__button"
+          data-on={on ? 'true' : undefined}
+          ref={trigger}
+        >
           <FolderTree size={16} />
         </IconButton>
-        {items.pending.length > 0 && <span className="rail__pending" aria-hidden="true" />}
+        {pending > 0 && <span className="rail__pending" aria-hidden="true" />}
       </span>
       <Popover aria-label={`Itens de ${project.name}`} placement="right top" className="rail-popover">
         <div className="rail-popover__head">

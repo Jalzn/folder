@@ -1,5 +1,6 @@
 import { folderName, folderNameKey } from '@tinyfold/workspace/domain';
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
+import { whenPresent } from '../../../ui';
 import { takenText } from '../../folders/folder-text';
 
 /** Marks the field, whose keys the tree leaves to it. */
@@ -37,8 +38,22 @@ export function FolderNameField({
   const [error, setError] = useState<string | null>(null);
   const done = useRef(false);
   useEffect(() => {
-    input.current?.focus();
-    input.current?.select();
+    const field = input.current;
+    if (!field) return;
+    const take = () => {
+      field.focus();
+      field.select();
+    };
+    // Coming from outside the row, as a new folder from ⌘K, N or "+" by the keyboard, React Aria's tree would
+    // give the focus back to the row it had, and leaving would save "Nova pasta": the field's row takes the
+    // focus first, so the field is a child of the focused row, as in a rename by F2.
+    const row = field.closest<HTMLElement>('[role="row"]');
+    if (!row || row.contains(document.activeElement)) {
+      take();
+      return;
+    }
+    row.focus();
+    return whenPresent(() => (document.activeElement === row ? row : null), take, { frames: 10, missing: take });
   }, []);
 
   const takenBy = (name: string) => taken.find((other) => folderNameKey(other) === folderNameKey(name));

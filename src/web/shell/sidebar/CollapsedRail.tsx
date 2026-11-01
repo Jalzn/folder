@@ -15,6 +15,16 @@ import { Avatar } from './SidebarFooter';
 import { useNavigationData } from './use-navigation-data';
 import { YouMenu } from './YouMenu';
 
+/** Whether the page is one of the project's items or its Índice, where the rail's Itens is the current place. */
+const onItems = (pathname: string, projectId: string) => {
+  const project = paths.overview(projectId);
+  return (
+    pathname.startsWith(`${project}/documentos/`) ||
+    pathname.startsWith(`${project}/desenhos/`) ||
+    pathname === `${project}/indice`
+  );
+};
+
 /** The 52 px rail of a collapsed sidebar: the same places as 32 px buttons, and expand at the bottom. */
 export function CollapsedRail({
   project,
@@ -71,7 +81,7 @@ export function CollapsedRail({
             <SquareKanban size={16} />
           </IconButton>
           <span className="rail__gap" />
-          <ItemsPopover project={project} tree={navigation?.tree} />
+          <ItemsPopover project={project} tree={navigation?.tree} on={onItems(pathname, project.id)} />
         </>
       )}
       <span className="rail__grow" />

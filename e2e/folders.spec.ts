@@ -92,6 +92,55 @@ test('folders are created, renamed and reordered in place, by the mouse and the 
   await expect(draft).toHaveCount(0);
 });
 
+test('a new folder started by the keyboard keeps its name field: ⌘K, N and the "+" of Itens', async ({ page }) => {
+  const projectId = await freshProject(page, 'Teclado');
+  await rpcDocument(page, projectId, 'Solto');
+  await page.reload();
+  const draft = itemsTree(page).getByRole('textbox', { name: 'Nome da nova pasta' });
+  /** The field holds the focus with "Nova pasta" selected, so typing replaces it; nothing is created yet. */
+  async function nameIt(name: string) {
+    await expect(draft).toBeFocused();
+    expect(await draft.evaluate((input: HTMLInputElement) => input.value.slice(input.selectionStart ?? 0))).toBe(
+      'Nova pasta',
+    );
+    await expect(itemsTree(page).getByRole('row', { name: /^Nova pasta, pasta, / })).toHaveCount(0);
+    await page.keyboard.type(name);
+    await page.keyboard.press('Enter');
+    await expect(folderRow(page, name)).toBeFocused();
+  }
+
+  // ⌘K: the typed text highlights "Nova pasta", and ↵ runs it. Typed at a person's pace: at machine speed
+  // right after ⌘K, React Aria's delayed highlight of the first result can lag the filter (validacao.md).
+  await pressCommand(page, 'k');
+  await page.keyboard.type('Nova pasta', { delay: 50 });
+  const command = page
+    .getByRole('dialog', { name: 'Buscar e comandar' })
+    .getByRole('menuitem')
+    .filter({ has: page.getByText('Nova pasta', { exact: true }) });
+  await expect(command).toHaveAttribute('data-focused');
+  await page.keyboard.press('Enter');
+  await nameIt('Pelo comando');
+
+  // N on a row, then ↓ to Pasta and ↵.
+  await treeRow(page, 'Solto').focus();
+  await page.keyboard.press('n');
+  const folderItem = page.getByRole('menuitem', { name: /^Pasta/ });
+  await expect(page.getByRole('menuitem').first()).toBeFocused();
+  while (!(await folderItem.evaluate((item) => item === document.activeElement)))
+    await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await nameIt('Pelo N');
+
+  // The "+" of Itens by ↵, then ↓ to Pasta and ↵.
+  await projectNavigation(page).getByRole('button', { name: 'Novo item', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menuitem').first()).toBeFocused();
+  while (!(await folderItem.evaluate((item) => item === document.activeElement)))
+    await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await nameIt('Pelo mais');
+});
+
 test('M moves an item between folders, with Desfazer and ⌘Z, and a full folder takes it unpinned', async ({ page }) => {
   const projectId = await freshProject(page, 'Mover');
   const full = await rpcFolder(page, projectId, 'Cheia');
@@ -243,7 +292,21 @@ test('the header’s folder label opens "Mover para pasta…" with the current p
   await expect(label).toBeVisible();
   await label.click();
   const menu = page.getByRole('menu', { name: 'Pastas' });
-  await expect(menu.getByRole('menuitem', { name: /^MCP\b.*lugar atual/ })).toBeVisible();
+  const here = menu.getByRole('menuitem', { name: /^MCP\b.*lugar atual/ });
+  await expect(here).toBeVisible();
+  // The ✓ is in the accent, as in the prototype, even with the row highlighted.
+  const accent = await page.evaluate(() => {
+    const probe = document.body.appendChild(document.createElement('span'));
+    probe.style.color = 'var(--accent)';
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  });
+  const check = here.locator('svg').first();
+  await expect(check).toHaveCSS('color', accent);
+  await here.hover();
+  await expect(here).toHaveAttribute('data-focused');
+  await expect(check).toHaveCSS('color', accent);
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
   await expect(label).toBeFocused();
