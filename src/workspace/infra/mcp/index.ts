@@ -1,7 +1,7 @@
 import type { Database } from '@tinyfold/core/infra';
 import { readingContext } from '../reading-context.js';
 import { withToolErrors } from './errors.js';
-import { withoutHiddenTags } from './hidden-tags.js';
+import { withoutHiddenText } from './hidden-text.js';
 import { listProjectsTool } from './list-projects.js';
 import { listTasksTool } from './list-tasks.js';
 import { withTextCeiling } from './output-ceiling.js';
@@ -20,7 +20,7 @@ export interface WorkspaceToolOptions {
 
 /**
  * The read-only tools agents use to consult the workspace; no text result passes the output ceiling
- * or carries tag characters outside a flag.
+ * or carries characters that draw nothing where they are.
  */
 export function createWorkspaceTools(db: Database, options: WorkspaceToolOptions = {}): AgentTool[] {
   const reading = readingContext(db);
@@ -33,5 +33,5 @@ export function createWorkspaceTools(db: Database, options: WorkspaceToolOptions
     listTasksTool(reading),
     readTaskTool(reading),
   ];
-  return tools.map((tool) => withTextCeiling(withoutHiddenTags(withToolErrors(tool, logError))));
+  return tools.map((tool) => withTextCeiling(withoutHiddenText(withToolErrors(tool, logError))));
 }

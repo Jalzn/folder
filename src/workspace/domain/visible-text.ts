@@ -1,17 +1,22 @@
 /**
  * Characters that draw nothing: format characters (`\p{Cf}`, such as the zero-width space, the soft
- * hyphen, the word joiner, the BOM and the tag characters) and the Hangul fillers. A name of them
- * looks empty, a name with them looks like another, and tags can spell a hidden text for an agent.
- * Two kinds stay, only where they draw something:
+ * hyphen, the word joiner, the BOM and the tag characters), the Hangul fillers and the variation
+ * selectors. A name of them looks empty, a name with them looks like another, and they can carry a
+ * hidden text for an agent: tags spell ASCII, and each selector can stand for a byte. Three kinds
+ * stay, only where they draw something:
  *
  * - the tags of the three subdivision flags emoji draw (England, Scotland and Wales: the black flag,
  *   the tags of "gbeng", "gbsct" or "gbwls", then the cancel tag). Any other tag text is hidden text,
  *   even in a flag's shape, since one flag could carry any message and many short ones could split
  *   it; its tags go and the black flag stays;
  * - the zero-width joiner between two emoji (the technologist, the family), and both joiners after a
- *   letter or mark of a script they shape (Persian, Devanagari, Sinhala), before another letter.
+ *   letter or mark of a script they shape (Persian, Devanagari, Sinhala), before another letter;
+ * - the text and emoji presentation selectors (U+FE0E, U+FE0F) right after a character that has an
+ *   emoji form (the heart, the keycap digits). Every other selector goes, U+E0100 to U+E01EF included.
  */
-const INVISIBLE = /[\p{Cf}\u{115F}\u{1160}\u{3164}\u{FFA0}]/u;
+const INVISIBLE = /[\p{Cf}\u{115F}\u{1160}\u{3164}\u{FFA0}]|[\u{FE00}-\u{FE0F}]|[\u{E0100}-\u{E01EF}]/u;
+const PRESENTATION = /[\u{FE0E}\u{FE0F}]/u;
+const EMOJI = /\p{Emoji}/u;
 const TAG = /[\u{E0000}-\u{E007F}]/u;
 const TAG_SPEC = /[\u{E0020}-\u{E007E}]/u;
 /** The subdivision flags in the emoji set (RGI), by the letters their tags spell. */
@@ -61,8 +66,14 @@ function flagTags(points: readonly string[]): Set<number> {
   return kept;
 }
 
-/** The text without the characters that draw nothing where they are (see INVISIBLE). */
-function withoutHidden(text: string): string {
+/**
+ * The text without the characters that draw nothing where they are (see INVISIBLE), and nothing else
+ * changed: spaces and line breaks stay. Names and titles go through it as they are stored
+ * (visibleText), and everything the MCP returns goes through it again, for what was stored before
+ * and for document content.
+ */
+export function withoutHidden(text: string): string {
+  if (!INVISIBLE.test(text)) return text;
   const points = Array.from(text);
   const tags = flagTags(points);
   return points
@@ -70,21 +81,10 @@ function withoutHidden(text: string): string {
       if (TAG.test(point)) return tags.has(index);
       if (point === ZWJ) return joinsEmoji(points, index) || shapesScript(points, index);
       if (point === ZWNJ) return shapesScript(points, index);
+      if (PRESENTATION.test(point)) return EMOJI.test(points[index - 1] ?? '');
       return !INVISIBLE.test(point);
     })
     .join('');
-}
-
-/**
- * The text without tag characters outside the three subdivision flags, the hidden text an agent reads,
- * and nothing else changed. For what the MCP returns: names and titles stored before visibleText, and
- * document content, may still hold them.
- */
-export function withoutStrayTags(text: string): string {
-  if (!TAG.test(text)) return text;
-  const points = Array.from(text);
-  const tags = flagTags(points);
-  return points.filter((point, index) => !TAG.test(point) || tags.has(index)).join('');
 }
 
 /**
