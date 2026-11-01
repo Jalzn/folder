@@ -208,9 +208,13 @@ button.task-drawer__state {
   }
 }
 
-/* The description: the shared editor in 14/22, check items of 28 px, done ones in --text-3 and struck. */
-.task-description .bn-editor {
+/*
+ * The description: the shared editor in 14/22, check items of 28 px, done ones in --text-3 and struck. The
+ * shared editor sets the document's 15/24 on `.block-editor .bn-editor`, which this overrides.
+ */
+.task-description .block-editor .bn-editor {
   font: var(--weight-ui) 14px / 22px var(--font-sans);
+  letter-spacing: -0.006em;
 }
 .task-description [data-content-type="checkListItem"] {
   min-height: 28px;

@@ -59,6 +59,8 @@ test('the drawer edits the due date, the labels and the text, which saves and sh
   await page.keyboard.press('Enter');
   const description = drawer.getByRole('textbox', { name: 'Descrição da tarefa' });
   await expect(description).toBeFocused();
+  // The description reads in 14/22, apart from a document's 15/24.
+  expect(await description.evaluate((element) => getComputedStyle(element).font)).toContain('14px / 22px');
   await page.keyboard.type('[] Primeiro passo');
   await page.keyboard.press('Enter');
   await page.keyboard.type('Segundo passo');
