@@ -15,16 +15,20 @@ export interface ToastOptions {
   /** The undo's label: "Desfazer", or one that says what it does, such as "Desarquivar". */
   undoLabel?: string;
 }
-/** Shows a toast; `'error'` is short for `{ kind: 'error' }`. */
-export type Notify = (text: string, options?: ToastKind | ToastOptions) => void;
+/** Shows a toast and gives its id; `'error'` is short for `{ kind: 'error' }`. */
+export type Notify = (text: string, options?: ToastKind | ToastOptions) => number;
 
-const ToastContext = createContext<Notify>(() => undefined);
+const ToastContext = createContext<Notify>(() => -1);
 const UndoContext = createContext<() => boolean>(() => false);
+const WithdrawContext = createContext<(toastId: number) => void>(() => undefined);
 
 export const useToast = () => useContext(ToastContext);
 
 /** Runs the undo of the toast on screen and closes it; false when it offers none. */
 export const useUndoLatest = () => useContext(UndoContext);
+
+/** Takes the undo back from a toast whose change a newer one superseded: no Desfazer, and no ⌘Z. */
+export const useWithdrawUndo = () => useContext(WithdrawContext);
 
 /**
  * The latest toast, at the bottom right of the content area: a new one replaces the one on screen, so the
@@ -47,6 +51,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       const id = nextId.current++;
       slot.show(id, undo);
       setCurrent({ id, text, kind, action, undo, undoLabel });
+      return id;
     },
     [slot],
   );
@@ -58,6 +63,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     refocusAfter(undo());
     return true;
   }, [slot]);
+  const withdraw = useCallback(
+    (id: number) => {
+      slot.withdraw(id);
+      setCurrent((shown) => (shown?.id === id ? { ...shown, undo: undefined } : shown));
+    },
+    [slot],
+  );
   const remove = useCallback((id: number) => setCurrent((shown) => (shown?.id === id ? null : shown)), []);
   const leaving = useCallback((id: number) => slot.leave(id), [slot]);
   const toast = (kind: ToastKind) =>
@@ -65,7 +77,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={notify}>
       <UndoContext.Provider value={undoLatest}>
-        {children}
+        <WithdrawContext.Provider value={withdraw}>{children}</WithdrawContext.Provider>
         {/* React Aria leaves elements marked as top layer readable while a modal hides the rest. */}
         <div className="toast-region" data-react-aria-top-layer="true">
           <div role="status">{toast('success')}</div>

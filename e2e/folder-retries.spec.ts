@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { folderRow, itemsTree, rpcDocument, rpcFolder } from './support/folders.js';
+import { folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
@@ -119,4 +119,74 @@ test('⌘Z pressed while a rename is on its way undoes the deletion once the ren
   await expect(folderRow(page, 'Segunda renomeada')).toBeVisible();
   await expect(folderRow(page, 'Primeira')).toBeVisible();
   await expect(toast(page)).toContainText('Pasta “Primeira” restaurada.');
+});
+
+test('a deletion whose answer was lost is sent again with its request, and its Desfazer comes back', async ({
+  page,
+}) => {
+  await login(page);
+  const projectId = await createProject(page, `Perdida ${Date.now()}`);
+  const folder = await rpcFolder(page, projectId, 'Efêmera');
+  await rpcDocument(page, projectId, 'Dentro', folder);
+  await page.reload();
+  // The first deletion reaches the server, which applies it, but its answer never comes back.
+  let sent = 0;
+  const ids: string[] = [];
+  await page.route('**/rpc/workspace/deleteFolder', async (route) => {
+    sent += 1;
+    ids.push((route.request().postDataJSON() as { json: { requestId: string } }).json.requestId);
+    if (sent > 1) return route.continue();
+    await route.fetch();
+    await route.abort('failed');
+  });
+  await folderRow(page, 'Efêmera').focus();
+  await page.keyboard.press('Shift+F10');
+  await page.getByRole('menuitem', { name: /^Excluir pasta(?! e)/ }).click();
+  await expect(toast(page)).toContainText('Pasta “Efêmera” excluída. 1 item foi para a raiz.');
+  expect(sent).toBe(2);
+  expect(ids[1]).toBe(ids[0]);
+  await toast(page).getByRole('button', { name: 'Desfazer' }).click();
+  await expect(folderRow(page, 'Efêmera')).toHaveAttribute('aria-label', /, 1 item$/);
+});
+
+test('an undo applies only to its own move: a newer move of the item takes the Desfazer away', async ({ page }) => {
+  await login(page);
+  const projectId = await createProject(page, `Vaivém ${Date.now()}`);
+  await rpcFolder(page, projectId, 'Dois');
+  await rpcFolder(page, projectId, 'Um');
+  await rpcDocument(page, projectId, 'Vai e vem');
+  await page.reload();
+  const moveTo = async (target: string) => {
+    await treeRow(page, 'Vai e vem').focus();
+    await page.keyboard.press('m');
+    await page
+      .getByRole('menu', { name: 'Pastas' })
+      .getByRole('menuitem', { name: new RegExp(`^${target}`) })
+      .click();
+  };
+  await moveTo('Um');
+  await expect(toast(page)).toContainText('Movido para Um.');
+  await expect(toast(page).getByRole('button', { name: 'Desfazer' })).toBeVisible();
+
+  // The second move waits at the network; the first toast loses its Desfazer as it starts, and ⌘Z does nothing.
+  let release = () => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/rpc/workspace/moveItem', async (route) => {
+    await held;
+    await route.continue();
+  });
+  await moveTo('Dois');
+  await expect(toast(page).getByRole('button', { name: 'Desfazer' })).toHaveCount(0);
+  await page.getByRole('main').getByRole('heading', { level: 1 }).focus();
+  await pressCommand(page, 'z');
+  release();
+  await expect(toast(page)).toContainText('Movido para Dois.');
+  await expect(folderRow(page, 'Dois')).toHaveAttribute('aria-label', /, 1 item$/);
+  // This toast's own Desfazer takes it back to Um, where the first move left it.
+  await page.unroute('**/rpc/workspace/moveItem');
+  await toast(page).getByRole('button', { name: 'Desfazer' }).click();
+  await expect(folderRow(page, 'Um')).toHaveAttribute('aria-label', /, 1 item$/);
+  await expect(folderRow(page, 'Dois')).toHaveAttribute('aria-label', /, 0 itens$/);
 });

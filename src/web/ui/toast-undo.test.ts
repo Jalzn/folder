@@ -38,4 +38,14 @@ describe('createUndoSlot', () => {
     slot.take()?.();
     expect(newer).toHaveBeenCalledOnce();
   });
+
+  it('withdraws the undo of a superseded toast, but not a newer one', () => {
+    const slot = createUndoSlot();
+    const undo = vi.fn();
+    slot.show(1, undo);
+    slot.withdraw(2);
+    expect(slot.offeredBy()).toBe(1);
+    slot.withdraw(1);
+    expect(slot.take()).toBeNull();
+  });
 });

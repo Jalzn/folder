@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { NavFolder, NavItem } from '@tinyfold/workspace/domain';
 import { api } from '../../lib/api';
+import { onceMoreIfLost } from '../../lib/lost-answer';
 import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
@@ -13,8 +14,9 @@ export const RESTORE_FAILED = 'Não foi possível desfazer a exclusão da pasta.
 
 /**
  * Folder writes of the sidebar (docs/etapas/09-pastas.md, "Ações de pasta"), with their toasts and undo. Each
- * user intent keeps one request ID until it succeeds, so a retry after a lost answer replays it, the
- * deletion's lists included; an undo waits for a write in progress instead of being dropped.
+ * user intent keeps one request ID until it succeeds, and a write whose answer was lost is sent once more
+ * with it before the tree reads again, so the server replays it, the deletion's lists included; an undo
+ * waits for a write in progress instead of being dropped.
  */
 export function useFolderActions(projectId: string) {
   const action = useAction();
@@ -30,7 +32,9 @@ export function useFolderActions(projectId: string) {
   /** Creates a folder at the top; resolves to it, or undefined when the server refused. */
   async function create(name: string) {
     const input = { projectId, name };
-    const created = await action.run(() => api.workspace.createFolder({ ...input, requestId: creating.for(input) }));
+    const created = await action.run(() =>
+      onceMoreIfLost(() => api.workspace.createFolder({ ...input, requestId: creating.for(input) })),
+    );
     if (!created) return undefined;
     creating.clear();
     return { id: created.id, name };
@@ -38,7 +42,9 @@ export function useFolderActions(projectId: string) {
 
   async function rename(folder: NavFolder, name: string) {
     const input = { id: folder.id, expectedVersion: folder.version, name };
-    const renamed = await action.run(() => api.workspace.renameFolder({ ...input, requestId: renaming.for(input) }));
+    const renamed = await action.run(() =>
+      onceMoreIfLost(() => api.workspace.renameFolder({ ...input, requestId: renaming.for(input) })),
+    );
     if (!renamed) return false;
     renaming.clear();
     announce(`Pasta renomeada: ${name}`);
@@ -48,7 +54,9 @@ export function useFolderActions(projectId: string) {
   /** Puts a folder before another, or last with null, announced: "Pasta MCP na posição 2 de 4". */
   async function place(folder: NavFolder, beforeFolderId: string | null) {
     const input = { id: folder.id, beforeFolderId };
-    const moved = await action.run(() => api.workspace.moveFolder({ ...input, requestId: placing.for(input) }));
+    const moved = await action.run(() =>
+      onceMoreIfLost(() => api.workspace.moveFolder({ ...input, requestId: placing.for(input) })),
+    );
     if (!moved) return false;
     placing.clear();
     const at = moved.folders.findIndex((each) => each.id === folder.id);
@@ -76,7 +84,9 @@ export function useFolderActions(projectId: string) {
    */
   async function remove(folder: NavFolder, withItems: boolean, open: NavItem | null, onRestored?: () => void) {
     const input = { id: folder.id, expectedVersion: folder.version, withItems };
-    const deleted = await action.run(() => api.workspace.deleteFolder({ ...input, requestId: deleting.for(input) }));
+    const deleted = await action.run(() =>
+      onceMoreIfLost(() => api.workspace.deleteFolder({ ...input, requestId: deleting.for(input) })),
+    );
     if (!deleted) return false;
     deleting.clear();
     // The lists go back exactly as the deletion answered them.
@@ -84,7 +94,7 @@ export function useFolderActions(projectId: string) {
     const undo = deleted.complete
       ? () =>
           action.run(
-            () => api.workspace.restoreFolder({ ...restore, requestId: restoring.for(restore) }),
+            () => onceMoreIfLost(() => api.workspace.restoreFolder({ ...restore, requestId: restoring.for(restore) })),
             (restored) => {
               restoring.clear();
               toast(restoredText(folder.name, restored.skipped));

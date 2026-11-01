@@ -20,6 +20,10 @@ export function createUndoSlot() {
     leave(toastId: number) {
       if (offer?.toastId === toastId) offer = null;
     },
+    /** That toast's change was superseded by a newer one: its undo goes, but a newer toast's stays. */
+    withdraw(toastId: number) {
+      if (offer?.toastId === toastId) offer = null;
+    },
     /** The toast whose undo is on offer, if any. */
     offeredBy: () => offer?.toastId ?? null,
     /** Takes the undo on offer, once. */
