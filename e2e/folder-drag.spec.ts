@@ -1,5 +1,5 @@
-import { expect, type Locator, type Page, test } from '@playwright/test';
-import { folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
+import { expect, type Page, test } from '@playwright/test';
+import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -11,18 +11,6 @@ const folderNames = (page: Page) =>
   itemsTree(page)
     .getByRole('row', { name: /, pasta, / })
     .evaluateAll((rows) => rows.map((row) => row.getAttribute('aria-label')?.split(',')[0]));
-
-/** Presses on a row, moves in steps onto the target (at `y` of its height) and lets go, or not. */
-async function drag(page: Page, source: Locator, target: Locator, { y = 0.5, release = true } = {}) {
-  const from = await source.boundingBox();
-  const to = await target.boundingBox();
-  if (!from || !to) throw new Error('A row to drag is not on screen.');
-  await page.mouse.move(from.x + 60, from.y + from.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(from.x + 64, from.y + from.height / 2 + 6, { steps: 4 });
-  await page.mouse.move(to.x + 60, to.y + to.height * y, { steps: 12 });
-  if (release) await page.mouse.up();
-}
 
 async function sampleProject(page: Page) {
   await login(page);

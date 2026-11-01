@@ -55,7 +55,9 @@ const same = (a: Pick<NavItem, 'type' | 'id'>, b: Pick<NavItem, 'type' | 'id'>) 
 /**
  * The rows of the Itens tree (docs/interface/pastas.md §1): the root's pins, the folders in their order, each
  * with its pins first and up to the limit, and the loose items of the root. The open item always shows: past
- * the limit it comes as one more row, above "Ver todos", in its folder or at the root.
+ * the limit it comes as one more row, above "Ver todos", in its folder or at the root, but only when the tree
+ * lists it nowhere. No key ever comes twice, even while the item's folder and the tree disagree for a moment
+ * after a move: React Aria's collection cannot hold the same key in two places.
  */
 export function treeRows(
   tree: NavTree,
@@ -64,6 +66,16 @@ export function treeRows(
   pending: readonly PendingItem[],
 ): TreeNode[] {
   const isPending = (item: NavItem) => pending.some((entry) => same(entry, item));
+  const listed = [...tree.pinned, ...tree.loose.items, ...tree.folders.flatMap((folder) => folder.items)];
+  const extraOpen = open !== null && !listed.some((item) => same(item, open)) ? open : null;
+  const seen = new Set<string>();
+  /** Each item once, where the tree lists it first. */
+  const fresh = (item: NavItem) => {
+    const key = itemKey(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  };
   const node = (item: NavItem, lastPin = false): ItemNode => ({
     kind: 'item',
     key: itemKey(item),
@@ -74,11 +86,12 @@ export function treeRows(
   });
   const known = new Set(tree.folders.map((folder) => folder.id));
   const openFolder = open?.folderId && known.has(open.folderId) ? open.folderId : null;
+  const pinnedItems = tree.pinned.filter(fresh);
 
   const folders = tree.folders.map((folder): FolderNode => {
-    const items = folder.items.map((item) => node(item));
-    const extra = open && openFolder === folder.id && !folder.items.some((item) => same(item, open));
-    const children: TreeNode[] = [...items, ...(extra && open ? [node(open)] : [])];
+    const items = folder.items.filter(fresh).map((item) => node(item));
+    const extra = extraOpen && openFolder === folder.id ? [node(extraOpen)] : [];
+    const children: TreeNode[] = [...items, ...extra];
     if (folder.total === 0) children.push({ kind: 'empty', key: `empty:${folder.id}`, folder });
     else if (folder.total > folder.items.length)
       children.push({ kind: 'more', key: `more:${folder.id}`, folderId: folder.id, count: folder.total });
@@ -93,15 +106,10 @@ export function treeRows(
     };
   });
 
-  const loose = tree.loose.items.map((item) => node(item));
-  const openAtRoot =
-    open &&
-    openFolder === null &&
-    !tree.pinned.some((item) => same(item, open)) &&
-    !tree.loose.items.some((item) => same(item, open));
-  if (openAtRoot && open) loose.push(node(open));
+  const loose = tree.loose.items.filter(fresh).map((item) => node(item));
+  if (extraOpen && openFolder === null) loose.push(node(extraOpen));
   const after = folders.length + loose.length;
-  const pinned = tree.pinned.map((item, index) => node(item, after > 0 && index === tree.pinned.length - 1));
+  const pinned = pinnedItems.map((item, index) => node(item, after > 0 && index === pinnedItems.length - 1));
   const rows: TreeNode[] = [...pinned, ...folders, ...loose];
   if (tree.loose.total > tree.loose.items.length)
     rows.push({ kind: 'more', key: 'more:root', folderId: null, count: tree.pinned.length + tree.loose.total });

@@ -105,4 +105,36 @@ describe('treeRows', () => {
     expect((rows[0] as FolderNode).pending).toBe(2);
     expect(rows[1]).toMatchObject({ pending: true });
   });
+
+  it('never lists the open item twice while its folder and the tree disagree after a move', () => {
+    const all = (rows: ReturnType<typeof treeRows>): string[] =>
+      rows.flatMap((row) => [row.key, ...(row.kind === 'folder' ? all(row.children) : [])]);
+    const inFolder = item('a', 'f');
+    // The item says the root, the tree still has it in the folder: it stays where the tree lists it.
+    const toRoot = treeRows(tree({ folders: [folder('f', [inFolder])] }), item('a', null), new Set(['f']), []);
+    expect(all(toRoot)).toEqual(['folder:f', 'item:document:a']);
+    // The item says a folder, the tree still has it at the root, pinned or loose.
+    const fromRoot = treeRows(
+      tree({ folders: [folder('f', [])], loose: { total: 1, items: [item('a')] } }),
+      inFolder,
+      new Set(['f']),
+      [],
+    );
+    expect(all(fromRoot)).toEqual(['folder:f', 'empty:f', 'item:document:a']);
+    const fromPins = treeRows(
+      tree({ folders: [folder('f', [])], pinned: [item('a', null, true)] }),
+      inFolder,
+      none,
+      [],
+    );
+    expect(all(fromPins)).toEqual(['item:document:a', 'folder:f', 'empty:f']);
+    // Listed twice by the tree itself, it shows once, where it comes first.
+    const twice = treeRows(
+      tree({ pinned: [item('a', null, true)], loose: { total: 1, items: [item('a')] } }),
+      null,
+      none,
+      [],
+    );
+    expect(all(twice)).toEqual(['item:document:a']);
+  });
 });

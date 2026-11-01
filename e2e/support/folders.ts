@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { projectNavigation, showSidebar } from './navigation.js';
 import { rpc } from './rpc.js';
 
@@ -66,4 +66,16 @@ export async function rpcFolder(page: Page, projectId: string, name: string) {
   return (
     await rpc<{ id: string }>(page, 'workspace/createFolder', { requestId: crypto.randomUUID(), projectId, name })
   ).id;
+}
+
+/** Presses on a row, moves in steps onto the target (at `y` of its height) and lets go, or not. */
+export async function drag(page: Page, source: Locator, target: Locator, { y = 0.5, release = true } = {}) {
+  const from = await source.boundingBox();
+  const to = await target.boundingBox();
+  if (!from || !to) throw new Error('A row to drag is not on screen.');
+  await page.mouse.move(from.x + 60, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 64, from.y + from.height / 2 + 6, { steps: 4 });
+  await page.mouse.move(to.x + 60, to.y + to.height * y, { steps: 12 });
+  if (release) await page.mouse.up();
 }
