@@ -25,16 +25,13 @@ export function useMoveItem() {
     void queryClient.invalidateQueries({ queryKey: ['workspace', type === 'document' ? 'document' : 'canvas', id] });
     const destination = projects.find((project) => project.id === to)?.name ?? 'outro projeto';
     toast(`“${displayTitle(moved.title)}” foi para ${destination}.`, {
-      action: {
-        label: 'Desfazer',
-        onAction: () =>
-          action.run(async () => {
-            await moveItem(type, id, from, request.for);
-            request.clear();
-            // A full project keeps the item unpinned.
-            if (moved.pinned) await api.workspace.pinItem({ type, id }).catch(() => undefined);
-          }),
-      },
+      undo: () =>
+        action.run(async () => {
+          await moveItem(type, id, from, request.for);
+          request.clear();
+          // A full project keeps the item unpinned.
+          if (moved.pinned) await api.workspace.pinItem({ type, id }).catch(() => undefined);
+        }),
     });
     return true;
   }

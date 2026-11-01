@@ -32,4 +32,4 @@ export { SearchField, type SearchFieldProps } from './SearchField';
 export { Select, type SelectOption } from './Select';
 export { Spinner } from './Spinner';
 export { TextField, type TextFieldProps } from './TextField';
-export { type Notify, type ToastAction, type ToastOptions, ToastProvider, useToast } from './Toast';
+export { type Notify, type ToastAction, type ToastOptions, ToastProvider, useToast, useUndoLatest } from './Toast';

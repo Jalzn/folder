@@ -56,3 +56,10 @@ export function acceptsPlainKey(press: KeyPress, target: KeyTarget) {
 
 /** ⌘K works anywhere but inside the drawing editor. */
 export const acceptsPalette = (target: KeyTarget) => !target.inDrawing;
+
+/**
+ * ⌘Z undoes the toast's action only outside text fields, the document editor, the drawing editor and open
+ * menus or dialogs, where the native undo stays (docs/etapas/09-pastas.md, decision 11).
+ */
+export const acceptsUndo = (press: KeyPress, target: KeyTarget) =>
+  !press.shiftKey && !press.altKey && !target.editable && !target.inDrawing && !target.inOverlay;

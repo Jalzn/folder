@@ -1,6 +1,6 @@
 import { expect, type Locator, test } from '@playwright/test';
 import { newDocument } from './support/items.js';
-import { runCommand } from './support/keyboard.js';
+import { pressCommand, runCommand } from './support/keyboard.js';
 import {
   createProject,
   currentProjectId,
@@ -149,4 +149,38 @@ test('an open document moves with its unsaved text, stays in the new project and
   await page.reload();
   await expect(page).toHaveURL(new RegExp(`/projetos/${target}/documentos/`));
   await expect(page.locator('[contenteditable="true"]').first()).toContainText('Ainda aqui.');
+});
+
+test('⌘Z undoes the toast on screen, and never takes the undo of a field', async ({ page }, info) => {
+  const suffix = `${info.project.name} ${Date.now()}`;
+  const title = `Desfazer pelo teclado ${suffix}`;
+  const destination = `Destino do ⌘Z ${suffix}`;
+  await login(page);
+  const home = currentProjectId(page);
+  const target = await createProject(page, destination);
+  await page.goto(`/projetos/${home}`);
+  await newDocument(page);
+  const titleField = page.getByRole('textbox', { name: 'Título do documento' });
+  await titleField.fill(title);
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Opções do documento', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Mover para projeto/ }).click();
+  await page.getByRole('menuitemradio', { name: destination }).click();
+  await expect(page).toHaveURL(new RegExp(`/projetos/${target}/documentos/`));
+  const undo = page.getByRole('button', { name: 'Desfazer', exact: true });
+  await expect(undo).toHaveAttribute('aria-keyshortcuts', /^(Meta|Control)\+Z$/);
+
+  // In the title, ⌘Z is the field's own undo: the move stays and the toast with it.
+  await titleField.focus();
+  await pressCommand(page, 'z');
+  await expect(page).toHaveURL(new RegExp(`/projetos/${target}/documentos/`));
+  await expect(undo).toBeVisible();
+
+  // On the page, it runs the toast's Desfazer and closes the toast.
+  await page.locator('main h1').first().focus();
+  await pressCommand(page, 'z');
+  await expect(page).toHaveURL(new RegExp(`/projetos/${home}/documentos/`));
+  await expect(undo).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeFocused();
 });

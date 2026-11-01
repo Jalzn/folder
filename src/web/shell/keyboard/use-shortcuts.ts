@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { usesCommandKey } from '../../lib/platform';
 import { useShellUi } from '../shell-ui';
 import { createChords } from './chords';
-import { acceptsPalette, acceptsPlainKey, commandKey, describeTarget, isComposing } from './guards';
+import { acceptsPalette, acceptsPlainKey, acceptsUndo, commandKey, describeTarget, isComposing } from './guards';
 import { escapeAction } from './layers';
 import type { useShortcutActions } from './use-shortcut-actions';
 
@@ -16,8 +16,9 @@ function leaveField(field: EventTarget | null) {
 
 /**
  * The single keyboard listener of the app (docs/etapas/08-fundacao.md, "Teclado e Esc"). ⌘K and ⌘\ work
- * anywhere, ⌘K not inside the drawing editor; single keys and G chords only outside fields, the drawing
- * editor and open menus; Esc closes the most recent layer and nothing else.
+ * anywhere, ⌘K not inside the drawing editor; ⌘Z undoes the toast on screen outside fields, editors and
+ * overlays; single keys and G chords only outside fields, the drawing editor and open menus; Esc closes the
+ * most recent layer and nothing else.
  */
 export function useShortcuts(actions: Actions) {
   const { layers } = useShellUi();
@@ -63,6 +64,8 @@ export function useShortcuts(actions: Actions) {
           event.preventDefault();
           run.back();
         }
+        // Without a toast offering an undo, ⌘Z stays with the page.
+        else if (key === 'z' && acceptsUndo(event, target) && run.undo()) event.preventDefault();
         return;
       }
       if (event.key === 'F6') {

@@ -35,7 +35,8 @@ export function useProjectActions() {
     const archived = await action.run(() => setArchived(project.id, true));
     if (!archived) return;
     toast(`${project.name} arquivado. O conteúdo está preservado.`, {
-      action: { label: 'Desarquivar', onAction: () => void unarchive(project) },
+      undo: () => unarchive(project),
+      undoLabel: 'Desarquivar',
     });
   }
   async function move(project: Project, projects: Project[], direction: MoveDirection) {

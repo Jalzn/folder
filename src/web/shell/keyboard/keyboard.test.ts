@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHORD_TIMEOUT_MS, createChords } from './chords';
-import { acceptsPalette, acceptsPlainKey, commandKey, isComposing, type KeyPress } from './guards';
+import { acceptsPalette, acceptsPlainKey, acceptsUndo, commandKey, isComposing, type KeyPress } from './guards';
 import { createLayerStack, escapeAction } from './layers';
 
 const press = (key: string, modifiers: Partial<KeyPress> = {}): KeyPress => ({
@@ -14,6 +14,17 @@ const press = (key: string, modifiers: Partial<KeyPress> = {}): KeyPress => ({
 const outside = { editable: false, inDrawing: false };
 
 describe('guards', () => {
+  it('lets ⌘Z undo a toast only outside fields, editors and overlays', () => {
+    const z = press('z', { metaKey: true });
+    expect(acceptsUndo(z, outside)).toBe(true);
+    expect(acceptsUndo(z, { editable: true, inDrawing: false })).toBe(false);
+    expect(acceptsUndo(z, { editable: false, inDrawing: true })).toBe(false);
+    expect(acceptsUndo(z, { editable: false, inDrawing: false, inOverlay: true })).toBe(false);
+    // ⌘⇧Z redoes, and ⌥ changes the key on some layouts.
+    expect(acceptsUndo(press('z', { metaKey: true, shiftKey: true }), outside)).toBe(false);
+    expect(acceptsUndo(press('z', { metaKey: true, altKey: true }), outside)).toBe(false);
+  });
+
   it('lets single keys work only outside fields and the drawing editor, without modifiers', () => {
     expect(acceptsPlainKey(press('n'), outside)).toBe(true);
     expect(acceptsPlainKey(press('n'), { editable: true, inDrawing: false })).toBe(false);

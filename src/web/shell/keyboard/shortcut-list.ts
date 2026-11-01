@@ -28,6 +28,7 @@ export const shortcutGroups: ShortcutGroup[] = [
       { label: 'Atalhos', alternatives: [['?']] },
       { label: 'Salvar agora; depois de falha, tentar de novo', alternatives: [['mod', 'S']] },
       { label: 'Voltar', alternatives: [['mod', '[']] },
+      { label: 'Desfazer a ação do toast na tela', alternatives: [['mod', 'Z']] },
       { label: 'Fecha a camada aberta mais recente', alternatives: [['Esc']] },
     ],
   },

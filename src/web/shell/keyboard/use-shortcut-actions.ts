@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import type { Project } from '../../lib/types';
 import { parseProjectPath, paths } from '../../router/paths';
-import { useToast } from '../../ui';
+import { useToast, useUndoLatest } from '../../ui';
 import { useApp } from '../AppProvider';
 import { activeProjects } from '../project/project-order';
 import { noProjectText } from '../project/switcher-label';
@@ -42,6 +42,7 @@ export function useShortcutActions(layout: ShortcutLayout) {
   const app = useApp();
   const navigate = useNavigate();
   const toast = useToast();
+  const undo = useUndoLatest();
   const queryClient = useQueryClient();
   const pins = usePins();
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -104,5 +105,7 @@ export function useShortcutActions(layout: ShortcutLayout) {
     pinCurrent,
     moveCurrent,
     shortcuts: () => ui.setShortcutsOpen(true),
+    /** ⌘Z: the undo of the toast on screen; false when there is none. */
+    undo,
   };
 }
