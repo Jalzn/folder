@@ -48,6 +48,7 @@ async function migrateTo005() {
   expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
     { module: 'workspace', version: 5, name: 'projects_required' },
     { module: 'workspace', version: 6, name: 'folders' },
+    { module: 'workspace', version: 7, name: 'board' },
   ]);
   expect((await sql<{ integrity_check: string }>`pragma integrity_check`.execute(db)).rows).toEqual([
     { integrity_check: 'ok' },
@@ -56,6 +57,7 @@ async function migrateTo005() {
   return createWorkspaceService(db);
 }
 
+/** The board revision, which migration 007 raises once more after the 005 under test. */
 const boardRevision = async () =>
   (await sql<{ board_revision: number }>`select board_revision from workspace_state`.execute(db)).rows[0]
     ?.board_revision;
@@ -66,7 +68,7 @@ describe('migration 005', () => {
   it('creates no project in an empty database', async () => {
     const service = await migrateTo005();
     expect(await service.listProjects({ includeArchived: true })).toEqual([]);
-    expect(await boardRevision()).toBe(0);
+    expect(await boardRevision()).toBe(1);
   });
 
   it('orders projects as the sidebar did and rotates colours by creation, without Geral when nothing is loose', async () => {
@@ -132,7 +134,7 @@ describe('migration 005', () => {
     const trashedTaskRow = await sql<{ project_id: string; version: number }>`
       select project_id, version from workspace_tasks where id = ${trashedTask.id}`.execute(db);
     expect(trashedTaskRow.rows).toEqual([{ project_id: generalId, version: 2 }]);
-    expect(await boardRevision()).toBe(8);
+    expect(await boardRevision()).toBe(9);
   });
 
   it('leaves archived-only databases without Geral, and creates it active for their loose items', async () => {
@@ -152,7 +154,7 @@ describe('migration 005', () => {
     expect(await withLoose.listProjects()).toEqual([
       expect.objectContaining({ id: generalId, archivedAt: null, position: 1 }),
     ]);
-    expect(await boardRevision()).toBe(0);
+    expect(await boardRevision()).toBe(1);
   });
 
   it('keeps task sources with the document title, and previews with their fingerprint', async () => {
@@ -198,12 +200,13 @@ describe('migration 005', () => {
     await old.canvas({ projectId: project.id });
     await old.task({ projectId: project.id, title: 'No projeto' });
     await migrateTo005();
-    for (const table of ['workspace_documents', 'workspace_canvases', 'workspace_tasks'])
+    for (const table of ['workspace_documents', 'workspace_canvases'])
       await expect(sql`update ${sql.table(table)} set project_id = null`.execute(db)).rejects.toThrow(
         `${table}.project_id is required`,
       );
-    await expect(legacyRows(db).task({ title: 'Sem projeto' })).rejects.toThrow(
-      'workspace_tasks.project_id is required',
+    // Migration 007 rebuilt the tasks with the project NOT NULL, in place of the triggers of 005.
+    await expect(sql`update workspace_tasks set project_id = null`.execute(db)).rejects.toThrow(
+      'NOT NULL constraint failed: workspace_tasks.project_id',
     );
     await expect(sql`delete from workspace_projects where id = ${project.id}`.execute(db)).rejects.toThrow(
       /\.project_id is required$/u,

@@ -1,4 +1,4 @@
-import type { TaskStatus } from '../domain/models.js';
+import type { LabelColor } from '../domain/labels.js';
 import type { ProjectColor } from '../domain/project.js';
 
 export interface ProjectRow {
@@ -30,13 +30,52 @@ export interface DocumentRow {
   folder_id: string | null;
 }
 
+/** Since migration 007, which rebuilt the table: the column replaced the status. */
 export interface TaskRow {
   id: string;
-  /** Required since migration 005, whose triggers refuse null; the column itself stays nullable. */
   project_id: string;
+  column_id: string;
   title: string;
-  status: TaskStatus;
   position: number;
+  /** A civil date, YYYY-MM-DD. */
+  due_on: string | null;
+  /** Set exactly in the done column, which a trigger keeps. */
+  completed_at: string | null;
+  /** The description, in the document block format, as JSON. */
+  description: string;
+  description_plain_text: string;
+  /** searchText(title + "\n" + description_plain_text). */
+  search_text: string;
+  checklist_done: number;
+  checklist_total: number;
+  version: number;
+  text_version: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+/** A board column, the same for every project; a deleted one keeps its row. */
+export interface ColumnRow {
+  id: string;
+  name: string;
+  /** nameKey(name), unique among the active columns. */
+  name_key: string;
+  position: number;
+  is_done: 0 | 1;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+/** A label, the same for every project; a deleted one keeps its row and its links. */
+export interface LabelRow {
+  id: string;
+  name: string;
+  /** nameKey(name), unique among the active labels. */
+  name_key: string;
+  color: LabelColor;
   version: number;
   created_at: string;
   updated_at: string;
@@ -84,6 +123,9 @@ export interface WorkspaceTables {
   workspace_documents: DocumentRow;
   workspace_tasks: TaskRow;
   workspace_task_sources: SourceRow;
+  workspace_columns: ColumnRow;
+  workspace_labels: LabelRow;
+  workspace_task_labels: { task_id: string; label_id: string };
   workspace_state: { id: number; board_revision: number };
 }
 

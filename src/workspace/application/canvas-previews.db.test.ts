@@ -185,6 +185,7 @@ describe('drawing previews', () => {
       { module: 'workspace', version: 4, name: 'canvas_preview_fingerprint' },
       { module: 'workspace', version: 5, name: 'projects_required' },
       { module: 'workspace', version: 6, name: 'folders' },
+      { module: 'workspace', version: 7, name: 'board' },
     ]);
     service = createWorkspaceService(db);
     expect(await service.getCanvas({ id: canvas.id })).toMatchObject({
@@ -248,6 +249,7 @@ describe('drawing previews', () => {
       { module: 'workspace', version: 4, name: 'canvas_preview_fingerprint' },
       { module: 'workspace', version: 5, name: 'projects_required' },
       { module: 'workspace', version: 6, name: 'folders' },
+      { module: 'workspace', version: 7, name: 'board' },
     ]);
     service = createWorkspaceService(db);
     expect(await service.getCanvas({ id: canvas.id })).toMatchObject({ previewVersion: 1, previewCurrent: true });

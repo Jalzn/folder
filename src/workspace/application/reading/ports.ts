@@ -170,6 +170,8 @@ export interface TaskListing extends ProjectReference {
   id: string;
   title: string;
   status: TaskStatus;
+  /** The position of the task's column among the active ones, which orders the board. */
+  columnPosition: number;
   position: number;
   updatedAt: string;
   source: SourceDocument | null;

@@ -8,6 +8,7 @@ import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
 import type { WorkspaceTables } from '../db.js';
 import { itemTable } from '../item-tables.js';
 import { hydrateTasks } from '../repository/tasks.js';
+import { taskStatuses } from '../task-statuses.js';
 
 type OverviewReads = Pick<NavigationReader, 'tasksInColumn' | 'recentItems'>;
 
@@ -62,14 +63,18 @@ export function overviewReads(db: Kysely<WorkspaceTables>): OverviewReads {
 
   return {
     async tasksInColumn(projectId, status, limit) {
+      const columnIds = (await taskStatuses(db)).columnsWith([status]);
+      if (!columnIds.length) return [];
       const rows = await db
-        .selectFrom('workspace_tasks')
-        .selectAll()
-        .where('project_id', '=', projectId)
-        .where('status', '=', status)
-        .where('deleted_at', 'is', null)
-        .orderBy('position')
-        .orderBy('id')
+        .selectFrom('workspace_tasks as item')
+        .innerJoin('workspace_columns as col', 'col.id', 'item.column_id')
+        .selectAll('item')
+        .where('item.project_id', '=', projectId)
+        .where('item.column_id', 'in', columnIds)
+        .where('item.deleted_at', 'is', null)
+        .orderBy('col.position')
+        .orderBy('item.position')
+        .orderBy('item.id')
         .limit(limit)
         .execute();
       return hydrateTasks(db, rows);

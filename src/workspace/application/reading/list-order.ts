@@ -1,5 +1,4 @@
 import { type BoardKey, SEARCH_ITEM_TYPES, type SearchItemType, type SearchKey } from '../../domain/paging.js';
-import { TASK_STATUSES } from '../../domain/task-status.js';
 import type { SearchHit, TaskListing } from './ports.js';
 
 export const searchTypeRankOf = (type: SearchItemType) => SEARCH_ITEM_TYPES.indexOf(type);
@@ -24,8 +23,8 @@ export function compareSearchKeys(a: SearchKey, b: SearchKey): number {
 }
 
 /** Tasks in board order: the column, then the position within it. */
-export const boardKey = (task: Pick<TaskListing, 'status' | 'position' | 'id'>): BoardKey => ({
-  columnRank: TASK_STATUSES.indexOf(task.status),
+export const boardKey = (task: Pick<TaskListing, 'columnPosition' | 'position' | 'id'>): BoardKey => ({
+  columnRank: task.columnPosition,
   position: task.position,
   id: task.id,
 });

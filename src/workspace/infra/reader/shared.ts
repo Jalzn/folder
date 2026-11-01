@@ -1,6 +1,5 @@
 import { sql } from 'kysely';
 import type { ProjectReference, SourceDocument } from '../../application/reading/ports.js';
-import { TASK_STATUSES } from '../../domain/task-status.js';
 
 /**
  * The project columns every read query selects, from `item` joined to `project`. The join is inner:
@@ -22,11 +21,8 @@ export const projectReference = (row: {
   projectArchived: row.project_archived_at !== null,
 });
 
-/** The board column of `item.status`, as its index in TASK_STATUSES. */
-export const columnRank = sql<number>`case item.status ${sql.join(
-  TASK_STATUSES.map((status, index) => sql`when ${sql.lit(status)} then ${sql.lit(index)}`),
-  sql` `,
-)} end`;
+/** The board order of a task's column, from `col` joined to `item`: its position among the active ones. */
+export const columnRank = sql<number>`col.position`;
 
 /** The source columns task queries select, from `source` and `document` left-joined to `item`. */
 export const sourceColumns = [

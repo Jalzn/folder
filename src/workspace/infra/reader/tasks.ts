@@ -4,6 +4,7 @@ import type { DocumentBlock } from '../../domain/models.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
 import { excerptPresent } from '../../domain/task-source.js';
 import type { WorkspaceTables } from '../db.js';
+import { taskStatuses } from '../task-statuses.js';
 import { columnRank, projectColumns, projectReference, sourceColumns, sourceDocument } from './shared.js';
 
 type TaskReads = Pick<WorkspaceReader, 'tasks' | 'task' | 'boardRevision'>;
@@ -18,9 +19,11 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
     db
       .selectFrom('workspace_tasks as item')
       .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
+      .innerJoin('workspace_columns as col', 'col.id', 'item.column_id')
       .leftJoin('workspace_task_sources as source', 'source.task_id', 'item.id')
       .leftJoin('workspace_documents as document', 'document.id', 'source.document_id')
-      .select(['item.id', 'item.title', 'item.status', 'item.position', 'item.created_at', 'item.updated_at'])
+      .select(['item.id', 'item.title', 'item.column_id', 'item.position', 'item.created_at', 'item.updated_at'])
+      .select('col.position as column_position')
       .select(projectColumns)
       .select(sourceColumns)
       .where('item.deleted_at', 'is', null);
@@ -36,10 +39,15 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
     },
 
     async tasks(query) {
+      const { statusOf, columnsWith } = await taskStatuses(db);
       let select = withSource().orderBy(columnRank).orderBy('item.position').orderBy('item.id');
       if (query.projectId) select = select.where('item.project_id', '=', query.projectId);
       if (query.documentId) select = select.where('source.document_id', '=', query.documentId);
-      if (query.statuses?.length) select = select.where('item.status', 'in', [...query.statuses]);
+      if (query.statuses?.length) {
+        const columnIds = columnsWith(query.statuses);
+        if (!columnIds.length) return { items: [], hasMore: false };
+        select = select.where('item.column_id', 'in', columnIds);
+      }
       const after = query.after;
       if (after)
         select = select.where(
@@ -55,7 +63,8 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
         (row): TaskListing => ({
           id: row.id,
           title: row.title,
-          status: row.status,
+          status: statusOf(row.column_id),
+          columnPosition: row.column_position,
           position: row.position,
           ...projectReference(row),
           updatedAt: row.updated_at,
@@ -71,10 +80,12 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
         .where('item.id', '=', id)
         .executeTakeFirst();
       if (!row) return undefined;
+      const { statusOf } = await taskStatuses(db);
       const task = {
         id: row.id,
         title: row.title,
-        status: row.status,
+        status: statusOf(row.column_id),
+        columnPosition: row.column_position,
         ...projectReference(row),
         createdAt: row.created_at,
         updatedAt: row.updated_at,

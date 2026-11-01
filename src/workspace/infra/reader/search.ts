@@ -5,6 +5,7 @@ import { excerptAround } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
 import type { WorkspaceTables } from '../db.js';
+import { taskStatuses } from '../task-statuses.js';
 import { excerptWindows } from './excerpt-windows.js';
 import { folderColumns, folderReference } from './folders.js';
 import { searchableItems, type TextType, titleLengthInSearchText } from './searchable.js';
@@ -65,7 +66,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
     let select = db
       .selectFrom('workspace_tasks as item')
       .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
-      .select(['item.id', 'item.title', 'item.status', 'item.updated_at'])
+      .select(['item.id', 'item.title', 'item.column_id', 'item.updated_at'])
       .select(projectColumns)
       .where('item.deleted_at', 'is', null)
       .where(afterKey(query, searchTypeRankOf('task'), sql<number>`0`))
@@ -73,6 +74,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
       .orderBy('item.id');
     if (query.projectId) select = select.where('item.project_id', '=', query.projectId);
     if (!query.terms.length) select = select.limit(limit);
+    const { statusOf } = await taskStatuses(db);
     return (await select.execute())
       .filter((row) => matchesAllTerms(searchText(row.title), query.terms))
       .slice(0, limit)
@@ -80,7 +82,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
         type: 'task' as const,
         id: row.id,
         title: row.title,
-        status: row.status,
+        status: statusOf(row.column_id),
         ...projectReference(row),
         updatedAt: row.updated_at,
         titleRank: 0,

@@ -60,16 +60,32 @@ export interface TaskSource {
   blockAvailable: boolean;
 }
 
+/** A task as lists show it, without its description. */
 export interface Task {
   id: string;
   title: string;
   projectId: string;
-  status: TaskStatus;
+  /** An active column: every task, live or trashed, is in one. */
+  columnId: string;
+  /** Order within its project's column, from 0. */
   position: number;
+  /** The fields' version: column, project, due date and labels. */
   version: number;
+  /** The text's version: title and description, saved together by saveTaskText. */
+  textVersion: number;
+  /** A civil date, YYYY-MM-DD. */
+  dueOn: string | null;
+  /** Set exactly while the task is in the done column. */
+  completedAt: string | null;
+  /** The active labels, in alphabetical order. */
+  labelIds: string[];
+  /** The description's check items, or null without any. */
+  checklist: { done: number; total: number } | null;
   createdAt: string;
   updatedAt: string;
   source: TaskSource | null;
+  /** Until B6: the stage 09 status of the column, for the interface that still reads it. */
+  status: TaskStatus;
 }
 
 export interface TaskList {

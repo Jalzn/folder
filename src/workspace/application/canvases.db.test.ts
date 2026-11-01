@@ -187,6 +187,7 @@ describe('canvas persistence and concurrency', () => {
       { module: 'workspace', version: 4, name: 'canvas_preview_fingerprint' },
       { module: 'workspace', version: 5, name: 'projects_required' },
       { module: 'workspace', version: 6, name: 'folders' },
+      { module: 'workspace', version: 7, name: 'board' },
     ]);
     service = createWorkspaceService(db);
     const [general] = await service.listProjects();

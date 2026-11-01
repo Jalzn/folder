@@ -322,7 +322,8 @@ describe('workspace persistence and adversarial cases', () => {
     await expect(
       service.createTask({ ...request(), ...task, source: { ...task.source, expectedVersion: 10 } }),
     ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
-    expect(await service.listTasks({})).toEqual({ tasks: [], revision: 0 });
+    // Migration 007 raised the revision once, also on a new installation.
+    expect(await service.listTasks({})).toEqual({ tasks: [], revision: 1 });
   });
 
   it('stores an id for every block, so a selection in content from elsewhere can become a task', async () => {
@@ -376,7 +377,7 @@ describe('workspace persistence and adversarial cases', () => {
     expect(await service.moveTask(move)).toEqual(moved);
     const current = await service.listTasks({});
     expect(current.tasks.map((task) => task.title)).toEqual(['C', 'A', 'B']);
-    expect(current.revision).toBe(4);
+    expect(current.revision).toBe(5);
     await expect(
       service.moveTask({
         ...request(),
@@ -386,7 +387,7 @@ describe('workspace persistence and adversarial cases', () => {
         status: 'doing',
       }),
     ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
-    expect((await service.listTasks({})).revision).toBe(4);
+    expect((await service.listTasks({})).revision).toBe(5);
   });
 
   it("renumbers only the moved task's project column, without editing the neighbours", async () => {

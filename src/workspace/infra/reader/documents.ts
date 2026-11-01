@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
 import type { DocumentBlock } from '../../domain/models.js';
 import type { WorkspaceTables } from '../db.js';
+import { taskStatuses } from '../task-statuses.js';
 import { folderColumns, folderReference } from './folders.js';
 import { columnRank, projectColumns, projectReference } from './shared.js';
 
@@ -37,11 +38,12 @@ export function documentReads(db: Kysely<WorkspaceTables>): DocumentReads {
       const fromDocument = db
         .selectFrom('workspace_task_sources as source')
         .innerJoin('workspace_tasks as item', 'item.id', 'source.task_id')
+        .innerJoin('workspace_columns as col', 'col.id', 'item.column_id')
         .where('source.document_id', '=', documentId)
         .where('item.deleted_at', 'is', null);
       const [items, count] = await Promise.all([
         fromDocument
-          .select(['item.id', 'item.title', 'item.status'])
+          .select(['item.id', 'item.title', 'item.column_id'])
           .orderBy(columnRank)
           .orderBy('item.position')
           .orderBy('item.id')
@@ -49,7 +51,11 @@ export function documentReads(db: Kysely<WorkspaceTables>): DocumentReads {
           .execute(),
         fromDocument.select(({ fn }) => fn.countAll<number>().as('total')).executeTakeFirstOrThrow(),
       ]);
-      return { items, total: count.total };
+      const { statusOf } = await taskStatuses(db);
+      return {
+        items: items.map((item) => ({ id: item.id, title: item.title, status: statusOf(item.column_id) })),
+        total: count.total,
+      };
     },
   };
 }

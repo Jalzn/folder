@@ -49,7 +49,9 @@ describe('cursors', () => {
       expect(() => readDocumentCursor(cursor)).toThrow('Cursor inválido');
     for (const cursor of ['o:40', `t~1~7~${id}`, `s~1~2026-10-31~0~${id}`, `s~1~2026-10-31T06:41:25.403Z~3~${id}`])
       expect(() => readSearchCursor(cursor)).toThrow('Cursor inválido');
-    for (const cursor of [`s~0~2026-10-31T06:41:25.403Z~0~${id}`, `t~1~3~7~${id}`, `t~1~7~${id}`])
+    // The column is its position among at most 20 active ones: 0 to 19.
+    expect(readBoardCursor(`t~1~19~7~${id}`).key.columnRank).toBe(19);
+    for (const cursor of [`s~0~2026-10-31T06:41:25.403Z~0~${id}`, `t~1~20~7~${id}`, `t~1~7~${id}`])
       expect(() => readBoardCursor(cursor)).toThrow('Cursor inválido');
   });
 });

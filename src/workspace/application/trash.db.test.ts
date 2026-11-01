@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
 import type { DocumentBlock, Project } from '../domain/models.js';
 import type { WorkspaceTables } from '../infra/db.js';
 import { workspaceModule } from '../infra/module.js';
@@ -362,10 +363,18 @@ describe('project trash and permanent delete', () => {
         Array.from({ length: 1_001 }, (_, index) => ({
           id: randomUUID(),
           project_id: project.id,
+          column_id: INITIAL_COLUMN_IDS.todo,
           title: `Tarefa ${index}`,
-          status: 'todo' as const,
+          due_on: null,
+          completed_at: null,
+          description: '[]',
+          description_plain_text: '',
+          search_text: `tarefa ${index}\n`,
+          checklist_done: 0,
+          checklist_total: 0,
           position: index,
           version: 2,
+          text_version: 1,
           created_at: deletedAt(0),
           updated_at: deletedAt(index),
           deleted_at: deletedAt(index),

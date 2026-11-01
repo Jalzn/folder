@@ -9,6 +9,8 @@ export {
   readCanvasScene,
 } from './canvas.js';
 export { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from './canvas-preview.js';
+export { checklistProgress } from './checklist.js';
+export { COLUMN_LIMITS, type Column } from './columns.js';
 export type { DocumentContentLimits } from './document.js';
 export {
   documentLead,
@@ -21,6 +23,7 @@ export {
 } from './document.js';
 export { excerptAround, excerptFromStart, type TextCut } from './excerpt.js';
 export { folderName, folderNameKey } from './folders.js';
+export { LABEL_COLORS, LABEL_LIMITS, type Label, type LabelColor } from './labels.js';
 export { documentToMarkdown } from './markdown.js';
 export { displayMathLines, inlineMath, MATH_SEPARATOR, needsMathSeparator } from './markdown-math.js';
 export type {
@@ -36,6 +39,7 @@ export type {
   TaskSource,
   TaskStatus,
 } from './models.js';
+export { displayName, nameKey } from './names.js';
 export { NAV_SORTS, type NavItem, type NavSort } from './navigation.js';
 export { NAVIGATION_LIMITS } from './navigation-limits.js';
 export type { NavFolder, NavTree } from './navigation-tree.js';
@@ -43,4 +47,7 @@ export { type PngInfo, readPngInfo } from './png.js';
 export { defaultProjectColor, MAX_PINNED, PROJECT_COLORS, type ProjectColor, projectInitial } from './project.js';
 export { sceneFingerprint } from './scene-fingerprint.js';
 export { searchText } from './search-text.js';
+export { doneWindowStart, isOverdue } from './task-dates.js';
+/** Until B6: the statuses the interface of stage 09 still uses. */
 export { TASK_STATUSES, taskStatusLabels } from './task-status.js';
+export { TASK_LIMITS, type TaskDetail } from './tasks.js';

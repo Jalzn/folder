@@ -1,8 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import { copyFile, mkdtemp, readdir } from 'node:fs/promises';
+import { copyFile, mkdtemp, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { coreModule, type Database, migrate, tables } from '@tinyfold/core/infra';
+import {
+  coreModule,
+  type Database,
+  executeMigrationScript,
+  migrate,
+  setForeignKeys,
+  tables,
+} from '@tinyfold/core/infra';
 import { type CanvasScene, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
 import { documentPlainText } from '../domain/document.js';
 import type { DocumentBlock, TaskStatus } from '../domain/models.js';
@@ -13,11 +20,22 @@ import { workspaceModule } from '../infra/module.js';
  * Applies the workspace migrations up to `version` only, as an installation of an earlier stage
  * would have them. The files are copied to a folder inside `scratch`.
  */
-export async function migrateWorkspaceTo(db: Database, version: number, scratch: string): Promise<void> {
+export async function migrateWorkspaceTo(db: Database, version: number, scratch: string) {
   const folder = await mkdtemp(join(scratch, `migrations-${version}-`));
   const names = (await readdir(workspaceModule.migrations)).filter((name) => Number(name.slice(0, 3)) <= version);
   for (const name of names) await copyFile(new URL(name, workspaceModule.migrations), join(folder, name));
-  await migrate(db, [coreModule, { ...workspaceModule, migrations: pathToFileURL(`${folder}/`) }]);
+  return migrate(db, [coreModule, { ...workspaceModule, migrations: pathToFileURL(`${folder}/`) }]);
+}
+
+/**
+ * Loads into an empty database a real stage 09 database: the SQL dump (`sqlite3 .dump`) of
+ * `seed:sample`, or of `seed:sample --grande`, made by the code of 1da6617, with its migrations,
+ * request records and all. The dump turns the keys off for itself; they are turned on again.
+ */
+export async function loadStage09Fixture(db: Database, name: 'sample' | 'grande'): Promise<void> {
+  const dump = await readFile(new URL(`./fixtures/stage-09-${name}.sql`, import.meta.url), 'utf8');
+  executeMigrationScript(db, dump);
+  setForeignKeys(db, true);
 }
 
 interface LegacyItem {

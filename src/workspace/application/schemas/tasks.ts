@@ -3,6 +3,7 @@ import { TASK_STATUSES } from '../../domain/task-status.js';
 import { edit, id, request, version, visible } from './common.js';
 
 const title = visible(z.string().min(1, 'Escreva um título.').max(300));
+/** Until B6: the status of stage 09, which the interface of that stage sends for a column. */
 const status = z.enum(TASK_STATUSES);
 
 export const ListTasksInput = z.object({ projectId: id.optional(), documentId: id.optional() });
@@ -15,6 +16,8 @@ export const CreateTaskInput = z
     ...request,
     title,
     projectId: id.nullable().optional(),
+    /** An active column; the first open one when left out. */
+    columnId: id.optional(),
     status: status.optional(),
     source: z
       .object({
@@ -31,18 +34,26 @@ export const CreateTaskInput = z
   });
 export const UpdateTaskInput = z.object({
   ...edit,
+  /** Until B6: the interface of stage 09 renames a task here. */
   title: title.optional(),
   projectId: id.optional(),
+  columnId: id.optional(),
   status: status.optional(),
 });
 export const DeleteTaskInput = z.object(edit);
 export const RestoreTaskInput = z.object(edit);
-export const MoveTaskInput = z.object({
-  ...edit,
-  expectedRevision: z.number().int().nonnegative(),
-  status,
-  beforeTaskId: id.nullable().optional(),
-});
+export const MoveTaskInput = z
+  .object({
+    ...edit,
+    expectedRevision: z.number().int().nonnegative(),
+    columnId: id.optional(),
+    status: status.optional(),
+    beforeTaskId: id.nullable().optional(),
+  })
+  .refine((input) => input.columnId !== undefined || input.status !== undefined, {
+    message: 'Escolha a coluna.',
+    path: ['columnId'],
+  });
 
 export type ListTasksInput = z.infer<typeof ListTasksInput>;
 export type CreateTaskInput = z.infer<typeof CreateTaskInput>;

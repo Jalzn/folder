@@ -2,11 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import { createDatabase, type Database } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { folderNameKey } from '../domain/folders.js';
-import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
 import { legacyRows, migrateWorkspaceTo } from '../testing/legacy-workspace.js';
@@ -33,11 +32,9 @@ const consistent = async () => {
   expect((await sql`pragma foreign_key_check`.execute(db)).rows).toEqual([]);
 };
 
-/** Runs migration 006 over a database written with migrations 001 to 005. */
+/** Runs migration 006, and only it, over a database written with migrations 001 to 005. */
 async function migrateTo006() {
-  expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
-    { module: 'workspace', version: 6, name: 'folders' },
-  ]);
+  expect(await migrateWorkspaceTo(db, 6, directory)).toEqual([{ module: 'workspace', version: 6, name: 'folders' }]);
   await consistent();
 }
 
@@ -163,7 +160,7 @@ describe('migration 006', () => {
     await migrateTo006();
     await db.destroy();
     db = createDatabase(join(directory, 'test.sqlite'));
-    expect(await migrate(db, [coreModule, workspaceModule])).toEqual([]);
+    expect(await migrateWorkspaceTo(db, 6, directory)).toEqual([]);
     await consistent();
   });
 });

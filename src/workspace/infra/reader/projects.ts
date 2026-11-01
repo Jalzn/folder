@@ -25,7 +25,7 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
         .selectFrom('workspace_tasks')
         .select((eb) => ['project_id', eb.fn.countAll<number>().as('count')])
         .where('deleted_at', 'is', null)
-        .where('status', '<>', 'done')
+        .where('column_id', 'not in', db.selectFrom('workspace_columns').select('id').where('is_done', '=', 1))
         .groupBy('project_id')
         .execute(),
     ]);

@@ -1,5 +1,5 @@
 import { DomainError } from '@tinyfold/core/domain';
-import { TASK_STATUSES } from './task-status.js';
+import { COLUMN_LIMITS } from './columns.js';
 
 const invalidCursor = () => new DomainError('Cursor inválido. Repita a consulta sem cursor.');
 
@@ -76,7 +76,7 @@ export interface ProjectKey {
 }
 
 export interface BoardKey {
-  /** The index of the task's column in TASK_STATUSES. */
+  /** The position of the task's column among the active ones: from 0 to COLUMN_LIMITS.active − 1. */
   columnRank: number;
   position: number;
   id: string;
@@ -119,7 +119,7 @@ export function readBoardCursor(cursor: string): { revision: number; key: BoardK
   if (!match) throw invalidCursor();
   return {
     revision: Number(match[1]),
-    key: { columnRank: rankIn(match[2], TASK_STATUSES.length), position: Number(match[3]), id: match[4] as string },
+    key: { columnRank: rankIn(match[2], COLUMN_LIMITS.active), position: Number(match[3]), id: match[4] as string },
   };
 }
 

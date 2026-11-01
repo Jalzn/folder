@@ -4,6 +4,7 @@ import { TASK_STATUSES, type TaskStatus } from '../../domain/task-status.js';
 import type { WorkspaceTables } from '../db.js';
 import { itemTable } from '../item-tables.js';
 import { projectModel } from '../repository/mappers.js';
+import { taskStatuses } from '../task-statuses.js';
 
 type ProjectReads = Pick<NavigationReader, 'findProject' | 'navItems' | 'folders' | 'taskCounts'>;
 
@@ -46,16 +47,15 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
     async taskCounts(projectId) {
       const rows = await db
         .selectFrom('workspace_tasks')
-        .select((eb) => ['status', eb.fn.countAll<number>().as('count')])
+        .select((eb) => ['column_id', eb.fn.countAll<number>().as('count')])
         .where('project_id', '=', projectId)
         .where('deleted_at', 'is', null)
-        .groupBy('status')
+        .groupBy('column_id')
         .execute();
-      const counts = new Map(rows.map((row) => [row.status, row.count]));
-      return Object.fromEntries(TASK_STATUSES.map((status) => [status, counts.get(status) ?? 0])) as Record<
-        TaskStatus,
-        number
-      >;
+      const { statusOf } = await taskStatuses(db);
+      const counts = Object.fromEntries(TASK_STATUSES.map((status) => [status, 0])) as Record<TaskStatus, number>;
+      for (const row of rows) counts[statusOf(row.column_id)] += row.count;
+      return counts;
     },
   };
 }

@@ -1,9 +1,29 @@
 import type { Canvas, CanvasSummary } from '../domain/canvas.js';
+import type { Column } from '../domain/columns.js';
 import type { Folder } from '../domain/folders.js';
-import type { Document, DocumentSummary, Project, Task, TaskSource, TaskStatus } from '../domain/models.js';
+import type { Label } from '../domain/labels.js';
+import type { Document, DocumentContent, DocumentSummary, Project, Task, TaskSource } from '../domain/models.js';
 import type { NavItemType } from '../domain/navigation.js';
 
-export type TaskRecord = Omit<Task, 'source'> & { deletedAt: string | null };
+/** A task as stored, live or trashed, with its description and without its labels or source. */
+export interface TaskRecord {
+  id: string;
+  title: string;
+  projectId: string;
+  columnId: string;
+  position: number;
+  dueOn: string | null;
+  completedAt: string | null;
+  description: DocumentContent;
+  descriptionPlainText: string;
+  checklistDone: number;
+  checklistTotal: number;
+  version: number;
+  textVersion: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
 
 /** A new task's source, which keeps the document's title for when the document is deleted for good. */
 export interface TaskSourceRecord extends Pick<TaskSource, 'blockId' | 'excerpt' | 'documentTitle'> {
@@ -103,13 +123,40 @@ export interface TaskRepository {
   listTasks(query: TaskListQuery): Promise<Task[]>;
   findTask(id: string): Promise<TaskRecord | undefined>;
   insertTask(task: TaskRecord): Promise<void>;
-  saveTask(task: TaskRecord, expectedVersion: number): Promise<void>;
+  /**
+   * Writes the fields only (project, column, position, due date, completion, trash, version and
+   * update date) at the expected version, so it never overwrites the text.
+   */
+  saveTaskFields(task: TaskRecord, expectedVersion: number): Promise<void>;
+  /**
+   * Writes the text only (title, description and what derives from them, text version and update
+   * date) at the expected text version, so it never overwrites the fields.
+   */
+  saveTaskText(task: TaskRecord, expectedTextVersion: number): Promise<void>;
   insertSource(source: TaskSourceRecord): Promise<void>;
-  nextPosition(status: TaskStatus): Promise<number>;
+  /** After the last of one project's live tasks in a column. */
+  nextPosition(projectId: string, columnId: string): Promise<number>;
   /** One project's live tasks of a column, in board order. */
-  tasksInColumn(status: TaskStatus, projectId: string): Promise<TaskRecord[]>;
+  tasksInColumn(projectId: string, columnId: string): Promise<TaskRecord[]>;
   /** Moves a task within its column. The order is not an edit: version and dates stay. */
   setTaskPosition(id: string, position: number): Promise<void>;
+  /** The task's labels, deleted ones included, which keep their links. */
+  taskLabelIds(taskId: string): Promise<string[]>;
+  /** Replaces the task's links to active labels; links to deleted ones stay. */
+  setTaskLabels(taskId: string, labelIds: readonly string[]): Promise<void>;
+}
+
+/** Board columns, the same for every project. */
+export interface ColumnRepository {
+  /** The active columns in board order. */
+  activeColumns(): Promise<Column[]>;
+  findColumn(id: string): Promise<Column | undefined>;
+}
+
+/** Labels, the same for every project. */
+export interface LabelRepository {
+  /** The labels with these IDs, active or deleted. */
+  findLabels(ids: readonly string[]): Promise<Label[]>;
 }
 
 export interface CanvasPreviewRecord {
@@ -176,6 +223,8 @@ export type WorkspaceRepository = ProjectRepository &
   CanvasRepository &
   CanvasPreviewRepository &
   TaskRepository &
+  ColumnRepository &
+  LabelRepository &
   TrashRepository &
   PinRepository &
   MoveRepository &
