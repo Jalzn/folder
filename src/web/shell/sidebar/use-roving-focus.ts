@@ -6,6 +6,9 @@ function rows(container: HTMLElement) {
   return [...container.querySelectorAll<HTMLElement>(rowSelector)].filter((row) => row.offsetParent !== null);
 }
 
+/** The first visible row of a list, as the first search result after ↓ in Buscar. */
+export const firstRow = (container: HTMLElement | null) => (container ? (rows(container)[0] ?? null) : null);
+
 /**
  * One tab stop for a list of rows: ↑ and ↓ move between the visible `[data-roving]` rows, Home and End go to
  * the first and the last. The tab stop is the current row (`aria-current`), or the first.
@@ -40,5 +43,20 @@ export function useRovingFocus<T extends HTMLElement>() {
     next.focus();
   }, []);
 
-  return { ref, onKeyDown };
+  /** Whether an element is the last visible row, from which ↓ goes on to what follows the list. */
+  const isLast = useCallback((element: EventTarget | null) => {
+    const container = ref.current;
+    return Boolean(container && element instanceof HTMLElement && rows(container).at(-1) === element);
+  }, []);
+  /** Back to the last row, as ↑ from what follows the list; it becomes the tab stop. */
+  const focusLast = useCallback(() => {
+    const container = ref.current;
+    const all = container ? rows(container) : [];
+    const last = all.at(-1);
+    if (!last) return;
+    for (const row of all) row.tabIndex = row === last ? 0 : -1;
+    last.focus();
+  }, []);
+
+  return { ref, onKeyDown, isLast, focusLast };
 }

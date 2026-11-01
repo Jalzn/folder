@@ -1,6 +1,6 @@
 import './sidebar.css';
 import { Search } from 'lucide-react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Project } from '../../lib/types';
 import { Kbd } from '../../ui';
 import { useShellActions } from '../shell-ui';
@@ -10,10 +10,10 @@ import { SidebarFooter } from './SidebarFooter';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarNav } from './SidebarNav';
 import { SidebarSearch } from './SidebarSearch';
-import { entryRow } from './tree/tree-dom';
+import type { TreeHandle } from './tree/ItemsTree';
 import { useFolderReveal } from './use-folder-reveal';
 import { useNavigationData } from './use-navigation-data';
-import { useRovingFocus } from './use-roving-focus';
+import { firstRow, useRovingFocus } from './use-roving-focus';
 import { useSidebarSearch } from './use-sidebar-search';
 
 /**
@@ -40,9 +40,16 @@ export function ProjectSidebar({
   const navigation = useNavigationData(project);
   const roving = useRovingFocus<HTMLElement>();
   const treeRef = useRef<HTMLDivElement>(null);
+  const treeHandle = useRef<TreeHandle>(null);
+  const sections = useRef<HTMLDivElement>(null);
+  const results = useRef<HTMLDivElement>(null);
   const { query, setQuery, input, searching, search, openFirst } = useSidebarSearch(project, focusSearch);
   // A folder from the filter or from ⌘K: it opens in the tree, and its first child takes the focus.
   const openFolder = useFolderReveal(project?.id ?? null, treeRef, () => setQuery(''));
+  // Results replace the sections: the list starts again at the top.
+  useEffect(() => {
+    if (query) sections.current?.scrollTo({ top: 0 });
+  }, [query]);
   return (
     <div className="sidebar" data-region="sidebar">
       <SidebarHeader project={project} place={place} collapseLabel={collapseLabel} onCollapse={onCollapse} />
@@ -52,15 +59,10 @@ export function ProjectSidebar({
           className="sidebar__nav"
           aria-label={`Projeto ${project.name}`}
           onKeyDown={(event) => {
-            // ↓ on the last row of the navigation goes on into the tree, at its current row.
-            const rows = [...(roving.ref.current?.querySelectorAll<HTMLElement>('[data-roving]') ?? [])];
-            if (event.key === 'ArrowDown' && rows.at(-1) === event.target) {
-              const row = entryRow(treeRef.current);
-              if (row) {
-                event.preventDefault();
-                row.focus();
-                return;
-              }
+            // ↓ on the last row of the navigation goes on into the tree, at the open item's row.
+            if (event.key === 'ArrowDown' && roving.isLast(event.target) && treeHandle.current?.focusEntry()) {
+              event.preventDefault();
+              return;
             }
             roving.onKeyDown(event);
           }}
@@ -71,11 +73,12 @@ export function ProjectSidebar({
               query={query}
               onQueryChange={setQuery}
               onOpenFirst={openFirst}
+              onArrowDown={() => firstRow(results.current)?.focus()}
               inputRef={input}
             />
             <SidebarNav project={project} openTasks={navigation?.openTasks} />
           </div>
-          <div className="sidebar__sections">
+          <div className="sidebar__sections" ref={sections}>
             {searching ? (
               <SearchResults
                 projectId={project.id}
@@ -84,20 +87,15 @@ export function ProjectSidebar({
                 results={search.data?.items}
                 error={search.error}
                 onOpenFolder={openFolder}
+                listRef={results}
               />
             ) : (
               <ItemsSection
                 project={project}
                 tree={navigation?.tree}
                 treeRef={treeRef}
-                onLeaveUp={() => {
-                  const rows = roving.ref.current?.querySelectorAll<HTMLElement>('[data-roving]');
-                  const last = rows?.[rows.length - 1];
-                  if (last) {
-                    for (const row of rows ?? []) row.tabIndex = row === last ? 0 : -1;
-                    last.focus();
-                  }
-                }}
+                handleRef={treeHandle}
+                onLeaveUp={roving.focusLast}
               />
             )}
           </div>

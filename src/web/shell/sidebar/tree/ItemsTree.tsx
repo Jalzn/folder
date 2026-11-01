@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { type RefObject, useLayoutEffect, useRef, useState } from 'react';
+import { type Ref, type RefObject, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { type Key, Tree } from 'react-aria-components';
 import type { Project } from '../../../lib/types';
 import { paths } from '../../../router/paths';
@@ -9,7 +9,7 @@ import { useAnnounce } from '../../announcer';
 import { usePins } from '../../project/use-pins';
 import { modifiedClick } from './ItemRow';
 import { type Moving, TreeOverlays } from './TreeOverlays';
-import { rowIn } from './tree-dom';
+import { entryRow, rowIn } from './tree-dom';
 import { treeNodes } from './tree-nodes';
 import { type FolderNode, folderKey, type ItemNode, type TreeNode } from './tree-rows';
 import type { useExpandedFolders } from './use-expanded-folders';
@@ -17,6 +17,12 @@ import { useRowAnchor } from './use-row-anchor';
 import { useTabEntry } from './use-tab-entry';
 import type { TreeEditing } from './use-tree-editing';
 import { useTreeKeyRouter } from './use-tree-key-router';
+
+/** What the tree lets the sidebar and the rail's popover do. */
+export interface TreeHandle {
+  /** Focuses the row the keyboard comes in at (entryRow); false without rows. */
+  focusEntry: () => boolean;
+}
 
 /** How recently a pointer went down on an item's link, and with which modifiers. */
 interface LinkPress {
@@ -37,6 +43,7 @@ export function ItemsTree({
   expanded,
   editing,
   treeRef,
+  handleRef,
   onLeaveUp,
   onChoose,
 }: {
@@ -45,6 +52,7 @@ export function ItemsTree({
   expanded: ReturnType<typeof useExpandedFolders>;
   editing?: TreeEditing | undefined;
   treeRef?: RefObject<HTMLDivElement | null>;
+  handleRef?: Ref<TreeHandle> | undefined;
   /** ↑ on the first row: back to the navigation above the tree. */
   onLeaveUp?: () => void;
   /** After an item opens from the tree, as a popover that closes. */
@@ -91,6 +99,13 @@ export function ItemsTree({
     if (currentKey) rowByKey(currentKey)?.setAttribute('aria-current', 'page');
   });
   const tabEntry = useTabEntry(() => rowByKey(currentKey ?? null));
+  useImperativeHandle(handleRef, () => ({
+    focusEntry: () => {
+      const row = entryRow(tree.current, currentKey ?? null);
+      row?.focus();
+      return Boolean(row);
+    },
+  }));
 
   const archived = Boolean(project.archivedAt);
   const keys = useTreeKeyRouter({

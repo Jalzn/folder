@@ -4,15 +4,27 @@ const overlay = '.popover, .modal-overlay, .palette-overlay, .sidebar-overlay, [
 const holding = '.popover, .modal-overlay, .palette-overlay';
 
 let pageElement: HTMLElement | null = null;
-if (typeof document !== 'undefined') {
-  document.addEventListener('focusin', (event) => {
+
+/**
+ * Follows the focus on the page, outside menus and dialogs, for `pageFocus`. The app installs it once from its
+ * root; it returns the removal, so a remount or a reload of the module in development does not add a second.
+ */
+export function trackPageFocus(target: Document = document) {
+  const focusIn = (event: FocusEvent) => {
     if (event.target instanceof HTMLElement && !event.target.closest(overlay)) pageElement = event.target;
-  });
+  };
   // Focus that leaves to nothing, as a click on the page's background, leaves no element to go back to.
-  document.addEventListener('focusout', (event) => {
+  const focusOut = (event: FocusEvent) => {
     if (event.relatedTarget === null && event.target instanceof HTMLElement && !event.target.closest(overlay))
       pageElement = null;
-  });
+  };
+  target.addEventListener('focusin', focusIn);
+  target.addEventListener('focusout', focusOut);
+  return () => {
+    target.removeEventListener('focusin', focusIn);
+    target.removeEventListener('focusout', focusOut);
+    pageElement = null;
+  };
 }
 
 /** The element of the page that had the focus last, outside menus and dialogs; null when it is gone. */

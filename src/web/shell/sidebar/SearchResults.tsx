@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { NavFolder } from '@tinyfold/workspace/domain';
 import { FileText, Folder, Search, Shapes } from 'lucide-react';
+import type { Ref } from 'react';
 import { errorMessage } from '../../lib/api';
 import { formatCount } from '../../lib/count';
 import { matchesAllWords, queryWords } from '../../lib/highlight';
@@ -35,6 +36,7 @@ export function SearchResults({
   results,
   error,
   onOpenFolder,
+  listRef,
 }: {
   projectId: string;
   query: string;
@@ -42,12 +44,14 @@ export function SearchResults({
   results: SearchResult[] | undefined;
   error: unknown;
   onOpenFolder: (folderId: string) => void;
+  /** The list, where ↓ from Buscar comes in. */
+  listRef?: Ref<HTMLDivElement> | undefined;
 }) {
   const ui = useShellActions();
   const matched = matchingFolders(folders, query);
   const items = itemResults(results);
   return (
-    <div className="sidebar-results">
+    <div className="sidebar-results" ref={listRef}>
       {error ? <p className="sidebar-results__message">{errorMessage(error)}</p> : null}
       {matched.length > 0 && (
         <section className="sidebar-results__group" aria-label={`Pastas: ${formatCount(matched.length)}`}>

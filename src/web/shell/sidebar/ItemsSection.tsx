@@ -5,7 +5,7 @@ import type { Project } from '../../lib/types';
 import { useMoveToFolder } from '../folders/use-move-to-folder';
 import { ItemsHeader } from './ItemsHeader';
 import { defaultProjectPrefs } from './sidebar-prefs';
-import { ItemsTree } from './tree/ItemsTree';
+import { ItemsTree, type TreeHandle } from './tree/ItemsTree';
 import { useItemsTree } from './tree/use-items-tree';
 import { useTreeEditing } from './tree/use-tree-editing';
 import { useSidebarPrefs } from './use-sidebar-prefs';
@@ -15,11 +15,13 @@ export function ItemsSection({
   project,
   tree,
   treeRef,
+  handleRef,
   onLeaveUp,
 }: {
   project: Project;
   tree: NavTree | undefined;
   treeRef: RefObject<HTMLDivElement | null>;
+  handleRef: RefObject<TreeHandle | null>;
   onLeaveUp: () => void;
 }) {
   const prefs = useSidebarPrefs();
@@ -53,6 +55,7 @@ export function ItemsSection({
           expanded={items.expanded}
           editing={editing}
           treeRef={treeRef}
+          handleRef={handleRef}
           onLeaveUp={onLeaveUp}
         />
       )}

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { formatCount } from '../../lib/count';
 import type { Project } from '../../lib/types';
 import { IconButton, Popover, PopoverTrigger, returnFocus } from '../../ui';
-import { ItemsTree } from './tree/ItemsTree';
+import { ItemsTree, type TreeHandle } from './tree/ItemsTree';
 import { useItemsTree } from './tree/use-items-tree';
 
 /**
@@ -16,21 +16,17 @@ import { useItemsTree } from './tree/use-items-tree';
 export function ItemsPopover({ project, tree }: { project: Project; tree: NavTree | undefined }) {
   const items = useItemsTree(project, tree);
   const [isOpen, setOpen] = useState(false);
-  const treeRef = useRef<HTMLDivElement>(null);
-  const trigger = useRef<HTMLElement | null>(null);
+  const handle = useRef<TreeHandle>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!isOpen) return;
     // The open item's row, or the first, takes the focus as the popover opens.
-    requestAnimationFrame(() => {
-      const rows = treeRef.current?.querySelectorAll<HTMLElement>('[role="row"]');
-      const current = treeRef.current?.querySelector<HTMLElement>('.is-current');
-      (current ?? rows?.[0])?.focus();
-    });
+    requestAnimationFrame(() => handle.current?.focusEntry());
   }, [isOpen]);
   return (
     <PopoverTrigger isOpen={isOpen} onOpenChange={setOpen}>
-      <span className="rail__items" ref={trigger}>
-        <IconButton label="Itens" className="rail__button">
+      <span className="rail__items">
+        <IconButton label="Itens" className="rail__button" ref={trigger}>
           <FolderTree size={16} />
         </IconButton>
         {items.pending.length > 0 && <span className="rail__pending" aria-hidden="true" />}
@@ -45,11 +41,10 @@ export function ItemsPopover({ project, tree }: { project: Project; tree: NavTre
             project={project}
             rows={items.rows}
             expanded={items.expanded}
-            treeRef={treeRef}
+            handleRef={handle}
             onChoose={() => {
-              const button = trigger.current?.querySelector('button') ?? null;
               setOpen(false);
-              returnFocus(null, { from: button });
+              returnFocus(null, { from: trigger.current });
             }}
           />
         )}

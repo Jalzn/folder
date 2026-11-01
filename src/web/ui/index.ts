@@ -6,7 +6,15 @@ export { Dialog, DialogActions, type DialogProps } from './Dialog';
 export { EmptyState } from './EmptyState';
 export { ErrorNotice } from './ErrorNotice';
 export { FilterMenu, type FilterOption } from './FilterMenu';
-export { focusPageTitle, focusWhenPresent, pageFocus, pageTitle, returnFocus, whenPresent } from './focus';
+export {
+  focusPageTitle,
+  focusWhenPresent,
+  pageFocus,
+  pageTitle,
+  returnFocus,
+  trackPageFocus,
+  whenPresent,
+} from './focus';
 export { ColumnRing } from './glyphs/ColumnRing';
 export { Logo } from './glyphs/Logo';
 export { ProjectMark } from './glyphs/ProjectMark';

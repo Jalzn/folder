@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react';
-import { type KeyboardEvent, type RefObject, useEffect } from 'react';
+import type { KeyboardEvent, RefObject } from 'react';
 import { Kbd } from '../../ui';
 import { isComposing } from '../keyboard/guards';
 
@@ -13,12 +13,15 @@ export function SidebarSearch({
   query,
   onQueryChange,
   onOpenFirst,
+  onArrowDown,
   inputRef,
 }: {
   projectName: string;
   query: string;
   onQueryChange: (query: string) => void;
   onOpenFirst: () => void;
+  /** ↓ in the field: to the first result. */
+  onArrowDown: () => void;
   inputRef: RefObject<HTMLInputElement | null>;
 }) {
   function keyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -33,14 +36,9 @@ export function SidebarSearch({
       onOpenFirst();
     } else if (event.key === 'ArrowDown') {
       event.preventDefault();
-      event.currentTarget.closest('.sidebar')?.querySelector<HTMLElement>('.sidebar-results [data-roving]')?.focus();
+      onArrowDown();
     }
   }
-  useEffect(() => {
-    if (!query) return;
-    // Results replace the sections: the list starts again at the top.
-    inputRef.current?.closest('.sidebar')?.querySelector('.sidebar__sections')?.scrollTo({ top: 0 });
-  }, [query, inputRef]);
   return (
     <div className="sidebar-search">
       <Search className="sidebar-search__icon" size={16} aria-hidden="true" />

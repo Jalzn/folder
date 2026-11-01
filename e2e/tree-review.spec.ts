@@ -192,3 +192,18 @@ test('letters that type-to-select finds nothing for stay in the tree: "zp" pins 
   await expect(page.getByRole('menu', { name: /^Novo em / })).toHaveCount(0);
   expect(page.url()).toContain(projectId);
 });
+
+test('↓ from Quadro comes into the tree at the open item’s row, and ↑ from the first row goes back', async ({
+  page,
+}) => {
+  const { projectId, fluxo } = await sampleProject(page);
+  await page.goto(`/projetos/${projectId}/documentos/${fluxo}`);
+  await expect(treeRow(page, 'Fluxo')).toHaveAttribute('aria-current', 'page');
+  await projectNavigation(page).getByRole('link', { name: 'Quadro' }).focus();
+  await page.keyboard.press('ArrowDown');
+  expect(await focusedRow(page)).toMatch(/^Fluxo, documento/);
+  // The first row's ↑ leaves for the navigation's last row.
+  await folderRow(page, 'Arquitetura').focus();
+  await page.keyboard.press('ArrowUp');
+  await expect(projectNavigation(page).getByRole('link', { name: 'Quadro' })).toBeFocused();
+});
