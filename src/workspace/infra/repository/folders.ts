@@ -73,7 +73,7 @@ export function folderRepository(connection: Database): FolderRepository {
               .as('counts'),
           (join) => join.onRef('counts.folder_id', '=', 'folder.id'),
         )
-        .select(['folder.id', 'folder.project_id', 'folder.name', 'folder.position', 'counts.items'])
+        .select(['folder.id', 'folder.project_id', 'folder.name', 'folder.position', 'folder.version', 'counts.items'])
         .where('folder.deleted_at', 'is', null);
       if (projectId) query = query.where('folder.project_id', '=', projectId);
       const rows = await query.orderBy('project.position').orderBy('project.id').orderBy('folder.position').execute();
@@ -82,6 +82,7 @@ export function folderRepository(connection: Database): FolderRepository {
         projectId: row.project_id,
         name: row.name,
         position: row.position,
+        version: row.version,
         items: row.items ?? 0,
       }));
     },

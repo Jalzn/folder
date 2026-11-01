@@ -6,6 +6,18 @@ import { pngImage } from '../../testing/png.js';
 describe('read_drawing', () => {
   const agent = useAgentTools();
 
+  it('names the folder a drawing is in, quoted', async () => {
+    const folder = await agent.service.createFolder({ ...request(), projectId: agent.project.id, name: 'MCP · "a"' });
+    const canvas = await agent.service.createCanvas({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Fluxo',
+      folderId: folder.id,
+    });
+    const { text } = await agent.call('read_drawing', { id: canvas.id, image: false });
+    expect(text.split('\n')[0]).toContain('· Projeto "Projeto de teste" · Pasta "MCP · \\"a\\"" · versão 1 ·');
+  });
+
   it('describes the current scene of a drawing', async () => {
     const canvas = await agent.service.createCanvas({
       ...request(),
@@ -15,7 +27,7 @@ describe('read_drawing', () => {
     });
     const { text } = await agent.call('read_drawing', { id: canvas.id });
     expect(text).toContain(
-      `Desenho "Fluxo" · Projeto "Projeto de teste" · versão 1 · atualizado em ${canvas.updatedAt} · ID ${canvas.id}`,
+      `Desenho "Fluxo" · Projeto "Projeto de teste" · Sem pasta · versão 1 · atualizado em ${canvas.updatedAt} · ID ${canvas.id}`,
     );
     expect(text).toContain('Imagem: indisponível');
     expect(text).toContain('Quadro q1 "Ideia" (0, 0, 800×600)');
@@ -25,7 +37,7 @@ describe('read_drawing', () => {
     const project = await agent.service.createProject({ ...request(), name: 'Alfa · versão 9 "beta"' });
     const inProject = await agent.service.createCanvas({ ...request(), title: 'Mapa', projectId: project.id });
     expect((await agent.call('read_drawing', { id: inProject.id })).text).toContain(
-      'Desenho "Mapa" · Projeto "Alfa · versão 9 \\"beta\\"" · versão 1 ·',
+      'Desenho "Mapa" · Projeto "Alfa · versão 9 \\"beta\\"" · Sem pasta · versão 1 ·',
     );
     const empty = await agent.service.createCanvas({ ...request(), projectId: agent.project.id, title: 'Vazio' });
     expect((await agent.call('read_drawing', { id: empty.id })).text).toContain('Imagem: o desenho está vazio');

@@ -41,6 +41,8 @@ export interface FolderSummary {
   projectId: string;
   name: string;
   position: number;
+  /** For renaming or deleting the folder from a list that is not the sidebar's tree. */
+  version: number;
   items: number;
 }
 

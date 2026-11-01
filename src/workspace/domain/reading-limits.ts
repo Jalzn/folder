@@ -9,6 +9,8 @@ export const READING_LIMITS = {
   /** Characters of text in one tool result, footers and error messages included. */
   toolTextChars: 45_000,
   projects: 200,
+  /** Folders list_projects shows per project, with folderCount for all of them. */
+  projectFolders: 50,
   /** Excerpts come from the text within `excerptWindowMargin` characters of the first match. */
   search: { defaultPageSize: 20, maxPageSize: 50, excerptChars: 240, excerptLeadChars: 60, excerptWindowMargin: 2_000 },
   tasks: { defaultPageSize: 50, maxPageSize: 100 },

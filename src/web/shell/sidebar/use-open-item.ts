@@ -14,5 +14,13 @@ export function useOpenItem(type: ItemType): NavItem | null {
   const drawing = useQuery({ ...canvasQuery(id), enabled: id !== '' && type === 'drawing' });
   const item = type === 'document' ? document.data : drawing.data;
   if (!id || !item || item.deletedAt) return null;
-  return { id, title: item.title, updatedAt: item.updatedAt, createdAt: item.createdAt, pinnedAt: item.pinnedAt };
+  return {
+    type,
+    id,
+    title: item.title,
+    updatedAt: item.updatedAt,
+    createdAt: item.createdAt,
+    pinnedAt: item.pinnedAt,
+    folderId: item.folderId,
+  };
 }

@@ -1,5 +1,6 @@
 import { type Kysely, sql } from 'kysely';
-import type { ItemCounts, WorkspaceReader } from '../../application/reading/ports.js';
+import type { FolderWithCount, ItemCounts, WorkspaceReader } from '../../application/reading/ports.js';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
 import type { WorkspaceTables } from '../db.js';
 
 type ProjectReads = Pick<WorkspaceReader, 'projectsWithCounts'>;
@@ -38,6 +39,31 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
     });
   }
 
+  /** The active folders of the projects, in the sidebar's order, with their live items counted. */
+  async function foldersByProject(projectIds: readonly string[]): Promise<Map<string, FolderWithCount[]>> {
+    if (!projectIds.length) return new Map();
+    const live = (table: 'workspace_documents' | 'workspace_canvases') =>
+      sql<number>`(select count(*) from ${sql.table(table)} as filed
+        where filed.folder_id = folder.id and filed.deleted_at is null)`;
+    const rows = await db
+      .selectFrom('workspace_folders as folder')
+      .select(['folder.id', 'folder.project_id', 'folder.name'])
+      .select(sql<number>`${live('workspace_documents')} + ${live('workspace_canvases')}`.as('items'))
+      .where('folder.project_id', 'in', projectIds)
+      .where('folder.deleted_at', 'is', null)
+      .orderBy('folder.project_id')
+      .orderBy('folder.position')
+      .orderBy('folder.id')
+      .execute();
+    const byProject = new Map<string, FolderWithCount[]>();
+    for (const row of rows) {
+      const folders = byProject.get(row.project_id) ?? [];
+      folders.push({ id: row.id, name: row.name, items: row.items });
+      byProject.set(row.project_id, folders);
+    }
+    return byProject;
+  }
+
   return {
     async projectsWithCounts({ includeArchived, limit, after }) {
       let query = db
@@ -52,7 +78,9 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
           sql<boolean>`(updated_at < ${after.updatedAt} or (updated_at = ${after.updatedAt} and id > ${after.id}))`,
         );
       const [projects, counts] = await Promise.all([query.execute(), countsByProject()]);
-      const items = projects.slice(0, limit).map((project) => ({
+      const shown = projects.slice(0, limit);
+      const folders = await foldersByProject(shown.map((project) => project.id));
+      const items = shown.map((project) => ({
         id: project.id,
         name: project.name,
         color: project.color,
@@ -61,6 +89,8 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
         createdAt: project.created_at,
         updatedAt: project.updated_at,
         ...counts(project.id),
+        folderCount: folders.get(project.id)?.length ?? 0,
+        folders: (folders.get(project.id) ?? []).slice(0, READING_LIMITS.projectFolders),
       }));
       return { items, hasMore: projects.length > limit };
     },

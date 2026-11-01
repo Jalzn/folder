@@ -1,10 +1,15 @@
 /**
- * Fills a temporary database with the sample data of docs/interface/brief.md, for visual checks and
- * screenshots, never for production. Deadlines and labels wait for stage 10, and the brief's items
- * without a project live in Geral, as migration 005 left them. The scenes are built here, since the
- * test helpers of the testing/ folders stay out of runtime code.
+ * Fills a temporary database with the sample data of docs/interface/brief.md, filed in the folders of
+ * docs/interface/pastas.md §5, for visual checks and screenshots, never for production. Deadlines and
+ * labels wait for stage 10, and the brief's items without a project live in Geral, as migration 005
+ * left them. The scenes are built here, since the test helpers of the testing/ folders stay out of
+ * runtime code.
  *
- *   DATABASE_PATH=/tmp/tinyfold-08/tinyfold.sqlite pnpm seed:sample
+ *   DATABASE_PATH=/tmp/tinyfold-09/tinyfold.sqlite pnpm seed:sample
+ *   DATABASE_PATH=/tmp/tinyfold-09/grande.sqlite pnpm seed:sample --grande
+ *
+ * `--grande` takes Tinyfold to 55 items in four folders, like the prototype's "Simular projeto grande":
+ * Produto 11, MCP 12, Arquitetura 18, Operação 8 and 5 loose at the root, besides the pinned vision.
  *
  * Writes only inside the system's temporary folders, to a new file or an empty database: before
  * migrating anything, it refuses any other target (see assertSeedTarget), the main database
@@ -175,13 +180,69 @@ function flow(labels: string[], caption?: string): CanvasScene {
   return { appState: { viewBackgroundColor: '#ffffff' }, elements };
 }
 
-async function seed(workspace: WorkspaceService) {
+/** Creates the folders in the order given; each new folder goes first, so they are made from the last. */
+async function folders<const Name extends string>(workspace: WorkspaceService, projectId: string, names: Name[]) {
+  const ids = {} as Record<Name, string>;
+  for (const name of [...names].reverse())
+    ids[name] = (await workspace.createFolder({ ...request(), projectId, name })).id;
+  return ids;
+}
+
+/**
+ * The items the large project adds, as the prototype's loadBigProject numbers them: 37 documents and
+ * 13 drawings, filed by their number. Written before the sample's own items, so these read as older.
+ */
+async function loadBigProject(
+  workspace: WorkspaceService,
+  projectId: string,
+  folder: Record<'Produto' | 'MCP' | 'Arquitetura' | 'Operação', string>,
+) {
+  const pad = (number: number) => String(number).padStart(2, '0');
+  const documentFolder = (number: number) =>
+    number <= 8
+      ? folder.Produto
+      : number <= 17
+        ? folder.MCP
+        : number <= 28
+          ? folder.Arquitetura
+          : number <= 34
+            ? folder.Operação
+            : undefined;
+  const drawingFolder = (number: number) =>
+    number <= 3
+      ? folder.Produto
+      : number <= 5
+        ? folder.MCP
+        : number <= 10
+          ? folder.Arquitetura
+          : number <= 12
+            ? folder.Operação
+            : undefined;
+  for (let number = 1; number <= 37; number++)
+    await workspace.createDocument({
+      ...request(),
+      projectId,
+      folderId: documentFolder(number),
+      title: `Documento de carga ${pad(number)}`,
+      content: [paragraph('Conteúdo de carga para testar a barra lateral com muitos itens.')],
+    });
+  for (let number = 1; number <= 13; number++)
+    await workspace.createCanvas({
+      ...request(),
+      projectId,
+      folderId: drawingFolder(number),
+      title: `Desenho de carga ${pad(number)}`,
+      scene: flow(['Etapa A', 'Etapa B', 'Etapa C']),
+    });
+}
+
+async function seed(workspace: WorkspaceService, { grande }: { grande: boolean }) {
   const project = (name: string, color: 'violet' | 'ochre' | 'gray' | 'green') =>
     workspace.createProject({ ...request(), name, color });
-  const document = (projectId: string, title: string, content: DocumentBlock[]) =>
-    workspace.createDocument({ ...request(), projectId, title, content });
-  const drawing = (projectId: string, title: string, scene: CanvasScene) =>
-    workspace.createCanvas({ ...request(), projectId, title, scene });
+  const document = (projectId: string, title: string, content: DocumentBlock[], folderId?: string) =>
+    workspace.createDocument({ ...request(), projectId, folderId, title, content });
+  const drawing = (projectId: string, title: string, scene: CanvasScene, folderId?: string) =>
+    workspace.createCanvas({ ...request(), projectId, folderId, title, scene });
   const task = (projectId: string, title: string, status: TaskStatus) =>
     workspace.createTask({ ...request(), projectId, title, status });
 
@@ -189,6 +250,16 @@ async function seed(workspace: WorkspaceService) {
   const reforma = await project('Reforma do escritório', 'ochre');
   const geral = await project('Geral', 'gray');
   const site = await project('Site pessoal 2024', 'green');
+
+  // Geral has no folders, to show that folders are optional; "Produto" and "Operação" exist only in
+  // the large project, so the normal sample has no folder with a single item (pastas.md §5).
+  const compras = await folders(workspace, reforma.id, ['Compras']);
+  let tinyfoldFolders: Record<'MCP' | 'Arquitetura', string>;
+  if (grande) {
+    const all = await folders(workspace, tinyfold.id, ['Produto', 'MCP', 'Arquitetura', 'Operação']);
+    await loadBigProject(workspace, tinyfold.id, all);
+    tinyfoldFolders = all;
+  } else tinyfoldFolders = await folders(workspace, tinyfold.id, ['MCP', 'Arquitetura']);
 
   await document(geral.id, 'Ideias soltas', [
     paragraph('Anotar aqui o que ainda não tem projeto.'),
@@ -198,19 +269,29 @@ async function seed(workspace: WorkspaceService) {
   await drawing(geral.id, 'Rabisco de logo', flow(['Dobra', 'Folha', 'Marca'], 'Três ideias para o logo'));
   await task(geral.id, 'Renovar domínio', 'todo');
 
-  await document(reforma.id, 'Orçamento e fornecedores', [
-    heading('Orçamento'),
-    paragraph('Teto de R$ 8.000 para marcenaria, pintura e iluminação.'),
-    heading('Fornecedores'),
-    bullet('Marcenaria Silva: armário e prateleiras sob medida.'),
-    bullet('Loja de iluminação do centro: luminária de mesa e pendente.'),
-  ]);
-  await document(reforma.id, 'Lista de compras', [
-    check('Tinta acrílica fosca, 18 litros', true),
-    check('Fita crepe e lona'),
-    check('Luminária de mesa'),
-  ]);
-  await drawing(reforma.id, 'Planta do escritório', flow(['Porta', 'Mesa', 'Janela'], 'Planta baixa, sem escala'));
+  await document(
+    reforma.id,
+    'Orçamento e fornecedores',
+    [
+      heading('Orçamento'),
+      paragraph('Teto de R$ 8.000 para marcenaria, pintura e iluminação.'),
+      heading('Fornecedores'),
+      bullet('Marcenaria Silva: armário e prateleiras sob medida.'),
+      bullet('Loja de iluminação do centro: luminária de mesa e pendente.'),
+    ],
+    compras.Compras,
+  );
+  await document(
+    reforma.id,
+    'Lista de compras',
+    [check('Tinta acrílica fosca, 18 litros', true), check('Fita crepe e lona'), check('Luminária de mesa')],
+    compras.Compras,
+  );
+  const planta = await drawing(
+    reforma.id,
+    'Planta do escritório',
+    flow(['Porta', 'Mesa', 'Janela'], 'Planta baixa, sem escala'),
+  );
   for (const [title, status] of [
     ['Pedir orçamento do marceneiro', 'todo'],
     ['Escolher luminária', 'doing'],
@@ -220,21 +301,32 @@ async function seed(workspace: WorkspaceService) {
     await task(reforma.id, title, status);
 
   const token = paragraph('Gerar token pessoal no Perfil, mostrado uma única vez, com o comando pronto para copiar.');
-  const mcp = await document(tinyfold.id, 'MCP somente leitura', [
-    paragraph('O Claude Code consulta documentos, desenhos e tarefas por MCP, sem escrever nada.'),
-    token,
-    paragraph('Cada resposta cabe em 45.000 caracteres; documentos longos vêm em páginas.'),
-  ]);
-  await document(tinyfold.id, 'Notas de arquitetura', [
-    heading('Módulos'),
-    paragraph('core, auth, workspace, server e web, cada um com domínio, aplicação e infraestrutura.'),
-    heading('Persistência'),
-    paragraph('SQLite no servidor, com migrações numeradas e escritas idempotentes.'),
-  ]);
-  const autosave = await drawing(
+  const mcp = await document(
+    tinyfold.id,
+    'MCP somente leitura',
+    [
+      paragraph('O Claude Code consulta documentos, desenhos e tarefas por MCP, sem escrever nada.'),
+      token,
+      paragraph('Cada resposta cabe em 45.000 caracteres; documentos longos vêm em páginas.'),
+    ],
+    tinyfoldFolders.MCP,
+  );
+  await document(
+    tinyfold.id,
+    'Notas de arquitetura',
+    [
+      heading('Módulos'),
+      paragraph('core, auth, workspace, server e web, cada um com domínio, aplicação e infraestrutura.'),
+      heading('Persistência'),
+      paragraph('SQLite no servidor, com migrações numeradas e escritas idempotentes.'),
+    ],
+    tinyfoldFolders.Arquitetura,
+  );
+  await drawing(
     tinyfold.id,
     'Fluxo do autosave',
     flow(['Editor', 'Rascunho local', 'Servidor'], 'Uma chamada em voo por documento'),
+    tinyfoldFolders.Arquitetura,
   );
   await drawing(tinyfold.id, 'Navegação com projeto no centro', flow(['Seletor', 'Projeto', 'Item']));
   await workspace.createTask({
@@ -270,7 +362,7 @@ async function seed(workspace: WorkspaceService) {
     paragraph('Próximo passo: gerar token pessoal no Perfil para o Claude Code ler o Tinyfold.'),
   ]);
   await workspace.pinItem({ type: 'document', id: vision.id });
-  await workspace.pinItem({ type: 'drawing', id: autosave.id });
+  await workspace.pinItem({ type: 'drawing', id: planta.id });
 
   await document(site.id, 'Portfólio', [paragraph('Projetos de 2024 e um texto curto de apresentação.')]);
   await workspace.updateProject({ ...request(), id: site.id, expectedVersion: site.version, archived: true });
@@ -278,26 +370,36 @@ async function seed(workspace: WorkspaceService) {
 }
 
 /**
- * Spreads the sample's writes over the last two days, an hour and a half apart, so recency orders
- * them as written and the interface shows plausible dates. It never passes the current time.
+ * Spreads the sample's writes over the last `days`, an hour and a half apart, so recency orders them
+ * as written and the interface shows plausible dates. It never passes the current time.
  */
-function sampleClock() {
+function sampleClock(days: number) {
   const step = 90 * 60_000;
-  let at = Date.now() - 2 * 24 * 60 * 60_000;
+  let at = Date.now() - days * 24 * 60 * 60_000;
   return () => {
     at = Math.min(at + step, Date.now());
     return new Date(at);
   };
 }
 
+/** The only option is `--grande`; anything else is refused before the database is opened. */
+function readOptions(args: string[]) {
+  const unknown = args.filter((arg) => arg !== '--grande');
+  if (unknown.length > 0) throw new Error(`Opção desconhecida: ${unknown.join(' ')}. Use apenas --grande.`);
+  return { grande: args.includes('--grande') };
+}
+
 async function main() {
+  const options = readOptions(process.argv.slice(2));
   const { databasePath } = readConfig();
   assertSeedTarget(databasePath, { roots: temporaryRoots(), production: process.env.NODE_ENV === 'production' });
   const db = createDatabase(databasePath);
   try {
     await migrate(db, modules);
-    const projects = await seed(createWorkspaceService(db, sampleClock()));
-    console.info(`Exemplo criado em ${databasePath}: ${projects.map((project) => project.name).join(', ')}.`);
+    // The large project's 54 more writes would reach the current time within two days.
+    const projects = await seed(createWorkspaceService(db, sampleClock(options.grande ? 7 : 2)), options);
+    const names = projects.map((project) => project.name).join(', ');
+    console.info(`Exemplo${options.grande ? ' grande' : ''} criado em ${databasePath}: ${names}.`);
   } finally {
     await db.destroy();
   }

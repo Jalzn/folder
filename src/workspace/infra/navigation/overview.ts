@@ -26,7 +26,7 @@ export function overviewReads(db: Kysely<WorkspaceTables>): OverviewReads {
   const recent = (projectId: string, type: NavItemType) =>
     db
       .selectFrom(itemTable(db, type))
-      .select([sql<NavItemType>`${type}`.as('type'), 'item.id', 'item.title', 'item.updated_at'])
+      .select([sql<NavItemType>`${type}`.as('type'), 'item.id', 'item.title', 'item.updated_at', 'item.folder_id'])
       .where('item.project_id', '=', projectId)
       .where('item.deleted_at', 'is', null);
 
@@ -76,10 +76,13 @@ export function overviewReads(db: Kysely<WorkspaceTables>): OverviewReads {
     },
 
     async recentItems(projectId, limit) {
-      const rows = await recent(projectId, 'document')
-        .unionAll(recent(projectId, 'drawing'))
-        .orderBy('updated_at', 'desc')
-        .orderBy('id')
+      const rows = await db
+        .selectFrom(recent(projectId, 'document').unionAll(recent(projectId, 'drawing')).as('recent'))
+        .leftJoin('workspace_folders as folder', 'folder.id', 'recent.folder_id')
+        .select(['recent.type', 'recent.id', 'recent.title', 'recent.updated_at', 'folder.id as folder_id'])
+        .select('folder.name as folder_name')
+        .orderBy('recent.updated_at', 'desc')
+        .orderBy('recent.id')
         .limit(limit)
         .execute();
       const sources = await excerptSources(rows);
@@ -91,6 +94,7 @@ export function overviewReads(db: Kysely<WorkspaceTables>): OverviewReads {
           title: row.title,
           updatedAt: row.updated_at,
           excerpt: excerptFromStart(source.text, excerptChars, source.cut),
+          folder: row.folder_id && row.folder_name ? { id: row.folder_id, name: row.folder_name } : null,
         };
       });
     },

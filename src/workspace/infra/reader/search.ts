@@ -6,6 +6,7 @@ import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
 import type { WorkspaceTables } from '../db.js';
 import { excerptWindows } from './excerpt-windows.js';
+import { folderColumns, folderReference } from './folders.js';
 import { searchableItems, type TextType, titleLengthInSearchText } from './searchable.js';
 import { projectColumns, projectReference } from './shared.js';
 
@@ -34,8 +35,10 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
     let select = db
       .selectFrom(searchableItems(db, type))
       .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
+      .leftJoin('workspace_folders as folder', 'folder.id', 'item.folder_id')
       .select(['item.id', 'item.title', 'item.updated_at', 'item.pinned_at', titleRank.as('title_rank')])
       .select(projectColumns)
+      .select(folderColumns)
       .where('item.deleted_at', 'is', null)
       .where(afterKey(query, searchTypeRankOf(type), titleRank))
       .orderBy('title_rank')
@@ -43,6 +46,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
       .orderBy('item.id')
       .limit(limit);
     if (query.projectId) select = select.where('item.project_id', '=', query.projectId);
+    if (query.folderId) select = select.where('item.folder_id', '=', query.folderId);
     for (const term of query.terms) select = select.where(sql<boolean>`instr(item.search_text, ${term}) > 0`);
     return (await select.execute()).map((row) => ({
       type,
@@ -51,6 +55,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
       ...projectReference(row),
       updatedAt: row.updated_at,
       pinned: row.pinned_at !== null,
+      folder: folderReference(row),
       titleRank: row.title_rank,
     }));
   }

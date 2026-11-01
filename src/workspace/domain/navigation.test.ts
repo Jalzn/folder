@@ -3,6 +3,8 @@ import { type NavItem, navSection, openTaskCount, tasksLeftOut } from './navigat
 
 /** Created on October `created` and edited on October `edited`. */
 const item = (id: string, title: string, created: number, edited: number, pinnedAt: string | null = null): NavItem => ({
+  type: 'document',
+  folderId: null,
   id,
   title,
   createdAt: `2026-10-${String(created).padStart(2, '0')}T12:00:00.000Z`,

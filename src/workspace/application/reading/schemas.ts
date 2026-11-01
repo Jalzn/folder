@@ -35,6 +35,7 @@ export const SearchInput = z.object(
           'lista os itens recentes.',
       ),
     projectId: id.optional().describe('Limita a busca a um projeto.'),
+    folderId: id.optional().describe('Limita a uma pasta; só documentos e desenhos.'),
     types: z
       .array(z.enum(SEARCH_ITEM_TYPES, pt), pt)
       .min(1)

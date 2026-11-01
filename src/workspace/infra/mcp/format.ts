@@ -42,7 +42,13 @@ const shortTitle = (title: string, max = READING_LIMITS.document.originTaskTitle
  */
 export function documentHeader(
   input: {
-    document: ProjectReference & { id: string; title: string; version: number; updatedAt: string };
+    document: ProjectReference & {
+      id: string;
+      title: string;
+      version: number;
+      updatedAt: string;
+      folder: { name: string } | null;
+    };
     originTasks: OriginTask[];
     originTaskCount: number;
     empty: boolean;
@@ -54,6 +60,7 @@ export function documentHeader(
     `# ${singleLine(document.title)}`,
     '',
     `- Projeto: ${projectName(document)}`,
+    `- Pasta: ${document.folder ? singleLine(document.folder.name) : 'nenhuma (raiz do projeto)'}`,
     `- Atualizado: ${document.updatedAt} · versão ${document.version}`,
     `- ID: ${document.id}`,
   ];

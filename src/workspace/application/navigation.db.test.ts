@@ -8,6 +8,7 @@ import type { DocumentBlock, Project, TaskStatus } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
+import { testFolder } from '../testing/folders.js';
 import { testProject } from '../testing/projects.js';
 
 const request = () => ({ requestId: randomUUID() });
@@ -66,6 +67,8 @@ describe('navigation queries', () => {
         'Ébano',
       ]);
       expect(navigation.documents.pinned[0]).toEqual({
+        type: 'document',
+        folderId: null,
         id: zeta?.id,
         title: 'Zeta',
         updatedAt: zeta?.updatedAt,
@@ -101,6 +104,46 @@ describe('navigation queries', () => {
       expect(await sorted('created')).toEqual(['Doc 2', 'Doc 10', 'Casa', 'árvore', 'Banco']);
       expect(await sorted('title', 2)).toEqual(['árvore', 'Banco']);
       expect(() => service.projectNavigation({ projectId: project.id, limit: 21 })).toThrow();
+    });
+
+    it('builds the items tree: root pins, folders in order with their first children, then loose items', async () => {
+      const [arquitetura, mcp] = [
+        await testFolder(service, project.id, 'Arquitetura'),
+        await testFolder(service, project.id, 'MCP'),
+      ];
+      const gone = await testFolder(service, project.id, 'Excluída');
+      const file = (title: string, folderId?: string) =>
+        service.createDocument({ ...request(), projectId: project.id, title, ...(folderId ? { folderId } : {}) });
+      const visao = await file('Visão do produto');
+      await service.pinItem({ type: 'document', id: visao.id });
+      await file('MCP somente leitura', mcp.id);
+      for (const title of ['Notas', 'Camadas', 'Banco']) await file(title, arquitetura.id);
+      const fluxo = await service.createCanvas({
+        ...request(),
+        projectId: project.id,
+        title: 'Fluxo do autosave',
+        folderId: arquitetura.id,
+      });
+      await service.pinItem({ type: 'drawing', id: fluxo.id });
+      await file('Navegação');
+      const trashed = await file('Na lixeira', mcp.id);
+      await service.deleteDocument({ ...request(), id: trashed.id, expectedVersion: 1 });
+      await service.deleteFolder({ ...request(), id: gone.id, expectedVersion: 1, withItems: false });
+
+      const { tree } = await service.projectNavigation({ projectId: project.id, sort: 'title', limit: 2 });
+      expect(tree.total).toBe(7);
+      expect(titles(tree.pinned)).toEqual(['Visão do produto']);
+      expect(tree.folders.map((folder) => [folder.name, folder.position, folder.total, titles(folder.items)])).toEqual([
+        ['MCP', 0, 1, ['MCP somente leitura']],
+        ['Arquitetura', 1, 4, ['Fluxo do autosave', 'Banco']],
+      ]);
+      expect(tree.folders[1]?.items[0]).toMatchObject({ type: 'drawing', folderId: arquitetura.id });
+      expect(tree.loose).toEqual({
+        total: 1,
+        items: [expect.objectContaining({ title: 'Navegação', folderId: null })],
+      });
+      // Until B5 the per-type sections still answer.
+      expect((await service.projectNavigation({ projectId: project.id })).documents.total).toBe(6);
     });
 
     it('counts open tasks and every type in the trash, for archived projects too', async () => {
@@ -183,6 +226,7 @@ describe('navigation queries', () => {
         title: 'Fluxo',
         updatedAt: drawing.updatedAt,
         excerpt: 'Ideia, Fluxo de ação',
+        folder: null,
       });
       expect(overview.lastEdited).toEqual({
         type: 'document',
@@ -190,6 +234,22 @@ describe('navigation queries', () => {
         title: 'Notas',
         updatedAt: last?.updatedAt,
       });
+    });
+
+    it('names the folder of each item edited last', async () => {
+      const mcp = await testFolder(service, project.id, 'MCP');
+      const filed = await service.createDocument({
+        ...request(),
+        projectId: project.id,
+        title: 'Filed',
+        folderId: mcp.id,
+      });
+      await newDocument('Solto');
+      const { recent } = await service.projectOverview({ projectId: project.id });
+      expect(recent.map((item) => [item.id === filed.id ? 'filed' : 'loose', item.folder])).toEqual([
+        ['loose', null],
+        ['filed', { id: mcp.id, name: 'MCP' }],
+      ]);
     });
 
     it("shows a document's first text that is not a heading, or its headings when it has only those", async () => {

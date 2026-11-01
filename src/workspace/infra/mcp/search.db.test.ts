@@ -43,6 +43,62 @@ describe('search', () => {
     expect(onlyTasks.items.map((item) => item.type)).toEqual(['task']);
   });
 
+  it('narrows to the documents and drawings of a folder, and names the folder of each', async () => {
+    const mcp = await agent.service.createFolder({ ...request(), projectId: agent.project.id, name: 'MCP' });
+    const filed = await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Plano do MCP',
+      folderId: mcp.id,
+    });
+    const drawing = await agent.service.createCanvas({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Fluxo do MCP',
+      folderId: mcp.id,
+    });
+    const loose = await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Solto do MCP',
+    });
+    await agent.service.createTask({ ...request(), projectId: agent.project.id, title: 'Tarefa do MCP' });
+    type Hit = { id: string; type: string; folder?: { id: string; name: string } | null };
+    const { items } = await agent.json<{ items: Hit[] }>('search', { query: 'mcp', folderId: mcp.id });
+    expect(items.map((item) => [item.id, item.folder])).toEqual([
+      [drawing.id, { id: mcp.id, name: 'MCP' }],
+      [filed.id, { id: mcp.id, name: 'MCP' }],
+    ]);
+    const all = await agent.json<{ items: Hit[] }>('search', { query: 'mcp' });
+    expect(all.items.find((item) => item.id === loose.id)?.folder).toBeNull();
+    expect(all.items.find((item) => item.type === 'task')).not.toHaveProperty('folder');
+    // Tasks are never in folders.
+    expect(await agent.json('search', { folderId: mcp.id, types: ['task'] })).toEqual({ items: [], nextCursor: null });
+
+    const other = await agent.service.createProject({ ...request(), name: 'Outro' });
+    expect(await agent.call('search', { folderId: mcp.id, projectId: other.id })).toEqual({
+      isError: true,
+      text: 'A pasta não é deste projeto.',
+    });
+    await agent.service.moveItem({
+      ...request(),
+      type: 'document',
+      id: filed.id,
+      projectId: agent.project.id,
+      folderId: null,
+    });
+    await agent.service.moveItem({
+      ...request(),
+      type: 'drawing',
+      id: drawing.id,
+      projectId: agent.project.id,
+      folderId: null,
+    });
+    await agent.service.deleteFolder({ ...request(), id: mcp.id, expectedVersion: 1, withItems: false });
+    for (const folderId of [mcp.id, '00000000-0000-4000-8000-000000000000'])
+      expect(await agent.call('search', { folderId })).toEqual({ isError: true, text: 'Pasta não encontrada.' });
+  });
+
   it('says which documents and drawings are pinned in their project', async () => {
     const pinned = await agent.service.createDocument({ ...request(), projectId: agent.project.id, title: 'Fixado' });
     await agent.service.createCanvas({ ...request(), projectId: agent.project.id, title: 'Solto' });

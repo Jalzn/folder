@@ -18,6 +18,19 @@ export interface WorkspaceReader {
   task(id: string): Promise<TaskDetail | undefined>;
   /** Counts every change to the board's tasks. */
   boardRevision(): Promise<number>;
+  /** A folder, active or deleted, for the reads it filters. */
+  folder(id: string): Promise<(FolderReference & { projectId: string; deleted: boolean }) | undefined>;
+}
+
+/** The folder a document or drawing is in. */
+export interface FolderReference {
+  id: string;
+  name: string;
+}
+
+/** A project's active folder as list_projects shows it, with its live documents and drawings counted. */
+export interface FolderWithCount extends FolderReference {
+  items: number;
 }
 
 export interface ReadingContext {
@@ -52,6 +65,10 @@ export interface ProjectWithCounts extends ItemCounts {
   archived: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Every active folder of the project. */
+  folderCount: number;
+  /** The first active folders, in the sidebar's order, at most READING_LIMITS.projectFolders. */
+  folders: FolderWithCount[];
 }
 
 /** The project every item belongs to. */
@@ -65,6 +82,8 @@ export interface SearchQuery {
   /** Normalized words from searchTerms, all required; none lists recent items. */
   terms: readonly string[];
   projectId: string | undefined;
+  /** Only documents and drawings in this active folder. */
+  folderId: string | undefined;
   types: readonly SearchItemType[];
   limit: number;
   /** The key of the last item of the previous page. */
@@ -83,6 +102,8 @@ export type SearchHit = ProjectReference & {
         excerpt: string;
         /** Pinned at the top of its section in the project's sidebar. */
         pinned: boolean;
+        /** The folder it is in, or null at the project's root. */
+        folder: FolderReference | null;
       }
     | { type: 'task'; status: TaskStatus }
   );
@@ -90,6 +111,8 @@ export type SearchHit = ProjectReference & {
 export interface DocumentForReading extends ProjectReference {
   id: string;
   title: string;
+  /** The folder it is in, or null at the project's root. */
+  folder: FolderReference | null;
   content: DocumentBlock[];
   version: number;
   createdAt: string;
@@ -105,6 +128,8 @@ export interface OriginTask {
 export interface CanvasForReading extends ProjectReference {
   id: string;
   title: string;
+  /** The folder it is in, or null at the project's root. */
+  folder: FolderReference | null;
   scene: CanvasScene;
   version: number;
   updatedAt: string;

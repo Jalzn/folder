@@ -25,6 +25,7 @@ const hitView = ({ projectId, projectName, projectArchived, updatedAt, titleRank
         projectArchived,
         updatedAt,
         pinned: hit.pinned,
+        folder: hit.folder,
         excerpt: hit.excerpt,
       };
 
@@ -37,8 +38,9 @@ export const searchTool = (reading: ReadingContext) =>
       'ou no texto, sem diferenciar caixa e acentos. Hífens separam palavras, e a pontuação em volta delas é ' +
       'ignorada. Itens com mais palavras no título vêm primeiro e, depois, ' +
       'os editados mais recentemente. Sem query, lista os itens editados mais recentemente. Documentos e desenhos ' +
-      'trazem pinned, que diz se estão fixados no topo da lateral do projeto. Passe o nextCursor para ver a ' +
-      'próxima página. Leia os itens com read_document, read_drawing ou read_task.',
+      'trazem pinned, que diz se estão fixados no topo da lateral do projeto, e folder, a pasta em que estão, ou ' +
+      'null na raiz do projeto; folderId limita a busca aos documentos e desenhos de uma pasta. Passe o ' +
+      'nextCursor para ver a próxima página. Leia os itens com read_document, read_drawing ou read_task.',
     inputSchema: SearchInput,
     annotations: readOnlyAnnotations,
     async handler(input) {

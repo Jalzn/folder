@@ -20,7 +20,7 @@ export {
   readDocumentContent,
 } from './document.js';
 export { excerptAround, excerptFromStart, type TextCut } from './excerpt.js';
-export { FOLDER_LIMITS, type Folder, folderName, folderNameKey } from './folders.js';
+export { FOLDER_LIMITS, type Folder, folderName, folderNameKey, folderOrder } from './folders.js';
 export { documentToMarkdown } from './markdown.js';
 export { displayMathLines, inlineMath, MATH_SEPARATOR, needsMathSeparator } from './markdown-math.js';
 export type {
@@ -31,13 +31,22 @@ export type {
   DocumentSummary,
   JsonValue,
   Project,
+  RestoreAck,
   Task,
   TaskList,
   TaskSource,
   TaskStatus,
 } from './models.js';
-export { NAV_SORTS, type NavItem, type NavSection, type NavSort } from './navigation.js';
+export {
+  bySort,
+  NAV_SORTS,
+  type NavItem,
+  type NavItemType,
+  type NavSection,
+  type NavSort,
+} from './navigation.js';
 export { NAVIGATION_LIMITS } from './navigation-limits.js';
+export { type NavFolder, type NavTree, navTree } from './navigation-tree.js';
 export { type PngInfo, readPngInfo } from './png.js';
 export { defaultProjectColor, MAX_PINNED, PROJECT_COLORS, type ProjectColor, projectInitial } from './project.js';
 export { sceneFingerprint } from './scene-fingerprint.js';

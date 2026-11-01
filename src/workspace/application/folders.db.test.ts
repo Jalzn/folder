@@ -390,6 +390,7 @@ describe('folders', () => {
         projectId,
         name,
         position,
+        version: 1,
         items,
       });
       expect(await service.listFolders({ projectId: project.id })).toEqual({

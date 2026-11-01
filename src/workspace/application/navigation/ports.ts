@@ -8,6 +8,8 @@ export interface NavigationReader {
   findProject(projectId: string): Promise<Project | undefined>;
   /** Every live document or drawing of the project: few enough for the sidebar to sort in memory. */
   navItems(projectId: string, type: NavItemType): Promise<NavItem[]>;
+  /** The project's active folders, in manual order. */
+  folders(projectId: string): Promise<{ id: string; name: string; position: number; version: number }[]>;
   /** The project's live tasks in each column. */
   taskCounts(projectId: string): Promise<Record<TaskStatus, number>>;
   /** The first `limit` live tasks of one column, in board order, with their sources. */
@@ -34,6 +36,8 @@ export interface RecentItem {
    * those; the start of a drawing's texts, separated by commas.
    */
   excerpt: string;
+  /** The folder it is in, or null at the project's root. */
+  folder: { id: string; name: string } | null;
 }
 
 export interface TrashItem {

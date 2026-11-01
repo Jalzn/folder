@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
 import type { DocumentBlock } from '../../domain/models.js';
 import type { WorkspaceTables } from '../db.js';
+import { folderColumns, folderReference } from './folders.js';
 import { columnRank, projectColumns, projectReference } from './shared.js';
 
 type DocumentReads = Pick<WorkspaceReader, 'documentForReading' | 'tasksFromDocument'>;
@@ -12,8 +13,10 @@ export function documentReads(db: Kysely<WorkspaceTables>): DocumentReads {
       const row = await db
         .selectFrom('workspace_documents as item')
         .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
+        .leftJoin('workspace_folders as folder', 'folder.id', 'item.folder_id')
         .select(['item.id', 'item.title', 'item.content', 'item.version', 'item.created_at', 'item.updated_at'])
         .select(projectColumns)
+        .select(folderColumns)
         .where('item.id', '=', id)
         .where('item.deleted_at', 'is', null)
         .executeTakeFirst();
@@ -22,6 +25,7 @@ export function documentReads(db: Kysely<WorkspaceTables>): DocumentReads {
           id: row.id,
           title: row.title,
           ...projectReference(row),
+          folder: folderReference(row),
           content: JSON.parse(row.content) as DocumentBlock[],
           version: row.version,
           createdAt: row.created_at,

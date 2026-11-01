@@ -12,11 +12,14 @@ export type NavSort = (typeof NAV_SORTS)[number];
 
 /** A document or drawing as the sidebar lists it. */
 export interface NavItem {
+  type: NavItemType;
   id: string;
   title: string;
   updatedAt: string;
   createdAt: string;
   pinnedAt: string | null;
+  /** Null at the project's root. */
+  folderId: string | null;
 }
 
 export interface NavSection {
@@ -38,17 +41,20 @@ const orders: Record<NavSort, (a: NavItem, b: NavItem) => number> = {
   created: (a, b) => descending(a.createdAt, b.createdAt),
 };
 
+/** Pinned items in the order they were pinned, IDs breaking ties. */
+export const byPinOrder = (a: NavItem, b: NavItem) =>
+  ascending(a.pinnedAt ?? '', b.pinnedAt ?? '') || ascending(a.id, b.id);
+
+/** Items in the chosen order, IDs breaking ties, so the order never changes between reads. */
+export const bySort = (sort: NavSort) => (a: NavItem, b: NavItem) => orders[sort](a, b) || ascending(a.id, b.id);
+
 /**
  * A sidebar section from all the live items of one type: the pinned ones first, then up to `limit`
  * of the others in `sort` order. IDs break ties, so the order never changes between reads.
  */
 export function navSection(items: readonly NavItem[], sort: NavSort, limit: number): NavSection {
-  const pinned = items
-    .filter((item) => item.pinnedAt !== null)
-    .sort((a, b) => ascending(a.pinnedAt ?? '', b.pinnedAt ?? '') || ascending(a.id, b.id));
-  const unpinned = items
-    .filter((item) => item.pinnedAt === null)
-    .sort((a, b) => orders[sort](a, b) || ascending(a.id, b.id));
+  const pinned = items.filter((item) => item.pinnedAt !== null).sort(byPinOrder);
+  const unpinned = items.filter((item) => item.pinnedAt === null).sort(bySort(sort));
   return { total: items.length, pinned, items: unpinned.slice(0, limit) };
 }
 

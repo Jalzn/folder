@@ -67,6 +67,36 @@ describe('agent read tools', () => {
       });
   });
 
+  it("lists each project's active folders in the sidebar's order, with their live items counted", async () => {
+    const create = (name: string, projectId = agent.project.id) =>
+      agent.service.createFolder({ ...request(), projectId, name });
+    const [arquitetura, mcp, gone] = [await create('Arquitetura'), await create('MCP'), await create('Excluída')];
+    await agent.service.deleteFolder({ ...request(), id: gone.id, expectedVersion: 1, withItems: false });
+    await agent.service.createDocument({ ...request(), projectId: agent.project.id, folderId: arquitetura.id });
+    await agent.service.createCanvas({ ...request(), projectId: agent.project.id, folderId: arquitetura.id });
+    const trashed = await agent.service.createDocument({ ...request(), projectId: agent.project.id, folderId: mcp.id });
+    await agent.service.deleteDocument({ ...request(), id: trashed.id, expectedVersion: 1 });
+    const archived = await agent.service.createProject({ ...request(), name: 'Antigo' });
+    const old = await create('Velha', archived.id);
+    await agent.service.updateProject({ ...request(), id: archived.id, expectedVersion: 1, archived: true });
+
+    const { projects } = await agent.json<{ projects: { id: string; folderCount: number; folders: unknown[] }[] }>(
+      'list_projects',
+      { includeArchived: true },
+    );
+    expect(projects.map((project) => [project.id, project.folderCount, project.folders])).toEqual([
+      [archived.id, 1, [{ id: old.id, name: 'Velha', items: 0 }]],
+      [
+        agent.project.id,
+        2,
+        [
+          { id: mcp.id, name: 'MCP', items: 0 },
+          { id: arquitetura.id, name: 'Arquitetura', items: 2 },
+        ],
+      ],
+    ]);
+  });
+
   it('keeps every text result within the output ceiling, by its own budget', async () => {
     // Quotes, backslashes and control characters grow the most when written as JSON.
     const heavy = (length: number) => '"\\\u0001'.repeat(length).slice(0, length);
@@ -80,25 +110,34 @@ describe('agent read tools', () => {
     const projects = [];
     for (let index = 0; index < 205; index += 1)
       projects.push(await agent.service.createProject({ ...request(), name: `${heavy(96)}${index}` }));
+    const [heaviest, ...others] = projects;
+    if (!heaviest) throw new Error('No project to fill.');
+    const projectId = heaviest.id;
+    // Folders with names as heavy as they get: 200 in one project, of which list_projects shows 50, and 50
+    // in each of ten others.
+    const folder = (inProject: string, index: number) =>
+      agent.service.createFolder({ ...request(), projectId: inProject, name: `${heavy(96)}${index}` });
+    const filedIn = await folder(projectId, 0);
+    for (let index = 1; index < 200; index += 1) await folder(projectId, index);
+    for (const other of others.slice(0, 10)) for (let index = 0; index < 50; index += 1) await folder(other.id, index);
     let listed = 0;
     for (let cursor: string | null | undefined; cursor !== null; ) {
       const page = JSON.parse((await record('list_projects', cursor ? { cursor } : {})).text) as {
-        projects: unknown[];
+        projects: { id: string; folderCount: number; folders: unknown[] }[];
         nextCursor: string | null;
       };
       listed += page.projects.length;
+      const shown = page.projects.find((project) => project.id === projectId);
+      if (shown) expect([shown.folders.length, shown.folderCount]).toEqual([50, 200]);
       cursor = page.nextCursor;
     }
     expect(listed).toBe(206);
-
-    const [heaviest] = projects;
-    if (!heaviest) throw new Error('No project to fill.');
-    const projectId = heaviest.id;
     const code = { type: 'codeBlock', props: { language: 'ts' }, content: 'linha de código\n'.repeat(3_000) };
     const document = await agent.service.createDocument({
       ...request(),
       title: `${heavy(295)} alvo`,
       projectId,
+      folderId: filedIn.id,
       content: [paragraph(`alvo ${heavy(3_000)}`), code, paragraph('palavra '.repeat(8_000))],
     });
     // Every third task comes from a document deleted for good, whose sources keep its long title.
@@ -128,6 +167,7 @@ describe('agent read tools', () => {
       ...request(),
       title: heavy(300),
       projectId,
+      folderId: filedIn.id,
       scene: { appState: { viewBackgroundColor: '#ffffff' }, elements: labels },
     });
 
@@ -141,6 +181,7 @@ describe('agent read tools', () => {
       cursor = /"cursor":"([0-9a-f]+:\d+)"/u.exec(next.text)?.[1];
     }
     await record('search', { query: 'alvo', limit: 50 });
+    expect((await record('search', { folderId: filedIn.id, limit: 50 })).text).toContain('"folder":{');
     expect((await record('search', { limit: 50 })).text).toContain('"pinned":true');
     const page = JSON.parse((await record('list_tasks', { limit: 100 })).text) as {
       tasks: { id: string; source: { documentId: string | null } }[];

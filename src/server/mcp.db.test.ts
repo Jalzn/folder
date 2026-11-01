@@ -199,6 +199,8 @@ describe('MCP protocol', () => {
           documents: 0,
           drawings: 0,
           openTasks: 0,
+          folderCount: 0,
+          folders: [],
         },
       ],
       nextCursor: null,
@@ -219,7 +221,13 @@ describe('MCP protocol', () => {
         content: paragraph('Revisar o plano do MCP'),
       });
     await workspace.createTask({ requestId: randomUUID(), projectId: project.id, title: 'Plano de testes' });
-    await workspace.createCanvas({ requestId: randomUUID(), projectId: project.id, title: 'Plano visual' });
+    const folder = await workspace.createFolder({ requestId: randomUUID(), projectId: project.id, name: 'MCP' });
+    await workspace.createCanvas({
+      requestId: randomUUID(),
+      projectId: project.id,
+      title: 'Plano visual',
+      folderId: folder.id,
+    });
     const { token } = await auth.login({ password }, { ip: 'test' });
     const viaRpc = async (input: Record<string, unknown>) => {
       const response = await app.request('/rpc/workspace/search', {
@@ -239,7 +247,12 @@ describe('MCP protocol', () => {
     const ids = (page: { items: Record<string, unknown>[] }) => page.items.map((item) => item.id);
 
     const first = { query: 'plano', limit: 2 };
-    for (const input of [first, { limit: 3 }, { query: 'plano', projectId: project.id, types: ['document'] }]) {
+    for (const input of [
+      first,
+      { limit: 3 },
+      { query: 'plano', projectId: project.id, types: ['document'] },
+      { query: 'plano', folderId: folder.id },
+    ]) {
       const [rpcPage, mcpPage] = [await viaRpc(input), await viaMcp(input)];
       expect(ids(rpcPage), JSON.stringify(input)).toEqual(ids(mcpPage));
       expect(rpcPage.nextCursor).toBe(mcpPage.nextCursor);
@@ -253,8 +266,18 @@ describe('MCP protocol', () => {
       title: 'Plano visual',
       projectName: 'Tinyfold',
       pinned: false,
+      folder: { id: folder.id, name: 'MCP' },
     });
     expect(page.items[0]).not.toHaveProperty('titleRank');
+    expect(ids(await viaRpc({ folderId: folder.id }))).toEqual(ids(await viaMcp({ folderId: folder.id })));
+    // list_projects lists the project's folders.
+    const listed = JSON.parse(textOf(await client.callTool({ name: 'list_projects', arguments: {} }))) as {
+      projects: { id: string; folderCount: number; folders: unknown[] }[];
+    };
+    expect(listed.projects.find((item) => item.id === project.id)).toMatchObject({
+      folderCount: 1,
+      folders: [{ id: folder.id, name: 'MCP', items: 1 }],
+    });
   });
 
   it('announces a fixed tool list and refuses subscription streams', async () => {

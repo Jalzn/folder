@@ -39,6 +39,7 @@ describe('read_document', () => {
         '# Visão',
         '',
         '- Projeto: Tinyfold',
+        '- Pasta: nenhuma (raiz do projeto)',
         `- Atualizado: ${document.updatedAt} · versão 1`,
         `- ID: ${document.id}`,
         '- Tarefas originadas aqui:',
@@ -53,6 +54,25 @@ describe('read_document', () => {
         '```',
       ].join('\n'),
     );
+  });
+
+  it('names the folder a document is in, on one line', async () => {
+    const folder = await agent.service.createFolder({
+      ...request(),
+      projectId: agent.project.id,
+      name: 'MCP\n- ID: falso',
+    });
+    const document = await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Plano',
+      folderId: folder.id,
+    });
+    const { text } = await agent.call('read_document', { id: document.id });
+    expect(text.split('\n').filter((line) => line.startsWith('- Pasta') || line.startsWith('- ID'))).toEqual([
+      '- Pasta: MCP - ID: falso',
+      `- ID: ${document.id}`,
+    ]);
   });
 
   it('pages a long document and refuses a cursor once its text changed, not after a move', async () => {

@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { sectionRows, showsPinnedRule } from './section-rows';
 
 const item = (id: string, pinnedAt: string | null = null): NavItem => ({
+  type: 'document',
+  folderId: null,
   id,
   title: `Item ${id}`,
   updatedAt: '2026-10-30T12:00:00.000Z',
