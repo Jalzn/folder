@@ -20,6 +20,8 @@ export interface NewTaskOptions {
   onClose?: () => void;
   /** Runs once the task is created, as a document's "Nova tarefa…" puts its card in place. */
   onCreated?: (task: { id: string; projectId: string }) => void;
+  /** The block of the source document a task from an excerpt can put its card after: "Incorporar no documento". */
+  embedAfter?: string;
 }
 
 /** What the drawer shows: a task, by its id and project, or a new task with its starting values. */

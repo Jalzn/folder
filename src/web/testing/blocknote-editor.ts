@@ -1,5 +1,5 @@
 import { registerHooks } from 'node:module';
-import { BlockNoteEditor, BlockNoteSchema } from '@blocknote/core';
+import { BlockNoteEditor, BlockNoteSchema, createBlockSpec } from '@blocknote/core';
 import { type DocumentContent, readDocumentContent } from '@tinyfold/workspace/domain';
 import { Window } from 'happy-dom';
 import { afterAll, beforeAll, vi } from 'vitest';
@@ -15,8 +15,29 @@ const cssModules = registerHooks({
 const { createReactInlineMathSpec, createReactMathBlockSpec } = await import('@blocknote/math-block');
 cssModules.deregister();
 
+/**
+ * An empty element of the happy-dom document that setupBlockNoteEditor puts on globalThis. The global is reached
+ * by hand because scripts/ also compiles this file, for seed-sample.test.ts, without the DOM's types.
+ */
+const emptyElement = () =>
+  (globalThis as unknown as { document: { createElement(tag: 'div'): never } }).document.createElement('div');
+
+/**
+ * A document's embed block, as the web's schema declares it (editor/blocks/embed-specs.tsx), drawn here as an
+ * empty element: the tests read the blocks, not the card or the figure.
+ */
+const embedSpec = <const Type extends string, const Prop extends string>(type: Type, prop: Prop) =>
+  createBlockSpec(
+    { type, propSchema: { [prop]: { default: '' } } as Record<Prop, { default: '' }>, content: 'none' },
+    { render: () => ({ dom: emptyElement() }) },
+  )();
+
 const schema = BlockNoteSchema.create().extend({
-  blockSpecs: { mathBlock: createReactMathBlockSpec() },
+  blockSpecs: {
+    mathBlock: createReactMathBlockSpec(),
+    taskEmbed: embedSpec('taskEmbed', 'taskId'),
+    drawingEmbed: embedSpec('drawingEmbed', 'canvasId'),
+  },
   inlineContentSpecs: { math: createReactInlineMathSpec() },
 });
 const createEditor = (initialContent?: DocumentContent) =>
@@ -26,7 +47,8 @@ const createEditor = (initialContent?: DocumentContent) =>
   });
 
 /**
- * The real BlockNote 0.56 editor with the document schema, on happy-dom, for the calling test file.
+ * The real BlockNote 0.56 editor with the document's blocks, the embeds included, on happy-dom, for the calling
+ * test file.
  * Call at the top level of the file: it registers the DOM before and removes it after the tests.
  */
 export function setupBlockNoteEditor() {
@@ -59,11 +81,19 @@ export function setupBlockNoteEditor() {
     parse: (source: string) => editor.tryParseMarkdownToBlocks(source) as unknown as DocumentContent,
     exportMarkdown: (blocks: DocumentContent) =>
       editor.blocksToMarkdownLossy(blocks as unknown as typeof editor.document),
+    /** The ProseMirror document an editor makes of the blocks, as the origin markers read it. */
+    prosemirrorDoc(blocks: DocumentContent) {
+      const opened = createEditor(blocks);
+      const doc = opened.prosemirrorState.doc;
+      opened._tiptapEditor.destroy();
+      return doc;
+    },
     /** Opens the blocks in a new editor, as reopening the document does; both sides must be a valid document. */
     reload(blocks: DocumentContent): DocumentContent {
       readDocumentContent(blocks, {}, { embeds: true });
       const reloaded = createEditor(blocks);
-      const result = reloaded.document as unknown as DocumentContent;
+      // As it is saved: JSON, where an embed's absent content is no key at all.
+      const result = JSON.parse(JSON.stringify(reloaded.document)) as DocumentContent;
       readDocumentContent(result, {}, { embeds: true });
       reloaded._tiptapEditor.destroy();
       return result;

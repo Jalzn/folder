@@ -224,3 +224,38 @@
     max-width: none;
   }
 }
+
+/*
+ * The origin marker (visual.md, "Marcador de origem"): an 18 px button after the excerpt a task came from,
+ * with the task's ring in the accent; on hover and focus, the excerpt gets a dotted underline, never a fill.
+ */
+.origin-marker {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  vertical-align: -3px;
+  cursor: pointer;
+  transition: background-color var(--duration-hover) var(--ease-out);
+}
+/* Every state of the ring takes the accent here, the check of a done task included. */
+.origin-marker .column-ring[data-state] {
+  color: var(--accent);
+}
+.origin-marker:hover,
+.origin-marker:focus-visible {
+  background: var(--selected);
+}
+.origin-marker:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.origin-excerpt {
+  text-decoration: underline dotted var(--accent) 1px;
+  text-underline-offset: 3px;
+}

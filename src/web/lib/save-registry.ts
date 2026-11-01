@@ -60,6 +60,11 @@ export interface OpenEditor {
    * answers; false when the content cannot be saved first.
    */
   moveTo: (move: (version: number) => Promise<Moved>) => Promise<boolean>;
+  /**
+   * A document's editor puts a task's card right after a block, as "Incorporar no documento" does for a task
+   * created from its excerpt (docs/etapas/11-documento-desenho.md, decision 15); false when it could not.
+   */
+  insertEmbedAfter?: (blockId: string, taskId: string) => boolean;
 }
 
 const openEditors = new Map<string, OpenEditor>();

@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { EmbedsProvider, type EmbedsValue } from '../../editor/blocks/embeds-context';
 import { EmbedPicker } from '../../editor/EmbedPicker';
 import { type EmbedKind, embedSlashItems } from '../../editor/insert-menu';
@@ -8,6 +8,14 @@ import { useOwnerToday } from '../../shell/AppProvider';
 import { useDocumentEmbeds } from './use-document-embeds';
 import { useEmbedActions } from './use-embed-actions';
 import { useEmbedPreviews } from './use-embed-preview';
+
+/** What the document's page asks of its embeds: ⌘K's "Incorporar…" and "Incorporar no documento". */
+export interface EmbedCommands {
+  /** Opens the picker on the block of the text cursor, as the `/` menu does. */
+  openPicker: (kind: EmbedKind) => void;
+  /** Puts a task's card right after a block; false when the block is gone. */
+  insertTaskAfter: (blockId: string, taskId: string) => boolean;
+}
 
 /**
  * A document's embeds around its editor (docs/etapas/11-documento-desenho.md, "Interface"): the provider the
@@ -20,6 +28,7 @@ export function DocumentEmbeds({
   projectId,
   folderId,
   readOnly,
+  commands,
   children,
 }: {
   editor: BlockEditorInstance;
@@ -27,6 +36,7 @@ export function DocumentEmbeds({
   projectId: string;
   folderId: string | null;
   readOnly: boolean;
+  commands: RefObject<EmbedCommands | null>;
   children: (slashItems: ReturnType<typeof embedSlashItems> | undefined) => ReactNode;
 }) {
   const states = useDocumentEmbeds(documentId, editor);
@@ -42,13 +52,25 @@ export function DocumentEmbeds({
     () => ({ ...states, previews, documentProjectId: projectId, today, openTaskId, readOnly, actions }),
     [states, previews, projectId, today, openTaskId, readOnly, actions],
   );
-  const slashItems = readOnly
-    ? undefined
-    : embedSlashItems((kind) => {
-        const block = editor.getTextCursorPosition().block;
-        anchor.current = editor.domElement?.querySelector<HTMLElement>(`[data-id="${CSS.escape(block.id)}"]`) ?? null;
-        setPicker({ kind, blockId: block.id });
-      });
+  /** The picker on the block of the text cursor, which it hangs from. */
+  function openPicker(kind: EmbedKind) {
+    const block = editor.getTextCursorPosition().block;
+    anchor.current = editor.domElement?.querySelector<HTMLElement>(`[data-id="${CSS.escape(block.id)}"]`) ?? null;
+    setPicker({ kind, blockId: block.id });
+  }
+  const latest = useRef({ openPicker, insert });
+  latest.current = { openPicker, insert };
+  useEffect(() => {
+    commands.current = {
+      openPicker: (kind) => latest.current.openPicker(kind),
+      insertTaskAfter: (blockId, taskId) =>
+        Boolean(editor.getBlock(blockId)) && latest.current.insert(blockId, 'task', taskId),
+    };
+    return () => {
+      commands.current = null;
+    };
+  }, [commands, editor]);
+  const slashItems = readOnly ? undefined : embedSlashItems(openPicker);
   /** Esc in the picker: the cursor goes back to the block. */
   function back(blockId: string) {
     if (editor.getBlock(blockId)) editor.setTextCursorPosition(blockId, 'end');

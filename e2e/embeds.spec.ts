@@ -198,3 +198,21 @@ test('/desenho embeds a drawing as a numbered figure, and "Novo desenho" makes o
   await expect(documentEditor(page).locator('.embed-figure').last()).toContainText('Figura 2 — Sem título');
   await expect(documentEditor(page).locator('.embed-figure').last()).toContainText('Desenho vazio');
 });
+
+test('⌘K offers "Incorporar tarefa…" in the document, which opens the picker at the cursor', async ({ page }) => {
+  await login(page);
+  const here = await createProject(page, `Incorporar pelo ⌘K ${Date.now()}`);
+  await rpcTask(page, here, 'Trocar a fechadura');
+  await writeDocument(page, 'Portas.');
+  await pressCommand(page, 'k');
+  const palette = page.getByRole('dialog', { name: 'Buscar e comandar' });
+  await expect(palette).toBeVisible();
+  await page.keyboard.type('Incorporar tarefa');
+  await expect(palette.getByRole('menuitem', { name: /Incorporar tarefa…/ })).toBeVisible();
+  await page.keyboard.press('Enter');
+  const picker = page.getByRole('menu', { name: 'Incorporar tarefa' });
+  await expect(page.getByRole('searchbox', { name: 'Incorporar tarefa' })).toBeFocused();
+  await pickEmbed(page, picker, 'fechadura', 'Trocar a fechadura');
+  await expect(embedCard(page, 'Trocar a fechadura')).toBeVisible();
+  await expectSavedEmbeds(page, 1);
+});

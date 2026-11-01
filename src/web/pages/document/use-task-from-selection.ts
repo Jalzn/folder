@@ -36,7 +36,10 @@ export function useTaskFromSelection(
       return;
     }
     const blocks = editor.getSelection()?.blocks;
-    const blockId = blocks && blocks.length > 1 ? null : (blocks?.[0]?.id ?? editor.getTextCursorPosition().block.id);
+    const cursor = editor.getTextCursorPosition().block.id;
+    const blockId = blocks && blocks.length > 1 ? null : (blocks?.[0]?.id ?? cursor);
+    // The card of "Incorporar no documento" goes after the excerpt's last block.
+    const embedAfter = blocks?.at(-1)?.id ?? cursor;
     setPreparing(true);
     const saved = await controller.flush();
     setPreparing(false);
@@ -55,6 +58,7 @@ export function useTaskFromSelection(
         expectedVersion: controller.getState().version,
       },
       title: excerpt.slice(0, 300),
+      embedAfter,
     });
   }
 

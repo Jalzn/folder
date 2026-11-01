@@ -1,3 +1,4 @@
+import type { ExtensionFactoryInstance } from '@blocknote/core';
 import { MathInlineInputRulesExtension } from '@blocknote/math-block';
 import { useCreateBlockNote } from '@blocknote/react';
 import { useEffect, useRef } from 'react';
@@ -22,6 +23,7 @@ export function useBlockEditor({
   label,
   placeholder,
   testId,
+  extensions = [],
 }: {
   /** A document takes embeds; a description does not. */
   schema: EditorSchemaKind;
@@ -33,14 +35,17 @@ export function useBlockEditor({
   /** The empty editor's hint, instead of the document's. */
   placeholder?: string;
   testId?: string;
+  /** More BlockNote extensions, as the document's origin markers; read once, when the editor is made. */
+  extensions?: readonly ExtensionFactoryInstance[];
 }) {
   const start = useRef(initial);
+  const added = useRef(extensions);
   const editor = useCreateBlockNote({
     // The kind never changes for an editor, so neither does the schema it was made with. Typed as the
     // document's, the larger of the two: a description's blocks are a subset of it.
     schema: (schema === 'document' ? documentSchema : descriptionSchema) as typeof documentSchema,
     // BlockNote 0.56 registers block-spec extensions, but not inline-spec extensions.
-    extensions: [MathInlineInputRulesExtension],
+    extensions: [MathInlineInputRulesExtension, ...added.current],
     dictionary: placeholder
       ? {
           ...documentDictionary,

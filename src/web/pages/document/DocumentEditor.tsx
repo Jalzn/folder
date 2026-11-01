@@ -1,4 +1,4 @@
-import { ArrowDownToLine, ArrowUpFromLine, X } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, Shapes, X } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ReloadDialog, SaveBanners, TrashItemDialog, useItemActions } from '../../components/item-page';
 import type { Snapshot } from '../../lib/autosave';
@@ -12,11 +12,12 @@ import { FolderLabel, PageFrame, useApp, usePageCommands, useTaskDrawer } from '
 import { useTheme } from '../../shell/theme';
 import { Banner, IconButton, useToast } from '../../ui';
 import { DocumentBody } from './DocumentBody';
-import { DocumentEmbeds } from './DocumentEmbeds';
+import { DocumentEmbeds, type EmbedCommands } from './DocumentEmbeds';
 import { DocumentHeader } from './DocumentHeader';
 import { documentController, documentItem } from './document-session';
 import { useBlockAnchor, useDocumentEditor } from './use-document-editor';
 import { useDocumentFiles } from './use-document-files';
+import { useOriginMarkers } from './use-origin-markers';
 import { NO_EXCERPT, selectedText, useTaskFromSelection } from './use-task-from-selection';
 
 /**
@@ -29,14 +30,21 @@ export function DocumentEditor({ document }: { document: Document }) {
   const toast = useToast();
   const drawer = useTaskDrawer();
   const [controller] = useState(() => documentController(document, app.owner.installationId));
+  const embedCommands = useRef<EmbedCommands | null>(null);
   useEffect(
-    () => registerOpenEditor('document', document.id, { moveTo: (move) => moveThroughController(controller, move) }),
+    () =>
+      registerOpenEditor('document', document.id, {
+        moveTo: (move) => moveThroughController(controller, move),
+        insertEmbedAfter: (blockId, taskId) => embedCommands.current?.insertTaskAfter(blockId, taskId) ?? false,
+      }),
     [controller, document.id],
   );
   useAutosaveLifecycle(controller);
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   usePageTitle(state.snapshot.title);
-  const editor = useDocumentEditor(controller, document, state);
+  const openOrigin = useRef<(taskId: string) => void>(() => undefined);
+  const editor = useDocumentEditor(controller, document, state, openOrigin);
+  useOriginMarkers(editor, document.id, openOrigin);
   const anchor = useBlockAnchor(editor);
   const hasActiveProject = useHasActiveProject();
   const [selection, setSelection] = useState('');
@@ -64,6 +72,33 @@ export function DocumentEditor({ document }: { document: Document }) {
       else toast(NO_EXCERPT);
     },
     files: [
+      // ⌘K's "Neste item" (docs/etapas/11-documento-desenho.md, W4): the excerpt's task and the embeds, which
+      // a document of an archived project does not offer.
+      ...(archived
+        ? []
+        : [
+            {
+              id: 'create-task',
+              label: 'Criar tarefa da seleção',
+              icon: <Plus size={16} />,
+              run: () => {
+                if (selectedText(editor)) void taskFromSelection.create();
+                else toast(NO_EXCERPT);
+              },
+            },
+            {
+              id: 'embed-task',
+              label: 'Incorporar tarefa…',
+              icon: <ListTodo size={16} />,
+              run: () => embedCommands.current?.openPicker('task'),
+            },
+            {
+              id: 'embed-drawing',
+              label: 'Incorporar desenho…',
+              icon: <Shapes size={16} />,
+              run: () => embedCommands.current?.openPicker('drawing'),
+            },
+          ]),
       {
         id: 'export',
         label: 'Exportar Markdown',
@@ -150,6 +185,7 @@ export function DocumentEditor({ document }: { document: Document }) {
         projectId={projectId}
         folderId={document.folderId}
         readOnly={archived}
+        commands={embedCommands}
       >
         {(slashItems) => (
           <DocumentBody

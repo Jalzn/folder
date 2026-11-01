@@ -1,5 +1,6 @@
 import { useSearch } from '@tanstack/react-router';
-import { useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
+import { createOriginMarkers } from '../../editor/origin-markers';
 import { type BlockEditorInstance, useBlockEditor } from '../../editor/use-block-editor';
 import type { AutosaveController, SaveState } from '../../lib/autosave';
 import { lacksBlockIds } from '../../lib/block-ids';
@@ -7,11 +8,19 @@ import type { Document, DocumentContent } from '../../lib/types';
 import { documentSnapshot } from './document-session';
 
 /**
- * The BlockNote editor of a document, started from the draft or the saved content. A newer version taken
- * from elsewhere (a reload or an adopted remote save) replaces the blocks.
+ * The BlockNote editor of a document, started from the draft or the saved content, with its origin markers,
+ * which open their task through `openOrigin`. A newer version taken from elsewhere (a reload or an adopted
+ * remote save) replaces the blocks.
  */
-export function useDocumentEditor(controller: AutosaveController, document: Document, state: SaveState) {
+export function useDocumentEditor(
+  controller: AutosaveController,
+  document: Document,
+  state: SaveState,
+  openOrigin: RefObject<(taskId: string) => void>,
+) {
+  const [markers] = useState(() => createOriginMarkers((taskId) => openOrigin.current(taskId)));
   const editor = useBlockEditor({
+    extensions: [markers],
     schema: 'document',
     initial: state.snapshot.content,
     epoch: state.remoteEpoch,

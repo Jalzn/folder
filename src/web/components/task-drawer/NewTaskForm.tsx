@@ -4,6 +4,7 @@ import { type RefObject, useEffect, useId, useRef, useState } from 'react';
 import { api, errorMessage, refreshWorkspace, reportSessionError } from '../../lib/api';
 import { doneAndFirstOpen } from '../../lib/board-order';
 import { useColumns, useLabels, useProjects } from '../../lib/queries';
+import { openEditor } from '../../lib/save-registry';
 import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { useOwnerToday } from '../../shell/AppProvider';
@@ -55,6 +56,12 @@ export function NewTaskForm({
   const [error, setError] = useState<string | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const project = projects.find((each) => each.id === projectId);
+  // "Incorporar no documento" (docs/etapas/11-documento-desenho.md, decision 15): only while the excerpt's
+  // document is open in this tab, whose editor puts the card in; checked to begin with.
+  const sourceDocument = content.source?.documentId;
+  const embedHost = () => (sourceDocument ? openEditor('document', sourceDocument)?.insertEmbedAfter : undefined);
+  const canEmbed = Boolean(content.embedAfter && embedHost());
+  const [embed, setEmbed] = useState(true);
   const dirty =
     title !== initialTitle ||
     projectId !== content.projectId ||
@@ -105,7 +112,14 @@ export function NewTaskForm({
       await refreshWorkspace();
       drawer.showTask({ id: created.id, projectId: created.projectId, title: name });
       content.onCreated?.({ id: created.id, projectId: created.projectId });
-      toast(`Tarefa criada em ${column?.name ?? 'o quadro'} · ${project?.name ?? 'o projeto'}.`);
+      // The document may have closed meanwhile: then the task stays without its card.
+      const insert = canEmbed && embed && content.embedAfter ? embedHost() : undefined;
+      const embedded = Boolean(insert && content.embedAfter && insert(content.embedAfter, created.id));
+      toast(
+        embedded
+          ? 'Tarefa criada. O card entrou abaixo do parágrafo.'
+          : `Tarefa criada em ${column?.name ?? 'o quadro'} · ${project?.name ?? 'o projeto'}.`,
+      );
     } catch (failure) {
       reportSessionError(failure);
       setError(errorMessage(failure));
@@ -181,6 +195,12 @@ export function NewTaskForm({
               Origem:{' '}
               <span className="task-drawer__origin-name">{content.source.documentTitle ?? content.source.excerpt}</span>
             </p>
+          )}
+          {canEmbed && (
+            <label className="task-drawer__embed">
+              <input type="checkbox" checked={embed} onChange={(event) => setEmbed(event.target.checked)} />
+              Incorporar no documento
+            </label>
           )}
         </div>
         <TaskProperties

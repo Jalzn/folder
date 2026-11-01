@@ -245,6 +245,22 @@ button.task-drawer__state {
 .task-drawer__origin-name {
   color: var(--text-2);
 }
+/* "Incorporar no documento", under the origin of a task from an excerpt. */
+.task-drawer__embed {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin-top: 4px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.task-drawer__embed input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent);
+}
 .task-drawer__missing p {
   margin: 0;
   font: var(--type-ui);
