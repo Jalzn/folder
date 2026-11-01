@@ -1,12 +1,10 @@
 import type { Kysely } from 'kysely';
 import type { NavigationReader } from '../../application/navigation/ports.js';
-import { TASK_STATUSES, type TaskStatus } from '../../domain/task-status.js';
 import type { WorkspaceTables } from '../db.js';
 import { itemTable } from '../item-tables.js';
 import { projectModel } from '../repository/mappers.js';
-import { taskStatuses } from '../task-statuses.js';
 
-type ProjectReads = Pick<NavigationReader, 'findProject' | 'navItems' | 'folders' | 'taskCounts'>;
+type ProjectReads = Pick<NavigationReader, 'findProject' | 'navItems' | 'folders' | 'openTaskCount'>;
 
 export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
   return {
@@ -44,18 +42,16 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
         .execute();
     },
 
-    async taskCounts(projectId) {
-      const rows = await db
-        .selectFrom('workspace_tasks')
-        .select((eb) => ['column_id', eb.fn.countAll<number>().as('count')])
-        .where('project_id', '=', projectId)
-        .where('deleted_at', 'is', null)
-        .groupBy('column_id')
-        .execute();
-      const { statusOf } = await taskStatuses(db);
-      const counts = Object.fromEntries(TASK_STATUSES.map((status) => [status, 0])) as Record<TaskStatus, number>;
-      for (const row of rows) counts[statusOf(row.column_id)] += row.count;
-      return counts;
+    async openTaskCount(projectId) {
+      const row = await db
+        .selectFrom('workspace_tasks as task')
+        .innerJoin('workspace_columns as col', 'col.id', 'task.column_id')
+        .select((eb) => eb.fn.countAll<number>().as('count'))
+        .where('task.project_id', '=', projectId)
+        .where('task.deleted_at', 'is', null)
+        .where('col.is_done', '=', 0)
+        .executeTakeFirstOrThrow();
+      return row.count;
     },
   };
 }

@@ -1,5 +1,5 @@
 import type { Column } from '../../domain/columns.js';
-import type { Project, Task, TaskStatus } from '../../domain/models.js';
+import type { Project, Task } from '../../domain/models.js';
 import type { NavItem, NavItemType } from '../../domain/navigation.js';
 import type { Calendar } from '../calendar.js';
 import type { TrashItemType } from '../schemas/trash.js';
@@ -12,8 +12,8 @@ export interface NavigationReader {
   navItems(projectId: string, type: NavItemType): Promise<NavItem[]>;
   /** The project's active folders, in manual order. */
   folders(projectId: string): Promise<{ id: string; name: string; position: number; version: number }[]>;
-  /** The project's live tasks in each column, by the stage 09 status each column reads as (until B6). */
-  taskCounts(projectId: string): Promise<Record<TaskStatus, number>>;
+  /** How many of the project's live tasks are outside the done column. */
+  openTaskCount(projectId: string): Promise<number>;
   /** The active columns in board order. */
   columns(): Promise<Column[]>;
   /** The project's live tasks outside the done column, in board order, with their sources. */

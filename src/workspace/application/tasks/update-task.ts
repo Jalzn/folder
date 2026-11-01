@@ -31,9 +31,6 @@ export function updateTask(ctx: WorkspaceContext, input: UpdateTaskInput): Promi
     };
     await repo.saveTaskFields(saved, task.version);
     if (labels) await repo.setTaskLabels(task.id, labels);
-    // Until B6, the interface of stage 09 renames a task here: a change of the text, with its version.
-    if (input.title !== undefined && input.title !== task.title)
-      await repo.saveTaskText({ ...saved, title: input.title, textVersion: task.textVersion + 1 }, task.textVersion);
     return taskAck(saved, moves ? await repo.bumpRevision() : await repo.revision());
   });
 }

@@ -4,10 +4,8 @@ import type { TaskRecord, TaskRepository } from '../../application/ports.js';
 import { byLabelName } from '../../domain/labels.js';
 import type { Task } from '../../domain/models.js';
 import { excerptPresent } from '../../domain/task-source.js';
-import { statusOfColumn } from '../../domain/task-status.js';
 import type { TaskRow, WorkspaceTables } from '../db.js';
-import { activeColumnRows } from './columns.js';
-import { columnModel, documentModel, taskFieldsRow, taskModel, taskRow, taskTextRow } from './mappers.js';
+import { documentModel, taskFieldsRow, taskModel, taskRow, taskTextRow } from './mappers.js';
 import { expectUpdated } from './versioned-update.js';
 
 /** The active labels of each task, in alphabetical order: links to deleted labels stay hidden. */
@@ -26,7 +24,7 @@ export async function activeLabelIds(db: Kysely<WorkspaceTables>, taskIds: reado
 }
 
 /** A stored task as lists show it, without its description. */
-export function taskSummary(task: TaskRecord, extra: Pick<Task, 'labelIds' | 'source' | 'status'>): Task {
+export function taskSummary(task: TaskRecord, extra: Pick<Task, 'labelIds' | 'source'>): Task {
   return {
     id: task.id,
     title: task.title,
@@ -56,12 +54,12 @@ export async function hydrateTasks(db: Kysely<WorkspaceTables>, rows: TaskRow[])
   const documents = documentIds.length
     ? await db.selectFrom('workspace_documents').selectAll().where('id', 'in', documentIds).execute()
     : [];
-  const [labels, columns] = [await activeLabelIds(db, ids), (await activeColumnRows(db)).map(columnModel)];
+  const labels = await activeLabelIds(db, ids);
   const sourceMap = new Map(sources.map((source) => [source.task_id, source]));
   const documentMap = new Map(documents.map((row) => [row.id, documentModel(row)]));
   return rows.map((row) => {
     const task = taskModel(row);
-    const extra = { labelIds: labels.get(row.id) ?? [], status: statusOfColumn(columns, row.column_id) };
+    const extra = { labelIds: labels.get(row.id) ?? [] };
     const source = sourceMap.get(row.id);
     if (!source) return taskSummary(task, { ...extra, source: null });
     const document = source.document_id === null ? undefined : documentMap.get(source.document_id);

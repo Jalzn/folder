@@ -12,7 +12,11 @@ import {
 } from '@tinyfold/core/infra';
 import { type CanvasScene, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
 import { documentPlainText } from '../domain/document.js';
-import type { DocumentBlock, TaskStatus } from '../domain/models.js';
+import type { DocumentBlock } from '../domain/models.js';
+
+/** A task's status before migration 007 replaced it with a column. */
+type LegacyStatus = 'todo' | 'doing' | 'done';
+
 import { searchText } from '../domain/search-text.js';
 import { workspaceModule } from '../infra/module.js';
 
@@ -85,7 +89,7 @@ interface LegacyTables {
     id: string;
     project_id: string | null;
     title: string;
-    status: TaskStatus;
+    status: LegacyStatus;
     position: number;
     version: number;
     created_at: string;
@@ -192,7 +196,7 @@ export function legacyRows(connection: Database, { at = 4 }: { at?: 4 | 5 } = {}
       await db.insertInto('workspace_canvas_previews').values(row).execute();
       return row;
     },
-    async task(fields: Omit<ItemFields, 'title'> & { title: string; status?: TaskStatus; position?: number }) {
+    async task(fields: Omit<ItemFields, 'title'> & { title: string; status?: LegacyStatus; position?: number }) {
       const row = {
         id: randomUUID(),
         project_id: fields.projectId ?? null,

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
-import type { DocumentBlock, Project, TaskStatus } from '../domain/models.js';
+import type { DocumentBlock, Project } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
@@ -39,8 +39,8 @@ describe('navigation queries', () => {
   });
   const newDocument = (title: string, text = '') =>
     service.createDocument({ ...request(), projectId: project.id, title, content: content(text) });
-  const newTask = (title: string, status: TaskStatus) =>
-    service.createTask({ ...request(), projectId: project.id, title, status });
+  const newTask = (title: string, column: keyof typeof INITIAL_COLUMN_IDS) =>
+    service.createTask({ ...request(), projectId: project.id, title, columnId: INITIAL_COLUMN_IDS[column] });
   const titles = (items: { title: string }[]) => items.map((item) => item.title);
 
   describe('projectNavigation', () => {
@@ -165,7 +165,7 @@ describe('navigation queries', () => {
       await service.createTask({
         ...request(),
         title: 'Revisar',
-        status: 'doing',
+        columnId: INITIAL_COLUMN_IDS.doing,
         source: { documentId: document.id, excerpt: 'Revisar' },
       });
       const overview = await service.projectOverview({ projectId: project.id });
@@ -178,11 +178,14 @@ describe('navigation queries', () => {
         'Em curso 4',
         'Em curso 5',
       ]);
-      expect(overview.now[0]).toMatchObject({ status: 'doing', projectId: project.id, source: null });
-      // Until B6 each column also reads as its stage 09 status.
+      expect(overview.now[0]).toMatchObject({
+        columnId: INITIAL_COLUMN_IDS.doing,
+        projectId: project.id,
+        source: null,
+      });
       expect(overview.rest).toEqual([
-        { columnId: INITIAL_COLUMN_IDS.todo, count: 3, withoutDue: 3, only: null, status: 'todo' },
-        { columnId: INITIAL_COLUMN_IDS.doing, count: 3, withoutDue: 3, only: null, status: 'doing' },
+        { columnId: INITIAL_COLUMN_IDS.todo, count: 3, withoutDue: 3, only: null },
+        { columnId: INITIAL_COLUMN_IDS.doing, count: 3, withoutDue: 3, only: null },
       ]);
       expect(overview).toMatchObject({
         overdueTasks: 0,
@@ -225,9 +228,7 @@ describe('navigation queries', () => {
         'Andando',
         'Em uma semana',
       ]);
-      expect(overview.rest).toEqual([
-        { columnId: INITIAL_COLUMN_IDS.todo, count: 2, withoutDue: 1, only: null, status: 'todo' },
-      ]);
+      expect(overview.rest).toEqual([{ columnId: INITIAL_COLUMN_IDS.todo, count: 2, withoutDue: 1, only: null }]);
       // The last completed first, up to eight.
       expect(titles(overview.done)).toEqual([
         'Vencida mas concluída',

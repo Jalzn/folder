@@ -1,7 +1,6 @@
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
 import { overviewTasks } from '../../domain/overview-tasks.js';
 import { doneWindowStart, isOverdue } from '../../domain/task-dates.js';
-import { statusOfColumn } from '../../domain/task-status.js';
 import { requireProject } from '../helpers.js';
 import type { ProjectOverviewInput } from '../schemas/navigation.js';
 import type { NavigationContext } from './ports.js';
@@ -30,8 +29,7 @@ export async function projectOverview(ctx: NavigationContext, input: ProjectOver
     openTasks: read.open.length,
     overdueTasks: read.open.filter((task) => isOverdue(task.dueOn, today, false)).length,
     now,
-    // Until B6, each column also reads as the status of stage 09, which that interface shows.
-    rest: rest.map((column) => ({ ...column, status: statusOfColumn(read.columns, column.columnId) })),
+    rest,
     done: read.done.items,
     doneTotal: read.done.total,
     recent: read.recent,

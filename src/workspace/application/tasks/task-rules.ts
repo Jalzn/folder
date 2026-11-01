@@ -2,8 +2,7 @@ import { AppError } from '@tinyfold/core/application';
 import { checklistProgress } from '../../domain/checklist.js';
 import type { Column } from '../../domain/columns.js';
 import { documentPlainText, withBlockIds } from '../../domain/document.js';
-import type { DocumentContent, TaskAck, TaskStatus } from '../../domain/models.js';
-import { columnOfStatus } from '../../domain/task-status.js';
+import type { DocumentContent, TaskAck } from '../../domain/models.js';
 import { TASK_LIMITS } from '../../domain/tasks.js';
 import type { TaskRecord, WorkspaceRepository } from '../ports.js';
 
@@ -16,17 +15,14 @@ export const taskAck = (task: TaskRecord, revision: number): TaskAck => ({
   revision,
 });
 
-/**
- * The active column a write names: by its ID, or, until B6, by the status of stage 09 (see
- * columnOfStatus). Without either, `fallback`.
- */
+/** The active column a write names by its ID, or `fallback` without one. */
 export async function columnFor(
   repo: WorkspaceRepository,
-  input: { columnId?: string | undefined; status?: TaskStatus | undefined },
+  input: { columnId?: string | undefined },
   fallback: (columns: Column[]) => Column | undefined,
 ): Promise<Column> {
   const columns = await repo.activeColumns();
-  const id = input.columnId ?? (input.status ? columnOfStatus(columns, input.status) : fallback(columns)?.id);
+  const id = input.columnId ?? fallback(columns)?.id;
   const column = columns.find((candidate) => candidate.id === id);
   if (!column) throw new AppError('NOT_FOUND', 'A coluna não está disponível.');
   return column;

@@ -1,5 +1,4 @@
 import type { ProjectColor } from './project.js';
-import type { TaskStatus } from './task-status.js';
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
@@ -45,8 +44,6 @@ export interface Document extends DocumentSummary {
   content: DocumentBlock[];
 }
 
-export type { TaskStatus };
-
 /**
  * Where a task was created. A document deleted for good leaves `documentId` null, and the source
  * keeps the title the document had then.
@@ -84,8 +81,6 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   source: TaskSource | null;
-  /** Until B6: the stage 09 status of the column, for the interface that still reads it. */
-  status: TaskStatus;
 }
 
 export interface TaskList {

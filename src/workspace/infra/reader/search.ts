@@ -4,7 +4,6 @@ import type { SearchHit, SearchQuery, WorkspaceReader } from '../../application/
 import { excerptAround } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import type { WorkspaceTables } from '../db.js';
-import { taskStatuses } from '../task-statuses.js';
 import { type ExcerptType, excerptWindows } from './excerpt-windows.js';
 import { folderColumns, folderReference } from './folders.js';
 import { searchableItems, type TextType, titleLengthInSearchText } from './searchable.js';
@@ -84,12 +83,10 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
       .limit(limit);
     if (query.projectId) select = select.where('item.project_id', '=', query.projectId);
     for (const term of query.terms) select = select.where(sql<boolean>`instr(item.search_text, ${term}) > 0`);
-    const { statusOf } = await taskStatuses(db);
     return (await select.execute()).map((row) => ({
       type: 'task' as const,
       id: row.id,
       title: row.title,
-      status: statusOf(row.column_id),
       column: { id: row.column_id, name: row.column_name, isDone: row.column_is_done === 1 },
       ...projectReference(row),
       updatedAt: row.updated_at,

@@ -37,7 +37,6 @@ export type {
   Task,
   TaskList,
   TaskSource,
-  TaskStatus,
 } from './models.js';
 export { displayName, nameKey } from './names.js';
 export { NAV_SORTS, type NavItem, type NavSort } from './navigation.js';
@@ -48,6 +47,4 @@ export { defaultProjectColor, MAX_PINNED, PROJECT_COLORS, type ProjectColor, pro
 export { sceneFingerprint } from './scene-fingerprint.js';
 export { searchText } from './search-text.js';
 export { doneWindowStart, isOverdue } from './task-dates.js';
-/** Until B6: the statuses the interface of stage 09 still uses. */
-export { TASK_STATUSES, taskStatusLabels } from './task-status.js';
 export { TASK_LIMITS, type TaskDetail } from './tasks.js';

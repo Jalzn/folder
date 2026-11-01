@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '../../domain/columns.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { paragraph, request, useAgentTools } from '../../testing/agent-tools.js';
 
@@ -30,7 +31,7 @@ describe('read_document', () => {
     const task = await agent.service.createTask({
       ...request(),
       title: 'Gerar token',
-      status: 'doing',
+      columnId: INITIAL_COLUMN_IDS.doing,
       source: { documentId: document.id, blockId: 'c', excerpt: 'Gerar token' },
     });
     const { text, isError } = await agent.call('read_document', { id: document.id });

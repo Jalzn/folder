@@ -284,25 +284,31 @@ describe('tasks', () => {
     expect((await service.listLabels({})).labels).toMatchObject([{ id: mcp, taskCount: 0 }]);
   });
 
-  it('accepts and answers the stage 09 status until B6', async () => {
-    const created = await service.createTask({ ...request(), projectId: project.id, title: 'Antiga', status: 'doing' });
-    expect((await service.getTask({ id: created.id })).columnId).toBe(doing);
-    await service.updateTask({ ...request(), id: created.id, expectedVersion: 1, status: 'done', title: 'Renomeada' });
+  it("drops the stage 09 status and updateTask's title like any key the schemas do not know", async () => {
+    // A tab opened before B6 still sends them; Zod strips unknown keys, so they change nothing.
+    const legacy = <T>(input: object) => input as T;
+    type Create = Parameters<typeof service.createTask>[0];
+    type Update = Parameters<typeof service.updateTask>[0];
+    type Move = Parameters<typeof service.moveTask>[0];
+    const created = await service.createTask(
+      legacy<Create>({ ...request(), projectId: project.id, title: 'Antiga', status: 'done' }),
+    );
+    expect(await service.getTask({ id: created.id })).toMatchObject({ columnId: todo, completedAt: null });
+    expect(
+      await service.updateTask(
+        legacy<Update>({ ...request(), id: created.id, expectedVersion: 1, status: 'done', title: 'Renomeada' }),
+      ),
+    ).toMatchObject({ version: 2 });
     expect(await service.getTask({ id: created.id })).toMatchObject({
-      columnId: done,
-      status: 'done',
-      title: 'Renomeada',
-      textVersion: 2,
+      columnId: todo,
+      title: 'Antiga',
+      textVersion: 1,
     });
-    await service.moveTask({
-      ...request(),
-      id: created.id,
-      expectedVersion: 2,
-      expectedRevision: await revision(),
-      status: 'todo',
-    });
-    expect((await service.listTasks({})).tasks.map((item) => [item.title, item.status])).toEqual([
-      ['Renomeada', 'todo'],
-    ]);
+    // moveTask needs columnId: the schema refuses the move, a 400 VALIDATION over /rpc.
+    expect(() =>
+      service.moveTask(legacy<Move>({ ...request(), id: created.id, expectedVersion: 2, status: 'doing' })),
+    ).toThrow('expected string, received undefined');
+    const [listed] = (await service.listTasks({})).tasks;
+    expect(listed).not.toHaveProperty('status');
   });
 });

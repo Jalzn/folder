@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '../../domain/columns.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { missingId, paragraph, request, useAgentTools } from '../../testing/agent-tools.js';
 import { shape } from '../../testing/canvas-scenes.js';
@@ -15,7 +16,7 @@ describe('agent read tools', () => {
       ...request(),
       title: 'Concluída',
       projectId: archived.id,
-      status: 'done',
+      columnId: INITIAL_COLUMN_IDS.done,
     });
     const open = await agent.service.createTask({ ...request(), title: 'Aberta', projectId: archived.id });
     const removed = await agent.service.createTask({ ...request(), title: 'Removida', projectId: archived.id });

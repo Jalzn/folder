@@ -1,5 +1,3 @@
-import { TASK_STATUSES, type TaskStatus } from './task-status.js';
-
 /** The item types the sidebar's tree lists, which are also the ones that can be pinned and filed. */
 export const NAV_ITEM_TYPES = ['document', 'drawing'] as const;
 
@@ -38,17 +36,3 @@ export const byPinOrder = (a: NavItem, b: NavItem) =>
 
 /** Items in the chosen order, IDs breaking ties, so the order never changes between reads. */
 export const bySort = (sort: NavSort) => (a: NavItem, b: NavItem) => orders[sort](a, b) || ascending(a.id, b.id);
-
-/** Columns of open tasks: every one but the last, where finished tasks go. */
-const OPEN_STATUSES = TASK_STATUSES.filter((status) => status !== 'done');
-
-export const openTaskCount = (counts: Record<TaskStatus, number>) =>
-  OPEN_STATUSES.reduce((total, status) => total + counts[status], 0);
-
-/** How many open tasks of each column a list leaves out, in board order, skipping columns with none. */
-export function tasksLeftOut(counts: Record<TaskStatus, number>, listed: readonly { status: TaskStatus }[]) {
-  return OPEN_STATUSES.map((status) => ({
-    status,
-    count: counts[status] - listed.filter((task) => task.status === status).length,
-  })).filter((column) => column.count > 0);
-}

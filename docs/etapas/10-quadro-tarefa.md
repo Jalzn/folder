@@ -367,7 +367,9 @@ Segue o [Desfazer da etapa 09](09-pastas.md#desfazer) sem mudanças no mecanismo
 
 Assim cada entrega do backend fica verde com a interface antiga. B6 remove a tolerância.
 
-**Aceito na transição:** até B6, o `title` de `updateTask` grava o texto com o `textVersion` lido na própria transação. Uma aba antiga, aberta antes da implantação e com a `version` de campos ainda atual, renomeia por cima do título que a gaveta já salvou por `saveTaskText`, sem `VERSION_CONFLICT`. A descrição fica, e a próxima gravação da gaveta recebe conflito e guarda o rascunho, mas o título salvo antes se perde. É a revisão de dados de B1–B4 (B5); fica aceito porque B6 tira `title` de `updateTask`.
+**Removida em B6:** `status` saiu das entradas, de `listTasks`, `getTask`, `projectBoard`, da busca e do `rest` da Visão geral, e `title` saiu de `updateTask`; `TASK_STATUSES`, `taskStatusLabels` e `TaskStatus` deixaram de ser exportados. Os esquemas descartam chaves que não conhecem, então um `status` ou um `title` vindos de uma aba antiga são ignorados como qualquer chave retirada: `createTask` cria na primeira coluna aberta, `updateTask` grava só os campos que conhece, e `moveTask`, que agora exige `columnId`, responde `VALIDATION`. Um pedido gravado antes com `status` e repetido não bate com o registro e responde `REQUEST_REUSED`, sem criar outra tarefa.
+
+**Aceito na transição (fechado em B6, que tirou `title` de `updateTask`):** até B6, o `title` de `updateTask` grava o texto com o `textVersion` lido na própria transação. Uma aba antiga, aberta antes da implantação e com a `version` de campos ainda atual, renomeia por cima do título que a gaveta já salvou por `saveTaskText`, sem `VERSION_CONFLICT`. A descrição fica, e a próxima gravação da gaveta recebe conflito e guarda o rascunho, mas o título salvo antes se perde. É a revisão de dados de B1–B4 (B5); fica aceito porque B6 tira `title` de `updateTask`.
 
 **Alterados:**
 

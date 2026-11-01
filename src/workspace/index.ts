@@ -9,7 +9,6 @@ export type {
   Task,
   TaskList,
   TaskSource,
-  TaskStatus,
 } from './domain/index.js';
 export { type AgentTool, type AgentToolResult, createWorkspaceTools } from './infra/mcp/index.js';
 export { workspaceModule } from './infra/module.js';

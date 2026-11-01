@@ -1,7 +1,7 @@
 import type { CanvasScene } from '../../domain/canvas.js';
 import type { Column } from '../../domain/columns.js';
 import type { Label, LabelColor } from '../../domain/labels.js';
-import type { DocumentBlock, TaskSource, TaskStatus } from '../../domain/models.js';
+import type { DocumentBlock, TaskSource } from '../../domain/models.js';
 import type { BoardKey, ProjectKey, SearchItemType, SearchKey } from '../../domain/paging.js';
 import type { ProjectColor } from '../../domain/project.js';
 import type { Calendar } from '../calendar.js';
@@ -130,8 +130,6 @@ export type SearchHit = ProjectReference & {
       }
     | {
         type: 'task';
-        /** Until B6, for the interface of stage 09; agents get `column`. */
-        status: TaskStatus;
         column: TaskColumn;
         excerpt: string;
       }

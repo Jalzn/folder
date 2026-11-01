@@ -315,13 +315,13 @@ describe('project trash and permanent delete', () => {
       title: taskTitle,
       source: { documentId: document.id, excerpt },
     });
-    const updated = await service.updateTask({ ...request(), id: task.id, expectedVersion: 1, title: retitled });
+    await service.saveTaskText({ ...request(), id: task.id, expectedTextVersion: 1, title: retitled, description: [] });
     const moved = await service.moveTask({
       ...request(),
       id: task.id,
-      expectedVersion: updated.version,
-      expectedRevision: updated.revision,
-      status: 'doing',
+      expectedVersion: task.version,
+      expectedRevision: task.revision,
+      columnId: INITIAL_COLUMN_IDS.doing,
     });
     const trashedTask = await service.deleteTask({ ...request(), id: task.id, expectedVersion: moved.version });
     const restoredTask = await service.restoreTask({ ...request(), id: task.id, expectedVersion: moved.version + 1 });

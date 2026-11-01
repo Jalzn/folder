@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
 import type { DocumentBlock, Project, TaskAck } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
@@ -370,7 +371,7 @@ describe('workspace persistence and adversarial cases', () => {
       id: c.id,
       expectedVersion: c.version,
       expectedRevision: c.revision,
-      status: 'todo' as const,
+      columnId: INITIAL_COLUMN_IDS.todo,
       beforeTaskId: a.id,
     };
     const moved = await service.moveTask(move);
@@ -384,7 +385,7 @@ describe('workspace persistence and adversarial cases', () => {
         id: b.id,
         expectedVersion: b.version,
         expectedRevision: c.revision,
-        status: 'doing',
+        columnId: INITIAL_COLUMN_IDS.doing,
       }),
     ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
     expect((await service.listTasks({})).revision).toBe(5);
@@ -412,7 +413,7 @@ describe('workspace persistence and adversarial cases', () => {
       id: moved?.id ?? '',
       expectedVersion: moved?.version ?? 0,
       expectedRevision: before.revision,
-      status: 'todo',
+      columnId: INITIAL_COLUMN_IDS.todo,
       beforeTaskId: created.a0?.id ?? null,
     });
     expect(await rows(other.id)).toEqual(otherBefore);
@@ -454,7 +455,7 @@ describe('workspace persistence and adversarial cases', () => {
         id: tasks[moved]?.id ?? '',
         expectedVersion: 1,
         expectedRevision: revision,
-        status: 'todo',
+        columnId: INITIAL_COLUMN_IDS.todo,
         beforeTaskId: tasks[before]?.id ?? null,
       });
     }
@@ -475,18 +476,24 @@ describe('workspace persistence and adversarial cases', () => {
       title: 'Escrever apresentação',
       source: { documentId: document.id, excerpt: 'Escrever apresentação' },
     });
+    await service.saveTaskText({
+      ...request(),
+      id: created.id,
+      expectedTextVersion: 1,
+      title: 'Publicar apresentação',
+      description: [],
+    });
     const result = await service.updateTask({
       ...request(),
       id: created.id,
       expectedVersion: 1,
-      title: 'Publicar apresentação',
-      status: 'done',
+      columnId: INITIAL_COLUMN_IDS.done,
     });
     expect(result.version).toBe(2);
-    expect((await service.listTasks({})).tasks.find((task) => task.id === created.id)?.status).toBe('done');
+    expect((await service.getTask({ id: created.id })).completedAt).not.toBeNull();
     expect((await service.getDocument({ id: document.id })).plainText).toBe('Escrever apresentação');
     await expect(
-      service.updateTask({ ...request(), id: created.id, expectedVersion: 1, title: 'Edição antiga' }),
+      service.updateTask({ ...request(), id: created.id, expectedVersion: 1, dueOn: '2026-12-01' }),
     ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
   });
 

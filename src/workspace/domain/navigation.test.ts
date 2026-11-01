@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byPinOrder, bySort, type NavItem, openTaskCount, tasksLeftOut } from './navigation.js';
+import { byPinOrder, bySort, type NavItem } from './navigation.js';
 
 /** Created on October `created` and edited on October `edited`. */
 const item = (id: string, title: string, created: number, edited: number, pinnedAt: string | null = null): NavItem => ({
@@ -41,22 +41,5 @@ describe('sidebar order', () => {
       expect(ids([...twins].sort(bySort(sort)))).toEqual(['x', 'y']);
     const pins = [item('y', 'Y', 1, 1, '2026-10-01T00:00:00.000Z'), item('x', 'X', 1, 1, '2026-10-01T00:00:00.000Z')];
     expect(ids([...pins].sort(byPinOrder))).toEqual(['x', 'y']);
-  });
-});
-
-describe('overview counts', () => {
-  const counts = { todo: 4, doing: 8, done: 9 };
-
-  it('counts open tasks outside the done column', () => {
-    expect(openTaskCount(counts)).toBe(12);
-  });
-
-  it('counts the open tasks a list leaves out, per column in board order', () => {
-    const listed = Array.from({ length: 6 }, () => ({ status: 'doing' as const }));
-    expect(tasksLeftOut(counts, listed)).toEqual([
-      { status: 'todo', count: 4 },
-      { status: 'doing', count: 2 },
-    ]);
-    expect(tasksLeftOut({ todo: 0, doing: 1, done: 3 }, [{ status: 'doing' }])).toEqual([]);
   });
 });

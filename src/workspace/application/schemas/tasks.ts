@@ -1,6 +1,5 @@
 import { isCivilDate } from '@tinyfold/core/domain';
 import { z } from 'zod';
-import { TASK_STATUSES } from '../../domain/task-status.js';
 import { TASK_LIMITS } from '../../domain/tasks.js';
 import { edit, id, request, version, visible } from './common.js';
 import { documentContent } from './documents.js';
@@ -9,8 +8,6 @@ import { documentContent } from './documents.js';
 const title = visible(z.string().min(1, 'Escreva um título.').max(TASK_LIMITS.titleChars));
 /** Saving the text: empty, or of only characters that draw nothing, it becomes "Sem título". */
 const textTitle = visible(z.string().max(TASK_LIMITS.titleChars));
-/** Until B6: the status of stage 09, which the interface of that stage sends for a column. */
-const status = z.enum(TASK_STATUSES);
 /** A due date, a civil date of the calendar; null clears it. */
 const dueOn = z.string().refine(isCivilDate, 'Use uma data válida, no formato AAAA-MM-DD.');
 /** The labels replace the task's set; the use case checks each and the limit, with its own message. */
@@ -30,7 +27,6 @@ export const CreateTaskInput = z
     projectId: id.nullable().optional(),
     /** An active column; the first open one when left out. */
     columnId: id.optional(),
-    status: status.optional(),
     dueOn: dueOn.nullable().optional(),
     labelIds: labelIds.optional(),
     description: documentContent.optional(),
@@ -47,14 +43,11 @@ export const CreateTaskInput = z
     message: 'Escolha o projeto da tarefa.',
     path: ['projectId'],
   });
-/** The fields, at the fields' version: column, project, due date and labels. */
+/** The fields, at the fields' version: column, project, due date and labels. The title is text. */
 export const UpdateTaskInput = z.object({
   ...edit,
-  /** Until B6: the interface of stage 09 renames a task here. */
-  title: title.optional(),
   projectId: id.optional(),
   columnId: id.optional(),
-  status: status.optional(),
   dueOn: dueOn.nullable().optional(),
   labelIds: labelIds.optional(),
 });
@@ -80,18 +73,12 @@ export const RestoreTaskInput = z.object(edit);
  * Moves a task within its project's board. With `expectedRevision`, the board must not have changed;
  * without it, only for an undo, the place is `beforeTaskId`, or the end once that task left.
  */
-export const MoveTaskInput = z
-  .object({
-    ...edit,
-    expectedRevision: z.number().int().nonnegative().optional(),
-    columnId: id.optional(),
-    status: status.optional(),
-    beforeTaskId: id.nullable().optional(),
-  })
-  .refine((input) => input.columnId !== undefined || input.status !== undefined, {
-    message: 'Escolha a coluna.',
-    path: ['columnId'],
-  });
+export const MoveTaskInput = z.object({
+  ...edit,
+  expectedRevision: z.number().int().nonnegative().optional(),
+  columnId: id,
+  beforeTaskId: id.nullable().optional(),
+});
 
 export type ListTasksInput = z.infer<typeof ListTasksInput>;
 export type GetTaskInput = z.infer<typeof GetTaskInput>;
