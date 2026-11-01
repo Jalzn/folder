@@ -14,6 +14,8 @@ export interface ToastOptions {
   undo?: () => unknown;
   /** The undo's label: "Desfazer", or one that says what it does, such as "Desarquivar". */
   undoLabel?: string;
+  /** The undo can no longer run: the toast left, a newer one came, or the undo was withdrawn. */
+  onUndoGone?: () => void;
 }
 /** Shows a toast and gives its id; `'error'` is short for `{ kind: 'error' }`. */
 export type Notify = (text: string, options?: ToastKind | ToastOptions) => number;
@@ -47,9 +49,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         action,
         undo,
         undoLabel = 'Desfazer',
+        onUndoGone,
       } = typeof options === 'string' ? { kind: options } : (options ?? {});
       const id = nextId.current++;
-      slot.show(id, undo);
+      slot.show(id, undo, onUndoGone);
       setCurrent({ id, text, kind, action, undo, undoLabel });
       return id;
     },

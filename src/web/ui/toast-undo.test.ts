@@ -48,4 +48,20 @@ describe('createUndoSlot', () => {
     slot.withdraw(1);
     expect(slot.take()).toBeNull();
   });
+
+  it('tells a toast when its undo can no longer run, but not when the undo is taken', () => {
+    const slot = createUndoSlot();
+    const gone = vi.fn();
+    slot.show(1, vi.fn(), gone);
+    slot.take();
+    expect(gone).not.toHaveBeenCalled();
+    slot.show(2, vi.fn(), gone);
+    slot.show(3, vi.fn());
+    expect(gone).toHaveBeenCalledOnce();
+    slot.show(4, vi.fn(), gone);
+    slot.leave(4);
+    slot.show(5, vi.fn(), gone);
+    slot.withdraw(5);
+    expect(gone).toHaveBeenCalledTimes(3);
+  });
 });

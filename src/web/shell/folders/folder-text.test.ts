@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  backToRootText,
   deletedText,
   deleteWithItemsTitle,
   edgeText,
@@ -51,5 +52,13 @@ describe('edgeText', () => {
   it('says the folder cannot go further', () => {
     expect(edgeText('MCP', 'up')).toBe('“MCP” já é a primeira pasta.');
     expect(edgeText('MCP', 'down')).toBe('“MCP” já é a última pasta.');
+  });
+});
+
+describe('backToRootText', () => {
+  it('says the item went back to the root of its project', () => {
+    expect(backToRootText('Notas', 'Tinyfold')).toBe(
+      '“Notas” voltou para Tinyfold, na raiz: a pasta de onde saiu foi excluída.',
+    );
   });
 });

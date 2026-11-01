@@ -4,6 +4,7 @@ import { trackPageFocus } from '../ui';
 import { AppLayout } from './AppLayout';
 import { AppProvider } from './AppProvider';
 import { AuthGate } from './AuthGate';
+import { ItemChangesProvider } from './item-changes';
 import { ShellUiProvider } from './shell-ui';
 
 /** The root route: the session, then the app's context and shell around the page. */
@@ -14,11 +15,13 @@ export function AppRoot() {
     <AuthGate>
       {(owner) => (
         <AppProvider owner={owner}>
-          <ShellUiProvider>
-            <AppLayout>
-              <Outlet />
-            </AppLayout>
-          </ShellUiProvider>
+          <ItemChangesProvider>
+            <ShellUiProvider>
+              <AppLayout>
+                <Outlet />
+              </AppLayout>
+            </ShellUiProvider>
+          </ItemChangesProvider>
         </AppProvider>
       )}
     </AuthGate>

@@ -2,6 +2,8 @@
 interface Offer {
   toastId: number;
   undo: () => unknown;
+  /** Its undo can no longer run: the toast left, a newer toast came, or a newer change withdrew it. */
+  gone?: (() => void) | undefined;
 }
 
 /**
@@ -11,18 +13,25 @@ interface Offer {
  */
 export function createUndoSlot() {
   let offer: Offer | null = null;
+  /** The offer goes without its undo running. */
+  const lose = () => {
+    const lost = offer;
+    offer = null;
+    lost?.gone?.();
+  };
   return {
-    /** A toast is shown, offering `undo` or nothing. */
-    show(toastId: number, undo?: () => unknown) {
-      offer = undo ? { toastId, undo } : null;
+    /** A toast is shown, offering `undo` or nothing; `gone` is told when that undo can no longer run. */
+    show(toastId: number, undo?: () => unknown, gone?: () => void) {
+      lose();
+      offer = undo ? { toastId, undo, gone } : null;
     },
     /** That toast leaves: its undo goes with it, but a newer toast's stays. */
     leave(toastId: number) {
-      if (offer?.toastId === toastId) offer = null;
+      if (offer?.toastId === toastId) lose();
     },
     /** That toast's change was superseded by a newer one: its undo goes, but a newer toast's stays. */
     withdraw(toastId: number) {
-      if (offer?.toastId === toastId) offer = null;
+      if (offer?.toastId === toastId) lose();
     },
     /** The toast whose undo is on offer, if any. */
     offeredBy: () => offer?.toastId ?? null,

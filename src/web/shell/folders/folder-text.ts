@@ -44,3 +44,7 @@ export function movedText(folderName: string | null, lostPin: boolean) {
 /** ⌥↑ on the first folder or ⌥↓ on the last: "“MCP” já é a primeira pasta." */
 export const edgeText = (name: string, direction: 'up' | 'down') =>
   `“${name}” já é a ${direction === 'up' ? 'primeira' : 'última'} pasta.`;
+
+/** The undo of a move to another project, when the folder the item came from was deleted meanwhile. */
+export const backToRootText = (title: string, projectName: string) =>
+  `“${title}” voltou para ${projectName}, na raiz: a pasta de onde saiu foi excluída.`;

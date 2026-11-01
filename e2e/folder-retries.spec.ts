@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
+import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
@@ -189,4 +189,75 @@ test('an undo applies only to its own move: a newer move of the item takes the D
   await toast(page).getByRole('button', { name: 'Desfazer' }).click();
   await expect(folderRow(page, 'Um')).toHaveAttribute('aria-label', /, 1 item$/);
   await expect(folderRow(page, 'Dois')).toHaveAttribute('aria-label', /, 0 itens$/);
+});
+
+test('a second move refused while another write runs leaves the first toast its Desfazer', async ({ page }) => {
+  await login(page);
+  const projectId = await createProject(page, `Recusa ${Date.now()}`);
+  await rpcFolder(page, projectId, 'Dois');
+  await rpcFolder(page, projectId, 'Um');
+  await rpcDocument(page, projectId, 'Outro');
+  await rpcDocument(page, projectId, 'Vai e vem');
+  await page.reload();
+  // Dragging uses one set of writes for the tree: the first move goes through.
+  await drag(page, treeRow(page, 'Vai e vem'), folderRow(page, 'Um'));
+  await expect(toast(page)).toContainText('Movido para Um.');
+  // A move of another item waits at the network; a second move of the first item is refused meanwhile.
+  let release = () => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/rpc/workspace/moveItem', async (route) => {
+    await held;
+    await route.continue();
+  });
+  await drag(page, treeRow(page, 'Outro'), folderRow(page, 'Dois'));
+  await drag(page, treeRow(page, 'Vai e vem'), folderRow(page, 'Dois'));
+  await expect(toast(page)).toContainText('Movido para Um.');
+  await expect(toast(page).getByRole('button', { name: 'Desfazer' })).toBeVisible();
+  release();
+  await expect(toast(page)).toContainText('Movido para Dois.');
+  await expect(folderRow(page, 'Um')).toHaveAttribute('aria-label', /, 1 item$/);
+});
+
+test('Desfazer of a move to another project puts the item back in its folder, or at the root if it is gone', async ({
+  page,
+}) => {
+  await login(page);
+  const target = `Destino ${Date.now()}`;
+  await createProject(page, target);
+  const projectId = await createProject(page, `Origem ${Date.now()}`);
+  const project = (await page.getByRole('heading', { level: 1 }).textContent()) ?? '';
+  const folder = await rpcFolder(page, projectId, 'Casa');
+  await rpcDocument(page, projectId, 'Viajante', folder);
+  await rpcDocument(page, projectId, 'Sem volta', folder);
+  await page.reload();
+  const toProject = async (title: string) => {
+    await folderRow(page, 'Casa').focus();
+    if ((await folderRow(page, 'Casa').getAttribute('aria-expanded')) !== 'true')
+      await page.keyboard.press('ArrowRight');
+    await treeRow(page, title).focus();
+    await page.keyboard.press('m');
+    await page.getByRole('menu', { name: 'Pastas' }).getByRole('menuitem', { name: 'Outro projeto…' }).click();
+    await page.getByRole('menuitemradio', { name: target }).click();
+    await expect(toast(page)).toContainText(`“${title}” foi para ${target}.`);
+  };
+
+  await toProject('Viajante');
+  await toast(page).getByRole('button', { name: 'Desfazer' }).click();
+  await expect(folderRow(page, 'Casa')).toHaveAttribute('aria-label', /, 2 itens/);
+
+  // The folder goes while the item is away: Desfazer brings it to the root, and says so.
+  await toProject('Sem volta');
+  await rpc(page, 'workspace/deleteFolder', {
+    requestId: crypto.randomUUID(),
+    id: folder,
+    expectedVersion: await folderVersion(page, projectId, folder),
+    withItems: false,
+  });
+  await toast(page).getByRole('button', { name: 'Desfazer' }).click();
+  await expect(toast(page)).toContainText(
+    `“Sem volta” voltou para ${project}, na raiz: a pasta de onde saiu foi excluída.`,
+  );
+  await expect(treeRow(page, 'Sem volta')).toHaveAttribute('aria-level', '1');
 });

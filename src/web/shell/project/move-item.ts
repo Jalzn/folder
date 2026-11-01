@@ -23,5 +23,5 @@ export async function moveItem(type: ItemType, id: string, projectId: string, re
   if (editor) {
     if (!(await editor.moveTo(move))) throw new Refusal('Resolva o salvamento deste item antes de movê-lo de projeto.');
   } else await move(item.version);
-  return { title: item.title, pinned: item.pinnedAt !== null, from: item.projectId };
+  return { title: item.title, pinned: item.pinnedAt !== null, from: item.projectId, folderId: item.folderId };
 }

@@ -32,4 +32,17 @@ describe('createItemChanges', () => {
     changes.offer('document:a', first, drop);
     expect(drop).toHaveBeenCalledOnce();
   });
+
+  it('lets an entry go once nothing can undo its change, but not a newer one', () => {
+    const changes = createItemChanges();
+    const first = changes.begin('document:a');
+    changes.release('document:a', first);
+    expect(changes.size()).toBe(0);
+    expect(changes.isLatest('document:a', first)).toBe(false);
+    const second = changes.begin('document:a');
+    const third = changes.begin('document:a');
+    changes.release('document:a', second);
+    expect(changes.isLatest('document:a', third)).toBe(true);
+    expect(changes.size()).toBe(1);
+  });
 });
