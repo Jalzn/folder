@@ -14,6 +14,8 @@ export function BoardColumn({
   cards,
   spot,
   editable,
+  emptyText = 'Nada aqui.',
+  footer,
   sectionRef,
   onAdd,
 }: {
@@ -24,6 +26,10 @@ export function BoardColumn({
   /** Where a dragged card would land, when in this column. */
   spot: DropSpot | null;
   editable: boolean;
+  /** "Nada aqui.", or what the label filter left out. */
+  emptyText?: string;
+  /** After the cards, as the done column's "Mais 23 concluídas antes de 19 out →". */
+  footer?: ReactNode;
   sectionRef: (element: HTMLElement | null) => () => void;
   onAdd: () => void;
 }) {
@@ -55,7 +61,7 @@ export function BoardColumn({
         ) : (
           <>
             {showLine && <ul className="board-column__cards">{line}</ul>}
-            <p className="board-column__empty">Nada aqui.</p>
+            <p className="board-column__empty">{emptyText}</p>
           </>
         )}
         {editable && !column.isDone && (
@@ -70,6 +76,7 @@ export function BoardColumn({
             Nova tarefa
           </button>
         )}
+        {footer}
       </div>
     </section>
   );

@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowRightLeft,
   Circle,
+  CircleCheck,
   FileText,
   Folder,
   FolderPlus,
@@ -19,6 +20,7 @@ import {
   SquareKanban,
   Sun,
   Table2,
+  Tags,
   Trash2,
 } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
@@ -33,6 +35,8 @@ const commandIcons: Record<CommandId, ReactElement> = {
   'new-drawing': <Shapes size={16} />,
   'new-folder': <FolderPlus size={16} />,
   'new-task': <Circle size={16} />,
+  completed: <CircleCheck size={16} />,
+  labels: <Tags size={16} />,
   'switch-project': <ArrowRightLeft size={16} />,
   overview: <LayoutDashboard size={16} />,
   board: <SquareKanban size={16} />,
@@ -55,10 +59,16 @@ export function rowIcon(
   row: PaletteRowData,
   here: readonly { id: string; icon?: ReactNode }[],
   projects: readonly Project[],
+  /** The board's columns in order, for a task's ring. */
+  columns: readonly { id: string }[] = [],
 ): ReactNode {
   const { action } = row;
   if (action.kind === 'here') return here.find((entry) => entry.id === action.id)?.icon;
   if (action.kind === 'item') {
+    if (row.column) {
+      const at = columns.findIndex((column) => column.id === row.column?.id);
+      return <ColumnRing index={Math.max(0, at)} count={columns.length} isDone={row.column.isDone} size={16} />;
+    }
     if (row.status)
       return <ColumnRing index={TASK_STATUSES.indexOf(row.status)} count={TASK_STATUSES.length} size={16} />;
     return action.type === 'document' ? <FileText size={16} /> : <Shapes size={16} />;
@@ -77,7 +87,7 @@ export function rowRight(row: PaletteRowData, projects: readonly Project[]): Rea
   const project = projects.find((candidate) => candidate.id === row.project?.id);
   return (
     <>
-      {row.status && <span>{taskStatusLabels[row.status]} ·</span>}
+      {row.column ? <span>{row.column.name} ·</span> : row.status && <span>{taskStatusLabels[row.status]} ·</span>}
       <span className="palette-row__project">
         {project && <ProjectMark name={project.name} color={project.color} size={16} />}
         {placeLabel(row.project.name, row.folder)}

@@ -2,7 +2,7 @@ import './sidebar.css';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { LayoutDashboard, PanelLeftOpen, Search, SquareKanban, Trash2 } from 'lucide-react';
 import { Button as AriaButton } from 'react-aria-components';
-import { formatCount } from '../../lib/count';
+import { countOf, formatCount } from '../../lib/count';
 import { useProjects } from '../../lib/queries';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
@@ -73,7 +73,11 @@ export function CollapsedRail({
             <LayoutDashboard size={16} />
           </IconButton>
           <IconButton
-            label="Quadro"
+            label={
+              navigation?.overdueTasks
+                ? `Quadro, ${countOf(navigation.overdueTasks, 'atrasada', 'atrasadas')}`
+                : 'Quadro'
+            }
             className="rail__button"
             data-on={on(paths.board(project.id))}
             onPress={() => go(paths.board(project.id))}

@@ -1,5 +1,6 @@
 import { displayName, nameKey } from '@tinyfold/workspace/domain';
-import { type KeyboardEvent, useId, useRef, useState } from 'react';
+import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
+import { whenPresent } from '../../ui';
 
 /** "Já existe uma coluna Revisão." */
 export const columnTakenText = (name: string) => `Já existe uma coluna ${name}.`;
@@ -27,6 +28,19 @@ export function ColumnNameField({
   const [value, setValue] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const settled = useRef(false);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const field = input.current;
+    if (!field) return;
+    // From the ⋯ menu's Renomear, the page stays inert until the menu has closed, which refuses autoFocus:
+    // the field takes the focus once it can.
+    const take = () => {
+      if (document.activeElement !== field) field.focus();
+      return document.activeElement === field ? field : null;
+    };
+    if (take()) return;
+    return whenPresent(take, () => undefined, { frames: 20 });
+  }, []);
   const takenBy = (name: string) => taken.find((other) => nameKey(other) === nameKey(name));
 
   async function settle(leaving: boolean) {
@@ -58,14 +72,13 @@ export function ColumnNameField({
   return (
     <span className="column-name-field">
       <input
+        ref={input}
         className="column-name-field__input"
         aria-label="Nome da coluna"
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
         value={value}
         maxLength={200}
-        // biome-ignore lint/a11y/noAutofocus: The field opens on purpose, from Renomear, ↵ or "+ Coluna".
-        autoFocus
         onFocus={(event) => event.currentTarget.select()}
         onChange={(event) => {
           setValue(event.target.value);

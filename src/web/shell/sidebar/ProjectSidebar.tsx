@@ -76,7 +76,7 @@ export function ProjectSidebar({
               onArrowDown={() => firstRow(results.current)?.focus()}
               inputRef={input}
             />
-            <SidebarNav project={project} openTasks={navigation?.openTasks} />
+            <SidebarNav project={project} openTasks={navigation?.openTasks} overdueTasks={navigation?.overdueTasks} />
           </div>
           <div className="sidebar__sections" ref={sections}>
             {searching ? (

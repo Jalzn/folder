@@ -2,12 +2,15 @@ import './command-palette.css';
 import { Search } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Menu as AriaMenu, Autocomplete, Dialog, Input, Modal, ModalOverlay, TextField } from 'react-aria-components';
+import { inBoardOrder } from '../../lib/board-order';
+import { useColumns } from '../../lib/queries';
 import { Kbd, MenuSection } from '../../ui';
 import { type SwitcherPlace, useShellUi } from '../shell-ui';
 import { availableCommands } from './commands';
 import { PaletteRow } from './PaletteRow';
 import { rowIcon, rowRight } from './palette-row-content';
 import { paletteSections } from './palette-sections';
+import { useTaskHereActions } from './palette-task';
 import { useHereActions } from './use-here-actions';
 import { usePaletteActions } from './use-palette-actions';
 import { usePaletteContext } from './use-palette-context';
@@ -49,11 +52,15 @@ function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & {
   const { context, project, projects, item, pinned } = usePaletteContext();
   const [query, setQuery] = useState(initial);
   const { results, searching, folders } = usePaletteData(query);
-  const here = useHereActions({ item, project, pinned });
+  const page = useHereActions({ item, project, pinned });
+  const task = useTaskHereActions();
+  const here = [...task, ...page];
+  const columns = inBoardOrder(useColumns().data?.columns ?? []);
   const run = usePaletteActions({ here, project, projects, switcherPlace, toggleSidebar });
   const sections = paletteSections({
     query,
-    here,
+    task,
+    here: page,
     results,
     projects,
     folders,
@@ -103,7 +110,7 @@ function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & {
               <PaletteRow
                 key={row.key}
                 id={row.key}
-                icon={rowIcon(row, here, projects)}
+                icon={rowIcon(row, here, projects, columns)}
                 label={row.label}
                 note={row.note}
                 query={query}

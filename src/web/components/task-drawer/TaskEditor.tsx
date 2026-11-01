@@ -1,12 +1,11 @@
 import { checklistProgress, isOverdue } from '@tinyfold/workspace/domain';
 import { RotateCcw } from 'lucide-react';
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { useToday } from '../../lib/civil-date';
 import { type ColumnSummary, type TaskWithText, useLabels } from '../../lib/queries';
 import { type Task, UNTITLED } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { paths } from '../../router/paths';
-import { useApp } from '../../shell/AppProvider';
+import { useApp, useOwnerToday } from '../../shell/AppProvider';
 import { useTaskDrawer } from '../../shell/task-drawer-state';
 import { Banner, Button, useToast } from '../../ui';
 import { ReloadDialog } from '../editor/EditorDialogs';
@@ -50,7 +49,7 @@ export function TaskEditor({
   const app = useApp();
   const drawer = useTaskDrawer();
   const toast = useToast();
-  const today = useToday();
+  const today = useOwnerToday();
   const labels = useLabels().data ?? [];
   const [controller] = useState(() => taskController(detail, app.owner.installationId));
   useAutosaveLifecycle(controller);
@@ -60,6 +59,7 @@ export function TaskEditor({
   const description = useRef<DescriptionHandle>(null);
   const [trashing, setTrashing] = useState(false);
   const [reloading, setReloading] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
 
   // A newer text saved elsewhere: taken in silence without local changes, a conflict with them.
   useEffect(() => {
@@ -68,7 +68,24 @@ export function TaskEditor({
   }, [controller, detail]);
   useEffect(() => {
     commands.current.primary = editable ? () => void fields.toggleDone() : undefined;
+    drawer.taskCommands.current = {
+      done: Boolean(column?.isDone),
+      copyLink: () => void copyLink(),
+      ...(editable
+        ? {
+            toggleDone: () => void fields.toggleDone(),
+            moveToColumn: () => setMoveOpen(true),
+            trash: () => setTrashing(true),
+          }
+        : {}),
+    };
   });
+  useEffect(
+    () => () => {
+      drawer.taskCommands.current = null;
+    },
+    [drawer],
+  );
 
   const column = columns.find((each) => each.id === task.columnId);
   const progress = checklistProgress(state.snapshot.description);
@@ -103,6 +120,8 @@ export function TaskEditor({
             onLeave={() => region.current?.focus({ preventScroll: true })}
           />
         }
+        moveOpen={moveOpen}
+        onMoveOpenChange={setMoveOpen}
         saveState={
           <>
             <SaveState status={state.status} />

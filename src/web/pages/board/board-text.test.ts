@@ -5,8 +5,11 @@ import {
   columnDeletedText,
   columnLabel,
   columnRestoredText,
+  filteredEmptyText,
+  filterText,
   movedText,
   newColumnName,
+  olderDoneText,
   positionText,
 } from './board-text';
 
@@ -43,5 +46,13 @@ describe('board text', () => {
   it('names a new column with the first free name', () => {
     expect(newColumnName(['A fazer'], nameKey)).toBe('Nova coluna');
     expect(newColumnName(['nova coluna', 'Nova Coluna 2'], nameKey)).toBe('Nova coluna 3');
+  });
+
+  it('says what the done column leaves out and what the filter shows', () => {
+    expect(olderDoneText(23, '19 out')).toBe('Mais 23 concluídas antes de 19 out →');
+    expect(olderDoneText(1, '19 out')).toBe('Mais 1 concluída antes de 19 out →');
+    expect(filteredEmptyText(['mcp'])).toBe('Nenhuma tarefa com mcp.');
+    expect(filterText(['mcp', 'backend'], 3)).toBe('Filtro mcp, backend: 3 tarefas');
+    expect(filterText([], 1)).toBe('Sem filtro: 1 tarefa');
   });
 });

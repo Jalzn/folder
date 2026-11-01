@@ -172,3 +172,15 @@
     font-size: 16px;
   }
 }
+
+.profile-time-zone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: var(--type-ui);
+  color: var(--text);
+}
+.profile-time-zone svg {
+  color: var(--icon);
+}

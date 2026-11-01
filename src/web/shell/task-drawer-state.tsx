@@ -43,6 +43,17 @@ export interface TaskDrawerActions {
   setCloseGuard: (guard: (() => boolean) | null) => void;
   /** What opened the drawer, while it is still on the page. */
   opener: () => HTMLElement | null;
+  /** What ⌘K's "Nesta tarefa" runs on the open task, which its editor keeps current; null without one. */
+  taskCommands: { current: TaskCommands | null };
+}
+
+/** The open task's actions for ⌘K: Concluir or Reabrir, Mover para coluna…, Copiar link, the trash. */
+export interface TaskCommands {
+  done: boolean;
+  toggleDone?: (() => void) | undefined;
+  moveToColumn?: (() => void) | undefined;
+  copyLink: () => void;
+  trash?: (() => void) | undefined;
 }
 
 const ActionsContext = createContext<TaskDrawerActions | null>(null);
@@ -69,6 +80,7 @@ export function TaskDrawerProvider({ children }: { children: ReactNode }) {
   const openedFrom = useRef<HTMLElement | null>(null);
   const guard = useRef<(() => boolean) | null>(null);
   const keys = useRef(0);
+  const taskCommands = useRef<TaskCommands | null>(null);
   const actions = useMemo<TaskDrawerActions>(() => {
     /** A new task leaving the drawer tells whoever started it. */
     const leaveNew = () => {
@@ -103,6 +115,7 @@ export function TaskDrawerProvider({ children }: { children: ReactNode }) {
         guard.current = next;
       },
       opener: () => (openedFrom.current?.isConnected ? openedFrom.current : null),
+      taskCommands,
     };
   }, []);
   return (

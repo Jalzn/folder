@@ -1,12 +1,23 @@
 import { useLocation } from '@tanstack/react-router';
 import { LayoutDashboard, SquareKanban } from 'lucide-react';
-import { formatCount } from '../../lib/count';
+import { countOf, formatCount } from '../../lib/count';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { SidebarRow } from './SidebarRow';
 
-/** Visão geral and Quadro, with the open tasks beside the board. */
-export function SidebarNav({ project, openTasks }: { project: Project; openTasks: number | undefined }) {
+/**
+ * Visão geral and Quadro. Beside the board, "1 atrasada" in --late when tasks are late, or else the open tasks
+ * in --text-3 (docs/interface/refino.md, critique 3).
+ */
+export function SidebarNav({
+  project,
+  openTasks,
+  overdueTasks,
+}: {
+  project: Project;
+  openTasks: number | undefined;
+  overdueTasks: number | undefined;
+}) {
   const pathname = useLocation({ select: (location) => location.pathname });
   const overview = paths.overview(project.id);
   const board = paths.board(project.id);
@@ -23,7 +34,13 @@ export function SidebarNav({ project, openTasks }: { project: Project; openTasks
         icon={<SquareKanban size={16} />}
         label="Quadro"
         current={pathname === board}
-        meta={openTasks ? formatCount(openTasks) : undefined}
+        meta={
+          overdueTasks ? (
+            <span className="sidebar-row__late">{countOf(overdueTasks, 'atrasada', 'atrasadas')}</span>
+          ) : openTasks ? (
+            formatCount(openTasks)
+          ) : undefined
+        }
       />
     </>
   );

@@ -2,6 +2,7 @@ import './layout.css';
 import { useLocation } from '@tanstack/react-router';
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef } from 'react';
 import { Dialog as AriaDialog, Modal, ModalOverlay } from 'react-aria-components';
+import { LabelsDialog } from '../components/labels/LabelsDialog';
 import { useFolders } from '../lib/queries';
 import { useLastLocation } from '../router/use-last-location';
 import { useRouteFocus } from '../router/use-route-focus';
@@ -136,6 +137,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </ModalOverlay>
       <CommandPalette switcherPlace={switcherPlace} toggleSidebar={toggleSidebar} />
       <ShortcutsDialog open={ui.shortcutsOpen} onClose={() => ui.setShortcutsOpen(false)} />
+      <LabelsDialog open={ui.labelsOpen} onClose={() => ui.setLabelsOpen(false)} />
       {project && ui.newItemOpen && (
         <NewItemPopover
           project={project}

@@ -63,6 +63,8 @@ export function usePaletteActions({
       board: () => current && go(paths.board(current.id)),
       index: () => current && go(paths.index(current.id)),
       trash: () => current && go(paths.trash(current.id)),
+      completed: () => current && go(paths.completed(current.id)),
+      labels: () => ui.setLabelsOpen(true),
       'collapse-folders': () => {
         if (!current) return;
         prefs.setProject(current.id, { expanded: [] });

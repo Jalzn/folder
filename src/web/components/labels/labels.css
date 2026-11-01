@@ -19,3 +19,148 @@
   border-radius: 2px;
   background: var(--label-color);
 }
+
+/* A label's 8 px square in menus and rows; outlined for a label yet to be named. */
+.label-square {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0 4px;
+  border-radius: 2px;
+  background: var(--label-color);
+}
+.label-square[data-empty] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+/* "Etiquetas" (docs/etapas/10-quadro-tarefa.md, "Etiquetas"): a 480 px dialog with rows like a menu list. */
+.modal.labels-dialog {
+  width: min(480px, 100%);
+}
+.labels-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: -6px -8px 0;
+}
+.labels-dialog__list {
+  max-height: min(416px, calc(100dvh - 200px));
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.labels-dialog__empty {
+  margin: 0;
+  padding: 6px 8px;
+  color: var(--text-3);
+}
+.labels-dialog__foot {
+  display: flex;
+  padding: 2px 0 0 2px;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+}
+.label-row:hover {
+  background: var(--hover-raised);
+}
+.label-row__name {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  padding: 0 4px;
+  margin-left: -4px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--text);
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+.label-row__name:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.label-row__count {
+  flex: none;
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.label-row__more {
+  opacity: 0;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+.label-row:hover .label-row__more,
+.label-row:focus-within .label-row__more,
+.label-row__more[aria-expanded="true"] {
+  opacity: 1;
+}
+@media (hover: none) {
+  .label-row__more {
+    opacity: 1;
+  }
+}
+
+/* A row whose name is being typed grows to show the error under the field. */
+.label-row[data-editing] {
+  align-items: flex-start;
+  padding-block: 2px;
+}
+.label-row[data-editing] > .label-square {
+  margin-top: 10px;
+}
+.label-row[data-editing] > .label-row__count {
+  margin-top: 6px;
+}
+.label-row[data-editing] > .label-row__more {
+  margin-top: 2px;
+}
+.label-row[data-editing]:hover {
+  background: none;
+}
+
+.label-name-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.label-name-field__input {
+  width: 100%;
+  height: 28px;
+  margin-left: -4px;
+  padding: 0 7px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--raised-1);
+  box-shadow: 0 0 0 3px var(--accent-25);
+  color: var(--text);
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  outline: none;
+}
+.label-name-field__input::placeholder {
+  color: var(--text-3);
+}
+.label-name-field__error {
+  padding: 0 0 2px 0;
+  margin-left: -4px;
+  color: var(--danger);
+  font: var(--type-meta);
+}

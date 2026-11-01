@@ -7,6 +7,8 @@ import { Button, Logo, TextField } from '../ui';
 export interface Owner {
   name: string;
   installationId: string;
+  /** The owner's time zone, where every civil date counts; null until the first load sets it. */
+  timeZone?: string | null;
 }
 
 /** The password form: on the login screen, and in the dialog that renews an expired session. */

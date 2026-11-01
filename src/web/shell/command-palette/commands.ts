@@ -11,6 +11,8 @@ export type CommandId =
   | 'board'
   | 'index'
   | 'trash'
+  | 'completed'
+  | 'labels'
   | 'collapse-folders'
   | 'theme-system'
   | 'theme-light'
@@ -80,6 +82,8 @@ export function availableCommands(context: CommandContext): Command[] {
         { id: 'board', label: 'Quadro', keywords: `kanban tarefas ${project.name}`, shortcut: ['G', 'Q'] },
         { id: 'index', label: 'Índice', keywords: `lista documentos desenhos ${project.name}` },
         { id: 'trash', label: 'Lixeira', keywords: `excluidos restaurar ${project.name}`, shortcut: ['G', 'L'] },
+        { id: 'completed', label: 'Concluídas do projeto', keywords: `feitas terminadas tarefas ${project.name}` },
+        { id: 'labels', label: 'Gerenciar etiquetas…', keywords: 'etiquetas tags cores renomear excluir' },
         ...(context.hasFolders
           ? [{ id: 'collapse-folders' as const, label: 'Recolher todas as pastas', keywords: 'pastas fechar itens' }]
           : []),

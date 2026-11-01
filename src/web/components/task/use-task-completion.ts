@@ -25,7 +25,7 @@ export function useTaskCompletion(action: ReturnType<typeof useAction>) {
     return change(
       `task:${id}`,
       () => {
-        const tasks = cachedTasks(projectId)?.tasks ?? [];
+        const tasks = cachedTasks(projectId, id)?.tasks ?? [];
         const task = tasks.find((each) => each.id === id);
         const { done, open } = doneAndFirstOpen(cachedColumns() ?? []);
         if (!task || !done || !open) throw new Refusal('Esta tarefa não está mais neste quadro.');

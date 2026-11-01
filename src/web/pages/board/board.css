@@ -256,3 +256,32 @@
     opacity: 1;
   }
 }
+
+/* The label filter, a ghost button flush with the title, and its colors in the menu. */
+.board-head__grow {
+  flex: 1;
+}
+.board-filter {
+  margin-left: -8px;
+  padding: 0 8px;
+}
+.board-filter__color {
+  width: 8px;
+  height: 8px;
+  margin: 0 4px;
+  border-radius: 2px;
+  background: var(--label-color);
+}
+/* "Mais 23 concluídas antes de 19 out →", which opens Concluídas. */
+.board-column__older {
+  margin-top: 2px;
+  padding: 4px 2px;
+  font: var(--type-meta);
+  color: var(--text-3);
+  text-decoration: none;
+}
+.board-column__older:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

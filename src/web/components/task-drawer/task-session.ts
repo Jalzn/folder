@@ -2,7 +2,7 @@ import { checklistProgress } from '@tinyfold/workspace/domain';
 import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
 import { AutosaveController, type SaveInput } from '../../lib/autosave';
 import { draftStorage } from '../../lib/draft-storage';
-import { type TaskList, type TaskWithText, taskQuery } from '../../lib/queries';
+import { type ProjectBoard, type TaskList, type TaskWithText, taskQuery } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
 import { displayTitle } from '../../lib/types';
 import { parseTaskTextDraft, type TaskTextSnapshot } from './task-text-draft';
@@ -46,16 +46,15 @@ function showSaved(task: TaskWithText, text: TaskTextSnapshot, textVersion: numb
       ? previous
       : { ...(previous ?? task), title, description: text.description, textVersion },
   );
-  queryClient.setQueriesData<TaskList>(
-    { queryKey: ['workspace', 'tasks'] },
-    (list) =>
-      list && {
-        ...list,
-        tasks: list.tasks.map((each) =>
-          each.id === task.id && each.textVersion <= textVersion ? { ...each, title, checklist, textVersion } : each,
-        ),
-      },
-  );
+  const update = <T extends Pick<TaskList, 'tasks'>>(list: T | undefined) =>
+    list && {
+      ...list,
+      tasks: list.tasks.map((each) =>
+        each.id === task.id && each.textVersion <= textVersion ? { ...each, title, checklist, textVersion } : each,
+      ),
+    };
+  queryClient.setQueriesData<TaskList>({ queryKey: ['workspace', 'tasks'] }, update);
+  queryClient.setQueriesData<ProjectBoard>({ queryKey: ['workspace', 'board'] }, update);
 }
 
 /**

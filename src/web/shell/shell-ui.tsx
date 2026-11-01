@@ -66,6 +66,10 @@ export interface ShellActions {
   endFolder: (created?: CreatedFolder) => boolean;
   revealFolder: (reveal: FolderReveal | null) => void;
   setTopBarActions: (element: HTMLElement | null) => void;
+  /** The board's label filter of a project, for this tab only (decision 17). */
+  setLabelFilter: (projectId: string, labelIds: readonly string[]) => void;
+  /** Opens "Gerenciar etiquetas…", from the board, its filter or ⌘K. */
+  setLabelsOpen: (open: boolean) => void;
 }
 
 /** What the shell shows open now. */
@@ -91,6 +95,9 @@ export interface ShellState {
    * not a ref, because the page's actions portal into it once it exists.
    */
   topBarActions: HTMLElement | null;
+  /** The label filter of each project's board in this tab: tasks with all of them show. */
+  labelFilters: Readonly<Record<string, readonly string[]>>;
+  labelsOpen: boolean;
 }
 
 const ActionsContext = createContext<ShellActions | null>(null);
@@ -137,6 +144,8 @@ function ShellUiState({ children }: { children: ReactNode }) {
   const [folderDraft, setFolderDraft] = useState<FolderDraft | null>(null);
   const [folderReveal, revealFolder] = useState<FolderReveal | null>(null);
   const [topBarActions, setTopBarActions] = useState<HTMLElement | null>(null);
+  const [labelFilters, setLabelFilters] = useState<Readonly<Record<string, readonly string[]>>>({});
+  const [labelsOpen, setLabelsOpen] = useState(false);
   const page = useRef<PageCommands>({});
   // What follows a folder's creation is a callback, kept beside the draft rather than in its state.
   const draftCreated = useRef<((folder: CreatedFolder) => void) | undefined>(undefined);
@@ -171,6 +180,8 @@ function ShellUiState({ children }: { children: ReactNode }) {
       },
       revealFolder,
       setTopBarActions,
+      setLabelFilter: (projectId, labelIds) => setLabelFilters((all) => ({ ...all, [projectId]: [...labelIds] })),
+      setLabelsOpen,
     }),
     [layers, announce],
   );
@@ -187,6 +198,8 @@ function ShellUiState({ children }: { children: ReactNode }) {
       folderDraft,
       folderReveal,
       topBarActions,
+      labelFilters,
+      labelsOpen,
     }),
     [
       overlay,
@@ -200,6 +213,8 @@ function ShellUiState({ children }: { children: ReactNode }) {
       folderDraft,
       folderReveal,
       topBarActions,
+      labelFilters,
+      labelsOpen,
     ],
   );
   return (

@@ -117,4 +117,24 @@ describe('palette sections', () => {
     const keys = paletteSections(input('')).flatMap((section) => section.rows.map((row) => row.key));
     expect(new Set(keys).size).toBe(keys.length);
   });
+
+  it('puts "Nesta tarefa" first while a task is open, filtered like the rest', () => {
+    const input = {
+      here: [{ id: 'trash', label: 'Mover para a lixeira' }],
+      task: [
+        { id: 'task-done', label: 'Concluir', shortcut: ['mod', '↵'] },
+        { id: 'task-link', label: 'Copiar link' },
+      ],
+      results: [],
+      projects: [project('p1', 'Tinyfold')],
+      folders: [],
+      commands: availableCommands(context),
+    };
+    const sections = paletteSections({ ...input, query: '' });
+    expect(sections[0]?.title).toBe('Nesta tarefa');
+    expect(sections[0]?.rows.map((row) => row.label)).toEqual(['Concluir', 'Copiar link']);
+    expect(sections[0]?.rows[0]?.action).toEqual({ kind: 'here', id: 'task-done' });
+    const typed = paletteSections({ ...input, query: 'concl' });
+    expect(typed.find((section) => section.id === 'task')?.rows.map((row) => row.label)).toEqual(['Concluir']);
+  });
 });

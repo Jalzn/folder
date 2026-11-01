@@ -12,6 +12,8 @@ export interface PaletteInput {
   query: string;
   /** The open item's actions, or none outside an item page. */
   here: readonly HereAction[];
+  /** "Nesta tarefa", the open task's actions, before the page's. */
+  task?: readonly HereAction[];
   results: readonly SearchResult[];
   projects: readonly Project[];
   /** Every project's active folders, for the Pastas group. */
@@ -27,12 +29,30 @@ export interface PaletteInput {
  * palette-folders.ts), then Comandos. Empty sections are left out; the query filters everything but the
  * search's own results.
  */
-export function paletteSections({ query, here, results, projects, folders, commands }: PaletteInput): PaletteSection[] {
+export function paletteSections({
+  query,
+  task = [],
+  here,
+  results,
+  projects,
+  folders,
+  commands,
+}: PaletteInput): PaletteSection[] {
   const typed = query.trim() !== '';
   const matches = (text: string) => matchesAllWords(text, query);
   const noActive = activeProjects([...projects]).length === 0;
 
+  const actions = (list: readonly HereAction[]) =>
+    list
+      .filter((action) => matches(action.label))
+      .map((action) => ({
+        key: `here:${action.id}`,
+        label: action.label,
+        action: { kind: 'here' as const, id: action.id },
+        shortcut: action.shortcut,
+      }));
   const sections: PaletteSection[] = [
+    { id: 'task', title: 'Nesta tarefa', rows: actions(task) },
     {
       id: 'here',
       title: 'Neste item',
@@ -56,6 +76,7 @@ export function paletteSections({ query, here, results, projects, folders, comma
         // A search shows where its words are; the recent items show none, as in the prototype.
         excerpt: typed && 'excerpt' in result ? result.excerpt : undefined,
         status: 'status' in result ? result.status : undefined,
+        column: 'column' in result ? result.column : undefined,
         project: { id: result.projectId, name: result.projectName },
         folder: 'folder' in result ? result.folder : undefined,
       })),

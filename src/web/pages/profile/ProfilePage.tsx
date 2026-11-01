@@ -9,6 +9,7 @@ import { AppearanceSection } from './AppearanceSection';
 import { PasswordSection } from './PasswordSection';
 import { ProfileSection } from './ProfileSection';
 import { SessionsSection } from './SessionsSection';
+import { TimeZoneSection } from './TimeZoneSection';
 
 /**
  * `/perfil`: the stage 07 settings in the 720 px column, with section labels and hairlines. Aparência,
@@ -21,6 +22,7 @@ export function ProfilePage() {
         <PageHeader title="Perfil e token" description="Seu espaço, seus dispositivos." />
         <hr className="profile-page__hair" />
         <AppearanceSection />
+        <TimeZoneSection />
         <AccessTokensSection />
         <SessionsSection />
         <PasswordSection />

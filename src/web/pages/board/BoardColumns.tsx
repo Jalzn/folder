@@ -1,5 +1,5 @@
 import { isOverdue } from '@tinyfold/workspace/domain';
-import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import { TrashTaskDialog } from '../../components/task/TrashTaskDialog';
 import { useTaskCompletion } from '../../components/task/use-task-completion';
 import { type ColumnSummary, cachedColumns, type LabelSummary } from '../../lib/queries';
@@ -48,9 +48,18 @@ export function BoardColumns({
   today,
   archived,
   commands,
+  visible,
+  emptyText,
+  doneFooter,
 }: {
   projectId: string;
   view: BoardColumnView[];
+  /** The label filter's test of a task. */
+  visible: (task: Task) => boolean;
+  /** What an empty column says: "Nada aqui.", or what the filter left out. */
+  emptyText: (columnId: string) => string;
+  /** Under the done column's cards. */
+  doneFooter?: ReactNode;
   labels: ReadonlyMap<string, LabelSummary>;
   today: string;
   archived: boolean;
@@ -82,6 +91,7 @@ export function BoardColumns({
   const moves = useBoardMoves(projectId, action, {
     beforeMove: flip,
     moved: (id, columnId) => focus.followCard(id, columnId),
+    visible,
   });
   const columnActions = useColumnActions(action);
   const completion = useTaskCompletion(action);
@@ -223,6 +233,8 @@ export function BoardColumns({
             cards={cardsOf}
             spot={dnd.spot?.columnId === column.id ? dnd.spot : null}
             editable={editable}
+            emptyText={emptyText(column.id)}
+            footer={column.isDone ? doneFooter : undefined}
             sectionRef={sections.ref(column.id)}
             onAdd={add}
             header={

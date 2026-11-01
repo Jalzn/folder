@@ -28,7 +28,7 @@
   transition: background-color var(--duration-hover) var(--ease-out);
 }
 .item-row--task {
-  grid-template-columns: 14px minmax(0, 1fr);
+  grid-template-columns: 14px minmax(0, 1fr) auto;
 }
 .item-row:hover {
   background: var(--hover);
@@ -77,4 +77,17 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   text-align: right;
+}
+
+/* A task's late due date, and its checklist beside the date. */
+.item-row__late {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--late);
+  font-weight: 500;
+}
+.item-row__progress {
+  margin-left: 8px;
+  color: var(--text-3);
 }

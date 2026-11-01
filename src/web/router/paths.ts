@@ -27,6 +27,8 @@ export const paths = {
     return `/projetos/${encode(projectId)}/indice${search ? `?${search}` : ''}`;
   },
   trash: (projectId: string) => `/projetos/${encode(projectId)}/lixeira`,
+  /** Every completed task of the project, by month; the board shows only the last 14 days. */
+  completed: (projectId: string) => `/projetos/${encode(projectId)}/concluidas`,
   document: (projectId: string, documentId: string, block?: string) =>
     `/projetos/${encode(projectId)}/documentos/${encode(documentId)}${block ? `?bloco=${encode(block)}` : ''}`,
   drawing: (projectId: string, canvasId: string) => `/projetos/${encode(projectId)}/desenhos/${encode(canvasId)}`,
@@ -43,7 +45,7 @@ export interface ProjectPath {
 }
 
 const itemSegments: Record<string, ItemType> = { documentos: 'document', desenhos: 'drawing' };
-const projectPages = new Set(['quadro', 'indice', 'lixeira']);
+const projectPages = new Set(['quadro', 'indice', 'lixeira', 'concluidas']);
 
 /** A percent-encoded segment as text, or null when its encoding is broken (`%E0%A4%A`). */
 export function safeDecode(segment: string): string | null {

@@ -1,5 +1,6 @@
 import { createRootRoute, createRoute, lazyRouteComponent, redirect } from '@tanstack/react-router';
 import { BoardPage } from '../pages/board';
+import { CompletedPage } from '../pages/project/completed';
 import { DocumentRoute, DrawingRoute } from '../pages/project/ItemRoute';
 import { IndexPage } from '../pages/project/item-index';
 import { NoActiveProjectPage } from '../pages/project/NoActiveProjectPage';
@@ -64,6 +65,11 @@ const indexRoute = createRoute({
   },
 });
 const trashRoute = createRoute({ getParentRoute: () => projectRoute, path: 'lixeira', component: TrashPage });
+const completedRoute = createRoute({
+  getParentRoute: () => projectRoute,
+  path: 'concluidas',
+  component: CompletedPage,
+});
 const documentRoute = createRoute({
   getParentRoute: () => projectRoute,
   path: 'documentos/$documentId',
@@ -104,6 +110,14 @@ export const routeTree = rootRoute.addChildren([
   oldLoginRoute,
   noProjectRoute,
   profileRoute,
-  projectRoute.addChildren([overviewRoute, boardRoute, indexRoute, trashRoute, documentRoute, drawingRoute]),
+  projectRoute.addChildren([
+    overviewRoute,
+    boardRoute,
+    completedRoute,
+    indexRoute,
+    trashRoute,
+    documentRoute,
+    drawingRoute,
+  ]),
   ...legacyRoutes,
 ]);

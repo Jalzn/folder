@@ -4,6 +4,7 @@ import { searchText } from '@tinyfold/workspace/domain';
 import { Check, Plus } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Menu as AriaMenu, SearchField as AriaSearchField, Autocomplete, Input } from 'react-aria-components';
+import { countOf } from '../../lib/count';
 import { useProjects } from '../../lib/queries';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
@@ -18,17 +19,33 @@ const NEW_PROJECT = 'new';
 const matches = (text: string, input: string, key: string | number) =>
   key === NEW_PROJECT || searchText(text).includes(searchText(input));
 
-function ProjectOption({ project, current, shortcut }: { project: Project; current: boolean; shortcut?: number }) {
+function ProjectOption({
+  project,
+  current,
+  shortcut,
+}: {
+  project: Project & { overdueTasks?: number };
+  current: boolean;
+  shortcut?: number;
+}) {
+  const late = project.overdueTasks ? (
+    <span className="project-switcher__late">{countOf(project.overdueTasks, 'atrasada', 'atrasadas')}</span>
+  ) : null;
   return (
     <MenuItem
       id={project.id}
       textValue={project.name}
       icon={<ProjectMark name={project.name} color={project.color} />}
       detail={
-        current ? (
-          <Check className="project-switcher__current" size={16} aria-label="atual" />
-        ) : shortcut !== undefined ? (
-          <Kbd>{`G ${shortcut}`}</Kbd>
+        late || current || shortcut !== undefined ? (
+          <>
+            {late}
+            {current ? (
+              <Check className="project-switcher__current" size={16} aria-label="atual" />
+            ) : shortcut !== undefined ? (
+              <Kbd>{`G ${shortcut}`}</Kbd>
+            ) : null}
+          </>
         ) : undefined
       }
     >

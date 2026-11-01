@@ -23,6 +23,8 @@ describe('palette commands', () => {
       'board',
       'index',
       'trash',
+      'completed',
+      'labels',
       'theme-system',
       'theme-light',
       'theme-dark',
@@ -61,8 +63,10 @@ describe('palette commands', () => {
   it('closes every folder only in a project that has folders, after the pages', () => {
     expect(ids(context)).not.toContain('collapse-folders');
     const withFolders = ids({ ...context, hasFolders: true });
-    expect(withFolders.slice(withFolders.indexOf('trash'), withFolders.indexOf('trash') + 2)).toEqual([
+    expect(withFolders.slice(withFolders.indexOf('trash'), withFolders.indexOf('trash') + 4)).toEqual([
       'trash',
+      'completed',
+      'labels',
       'collapse-folders',
     ]);
     expect(filterCommands(availableCommands({ ...context, hasFolders: true }), 'pasta').map((c) => c.id)).toEqual([

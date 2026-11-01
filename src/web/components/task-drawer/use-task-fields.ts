@@ -67,7 +67,7 @@ export function useTaskFields(task: Task | undefined) {
         from = {
           projectId: current.projectId,
           columnId: current.columnId,
-          before: followingTask(cachedTasks(current.projectId)?.tasks ?? [], current),
+          before: followingTask(cachedTasks(current.projectId, current.id)?.tasks ?? [], current),
         };
         const input = { requestId: going, id: current.id, expectedVersion: version(current), projectId };
         return onceMoreIfLost(() => api.workspace.updateTask(input));

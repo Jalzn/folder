@@ -61,3 +61,14 @@ export function newColumnName(taken: readonly string[], key: (name: string) => s
     if (!used.has(key(name))) return name;
   }
 }
+
+/** The done column's footer: "Mais 23 concluídas antes de 19 out →". */
+export const olderDoneText = (count: number, since: string) =>
+  `Mais ${countOf(count, 'concluída', 'concluídas')} antes de ${since} →`;
+
+/** A column left empty by the filter: "Nenhuma tarefa com mcp, backend.". */
+export const filteredEmptyText = (names: readonly string[]) => `Nenhuma tarefa com ${names.join(', ')}.`;
+
+/** What the filter shows, said when it changes: "Filtro mcp: 3 tarefas" or "Sem filtro: 6 tarefas". */
+export const filterText = (names: readonly string[], total: number) =>
+  `${names.length ? `Filtro ${names.join(', ')}` : 'Sem filtro'}: ${countOf(total, 'tarefa', 'tarefas')}`;

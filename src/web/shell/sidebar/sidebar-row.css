@@ -65,3 +65,8 @@
 .sidebar-row__pending + .sidebar-row__meta {
   margin-left: 0;
 }
+
+/* The board's late tasks, in --late instead of the open count. */
+.sidebar-row__late {
+  color: var(--late);
+}

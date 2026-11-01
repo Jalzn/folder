@@ -32,3 +32,10 @@
 .project-switcher__current {
   color: var(--accent);
 }
+
+/* "1 atrasada" in --late, before the G n shortcut. */
+.project-switcher__late {
+  margin-right: 8px;
+  font: var(--type-meta);
+  color: var(--late);
+}

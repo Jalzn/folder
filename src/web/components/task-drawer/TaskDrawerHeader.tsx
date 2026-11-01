@@ -29,6 +29,8 @@ export function TaskDrawerHeader({
   title,
   editable,
   saveState,
+  moveOpen,
+  onMoveOpenChange,
   onMove,
   onToggleDone,
   onCopyLink,
@@ -42,6 +44,9 @@ export function TaskDrawerHeader({
   editable: boolean;
   /** "Salvo", "Salvando…" or "Não salvou" with "Tentar de novo". */
   saveState?: ReactNode;
+  /** The ring's "Mover para", which ⌘K's "Mover para coluna…" opens too. */
+  moveOpen?: boolean;
+  onMoveOpenChange?: (open: boolean) => void;
   onMove: (columnId: string, name: string) => void;
   onToggleDone: () => void;
   onCopyLink: () => void;
@@ -61,7 +66,10 @@ export function TaskDrawerHeader({
   return (
     <header className="task-drawer__head">
       {editable ? (
-        <MenuTrigger>
+        <MenuTrigger
+          {...(moveOpen === undefined ? {} : { isOpen: moveOpen })}
+          {...(onMoveOpenChange ? { onOpenChange: onMoveOpenChange } : {})}
+        >
           <AriaButton className="task-drawer__state" aria-label={`Estado: ${state}. Mover para…`}>
             {ring}
           </AriaButton>

@@ -71,9 +71,16 @@ describe('legacy addresses', () => {
 });
 
 describe('project paths', () => {
+  it('writes the Concluídas address under its project', () => {
+    expect(paths.completed('p')).toBe('/projetos/p/concluidas');
+    expect(paths.completed('a b')).toBe('/projetos/a%20b/concluidas');
+  });
+
   it('reads the project and the item of an address', () => {
     expect(parseProjectPath(paths.overview('p'))).toEqual({ projectId: 'p', item: null });
     expect(parseProjectPath(paths.index('p', { tipo: 'desenhos' }))).toEqual({ projectId: 'p', item: null });
+    for (const page of [paths.board('p'), paths.trash('p'), paths.completed('p')])
+      expect(parseProjectPath(page), page).toEqual({ projectId: 'p', item: null });
     expect(parseProjectPath(paths.document('p', 'd', 'b'))).toEqual({
       projectId: 'p',
       item: { type: 'document', id: 'd' },
@@ -81,6 +88,7 @@ describe('project paths', () => {
     expect(parseProjectPath(paths.drawing('p', 'c'))).toEqual({ projectId: 'p', item: { type: 'drawing', id: 'c' } });
     expect(parseProjectPath('/projetos')).toBeNull();
     expect(parseProjectPath('/projetos/p/outra')).toBeNull();
+    expect(parseProjectPath('/projetos/p/concluidas/x')).toBeNull();
     expect(parseProjectPath('/perfil')).toBeNull();
   });
 
@@ -106,6 +114,7 @@ describe('app paths', () => {
     expect(isAppPath('/perfil')).toBe(true);
     expect(isAppPath('/projetos')).toBe(true);
     expect(isAppPath('/projetos/p/indice?tipo=documentos')).toBe(true);
+    expect(isAppPath('/projetos/p/concluidas')).toBe(true);
     expect(isAppPath('/projetos/p/documentos/d?bloco=b')).toBe(true);
     for (const path of [
       'https:evil.example/projetos/p',

@@ -1,5 +1,7 @@
+export { boardKey, type ProjectBoard, useProjectBoard } from './board';
 export { type CanvasListOptions, canvasQuery, useCanvas, useCanvases } from './canvases';
 export { type ColumnSummary, cachedColumns, columnsQuery, useColumns } from './columns';
+export { type CompletedTask, completedKey, useCompletedTasks } from './completed';
 export { type DocumentListOptions, documentQuery, useDocument, useDocuments } from './documents';
 export { type FolderSummary, foldersQuery, useAllFolders, useFolders } from './folders';
 export { type LabelSummary, labelsQuery, useLabels } from './labels';

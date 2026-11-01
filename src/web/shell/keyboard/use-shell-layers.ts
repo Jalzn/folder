@@ -19,6 +19,7 @@ export function useShellLayers() {
       switcher: () => latest.current.setSwitcherAt(null),
       palette: () => latest.current.closePalette(),
       shortcuts: () => latest.current.setShortcutsOpen(false),
+      labels: () => latest.current.setLabelsOpen(false),
       newItem: () => latest.current.setNewItemOpen(false),
       move: () => latest.current.setMoveOpen(false),
     }),
@@ -28,6 +29,7 @@ export function useShellLayers() {
   useLayer('switcher', ui.switcherAt !== null, close.switcher);
   useLayer('palette', ui.palette !== null, close.palette);
   useLayer('shortcuts', ui.shortcutsOpen, close.shortcuts);
+  useLayer('labels', ui.labelsOpen, close.labels);
   useLayer('new-item', ui.newItemOpen, close.newItem);
   useLayer('move', Boolean(ui.moveOpen), close.move);
 }

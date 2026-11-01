@@ -31,6 +31,8 @@ export interface PaletteRowData {
   archived?: boolean;
   /** A task's column, shown before its project. */
   status?: TaskStatus | undefined;
+  /** A task's column by name, from the search, shown before its project. */
+  column?: { id: string; name: string; isDone: boolean } | undefined;
   /** The project an item belongs to, by id and name. */
   project?: { id: string; name: string } | undefined;
   /** The folder a document or drawing is in, after its project: "Tinyfold › MCP". */
@@ -38,7 +40,7 @@ export interface PaletteRowData {
 }
 
 export interface PaletteSection {
-  id: 'here' | 'items' | 'projects' | 'folders' | 'commands';
+  id: 'task' | 'here' | 'items' | 'projects' | 'folders' | 'commands';
   title: string;
   rows: PaletteRowData[];
 }

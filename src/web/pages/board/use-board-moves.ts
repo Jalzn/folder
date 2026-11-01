@@ -21,13 +21,12 @@ type Outcome =
   | { kind: 'conflict' }
   | { kind: 'moved'; within: boolean };
 
-/** The board as last read: the project's columns with their tasks, and its revision. */
-function readBoard(projectId: string) {
+/** The board as last read, as it shows: the project's columns with their visible tasks, and its revision. */
+function readBoard(projectId: string, visible: (task: Task) => boolean) {
   const list = cachedTasks(projectId);
   const columns = cachedColumns();
-  return list && columns
-    ? { view: arrangeBoard(columns, list.tasks), tasks: list.tasks, revision: list.revision }
-    : null;
+  if (!list || !columns) return null;
+  return { view: arrangeBoard(columns, list.tasks.filter(visible)), tasks: list.tasks, revision: list.revision };
 }
 
 /**
@@ -41,12 +40,17 @@ function readBoard(projectId: string) {
 export function useBoardMoves(
   projectId: string,
   action: ReturnType<typeof useAction>,
-  hooks: { beforeMove: () => void; moved: (id: string, columnId: string) => void },
+  hooks: {
+    beforeMove: () => void;
+    moved: (id: string, columnId: string) => void;
+    /** The label filter: moves count only the cards on screen. */
+    visible: (task: Task) => boolean;
+  },
 ) {
   const announce = useAnnounce();
 
   function sayWhere(id: string, within: boolean) {
-    const board = readBoard(projectId);
+    const board = readBoard(projectId, hooks.visible);
     const place = board && placeOf(board.view, id);
     if (!place) return;
     announce(
@@ -63,7 +67,7 @@ export function useBoardMoves(
   ) {
     const outcome = await action.run(
       async (): Promise<Outcome> => {
-        const board = readBoard(projectId);
+        const board = readBoard(projectId, hooks.visible);
         const task = board?.tasks.find((each) => each.id === id);
         if (!board || !task) return { kind: 'none' };
         try {
