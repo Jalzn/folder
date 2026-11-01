@@ -98,7 +98,9 @@ describe('read_document', () => {
         paragraph(`bandeira ${payload} e ${split} fim`),
         paragraph(`seletores 😀${selectors} e M\u{FE0F}CP, ❤\u{FE0F} fim`),
         paragraph('zero\u{200B}\u{200C}\u{200D}\u{2060}largura\u{FEFF} fim, می\u{200C}خواهم e ශ්\u{200D}රී'),
-        paragraph(`ignoráveis M${'\u{034F}'.repeat(20)}CP\u{E0080}\u{2065}\u{FFF0}\u{17B4} fim`),
+        paragraph(
+          `ignoráveis M${'\u{034F}'.repeat(20)}CP\u{E0080}\u{2065}\u{FFF0}\u{17B4}\u{FFF9}\u{FFFB}\u{13430} fim`,
+        ),
         paragraph('digitos 1\u{FE0F}2\u{FE0E}3 e 1\u{FE0F}\u{20E3}, forma c\u{0327}a'),
       ],
     });
@@ -109,7 +111,7 @@ describe('read_document', () => {
       agent.db,
     );
     const hiddenText =
-      /[\u{E0000}-\u{E007F}\u{200B}\u{2060}\u{FEFF}\u{2065}\u{FFF0}]|[\u{E0080}-\u{E00FF}]|[\u{E0100}-\u{E01EF}]|[\u{FE00}-\u{FE0D}]|\u{034F}|\u{17B4}/u;
+      /[\u{E0000}-\u{E007F}\u{200B}\u{2060}\u{FEFF}\u{2065}\u{FFF0}]|[\u{E0080}-\u{E00FF}]|[\u{E0100}-\u{E01EF}]|[\u{FE00}-\u{FE0D}]|\u{034F}|\u{17B4}|[\u{FFF9}-\u{FFFB}]|[\u{13430}-\u{1343F}]/u;
     const allowed = (text: string) => text.replaceAll(scotland, '').replaceAll('❤\u{FE0F}', '');
     const { text } = await agent.call('read_document', { id: document.id });
     expect(text).toContain('- Pasta: MCP 🏴\n');

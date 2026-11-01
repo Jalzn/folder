@@ -88,11 +88,21 @@ describe('visible text', () => {
       '\u{E01F0}',
       '\u{1D173}',
       '\u{0378}',
+      '\u{FFF9}',
+      '\u{FFFB}',
+      '\u{13430}',
+      '\u{1343F}',
     ])
       expect(visibleText(`Notas${hidden}`)).toBe('Notas');
     expect(visibleText(`M${'\u{034F}'.repeat(20)}CP`)).toBe('MCP');
     // For agents, only the ignorable ones go: an unassigned letter of a newer Unicode may draw there.
     expect(withoutHidden('a\u{034F}\u{E0080}b\u{0378}')).toBe('ab\u{0378}');
+    // Two format blocks outside the property: interlinear annotations and Egyptian format controls.
+    expect(withoutHidden('a\u{FFF9}nota\u{FFFA}glosa\u{FFFB}b \u{13000}\u{13430}\u{13001}')).toBe(
+      'anotaglosab \u{13000}\u{13001}',
+    );
+    // Format characters that draw stay, such as the Arabic number sign.
+    expect(withoutHidden('\u{0600}\u{0661}')).toBe('\u{0600}\u{0661}');
   });
 
   it('writes names and text for agents in NFC, so a letter whole or as base and mark is one form', () => {

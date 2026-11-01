@@ -77,7 +77,17 @@ describe('folders', () => {
   });
 
   it('keys "Notas" with a default ignorable or unassigned code point as "Notas"', () => {
-    for (const hidden of ['\u{034F}', '\u{180B}', '\u{17B4}', '\u{2065}', '\u{FFF0}', '\u{E0080}', '\u{0378}'])
+    for (const hidden of [
+      '\u{034F}',
+      '\u{180B}',
+      '\u{17B4}',
+      '\u{2065}',
+      '\u{FFF0}',
+      '\u{E0080}',
+      '\u{0378}',
+      '\u{FFF9}',
+      '\u{13430}',
+    ])
       expect(folderNameKey(`Notas${hidden}`)).toBe(folderNameKey('Notas'));
   });
 

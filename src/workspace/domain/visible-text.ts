@@ -2,7 +2,10 @@
  * Characters that draw nothing: Unicode's default ignorable code points
  * (`\p{Default_Ignorable_Code_Point}`), such as the zero-width space, the soft hyphen, the word
  * joiner, the BOM, the tag characters, the variation selectors, the Hangul fillers, the combining
- * grapheme joiner, the Mongolian selectors and the unassigned ranges kept for more of them. A name of
+ * grapheme joiner, the Mongolian selectors and the unassigned ranges kept for more of them, plus two
+ * format blocks outside that property: the interlinear annotation characters (U+FFF9 to U+FFFB) and
+ * the Egyptian hieroglyph format controls (U+13430 to U+1343F). Format characters that draw, such as
+ * the Arabic number signs, stay. A name of
  * them looks empty, a name with them looks like another, and they can carry a hidden text for an
  * agent: tags spell ASCII, and each selector can stand for a byte. Three kinds stay, only where they
  * draw something:
@@ -18,7 +21,7 @@
  *   followed by U+20E3: alone they draw nothing there. Every other selector goes, U+E0100 to U+E01EF
  *   included.
  */
-const INVISIBLE = /\p{Default_Ignorable_Code_Point}/u;
+const INVISIBLE = /\p{Default_Ignorable_Code_Point}|[\u{FFF9}-\u{FFFB}]|[\u{13430}-\u{1343F}]/u;
 /** Code points no character is assigned to yet: they draw nothing today, so a name drops them. */
 const UNASSIGNED = /\p{Cn}/gu;
 const PRESENTATION = /[\u{FE0E}\u{FE0F}]/u;

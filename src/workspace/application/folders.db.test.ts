@@ -101,6 +101,8 @@ describe('folders', () => {
         'Ações\u{E0080}',
         'Ações\u{FFF0}',
         'Ações\u{0378}',
+        'Ações\u{FFF9}',
+        'Ações\u{13430}',
       ])
         await expect(create(name)).rejects.toMatchObject({
           code: 'DOMAIN_RULE',
