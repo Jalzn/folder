@@ -2,12 +2,13 @@
 
 Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar, sempre dentro de um projeto. Interface Sumário, limpa e tipográfica, em tema claro e escuro, com dados em SQLite no servidor e autenticação por senha.
 
-**Estado:** implementado e validado localmente até a [etapa 08](docs/etapas/08-fundacao.md). Hospedagem pública, domínio e destino externo dos backups ainda não estão configurados.
+**Estado:** implementado e validado localmente até a [etapa 09](docs/etapas/09-pastas.md). Hospedagem pública, domínio e destino externo dos backups ainda não estão configurados.
 
 ## O que funciona
 
-- Tudo dentro de um projeto: o aplicativo reabre onde você parou, com a lateral do projeto (seletor, Buscar, Visão geral, Quadro, Documentos, Desenhos e fixados), a faixa recolhida e a lateral sobre a página em telas menores.
-- Projetos com cor e ordem, arquivamento e até oito itens fixados; mover documentos e desenhos entre projetos, com desfazer.
+- Tudo dentro de um projeto: o aplicativo reabre onde você parou, com a lateral do projeto (seletor, Buscar, Visão geral, Quadro e a árvore Itens), a faixa recolhida com o popover Itens e a lateral sobre a página em telas menores.
+- Pastas de um nível para documentos e desenhos: criar, renomear, reordenar e excluir na lateral, mover arrastando ou por "Mover para pasta…" (M), e a pasta no cabeçalho do item, no ⌘K, no Índice, na Visão geral e na Lixeira.
+- Projetos com cor e ordem, arquivamento e até oito itens fixados na raiz e em cada pasta; mover documentos e desenhos entre pastas e projetos, com Desfazer no toast e por ⌘Z.
 - Visão geral, Índice do projeto e Lixeira por projeto, com restaurar, excluir de vez e esvaziar.
 - ⌘K para buscar em todos os projetos e rodar comandos, atalhos de teclado e Esc que fecha só a camada mais recente.
 - Tema Sistema, Claro ou Escuro, sem piscar ao carregar.
@@ -18,13 +19,13 @@ Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e ac
 - Kanban do projeto; criar, editar, mover, ordenar e concluir tarefas.
 - Criar tarefa a partir de um trecho e voltar ao documento de origem.
 - Perfil com troca de senha, gerenciamento de sessões e tokens pessoais para o Claude Code.
-- Acesso do Claude Code por MCP somente leitura: lista projetos, busca, lê documentos em Markdown, desenhos como imagem e estrutura, e tarefas. A lixeira fica de fora.
+- Acesso do Claude Code por MCP somente leitura: lista projetos com as pastas, busca, lê documentos em Markdown, desenhos como imagem e estrutura, e tarefas. A lixeira fica de fora.
 
-| Visão geral | Documento | Celular |
+| Visão geral | Pastas | Celular |
 | --- | --- | --- |
-| ![Visão geral no tema claro](docs/screens/visao-geral-claro-1440.png) | ![Documento no tema escuro](docs/screens/documento-escuro-1440.png) | ![Documento no celular](docs/screens/documento-celular.png) |
+| ![Visão geral no tema claro](docs/screens/visao-geral-claro-1440.png) | ![Mover para pasta no tema escuro](docs/screens/pastas-mover-escuro-1440.png) | ![Lateral com pastas no celular](docs/screens/lateral-celular.png) |
 
-Mais capturas, nos dois temas e em três larguras, estão na [validação](docs/validacao.md#validação-no-chrome-real-contra-o-protótipo).
+Mais capturas, nos dois temas e em três larguras, estão na validação das etapas [09](docs/validacao.md#etapa-09-pastas) e [08](docs/validacao.md#etapa-08-fundação-e-lateral).
 
 ## Executar
 

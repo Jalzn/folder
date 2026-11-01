@@ -2,6 +2,117 @@
 
 Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. Nenhuma publicação na nuvem foi realizada.
 
+## Etapa 09: pastas
+
+A etapa foi implementada entre 2026-10-31 e 2026-11-01 por dois subagentes: backend (B1 a B5) e web (W1 a W7). Três revisores adversariais examinaram, cada um, dados e migração, a árvore (acessibilidade, teclado e arrastar) e segurança e qualidade; os achados passaram por rodadas de correção, cada uma com reteste pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
+
+| Verificação | Resultado, em `e877664` |
+| --- | --- |
+| `mise exec -- pnpm check` | Biome, tipos de todos os pacotes, E2E e scripts, dependency-cruiser sem violações em 637 módulos, 477 testes unitários em 68 arquivos, com tokens, contraste e paridade com `tokens.py` |
+| `mise exec -- pnpm test:db` | 181 testes em 27 arquivos, com SQLite temporário |
+| `mise exec -- pnpm build` | Bundle de produção aprovado |
+| `E2E_PORT=5171 mise exec -- pnpm e2e` | 124 aprovados e 44 pulados, em 84 testes por perfil (desktop e Pixel 7). Pulados: o que precisa do desktop (teclado, hover e arrastar da árvore, faixa e larguras) no celular, e o que é só do celular no desktop |
+
+Os testes de unidade e de banco cobrem, além do que já existia:
+
+- **Migração 006:** bases 005 montadas com dados reais, migradas sem mudar versões nem datas; os gatilhos com SQL direto (item numa pasta de outro projeto ou excluída, pasta que muda de projeto ou é excluída com itens vivos, item restaurado que limpa a pasta); `integrity_check` e `foreign_key_check`; e, por `EXPLAIN QUERY PLAN`, que os gatilhos do autosave buscam a pasta pela chave primária.
+- **Pastas:** criar no topo, renomear, reordenar, excluir com e sem os itens e restaurar, com cada caso de pulo de `restoreFolder` (item que mudou de pasta, de versão ou de fixado, lista desatualizada, nome tomado), `keptPin`, o fixado por escopo com pedidos simultâneos, a idempotência das respostas guardadas, os limites (200 pastas, nome de 1 a 100 caracteres) e o projeto arquivado.
+- **Nomes:** colisões de `name_key` (caixa, acentos latinos, gregos e o de tonicidade cirílico, NFKD, emoji e sequências inteiras) e o que `visibleText` tira ou guarda, nos nomes, títulos e saídas do MCP.
+- **Navegação e leitura:** a árvore de `projectNavigation` (limites, fixados primeiro, totais), `listTrash` com a origem, a restauração com `folderGone`, `search` com `folderId` e `folder`, e o MCP com as pastas em `list_projects` e nos cabeçalhos, dentro de 45.000 caracteres com nomes pesados.
+- **Web:** as linhas da árvore (`tree-rows`), o alvo de soltar (`dropSpotAt`, para item e para pasta), o encaminhamento de teclas (`tree-keys`), os nomes acessíveis, as preferências no formato novo, os grupos do Índice, o grupo Pastas do ⌘K, os textos dos toasts, o Desfazer do toast (`toast-undo`), o registro de mudanças, a fila de escritas e o reenvio de uma resposta perdida.
+- **`seed:sample --grande` e backup:** a variante grande com 55 itens em quatro pastas, e um backup com pastas restaurado sem perda.
+
+### Fluxos no Chrome
+
+Os E2E rodam no Google Chrome instalado, desktop (1440×1000) e emulação Pixel 7. Os da etapa:
+
+1. **Pastas:** criar, renomear e reordenar no lugar, pelo mouse e pelo teclado (⌘K, N e o "+" de Itens com ↵), com o erro de nome repetido; excluir levando os itens à raiz e excluir com os itens, com Desfazer e ⌘Z devolvendo a pasta, a posição e os fixados.
+2. **Mover:** M, ↓ e ↵ na linha, no rótulo do cabeçalho e no popover da faixa; Desfazer e ⌘Z; pasta cheia que recebe o item sem fixado; o item aberto levado à raiz com a pasta aberta ou fechada; Desfazer de mover para outro projeto que volta à pasta, ou à raiz se ela sumiu.
+3. **Árvore e teclado:** `treegrid` com setas, ↵, typeahead e Esc que não faz nada; N, P, M e G P na linha; F2, ⇧F10, ⌥↑ e ⌥↓; letras da busca que não vazam ("zp", "an"); Tab e ↓ do Quadro entrando pela linha do item aberto; o campo do nome com as setas, ⇧ e espaços.
+4. **Arrastar:** item numa pasta (a linha inteira) e no cabeçalho Itens; pasta entre pastas; pasta no meio de outra recusada; pasta fechada que abre sob um item que ainda se mexe; Esc cancelando.
+5. **Estado e escala:** pastas abertas por projeto, chegada a um item que abre a pasta, pasta fechada sobre o item aberto que continua fechada ao voltar a lateral, oito itens e "Ver todos" no Índice filtrado, o ponto de não salvo na pasta e na faixa.
+6. **Páginas:** o rótulo da pasta, o menu Novo com a pasta, o Índice agrupado, filtrado e sem agrupar com a coluna Pasta, `?pasta=`, o ⌘K com o caminho e com a pasta que abre na lateral, a Visão geral e a Lixeira com a origem e a restauração para a raiz.
+7. **Falhas e repetições:** cópia de um rascunho cuja pasta sumiu, Desfazer recusado pelo servidor, ⌘Z durante uma renomeação, resposta de exclusão perdida, Desfazer de uma mudança já superada, segundo movimento recusado durante outra escrita.
+8. **Celular:** a árvore sobre a página, o toque que abre uma pasta, as ferramentas visíveis e o ⋯ que move um item.
+9. **MCP:** a busca do Claude Code numa pasta do que a interface arquivou ali.
+
+### Validação no Chrome real contra o protótipo
+
+```sh
+TF_TMP="$(mktemp -d -t tinyfold-09)"
+export OWNER_PASSWORD='validacao-pastas-09' PORT=3491 WEB_PORT=5291 \
+  APP_ORIGIN=http://localhost:5291 COOKIE_SECURE=false BACKUP_DIR="$TF_TMP/backups"
+DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm seed:sample
+DATABASE_PATH="$TF_TMP/grande.sqlite" mise exec -- pnpm seed:sample --grande
+DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm dev   # depois grande.sqlite, para a escala
+```
+
+O log confirmou `Banco: <TF_TMP>/tinyfold.sqlite` (e depois `grande.sqlite`) e `Tinyfold em http://127.0.0.1:3491`. O protótipo foi servido como UTF-8 de `127.0.0.1:5299`, na versão "Pastas", com "Simular projeto grande" para a escala. As duas telas foram abertas lado a lado no Google Chrome instalado, pelo Playwright (`channel: 'chrome'`), nos dois temas, em 1440×900 e 1280×800, e as medições usaram `getBoundingClientRect` e `getComputedStyle` no mesmo Chrome. As capturas para a documentação foram refeitas de bancos novos (`seed:sample` e `--grande`).
+
+- **Grade da lateral,** igual nas duas: 256 px; chevron de x=12 a 24; ícones da raiz de x=28 a 44 e texto em x=52; filhos com ícone de x=52 a 68 e texto em x=76; guia em x=36; contagens terminando em x=240; linhas de 28 px; "Itens" em x=28. Fundo `#F2F4F9` no claro e `#0E1116` no escuro, `--text-3` `#636568` e `#9A9FA6`, `--accent` `#3856C8` e `#86A5FB`, nos dois.
+- **Estados da pasta:** fechada, aberta, hover com "+" e "⋯", fechada com o item aberto (fundo de hover, texto 500 e ", contém o item aberto"), ponto de não salvo antes da contagem, alvo de arrastar com o contorno do acento e renomeação com o erro de nome repetido.
+- **Escala,** no banco grande: Produto 11, MCP 12, Arquitetura 18 e Operação 8; oito filhos e "Ver todos · n", que abre o Índice com "18 itens em Tinyfold · Arquitetura."; o item aberto além do oitavo como nona linha, antes de "Ver todos"; e "Ver todos na raiz" com mais de oito soltos.
+- **Telas:** "Mover para pasta…", o rótulo no cabeçalho, o toast de excluir com Desfazer, o AlertDialog de "Excluir pasta e itens…" (igual, texto a texto), o Índice agrupado e filtrado, a Visão geral com "Documento · MCP", a Lixeira com "Tinyfold › Arquitetura", o ⌘K com a pasta e o caminho, o filtro da lateral com o grupo Pastas e a faixa com o popover Itens.
+- **Teclado:** typeahead ("a" vai a Arquitetura, "o" a Operação), M abrindo "Mover para pasta…", Esc fechando só o popover e devolvendo o foco à linha, um segundo Esc sem efeito, Esc cancelando a renomeação, o filtro (um Esc limpa, outro sai), ⌘Z depois de excluir (Operação volta com 8) e depois de mover, e ⌘Z num campo sem desfazer o movimento. Nenhum Esc recolheu pasta nem navegou.
+- **Arrastar,** medido nas duas: a linha de 2 px de x=76 a 240 entre filhos e de x=52 a 240 na raiz e entre pastas, na mesma altura; a pasta e o cabeçalho Itens como alvo, com o mesmo contorno.
+- **Larguras:** em 1024 px, a faixa e, com ⌘K "Nova pasta", a lateral sobre a página com o campo do nome em foco e "Nova pasta" selecionado; ↵ cria a pasta com o nome digitado e Esc não cria nada. No Pixel 7, a lateral sobre a página, o toque que abre e fecha uma pasta e o ⋯ visível sem hover, com Renomear, Mover para cima e para baixo, Excluir pasta e Excluir pasta e itens.
+- **Achados corrigidos em `e877664`:** uma pasta nova começada pelo teclado perdia o campo do nome e era criada como "Nova pasta"; o ✓ do lugar atual em "Mover para pasta…" estava cinza; o botão Itens da faixa não marcava o lugar atual, não dizia os itens não salvos no nome e tinha o ponto sem o anel.
+- **Não validado:** o Esc no meio de um arrasto real. No Playwright, o Esc chega à página como tecla e o arrasto emulado acaba sem `dragleave` nem `dragend`: a pasta fica marcada como alvo e abre depois de 800 ms, e às vezes o soltar seguinte ainda move o item. Num arrasto do sistema, o Chrome toma o Esc e manda os dois eventos, que limpam o alvo e o tempo de abrir (`onDropExit` e `onDragEnd`); nenhuma ferramenta disponível produz esse arrasto. O E2E confere só que nada se move.
+- **Observação:** digitado à velocidade de uma máquina logo depois de abrir o ⌘K, o destaque do primeiro resultado, que o React Aria atrasa, pode ficar num item da lista anterior, e o ↵ abre esse item ou não faz nada. A 60 ms por letra ou mais devagar, o ↵ rodou o comando em todas as tentativas. O comportamento é do ⌘K da etapa 08; o E2E novo digita no ritmo de uma pessoa.
+
+**Diferenças aceitas em relação ao protótipo:**
+
+- **Semântica da árvore:** o `Tree` do React Aria é `treegrid`, com linhas e `aria-level`; o protótipo usa `tree`.
+- **Arrastar:** a pasta fechada abre em 800 ms, e não em 600 ms, pelo tempo fixo do React Aria. Uma pasta arrastada para o meio de outra é recusada, com o cursor de "não permitido"; o protótipo reordena por metades sobre qualquer linha de pasta.
+- **Typeahead:** no meio de uma busca por digitação (até 1 s), N, P, M e G continuam a busca; no protótipo, sempre agem.
+- **Fixados:** contados por escopo, até 8 na raiz e 8 em cada pasta, pela ordem em que foram fixados (`pinned_at`); o protótipo conta 8 por projeto.
+- **"Ver todos na raiz · n"** conta os fixados e os soltos da raiz, o mesmo conjunto que o Índice filtrado mostra (14 no banco grande sem Operação); o protótipo conta só os soltos (13).
+- **Filtro da lateral:** os grupos dizem "Pastas · 1" e "Itens · 1", como pede o plano, e a pasta não tem chevron; o protótipo põe a contagem à direita.
+- **"Mover para pasta…":** o popover fica 6 px abaixo da linha e a 12 px da borda da janela (o `containerPadding` do React Aria), contra 4 px e 8 px no protótipo; o campo de filtro é 7 px mais alto. "Nova pasta…" usa o ícone de pasta com "+" do ⌘K, e "Outro projeto…" o ⇄ de pastas.md e de "Mover para projeto…". O ↓ depois de abrir destaca a primeira linha, que o protótipo já mostra destacada.
+- **⌘K:** os grupos vêm na ordem Itens, Projetos, Pastas; o protótipo põe Pastas primeiro.
+- **Índice:** os cabeçalhos dos grupos ficam cerca de 2 px fora do lugar do protótipo; a coluna Pasta, sem agrupar, não ordena; as linhas de grupo recebem o foco das setas e não fazem nada. A coluna Ligações chega na etapa 11.
+- **Lixeira:** abaixo de 560 px, a coluna Origem some.
+- **Toasts:** "“X” restaurado." não diz "em Tinyfold".
+- **Entrada pela Tab:** a árvore só entra pela linha do item aberto até uma linha receber o foco; a heurística usa 300 ms para distinguir a Tab de um clique.
+- **Celular:** o filtro de "Mover para pasta…" abre o teclado do telefone. O fallback de celular é funcional, não um design aprovado.
+
+| Tela | 1440, claro | 1440, escuro | 1280, claro | 1280, escuro | Pixel 7 |
+| --- | --- | --- | --- | --- | --- |
+| Árvore Itens na Visão geral | [Captura](screens/visao-geral-claro-1440.png) | [Captura](screens/visao-geral-escuro-1440.png) | [Captura](screens/visao-geral-claro-1280.png) | [Captura](screens/visao-geral-escuro-1280.png) | [Captura](screens/lateral-celular.png) |
+| Renomear no lugar | [Captura](screens/pastas-renomear-claro-1440.png) | [Captura](screens/pastas-renomear-escuro-1440.png) | [Captura](screens/pastas-renomear-claro-1280.png) | [Captura](screens/pastas-renomear-escuro-1280.png) | — |
+| Mover para pasta | [Captura](screens/pastas-mover-claro-1440.png) | [Captura](screens/pastas-mover-escuro-1440.png) | [Captura](screens/pastas-mover-claro-1280.png) | [Captura](screens/pastas-mover-escuro-1280.png) | [Captura](screens/pastas-mover-celular.png) |
+| Arrastar sobre uma pasta | [Captura](screens/pastas-arrastar-claro-1440.png) | [Captura](screens/pastas-arrastar-escuro-1440.png) | [Captura](screens/pastas-arrastar-claro-1280.png) | [Captura](screens/pastas-arrastar-escuro-1280.png) | — |
+| Excluir, com Desfazer | [Captura](screens/pastas-excluir-claro-1440.png) | [Captura](screens/pastas-excluir-escuro-1440.png) | [Captura](screens/pastas-excluir-claro-1280.png) | [Captura](screens/pastas-excluir-escuro-1280.png) | — |
+| Projeto grande | [Captura](screens/pastas-grande-claro-1440.png) | [Captura](screens/pastas-grande-escuro-1440.png) | [Captura](screens/pastas-grande-claro-1280.png) | [Captura](screens/pastas-grande-escuro-1280.png) | — |
+| ⌘K com uma pasta | [Captura](screens/cmdk-pasta-claro-1440.png) | [Captura](screens/cmdk-pasta-escuro-1440.png) | [Captura](screens/cmdk-pasta-claro-1280.png) | [Captura](screens/cmdk-pasta-escuro-1280.png) | — |
+| Faixa com o popover Itens | [Captura](screens/faixa-itens-claro-1440.png) | [Captura](screens/faixa-itens-escuro-1440.png) | [Captura](screens/faixa-itens-claro-1280.png) | [Captura](screens/faixa-itens-escuro-1280.png) | — |
+| Índice agrupado | [Captura](screens/indice-claro-1440.png) | [Captura](screens/indice-escuro-1440.png) | [Captura](screens/indice-claro-1280.png) | [Captura](screens/indice-escuro-1280.png) | [Captura](screens/indice-celular.png) |
+| Lixeira com a origem | [Captura](screens/lixeira-claro-1440.png) | [Captura](screens/lixeira-escuro-1440.png) | [Captura](screens/lixeira-claro-1280.png) | [Captura](screens/lixeira-escuro-1280.png) | [Captura](screens/lixeira-celular.png) |
+
+Ao fim, o `dev` e o servidor do protótipo foram parados e `$TF_TMP` foi apagado.
+
+### Rodadas adversariais
+
+Corrigidos e retestados:
+
+- **Dados e migração:** a restauração devolvia o fixado da lista também a um item desafixado depois da exclusão e trazia da lixeira um item excluído da pasta antes dela (`70f82a5`, com `keptPin`); a recusa da lista inteira por um fixado posterior à exclusão, que um relógio que volta pode causar, deu lugar a devolver o item sem ele (`5a9bd8c`); nomes só de caracteres invisíveis, parecidos com outro ou com caracteres de controle (`9a710e2`), e depois, em quatro retestes, o que cada escrita esconde: etiquetas, *joiners*, seletores de variação, os ignoráveis do Unicode, os pontos não atribuídos, NFC e as letras cirílicas, macedônias e búlgaras que a chave do nome não pode juntar (`a72cea1` a `e5dbf30`). O MCP passou a aplicar as mesmas regras ao que devolve (`155be55`). O `INSERT OR REPLACE` que contorna os gatilhos ficou planejado para a migração 007 (`dcdd560`).
+- **Árvore, acessibilidade, teclado e arrastar** (`7a9574f`, `235c175`, `b1b5fca`, `940e393`, `2281100`, `996e7e5`, `80d2e27`): o item aberto listado duas vezes, que derrubava a página; as setas e o espaço do campo do nome indo para a linha e para o typeahead; a página de erro em inglês quando a própria lateral falhava; a pasta fechada que reabria ao voltar a lateral; letras da busca que viravam atalhos ("zp", "an"); → numa pasta aberta indo ao "+"; Tab e ↓ entrando pela última linha; o arrastar sem o alvo do plano (só 9 dos 28 px de uma pasta aceitavam o item) e a abertura em 800 ms que recomeçava; o filtro de "Mover para pasta…" sem setas depois de uma correção; e o Desfazer de mover para outro projeto que não voltava à pasta.
+- **Segurança e qualidade** (`4c33720`, `ef571e8`, `d29215e`, `e4f0969`, `3205808`, `80d2e27`): escritas de pasta e movimentos sem o mesmo ID de pedido nas repetições; um ⌘Z perdido durante outra escrita; a cópia que falhava para sempre quando a pasta sumia; o texto do servidor num Desfazer recusado; um Desfazer que desfazia uma mudança mais nova do mesmo item; uma resposta perdida sem o Desfazer; e, na qualidade, a árvore num arquivo de 437 linhas, laços de foco repetidos, o contexto do shell que redesenhava tudo, buscas e rótulos duplicados e o registro de mudanças como singleton de módulo.
+
+### Aceitos
+
+Os casos de dados estão descritos em [Desvios do plano](etapas/09-pastas.md#desvios-do-plano):
+
+- **Dados:** um `INSERT OR REPLACE` em `workspace_folders`, só por SQL manual, contorna os gatilhos até a migração 007; `restoreFolder` confia na lista `moved` (um `keptPin` forjado, um item da raiz listado por engano, uma lista antiga contra uma exclusão mais nova); um relógio do servidor que volta entre fixar e excluir; uma pasta com mais de 1.000 itens sai sem Desfazer; e os canais de texto invisível de um bit e as remoções em excesso registrados no plano.
+- **Interface:** as diferenças em relação ao protótipo listadas acima, inclusive a árvore `treegrid`, o teclado do celular com o filtro de mover, a ordem dos grupos do ⌘K, os detalhes do Índice, a Origem abaixo de 560 px, o toast de restaurar sem o projeto, a heurística de 300 ms da Tab e a abertura em 800 ms.
+- **O fallback de celular** é funcional, não um design aprovado.
+
+### Pendências
+
+- O gatilho `BEFORE INSERT` de `workspace_folders` (migração 007, [etapa 10](etapas/10-quadro-tarefa.md#mudanças-previstas-de-dados-e-contratos)).
+- O ⌘K digitado à velocidade de uma máquina logo depois de abrir (observação acima), do ⌘K da etapa 08.
+- A versão de celular da interface ainda não foi desenhada; as pendências de hospedagem da etapa 07 continuam.
+
 ## Etapa 08: fundação e lateral
 
 A etapa foi implementada em 2026-10-31 por dois subagentes: backend (B1 a B5) e web (W1 a W9). Três revisores adversariais examinaram, cada um, dados e migração, segurança e qualidade de código, e interação; os achados passaram por duas rodadas de correção, cada uma com reteste pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
@@ -81,6 +192,8 @@ O log confirmou `Banco: <TF_TMP>/…sqlite` e `Tinyfold em http://127.0.0.1:3481
 | ⌘K | [Captura](screens/cmdk-claro-1440.png) | [Captura](screens/cmdk-escuro-1440.png) | [Captura](screens/cmdk-claro-1280.png) | [Captura](screens/cmdk-escuro-1280.png) | — |
 | Perfil | [Captura](screens/perfil-claro-1440.png) | [Captura](screens/perfil-escuro-1440.png) | [Captura](screens/perfil-claro-1280.png) | [Captura](screens/perfil-escuro-1280.png) | [Captura](screens/perfil-celular.png) |
 | Faixa recolhida e lateral no celular | [Captura](screens/faixa-recolhida-claro-1440.png) | [Captura](screens/faixa-recolhida-escuro-1440.png) | [Captura](screens/faixa-recolhida-claro-1280.png) | [Captura](screens/faixa-recolhida-escuro-1280.png) | [Captura](screens/lateral-celular.png) |
+
+Desde a etapa 09, estas capturas mostram a lateral de 256 px com a árvore Itens; as da etapa 08, com Documentos e Desenhos, ficaram no histórico do Git.
 
 Ao fim, o `dev` e o servidor do protótipo foram parados e `$TF_TMP` foi apagado.
 

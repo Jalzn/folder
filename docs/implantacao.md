@@ -8,6 +8,8 @@ Use `mise install` para as versões fixadas, seguido de `mise exec -- pnpm insta
 
 `mise exec -- pnpm seed:sample` preenche um banco com os dados de exemplo, para validação visual e capturas, nunca para uso real. Ele só grava na pasta temporária do sistema, num arquivo novo ou num banco vazio, por exemplo `DATABASE_PATH="$(mktemp -d)/tinyfold.sqlite"`, e confere o destino antes de migrar qualquer coisa. Recusa outro lugar, um link simbólico, qualquer `data/tinyfold.sqlite`, o banco de produção (`/data/tinyfold.sqlite`), `NODE_ENV=production` e um arquivo que já tenha tabelas. Rode-o com o `dev` parado e suba o `dev` com o mesmo `DATABASE_PATH`.
 
+`mise exec -- pnpm seed:sample --grande` grava a variante grande, com o Tinyfold em 55 itens e quatro pastas, como o comando "Simular projeto grande" do protótipo. Serve só para validar a escala da lateral, com as mesmas recusas.
+
 ## Produção
 
 A imagem Docker serve a interface compilada, `/rpc` e `/mcp` no mesmo processo. Configurar:
@@ -38,6 +40,16 @@ docker run --detach --name tinyfold --restart unless-stopped \
 ```
 
 O proxy HTTPS deve encaminhar para essa porta local. O volume de backups desse exemplo está no mesmo host; uma cópia externa continua necessária para proteger contra perda do servidor. `.env.production` não deve entrar no Git.
+
+## Atualizar para a etapa 09
+
+A versão da etapa 09 aplica na subida a migração `006_folders.sql`, que só acrescenta: a tabela `workspace_folders`, a coluna `folder_id`, nula, em documentos e desenhos, os índices e os gatilhos das pastas. Nenhum conteúdo muda de lugar. Mesmo assim, antes de subir:
+
+1. Criar um backup com `mise exec -- pnpm backup:create` e conferir que ele terminou com a verificação de integridade.
+2. Subir a versão nova. Todo documento e desenho continua na raiz do seu projeto, com o fixado que tinha: o limite de 8 passa a valer por escopo (a raiz e cada pasta), e os fixados de antes cabem na raiz.
+3. Abrir o aplicativo. A lateral mostra a árvore Itens no lugar de Documentos e Desenhos; a ordenação guardada no dispositivo volta a Recentes uma vez, porque o formato das preferências mudou.
+
+A migração é atômica: se falhar, o banco fica como estava. Caso conhecido: um `INSERT OR REPLACE` em `workspace_folders`, que só SQL manual faz, contorna os gatilhos das pastas até a migração 007 da [etapa 10](etapas/10-quadro-tarefa.md#mudanças-previstas-de-dados-e-contratos). Não edite pastas com SQL manual.
 
 ## Atualizar para a etapa 08
 

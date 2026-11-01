@@ -1,12 +1,24 @@
 # Etapa 09 — Pastas
 
-**Estado:** detalhada em 2026-10-31, a partir do escopo inicial do mesmo dia. As seções "Resultado" e "Desvios do plano" entram ao concluir, como na [etapa 08](08-fundacao.md).
+**Estado:** concluída localmente em 2026-11-01, nas entregas B1 a B5 (backend) e W1 a W7 (web). Seguiram-se três revisões adversariais (dados e migração; árvore, com acessibilidade, teclado e arrastar; segurança e qualidade), rodadas de correção com reteste e a validação no Chrome real contra o protótipo. As verificações executadas estão em [validação](../validacao.md#etapa-09-pastas).
+
+As seções a partir de "Referências e precedência" são o plano aprovado, detalhado em 2026-10-31 a partir do escopo inicial do mesmo dia. O que mudou na implementação está em [Resultado](#resultado) e [Desvios do plano](#desvios-do-plano); a descrição do que existe está em [arquitetura](../arquitetura.md#projetos-navegação-e-lixeira) e no [README do workspace](../../src/workspace/README.md).
 
 ## Objetivo
 
 Agrupar documentos e desenhos do mesmo assunto em pastas mistas de um único nível dentro do projeto, conforme [pastas.md](../interface/pastas.md). Pasta não é página: não tem conteúdo, propriedades nem subpastas, e tarefas não entram em pastas.
 
 A lateral troca as seções Documentos e Desenhos pela árvore "Itens", feita com o `Tree` do React Aria. A pasta passa a aparecer no cabeçalho do item, no ⌘K, no Índice, na Visão geral, na Lixeira e no MCP. Excluir uma pasta tem "Desfazer", e o ⌘Z passa a desfazer a ação do toast na tela.
+
+## Resultado
+
+- **Pastas de um nível.** A migração 006 acrescenta `workspace_folders` e `folder_id`, com gatilhos que mantêm um item vivo numa pasta ativa do próprio projeto. Criar põe a pasta no topo; renomear, reordenar, excluir levando os itens à raiz e excluir com os itens, que vão para a Lixeira, têm Desfazer por restauração versionada. O nome é único sem caixa, acentos nem caracteres que não se desenham.
+- **Mover sem conflito.** `moveItem` com `folderId` não muda versão nem datas, então arrastar na lateral nunca conflita com um editor aberto; mudar de projeto leva o item à raiz. Fixados por escopo: até 8 na raiz e 8 em cada pasta.
+- **Árvore Itens** na lateral de 256 px, na grade do protótipo: fixados da raiz, pastas e soltos, até 8 por nível com "Ver todos" no Índice filtrado, o item aberto sempre à vista, "Pasta vazia", o ponto de não salvo e as pastas abertas e a ordenação no dispositivo. A faixa recolhida tem o popover Itens, e o filtro da lateral, o grupo Pastas.
+- **Teclado e arrastar.** ↑ ↓ → ←, typeahead, N, P, M e G nas linhas, F2, ⌥↑ e ⌥↓, ⇧F10 e um Esc que nunca recolhe pasta nem navega. Arrastar leva itens para uma pasta, para a raiz ou para o cabeçalho Itens e reordena pastas; uma pasta fechada abre em 800 ms.
+- **⌘Z** desfaz a ação do toast na tela: excluir pasta, com ou sem os itens, mover entre pastas e entre projetos, e desarquivar. Cada Desfazer pertence à sua mudança, e uma mudança mais nova do mesmo item o retira.
+- **A pasta em todo lugar:** rótulo no cabeçalho do item, menu Novo com "Em <pasta>", "Mover para pasta…" (M) na linha, na página e no ⌘K, ⌘K com o grupo Pastas e o caminho, Índice agrupado e filtrado (`?pasta=`), Visão geral e Lixeira com a origem e o aviso ao restaurar.
+- **MCP** com as pastas em `list_projects`, a pasta em `search`, que também filtra por ela, e a linha da pasta em `read_document` e `read_drawing`.
 
 ## Desvios do plano
 
@@ -18,6 +30,17 @@ A lateral troca as seções Documentos e Desenhos pela árvore "Itens", feita co
 - `listFolders` também responde `version`, para que renomear ou excluir uma pasta achada pelo ⌘K ou pelo Índice não dependa da árvore.
 - Na revisão de dados, `deleteFolder` passou a responder `keptPin` em cada item de `moved`, e `restoreFolder` passou a exigi-lo: só um item que perdeu o fixado na exclusão e continua sem ele recebe o fixado de volta. Da lixeira, só volta o que foi excluído no mesmo instante da pasta. Um fixado posterior à exclusão primeiro recusava a lista; na rodada de correção, o item passou a voltar sem ele, para que um relógio que volta entre fixar e excluir não custe o Desfazer inteiro.
 - Também na revisão de dados, nomes de pasta, nomes de projeto e títulos perdem os caracteres que não desenham nada (`visibleText`), e a chave do nome da pasta compara também as formas de compatibilidade (NFKD). Na rodada de correção, as etiquetas passaram a ficar só numa sequência de bandeira e o *zero-width joiner* só entre emoji, porque fora disso escondem texto (as etiquetas soletram instruções para o agente). No reteste seguinte, as etiquetas passaram a ficar só nas três bandeiras de subdivisão (Inglaterra, Escócia e País de Gales), porque o formato de bandeira aceitava qualquer texto. Os dois *joiners* também ficam depois de uma letra de uma escrita que eles moldam, como o persa e o cingalês: é um desvio da correção pedida, que só guardava o joiner entre emoji, para não quebrar "ශ්‍රී". A chave passou a tirar acentos só de letras latinas, gregas e cirílicas e a contar as sequências de emoji inteiras; no reteste seguinte, das cirílicas só o acento de tonicidade, para que "й", "ў", "ї" e "ё" continuem letras. O agudo de "ѓ" e "ќ", letras do macedônio, também fica, o que o reteste não pedia; no terceiro reteste, também o grave de "ѐ" e "ѝ". O MCP tira as etiquetas soltas de todo texto que devolve: dos nomes e títulos gravados antes da regra, como pedido, e também do conteúdo dos documentos, que pode trazê-las desde antes desta etapa. No reteste seguinte, os seletores de variação passaram a sair também, salvo U+FE0E e U+FE0F logo depois de um caractere com forma de emoji, e o MCP passou a usar a mesma função do armazenamento, com etiquetas, *joiners*, seletores e caracteres de largura zero, sem juntar espaços. No terceiro reteste, o conjunto do que não se desenha passou a ser `\p{Default_Ignorable_Code_Point}`, mais as âncoras de anotação interlinear (U+FFF9 a U+FFFB) e os controles de hieróglifos egípcios (U+13430 a U+1343F), que essa propriedade deixa de fora, com as mesmas exceções, e os nomes e títulos passaram a perder também os pontos não atribuídos (`\p{Cn}`). Nomes, títulos e a saída do MCP passaram a sair em NFC, e os seletores de apresentação depois de um dígito, "#" ou "*" só ficam num *keycap*. Um caractere de controle no nome da pasta dá `VALIDATION`, e não mais 500. Nomes de projeto e títulos, que não têm `CHECK` de comprimento e nunca deram 500, continuam aceitando caracteres de controle.
+
+**Web**
+
+- A árvore saiu em mais arquivos que os da tabela: `use-tree-keys.ts` virou `tree-keys.ts`, puro e testado, e `use-tree-key-router.ts`, e `ItemsTree.tsx` foi dividido na rodada de qualidade (`d29215e`) em `tree-nodes.tsx`, `TreeOverlays.tsx`, `use-tree-editing.ts` (só a lateral monta as ações e o arrastar), `use-tree-folders.ts`, `use-row-anchor.ts`, `tree-dom.ts`, `tree-labels.ts`, `use-items-tree.ts` e `use-tab-entry.ts`. `MoveToProjectSubmenu.tsx`, `use-item-shortcuts.ts` e `use-item-copy.ts` não foram criados: os menus do M encadeiam "Mover para pasta…" e "Mover para projeto…" na mesma âncora em `shell/folders/MoveMenus.tsx`, e `use-shortcut-actions.ts` (111 linhas) e `use-item-actions.ts` (166) ficaram inteiros.
+- O arrastar usa um `dropTargetDelegate` próprio (`dropSpotAt`, em `tree-drop.ts`), sem as zonas do `ListDropTargetDelegate`: um item cai na linha inteira de uma pasta, inclusive para abri-la em 800 ms, e uma pasta reordena pelos terços de cima e de baixo de outra, com o meio recusado e o cursor de "não permitido" (`b1b5fca`, `2281100`).
+- No meio de uma busca por digitação (uma letra há menos de 1 s), N, P, M e G continuam a busca, e uma letra que o typeahead toma não chega aos atalhos da página: "zp" não fixa o item aberto (`b1b5fca`, `940e393`). O plano só dizia que a busca não começa por elas, e no protótipo elas sempre agem.
+- Tab, ⇧Tab e ↓ a partir do Quadro entram na árvore pela linha do item aberto (`b1b5fca`, `996e7e5`).
+- O Desfazer ganhou garantias que o plano não pedia (`4c33720`, `ef571e8`, `80d2e27`): as escritas passam uma de cada vez por uma fila, e um Desfazer espera a escrita em curso; cada intenção guarda o seu ID de pedido, e uma resposta perdida é reenviada uma vez com ele; `lib/item-changes.ts`, que vive com o aplicativo, guarda a mudança mais recente de cada item, e um Desfazer que chega depois de outra mudança diz "O item mudou depois; nada foi desfeito."; e Desfazer de mover para outro projeto devolve o item à pasta de onde saiu, ou à raiz, com aviso, se ela foi excluída.
+- Uma cópia ou importação feita na página de um item cuja pasta foi excluída em outro lugar vai para a raiz, com aviso no toast (`4c33720`).
+- O foco passa por um só auxiliar (`ui/focus.ts`), e o contexto do shell foi dividido em ações estáveis (`useShellActions`) e estado (`useShellUi`), com a região viva própria (`e4f0969`).
+- Na validação (W7), uma pasta nova começada pelo teclado (⌘K, N ou o "+" de Itens com ↵) perdia o campo do nome: o `Tree` do React Aria, no modo de teclado, devolvia o foco à linha que guardava, e sair do campo criava "Nova pasta". O campo agora entra pela própria linha (`e877664`). O botão Itens da faixa ganhou o estado de lugar atual nas páginas de item e no Índice, o nome com os itens não salvos e o anel do ponto, e o ✓ de "Mover para pasta…" ficou no acento, como no protótipo.
 
 **Aceitos**
 
@@ -838,20 +861,20 @@ DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm dev
 
 ## Critérios de pronto
 
-- [ ] `check`, `test:db`, `build` e `e2e` (desktop e Pixel 7) verdes depois de cada entrega.
-- [ ] Migração 006 aplicada sobre bases 005 reais sem mudar dados, com os gatilhos recusando as violações e o banco consistente.
-- [ ] Criar, renomear, reordenar, excluir e excluir com os itens, com Desfazer pelo toast e por ⌘Z, e nomes únicos sem caixa e acentos.
-- [ ] `moveItem` com pasta, sem conflito com o autosave, e mover de projeto limpando a pasta.
-- [ ] Fixados por escopo, com o limite de 8 em cada um, também em concorrência.
-- [ ] Lixeira com a origem, e restauração de item de pasta excluída para a raiz, com aviso.
-- [ ] Árvore Itens conforme pastas.md: grade de 256 px, ordem, estados, escala, pasta vazia, estado aberto no dispositivo e popover da faixa.
-- [ ] Teclado de pastas.md §4 com os atalhos ganhando do typeahead, Esc sem recolher nem navegar, e ⌘Z sem tomar o desfazer dos campos.
-- [ ] Arrastar com os destinos da tabela, e recusa de pasta sobre pasta.
-- [ ] A pasta no cabeçalho, no menu Novo, no ⌘K, no Índice, na Visão geral e na Lixeira.
-- [ ] MCP com pastas em `list_projects`, `folderId` e `folder` em `search`, e a linha da pasta nos cabeçalhos, sem passar de 45.000 caracteres.
-- [ ] Arquivos divididos conforme a tabela, sem CSS global novo.
-- [ ] Validação no Chrome real contra o protótipo registrada, com bancos temporários e as portas 3491 e 5291.
-- [ ] Documentação atualizada conforme a seção final.
+- [x] `check`, `test:db`, `build` e `e2e` (desktop e Pixel 7) verdes depois de cada entrega.
+- [x] Migração 006 aplicada sobre bases 005 reais sem mudar dados, com os gatilhos recusando as violações e o banco consistente.
+- [x] Criar, renomear, reordenar, excluir e excluir com os itens, com Desfazer pelo toast e por ⌘Z, e nomes únicos sem caixa e acentos.
+- [x] `moveItem` com pasta, sem conflito com o autosave, e mover de projeto limpando a pasta.
+- [x] Fixados por escopo, com o limite de 8 em cada um, também em concorrência.
+- [x] Lixeira com a origem, e restauração de item de pasta excluída para a raiz, com aviso.
+- [x] Árvore Itens conforme pastas.md: grade de 256 px, ordem, estados, escala, pasta vazia, estado aberto no dispositivo e popover da faixa.
+- [x] Teclado de pastas.md §4 com os atalhos ganhando do typeahead, Esc sem recolher nem navegar, e ⌘Z sem tomar o desfazer dos campos.
+- [x] Arrastar com os destinos da tabela, e recusa de pasta sobre pasta.
+- [x] A pasta no cabeçalho, no menu Novo, no ⌘K, no Índice, na Visão geral e na Lixeira.
+- [x] MCP com pastas em `list_projects`, `folderId` e `folder` em `search`, e a linha da pasta nos cabeçalhos, sem passar de 45.000 caracteres.
+- [x] Arquivos divididos conforme a tabela, sem CSS global novo, com as exceções registradas em [Desvios do plano](#desvios-do-plano).
+- [x] Validação no Chrome real contra o protótipo registrada, com bancos temporários e as portas 3491 e 5291.
+- [x] Documentação atualizada conforme a seção final.
 
 ## Divisão do trabalho
 

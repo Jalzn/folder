@@ -1,6 +1,6 @@
 # Tinyfold — Produto
 
-**Estado:** implementado localmente até a [etapa 08](etapas/08-fundacao.md), que pôs tudo dentro de um projeto, com a lateral e o visual Sumário. Ver [validação](validacao.md) para evidências e limites. A definição foi revisada em 2026-10-30 e 2026-10-31; itens marcados como **Planejado** ainda não foram implementados.
+**Estado:** implementado localmente até a [etapa 09](etapas/09-pastas.md), que trouxe as pastas, depois da [etapa 08](etapas/08-fundacao.md), que pôs tudo dentro de um projeto, com a lateral e o visual Sumário. Ver [validação](validacao.md) para evidências e limites. A definição foi revisada em 2026-10-30 e 2026-10-31; itens marcados como **Planejado** ainda não foram implementados.
 
 Espaço pessoal e minimalista para conduzir projetos, de software ou não. Reúne escrita, desenho e tarefas, que antes ficavam espalhados entre Notion, Excalidraw e Trello, em um só lugar e sem o excesso dessas ferramentas. O aplicativo funciona no navegador e guarda os dados em um servidor acessível de vários dispositivos.
 
@@ -48,13 +48,13 @@ Implementada na etapa 08, conforme a [interface](interface/README.md):
   - No pé, o menu Você, com Perfil, token e tema, e a Lixeira.
   - A lateral recolhe numa faixa estreita e, em telas menores, abre sobre a página.
 - Visão geral do projeto: as tarefas em andamento e os itens editados recentemente.
-- Índice do projeto com todos os documentos e desenhos, filtrável por tipo e ordenável.
+- Índice do projeto com todos os documentos e desenhos, filtrável por tipo e por pasta, ordenável e agrupado por pasta.
 - ⌘K busca em todos os projetos e reúne as ações do item aberto e os comandos. Atalhos de teclado cobrem a navegação.
 - Esc fecha apenas a camada aberta mais recente e nunca navega.
+- ⌘Z desfaz a ação do toast na tela (excluir ou mover), fora de campos, editores e camadas abertas.
 
 **Planejado:**
 
-- Pastas na lateral e no Índice (etapa 09).
 - As tarefas atrasadas no seletor e no quadro, a gaveta inferior não modal da tarefa, que empurra o conteúdo e continua aberta durante a navegação, e as tarefas concluídas nos últimos 14 dias na Visão geral (etapa 10).
 
 Criar e editar tarefa são estados contextuais da interface. No celular, os fluxos essenciais de escrita, consulta e movimentação de tarefas precisam funcionar com toque e tela estreita.
@@ -88,13 +88,12 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 
 ## Pastas
 
-**Planejado:**
-
 - Pastas agrupam documentos e desenhos do mesmo assunto dentro de um projeto. Têm um único nível: não contêm outras pastas. Tarefas não entram em pastas.
-- Itens podem ficar fora de qualquer pasta, na raiz do projeto. Itens fixados sobem para o topo da raiz ou da própria pasta.
-- Criar, renomear e reordenar pastas. Mover itens arrastando ou pelo menu "Mover para pasta".
-- Excluir uma pasta leva os itens para a raiz, com opção de desfazer. Excluir a pasta com os itens manda os itens para a Lixeira, após confirmação.
-- Restaurar um item cuja pasta foi excluída devolve o item à raiz.
+- Itens podem ficar fora de qualquer pasta, na raiz do projeto. Itens fixados sobem para o topo da raiz ou da própria pasta, até 8 em cada um; mover um fixado para uma pasta cheia tira o fixado, e o toast avisa.
+- A lateral mostra a árvore Itens: fixados da raiz, pastas e itens soltos, até 8 por nível e "Ver todos" no Índice filtrado. As pastas abertas e a ordenação ficam no dispositivo.
+- Criar, renomear e reordenar pastas. Mover itens arrastando ou por "Mover para pasta…" (M), na lateral, na página do item e no ⌘K.
+- Excluir uma pasta leva os itens para a raiz, e excluir a pasta com os itens manda os itens para a Lixeira, após confirmação; os dois têm Desfazer no toast e por ⌘Z.
+- A pasta aparece no cabeçalho do item, no ⌘K, no Índice, na Visão geral e na Lixeira, que mostra a origem. Restaurar um item cuja pasta foi excluída devolve o item à raiz, com aviso.
 
 ## Projetos e tarefas
 
@@ -132,11 +131,12 @@ Servidor MCP somente leitura para o Claude Code consultar o espaço, por exemplo
 - Ler um documento em Markdown, com as tarefas que nasceram dele.
 - Ler um desenho como imagem PNG e como textos e estrutura da cena, com as ligações das setas.
 - Ler tarefas com estado, posição e trecho de origem.
+- Ver as pastas de cada projeto, com a contagem, e a pasta de cada documento e desenho na busca e na leitura.
 - Itens na lixeira ficam de fora. O acesso usa um token pessoal somente leitura, criado e revogado no Perfil, que mostra o último uso de cada token.
 
 **Planejado:**
 
-- Pastas (etapa 09), colunas, prazos, etiquetas e descrição das tarefas (etapa 10) e itens incorporados como referências (etapa 11) entram nas saídas do MCP com essas etapas.
+- Colunas, prazos, etiquetas e descrição das tarefas (etapa 10) e itens incorporados como referências (etapa 11) entram nas saídas do MCP com essas etapas.
 - Criar ou alterar conteúdo pelo MCP fica para depois.
 
 ## Em aberto

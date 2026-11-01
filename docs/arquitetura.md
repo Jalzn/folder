@@ -57,8 +57,9 @@ A implantação prevê uma instância e um volume local ao processo. Não há r�
 | `auth_sessions` | Hash do token, aparelho e validade |
 | `auth_access_tokens` | Nome, SHA-256 e prefixo do token pessoal, escopo `read`, criação e último uso |
 | `workspace_projects` | Nome, cor (`color`), posição no seletor (`position`, nula nos arquivados), versão, datas e arquivamento |
-| `workspace_documents` | Projeto obrigatório, título, JSON, texto de busca, formato, versão, fixado (`pinned_at`) e exclusão lógica |
-| `workspace_canvases` | Projeto obrigatório, título, cena vetorial JSON, texto de busca, formato, versão, fixado (`pinned_at`) e exclusão lógica |
+| `workspace_folders` | Pastas de um nível: projeto, nome, chave do nome sem caixa nem acentos (`name_key`, única entre as ativas do projeto), posição, versão, datas e exclusão lógica |
+| `workspace_documents` | Projeto obrigatório, pasta (`folder_id`, nula na raiz), título, JSON, texto de busca, formato, versão, fixado (`pinned_at`) e exclusão lógica |
+| `workspace_canvases` | Projeto obrigatório, pasta (`folder_id`, nula na raiz), título, cena vetorial JSON, texto de busca, formato, versão, fixado (`pinned_at`) e exclusão lógica |
 | `workspace_canvas_previews` | Uma prévia PNG por desenho: versão e impressão digital da cena, largura, altura e bytes; apagada com o desenho |
 | `workspace_tasks` | Projeto obrigatório, título, estado, posição na coluna do projeto, versão e exclusão lógica |
 | `workspace_task_sources` | Uma origem por tarefa: documento (nulo depois de excluído de vez), título guardado do documento, bloco opcional e trecho capturado |
@@ -66,18 +67,26 @@ A implantação prevê uma instância e um volume local ao processo. Não há r�
 | `core_mutations` | ID do pedido, operação, fingerprint, resposta compacta e data |
 | `core_schema_migrations` | Migrações aplicadas e checksums |
 
-As relações têm chaves estrangeiras, e gatilhos recusam `project_id` nulo em documentos, desenhos e tarefas. A lixeira preserva documentos e vínculos; tarefas continuam disponíveis mesmo com a origem excluída, e excluir o documento de vez deixa na origem o título que ele tinha. Trechos removidos ou modificados apresentam estado de origem indisponível e o contexto capturado permanece.
+As relações têm chaves estrangeiras, e gatilhos recusam `project_id` nulo em documentos, desenhos e tarefas. Desde a migração `006_folders.sql`, gatilhos também garantem que um item vivo só fica numa pasta ativa do próprio projeto, que a pasta não muda de projeto e que não é excluída com itens vivos dentro; um item na lixeira guarda a pasta excluída como origem. A lixeira preserva documentos e vínculos; tarefas continuam disponíveis mesmo com a origem excluída, e excluir o documento de vez deixa na origem o título que ele tinha. Trechos removidos ou modificados apresentam estado de origem indisponível e o contexto capturado permanece.
 
 ## Projetos, navegação e lixeira
 
 Todo documento, desenho e tarefa pertence a um projeto ativo na criação. A migração `005_projects_required.sql` levou os itens soltos, inclusive os da lixeira, ao projeto Geral (ID fixo, criado só quando havia itens soltos), sem mudar versões nem datas. As regras completas estão no [README do workspace](../src/workspace/README.md).
 
 - **Projetos:** cor de quatro chaves e ordem manual no seletor (`moveProject`), sem mudar versão. Qualquer projeto pode ser arquivado, inclusive o último ativo; sem projeto ativo, a interface mostra o estado vazio e o MCP devolve `list_projects` vazio.
-- **Fixados:** até 8 documentos e desenhos por projeto, contados juntos. `pinItem` e `unpinItem` não passam pelo registro de pedidos nem mudam versão ou data, então não conflitam com o autosave de uma página aberta.
-- **Mover de projeto:** só por `moveItem`, que não leva conteúdo, não conta como edição (`updatedAt` fica) e desafixa. A versão sobe, para que um editor com a anterior saiba da mudança. `saveDocument` e `saveCanvas` não têm `projectId`.
-- **Consultas da interface:** `projectNavigation` (seções da lateral com fixados, tarefas abertas e itens na lixeira), `projectOverview` (Agora e Editados recentemente, com o trecho cortado pelo domínio) e `search`, o mesmo caso de uso das ferramentas MCP, numa porta `NavigationReader` com SQL em `infra/navigation/`.
-- **Lixeira por projeto:** `listTrash` traz até 1.000 itens, do excluído mais recentemente; a contagem da lateral e da Visão geral é sempre exata. Excluir de vez (`purgeDocument`, `purgeCanvas`, `purgeTask`) só vale para item na lixeira, e `emptyTrash` recebe exatamente os itens mostrados (até 1.000) e responde `{ purged, skipped }`.
+- **Fixados por escopo:** até 8 documentos e desenhos na raiz do projeto e até 8 em cada pasta, contados juntos. `pinItem` e `unpinItem` não passam pelo registro de pedidos nem mudam versão ou data, então não conflitam com o autosave de uma página aberta.
+- **Pastas:** um nível, só para documentos e desenhos, até 200 ativas por projeto, com o nome único sem caixa nem acentos e só leitura num projeto arquivado. Criar põe a pasta no topo; renomear sobe a versão; reordenar e mudar um item de pasta não mudam versão nem datas, então nunca conflitam com o autosave. `deleteFolder` leva os itens à raiz ou, com `withItems`, à lixeira, e responde as listas que `restoreFolder` usa para desfazer.
+- **Mover:** só por `moveItem`, que não leva conteúdo nem conta como edição (`updatedAt` fica). Para outro projeto, exige a versão, sobe a versão, para que um editor com a anterior saiba da mudança, e leva o item à raiz, sem fixado. Para outra pasta do mesmo projeto ou para a raiz (`folderId`), não pede nem muda a versão, e o item mantém o fixado se o destino tiver vaga. `saveDocument` e `saveCanvas` não têm `projectId`.
+- **Consultas da interface:** `projectNavigation` (a árvore Itens, `tree`: fixados da raiz, pastas com os fixados e os primeiros itens, e soltos da raiz, até 8 por nível com os totais; mais tarefas abertas e itens na lixeira), `listFolders` (as pastas ativas, para o ⌘K e os menus), `projectOverview` (Agora e Editados recentemente, com o trecho cortado pelo domínio) e `search`, o mesmo caso de uso das ferramentas MCP, numa porta `NavigationReader` com SQL em `infra/navigation/`.
+- **Lixeira por projeto:** `listTrash` traz até 1.000 itens, do excluído mais recentemente, com a pasta de origem de cada documento e desenho, mesmo excluída; a contagem da lateral e da Visão geral é sempre exata. Restaurar devolve o item à pasta, ou à raiz se ela foi excluída (`folderGone`). Excluir de vez (`purgeDocument`, `purgeCanvas`, `purgeTask`) só vale para item na lixeira, e `emptyTrash` recebe exatamente os itens mostrados (até 1.000) e responde `{ purged, skipped }`.
 - **Respostas de escrita:** de documentos, desenhos e tarefas são compactas, sem título, conteúdo nem trecho, para que excluir de vez não deixe o texto no registro de pedidos.
+- **Texto que não se desenha:** nomes de pasta, nomes de projeto e títulos perdem os pontos de código ignoráveis (`visibleText`) e ficam em NFC, com exceções para emoji e escritas que precisam deles; o MCP aplica a mesma função ao que devolve.
+
+### Desfazer
+
+Excluir uma pasta, com ou sem os itens, e mover um item entre pastas ou projetos têm "Desfazer" no toast. A exclusão é lógica e a restauração é versionada: `restoreFolder` recebe as listas que `deleteFolder` respondeu, devolve a pasta à posição guardada e só traz de volta o que continua como a exclusão deixou, contando os outros em `skipped`. Desfazer um movimento é outro `moveItem`. Uma pasta com mais de 1.000 itens sai sem Desfazer.
+
+No cliente, o ⌘Z desfaz a ação do toast na tela (`ToastProvider`, com a guarda `acceptsUndo`): só fora de campos editáveis, do editor, do Excalidraw e de menus e diálogos, e nunca a de um toast que já saiu. Cada Desfazer pertence à sua mudança (`lib/item-changes.ts`): uma mudança mais nova do mesmo item tira o Desfazer do toast anterior. As escritas passam uma de cada vez (`lib/write-queue.ts`), cada intenção guarda o seu ID de pedido, e uma resposta perdida é reenviada uma vez com o mesmo ID (`lib/lost-answer.ts`), que devolve a resposta guardada.
 
 ## Salvamento e múltiplos dispositivos
 
@@ -103,7 +112,7 @@ A SPA usa TanStack Router com endereços em português, sempre dentro de um proj
 | --- | --- |
 | `/projetos/$id` | Visão geral |
 | `/projetos/$id/quadro` (`?tarefa=`) | Quadro, com o diálogo de uma tarefa |
-| `/projetos/$id/indice` (`?tipo=documentos\|desenhos`) | Índice de documentos e desenhos |
+| `/projetos/$id/indice` (`?tipo=documentos\|desenhos`, `?pasta=<id>\|raiz`) | Índice de documentos e desenhos, agrupado por pasta |
 | `/projetos/$id/lixeira` | Lixeira do projeto |
 | `/projetos/$id/documentos/$docId` (`?bloco=`) e `/projetos/$id/desenhos/$canvasId` | Editores |
 | `/projetos` | Estado vazio, sem projeto ativo |
@@ -111,7 +120,7 @@ A SPA usa TanStack Router com endereços em português, sempre dentro de um proj
 
 `/` reabre o último lugar do último projeto, com a rolagem, guardado no dispositivo por instalação; o caminho guardado só é usado se for um endereço interno conhecido. Os endereços anteriores (`/documentos/$id`, `/desenhos/$id`, listas e `/login`) redirecionam, e um item aberto no endereço de outro projeto passa ao endereço certo. Uma codificação quebrada ou um endereço desconhecido mostram uma página em português dentro do shell.
 
-O shell (`src/web/shell/`) tem a lateral variante A de 248 px a partir de 1.100 px, a faixa de 52 px (⌘\\) e a lateral sobre a página entre 720 e 1.100 px, e abaixo de 720 px uma barra de 44 px que recebe as ações da página. Buscar filtra na lateral; o ⌘K busca em todos os projetos e lista as ações do item aberto e os comandos. Atalhos de uma tecla não valem em campos editáveis, durante uma composição de IME nem no Excalidraw, e o Esc fecha só a camada mais recente, sem navegar. Toasts mostram um por vez, o mais novo no lugar do anterior, em regiões vivas que um modal não esconde.
+O shell (`src/web/shell/`) tem a lateral de 256 px a partir de 1.100 px, com a árvore Itens (o `Tree` do React Aria, `treegrid`), em que os atalhos N, P, M e G ganham do typeahead e um arrastar leva itens entre pastas e reordena pastas, a faixa de 52 px (⌘\\) e a lateral sobre a página entre 720 e 1.100 px, e abaixo de 720 px uma barra de 44 px que recebe as ações da página. Buscar filtra na lateral; o ⌘K busca em todos os projetos e lista as ações do item aberto e os comandos. Atalhos de uma tecla não valem em campos editáveis, durante uma composição de IME nem no Excalidraw, e o Esc fecha só a camada mais recente, sem navegar. Toasts mostram um por vez, o mais novo no lugar do anterior, em regiões vivas que um modal não esconde.
 
 ## Tema, tokens e fontes
 
@@ -179,7 +188,7 @@ As ferramentas do workspace são objetos simples (`createWorkspaceTools(db, { lo
 - **Listas:** são paginadas por chave (`s~…`, `t~…`, `p~…`). O cursor do quadro fixa a revisão do quadro e é recusado depois de qualquer mudança nas tarefas.
 - **Documentos:** saem em Markdown do serializador puro do domínio (`documentToMarkdown`), em páginas de 36.000 caracteres com cursor `<impressão>:<deslocamento>`, presas ao texto paginado, e não à versão, para que mover ou renomear não as invalide; a primeira reserva 9.000 para cabeçalho e rodapé. Um bloco cortado pela página é fechado e reaberto.
 - **Desenhos:** saem como estrutura textual da cena atual (`outlineCanvasScene`) e a prévia PNG guardada.
-- **Projetos e origens:** `list_projects` traz cor e posição, sem `withoutProject`; a busca diz se o item está fixado; uma origem de tarefa cujo documento foi excluído de vez vem com `documentId: null` e o título guardado.
+- **Projetos e origens:** `list_projects` traz cor, posição, `folderCount` e até 50 pastas por projeto, com a contagem de itens, sem `withoutProject`; a busca diz se o item está fixado e em que pasta está (`folder`), e aceita `folderId`; `read_document` e `read_drawing` trazem a linha da pasta no cabeçalho; uma origem de tarefa cujo documento foi excluído de vez vem com `documentId: null` e o título guardado.
 - **Respostas:** têm até 45.000 caracteres de texto, rodapés e erros incluídos, só em `content`, sem `structuredContent`. O Claude Code 2.1.310 grava num arquivo o resultado que passa de 50.000 e mostra ao modelo só uma prévia. Cada ferramenta cabe no teto pelo próprio orçamento, e `withTextCeiling` corta, com aviso, o que ainda passasse.
 
 O [README do workspace](../src/workspace/README.md) descreve as regras e as perdas conhecidas do Markdown no parser do BlockNote.

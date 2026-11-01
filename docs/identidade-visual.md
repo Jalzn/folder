@@ -1,6 +1,6 @@
 # Tinyfold — Identidade visual
 
-**Direção aprovada (2026-10-31):** Sumário. Limpa, moderna e tipográfica, no gênero de ferramentas como o Linear, com tema claro e escuro gerados pelo mesmo sistema. Implementada na [etapa 08](etapas/08-fundacao.md): tokens, temas, fontes, componentes base, lateral, seletor, ⌘K, Visão geral, Índice, Lixeira e Perfil. O quadro, a gaveta da tarefa e as páginas de documento e desenho receberam só um restyle por tokens; o desenho completo deles chega com as etapas 10 e 11.
+**Direção aprovada (2026-10-31):** Sumário. Limpa, moderna e tipográfica, no gênero de ferramentas como o Linear, com tema claro e escuro gerados pelo mesmo sistema. Implementada na [etapa 08](etapas/08-fundacao.md): tokens, temas, fontes, componentes base, lateral, seletor, ⌘K, Visão geral, Índice, Lixeira e Perfil. A [etapa 09](etapas/09-pastas.md) levou a lateral à grade de 256 px do protótipo, com texto em x=52, e trocou Documentos e Desenhos pela árvore Itens, com as pastas. O quadro, a gaveta da tarefa e as páginas de documento e desenho receberam só um restyle por tokens; o desenho completo deles chega com as etapas 10 e 11.
 
 [Protótipo Sumário](https://claude.ai/artifact/1DfmsQAVUE7Tek6pYCkcvW). A especificação completa está em [interface/visual.md](interface/visual.md); a organização das telas, em [interface](interface/README.md).
 
