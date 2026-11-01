@@ -94,6 +94,10 @@
 .palette-row[data-focused] {
   background: var(--hover-raised);
 }
+/* Items found for an earlier text, while this text's search answers. */
+.palette-row[data-disabled] {
+  opacity: 0.45;
+}
 .palette-row__line {
   display: flex;
   align-items: center;

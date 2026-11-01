@@ -1,6 +1,6 @@
 import './command-palette.css';
 import { Search } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Menu as AriaMenu, Autocomplete, Dialog, Input, Modal, ModalOverlay, TextField } from 'react-aria-components';
 import { Kbd, MenuSection } from '../../ui';
 import { type SwitcherPlace, useShellUi } from '../shell-ui';
@@ -12,6 +12,7 @@ import { useHereActions } from './use-here-actions';
 import { usePaletteActions } from './use-palette-actions';
 import { usePaletteContext } from './use-palette-context';
 import { usePaletteData } from './use-palette-data';
+import { usePaletteFocus } from './use-palette-focus';
 
 interface PaletteProps {
   switcherPlace: SwitcherPlace;
@@ -47,7 +48,7 @@ function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & {
   const ui = useShellUi();
   const { context, project, projects, item, pinned } = usePaletteContext();
   const [query, setQuery] = useState(initial);
-  const { results, folders } = usePaletteData(query);
+  const { results, searching, folders } = usePaletteData(query);
   const here = useHereActions({ item, project, pinned });
   const run = usePaletteActions({ here, project, projects, switcherPlace, toggleSidebar });
   const sections = paletteSections({
@@ -59,24 +60,42 @@ function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & {
     commands: availableCommands(context),
   });
   const rows = new Map(sections.flatMap((section) => section.rows.map((row) => [row.key, row] as const)));
+  // Items found for an earlier text stay in place, dimmed, until this text's answer: they take no highlight and
+  // run nothing, so a command typed at once is what Enter runs.
+  const stale = searching ? (sections.find((section) => section.id === 'items')?.rows.map((row) => row.key) ?? []) : [];
+  const list = useRef<HTMLDivElement>(null);
+  function choose(key: string) {
+    const row = rows.get(key);
+    if (!row) return;
+    // The palette closes first, so what the action opens gets the focus.
+    ui.closePalette();
+    requestAnimationFrame(() => run(row.action));
+  }
+  const { onKeyDownCapture } = usePaletteFocus({
+    list,
+    rows: [...rows.keys()],
+    usable: [...rows.keys()].filter((key) => !stale.includes(key)),
+    typed: query.trim() !== '',
+    onRun: choose,
+  });
 
   return (
     <Autocomplete inputValue={query} onInputChange={setQuery}>
       <TextField aria-label="Buscar ou comandar" className="palette__field" autoFocus>
         <Search size={16} aria-hidden="true" />
-        <Input className="palette__input" placeholder="Buscar itens, projetos e comandos…" />
+        <Input
+          className="palette__input"
+          placeholder="Buscar itens, projetos e comandos…"
+          onKeyDownCapture={onKeyDownCapture}
+        />
       </TextField>
       <AriaMenu
+        ref={list}
         className="palette__list"
         aria-label="Resultados"
-        onAction={(key) => {
-          const row = rows.get(String(key));
-          if (!row) return;
-          // The palette closes first, so what the action opens gets the focus.
-          ui.closePalette();
-          requestAnimationFrame(() => run(row.action));
-        }}
-        renderEmptyState={() => <p className="palette__empty">Nada encontrado.</p>}
+        onAction={(key) => choose(String(key))}
+        disabledKeys={stale}
+        renderEmptyState={() => (searching ? null : <p className="palette__empty">Nada encontrado.</p>)}
       >
         {sections.map((section) => (
           <MenuSection key={section.id} title={section.title}>

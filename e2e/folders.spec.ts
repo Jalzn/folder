@@ -109,8 +109,7 @@ test('a new folder started by the keyboard keeps its name field: ⌘K, N and the
     await expect(folderRow(page, name)).toBeFocused();
   }
 
-  // ⌘K: the typed text highlights "Nova pasta", and ↵ runs it. Typed at a person's pace: at machine speed
-  // right after ⌘K, React Aria's delayed highlight of the first result can lag the filter (validacao.md).
+  // ⌘K: the typed text highlights "Nova pasta", and ↵ runs it (palette.spec.ts types it at once).
   await pressCommand(page, 'k');
   await page.keyboard.type('Nova pasta', { delay: 50 });
   const command = page
