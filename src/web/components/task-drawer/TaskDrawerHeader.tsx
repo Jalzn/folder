@@ -28,6 +28,7 @@ export function TaskDrawerHeader({
   columns,
   title,
   editable,
+  saveState,
   onMove,
   onToggleDone,
   onCopyLink,
@@ -39,6 +40,8 @@ export function TaskDrawerHeader({
   /** The title field. */
   title: ReactNode;
   editable: boolean;
+  /** "Salvo", "Salvando…" or "Não salvou" with "Tentar de novo". */
+  saveState?: ReactNode;
   onMove: (columnId: string, name: string) => void;
   onToggleDone: () => void;
   onCopyLink: () => void;
@@ -79,6 +82,7 @@ export function TaskDrawerHeader({
       )}
       {title}
       <div className="task-drawer__actions">
+        {saveState}
         {editable && (
           <TooltipTrigger delay={600} closeDelay={0}>
             <Button

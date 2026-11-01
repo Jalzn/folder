@@ -12,7 +12,10 @@ const sources = new Map<string, SaveSource>();
 const listeners = new Set<() => void>();
 let pending: ReadonlySet<string> = new Set();
 
-const keyOf = (type: ItemType, id: string) => `${type}:${id}`;
+/** What an autosave follows: a document's or drawing's content, or a task's text. */
+type SavedType = ItemType | 'task';
+
+const keyOf = (type: SavedType, id: string) => `${type}:${id}`;
 
 function refresh() {
   const next = new Set<string>();
@@ -23,11 +26,11 @@ function refresh() {
 }
 
 /**
- * Follows the autosave of a document or drawing opened in this tab, for the sidebar's "não salvo" dot: a
+ * Follows the autosave of a document, drawing or task opened in this tab, for the "não salvo" dot: a
  * change not yet confirmed by the server, or a failed save. Editors keep their controllers for the whole
  * session, so a registration lasts until `unregister` (tests) or the page closes.
  */
-export function registerSave(type: ItemType, id: string, source: SaveSource) {
+export function registerSave(type: SavedType, id: string, source: SaveSource) {
   const key = keyOf(type, id);
   if (sources.get(key) === source) return () => undefined;
   sources.set(key, source);
@@ -48,7 +51,7 @@ export function subscribePendingSaves(listener: () => void) {
 /** The items with unconfirmed changes, as `<type>:<id>`; the same set until it changes. */
 export const pendingSaves = () => pending;
 
-export const isPendingSave = (saves: ReadonlySet<string>, type: ItemType, id: string) => saves.has(keyOf(type, id));
+export const isPendingSave = (saves: ReadonlySet<string>, type: SavedType, id: string) => saves.has(keyOf(type, id));
 
 /** An editor open in this tab: moving its item goes through its own autosave. */
 export interface OpenEditor {

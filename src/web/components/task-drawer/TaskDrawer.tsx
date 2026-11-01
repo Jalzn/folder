@@ -12,6 +12,14 @@ import { NewTaskForm } from './NewTaskForm';
 import { OpenTask } from './OpenTask';
 import { useDrawerHeight } from './use-drawer-height';
 
+/** In a code block of the description, ⌘↵ is BlockNote's way out of it (decision 12), not Concluir. */
+function inCodeBlock(target: EventTarget) {
+  if (!(target instanceof HTMLElement) || !target.isContentEditable) return false;
+  const node = document.getSelection()?.anchorNode;
+  const element = node instanceof Element ? node : node?.parentElement;
+  return Boolean(element?.closest('[data-content-type="codeBlock"]'));
+}
+
 const editable = (target: EventTarget) =>
   target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select'));
 
@@ -88,15 +96,17 @@ export function TaskDrawer({
     const mod = usesCommandKey() ? event.metaKey : event.ctrlKey;
     if (event.key !== 'Enter' || !mod || event.altKey || event.shiftKey || event.nativeEvent.isComposing) return;
     const primary = commands.current.primary;
-    if (!primary) return;
+    if (!primary || inCodeBlock(event.target)) return;
     event.preventDefault();
     event.stopPropagation();
     primary();
   }
   function keyDown(event: KeyboardEvent<HTMLElement>) {
     // P pins the open document or drawing elsewhere; a task is not pinned, so in the drawer it does nothing.
+    // Keys of its popovers, rendered outside it, as the labels' picker, stay theirs.
     const plain = !event.altKey && !event.metaKey && !event.ctrlKey;
-    if (plain && event.key.toLowerCase() === 'p' && !editable(event.target)) {
+    const inside = event.target instanceof Node && region.current?.contains(event.target);
+    if (plain && event.key.toLowerCase() === 'p' && inside && !editable(event.target)) {
       event.preventDefault();
       return;
     }

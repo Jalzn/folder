@@ -13,6 +13,7 @@ export function useBlockEditor({
   epoch,
   content,
   label,
+  placeholder,
   testId,
 }: {
   initial: DocumentContent;
@@ -20,6 +21,8 @@ export function useBlockEditor({
   content: DocumentContent;
   /** The editable area's accessible name, as "Conteúdo do documento". */
   label: string;
+  /** The empty editor's hint, instead of the document's. */
+  placeholder?: string;
   testId?: string;
 }) {
   const start = useRef(initial);
@@ -27,7 +30,12 @@ export function useBlockEditor({
     schema: documentSchema,
     // BlockNote 0.56 registers block-spec extensions, but not inline-spec extensions.
     extensions: [MathInlineInputRulesExtension],
-    dictionary: documentDictionary,
+    dictionary: placeholder
+      ? {
+          ...documentDictionary,
+          placeholders: { ...documentDictionary.placeholders, default: placeholder, emptyDocument: placeholder },
+        }
+      : documentDictionary,
     ...(start.current.length ? { initialContent: start.current as unknown as EditorBlocks } : {}),
     domAttributes: { editor: { 'aria-label': label, ...(testId ? { 'data-testid': testId } : {}) } },
   });

@@ -42,6 +42,7 @@ export function BlockEditor({
   onChange,
   onSelectionChange,
   onCreateTask,
+  editable = true,
 }: {
   // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
   editor: BlockNoteEditor<any, any, any>;
@@ -50,12 +51,15 @@ export function BlockEditor({
   onChange: () => void;
   onSelectionChange?: () => void;
   onCreateTask?: () => void;
+  /** False shows the blocks to read only, as an archived project's task. */
+  editable?: boolean;
 }) {
   return (
     <div className={cx('block-editor', className)}>
       <BlockNoteView
         editor={editor}
         theme={theme}
+        editable={editable}
         formattingToolbar={false}
         slashMenu={false}
         onChange={onChange}

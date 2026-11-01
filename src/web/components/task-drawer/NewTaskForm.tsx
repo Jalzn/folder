@@ -1,12 +1,17 @@
+import { isOverdue } from '@tinyfold/workspace/domain';
 import { Plus } from 'lucide-react';
 import { type RefObject, useEffect, useId, useRef, useState } from 'react';
 import { api, errorMessage, refreshWorkspace, reportSessionError } from '../../lib/api';
 import { doneAndFirstOpen } from '../../lib/board-order';
-import { useColumns, useProjects } from '../../lib/queries';
+import { useToday } from '../../lib/civil-date';
+import { onceMoreIfLost } from '../../lib/lost-answer';
+import { useColumns, useLabels, useProjects } from '../../lib/queries';
 import { useRequest } from '../../lib/use-request';
 import { type DrawerContent, useTaskDrawer } from '../../shell/task-drawer-state';
 import { AlertDialog, Button, useToast } from '../../ui';
+import { DueField } from './DueField';
 import type { DrawerCommands } from './drawer-commands';
+import { LabelsField } from './LabelsField';
 import { ColumnField, ProjectField, TaskProperties } from './TaskProperties';
 import { TaskTitleField } from './TaskTitleField';
 
@@ -40,11 +45,20 @@ export function NewTaskForm({
   const [chosenColumn, setColumn] = useState(content.columnId);
   const columnId = chosenColumn ?? doneAndFirstOpen(columns).open?.id;
   const column = columns.find((each) => each.id === columnId);
+  const today = useToday();
+  const labels = useLabels().data ?? [];
+  const [dueOn, setDue] = useState<string | null>(null);
+  const [labelIds, setLabels] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const project = projects.find((each) => each.id === projectId);
-  const dirty = title !== initialTitle || projectId !== content.projectId || chosenColumn !== content.columnId;
+  const dirty =
+    title !== initialTitle ||
+    projectId !== content.projectId ||
+    chosenColumn !== content.columnId ||
+    dueOn !== null ||
+    labelIds.length > 0;
   const latestDirty = useRef(dirty);
   latestDirty.current = dirty;
 
@@ -77,6 +91,8 @@ export function NewTaskForm({
       title: name,
       projectId,
       ...(chosenColumn ? { columnId: chosenColumn } : {}),
+      ...(dueOn ? { dueOn } : {}),
+      ...(labelIds.length ? { labelIds } : {}),
       ...(source ? { source } : {}),
     };
     setBusy(true);
@@ -98,6 +114,18 @@ export function NewTaskForm({
   useEffect(() => {
     commands.current.primary = () => void create();
   });
+  /** A label made from the picker goes on the new task at once; the task itself waits for Criar. */
+  async function createLabel(name: string) {
+    const input = { requestId: crypto.randomUUID(), name };
+    try {
+      const created = await onceMoreIfLost(() => api.workspace.createLabel(input));
+      await refreshWorkspace();
+      setLabels((current) => [...current, created.id]);
+    } catch (failure) {
+      reportSessionError(failure);
+      toast(errorMessage(failure), 'error');
+    }
+  }
 
   return (
     <form
@@ -164,6 +192,32 @@ export function NewTaskForm({
               id: 'column',
               label: 'Coluna',
               value: <ColumnField columnId={columnId} columns={columns} editable onChange={(id) => setColumn(id)} />,
+            },
+            {
+              id: 'due',
+              label: 'Prazo',
+              value: (
+                <DueField
+                  due={dueOn}
+                  today={today}
+                  late={isOverdue(dueOn, today, Boolean(column?.isDone))}
+                  editable
+                  onChange={setDue}
+                />
+              ),
+            },
+            {
+              id: 'labels',
+              label: 'Etiquetas',
+              value: (
+                <LabelsField
+                  labelIds={labelIds}
+                  labels={labels}
+                  editable
+                  onChange={setLabels}
+                  onCreate={(name) => void createLabel(name)}
+                />
+              ),
             },
           ]}
         />

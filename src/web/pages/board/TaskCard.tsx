@@ -1,6 +1,7 @@
 import './card.css';
-import { useId } from 'react';
+import { useId, useSyncExternalStore } from 'react';
 import type { ColumnSummary, LabelSummary } from '../../lib/queries';
+import { isPendingSave, pendingSaves, subscribePendingSaves } from '../../lib/save-registry';
 import { displayTitle, type Task } from '../../lib/types';
 import { ColumnRing } from '../../ui';
 import { CardMenu } from './CardMenu';
@@ -20,8 +21,8 @@ export interface CardColumn {
 /**
  * A task on the board (docs/etapas/10-quadro-tarefa.md, "Card"): the column's ring, the title, which is the
  * button that takes the focus and whose press anywhere on the card opens the drawer, the meta line and the ⋯.
- * The ring only shows the column (decision 18): Concluir is in the ⋯ and on ⌘↵. An archived project's card
- * only opens.
+ * The ring only shows the column (decision 18): Concluir is in the ⋯ and on ⌘↵. A 6 px dot in --late marks
+ * text not saved yet. An archived project's card only opens.
  */
 export function TaskCard({
   task,
@@ -63,6 +64,8 @@ export function TaskCard({
   onTrash: () => void;
 }) {
   const metaId = useId();
+  // Text typed in the drawer that the server has not confirmed yet, in this tab.
+  const unsaved = isPendingSave(useSyncExternalStore(subscribePendingSaves, pendingSaves), 'task', task.id);
   const { column } = place;
   const title = displayTitle(task.title);
   return (
@@ -89,7 +92,8 @@ export function TaskCard({
       >
         {title}
       </button>
-      <CardMeta id={metaId} task={task} late={late} labels={labels} />
+      {unsaved && <span className="task-card__unsaved" aria-hidden="true" />}
+      <CardMeta id={metaId} task={task} late={late} labels={labels} unsaved={unsaved} />
       {editable && (
         <CardMenu
           title={title}

@@ -76,6 +76,20 @@
 .task-card[data-done] .task-card__title {
   color: var(--text-2);
 }
+/* Text typed in the drawer and not saved yet. */
+.task-card__unsaved {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--late);
+}
+.task-card:hover .task-card__unsaved,
+.task-card:focus-within .task-card__unsaved {
+  visibility: hidden;
+}
 .task-card__more {
   position: absolute;
   top: 7px;

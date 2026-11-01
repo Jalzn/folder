@@ -2,6 +2,7 @@ import type { ItemAdapter } from '../../components/editor';
 import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
 import { AutosaveController, parseDraft, type SaveInput, type Snapshot } from '../../lib/autosave';
 import { withDraftProject } from '../../lib/draft-project';
+import { draftStorage } from '../../lib/draft-storage';
 import { documentQuery, invalidateNavigation } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
 import { type Document, displayTitle } from '../../lib/types';
@@ -30,44 +31,6 @@ export const documentItem = (id: string): ItemAdapter<Snapshot, Document> => ({
     }),
   remove: (input) => api.workspace.deleteDocument(input),
 });
-
-/**
- * The document's local draft. A duplicated browser tab inherits sessionStorage, so each opening writes to a
- * fresh record and uses the inherited pointer only to recover.
- */
-function draftStorage(identity: string) {
-  const key = `tinyfold:draft:${identity}:${crypto.randomUUID()}`;
-  const pointerKey = `tinyfold:draft-pointer:${identity}`;
-  let previousKey: string | null = null;
-  try {
-    previousKey = sessionStorage.getItem(pointerKey);
-  } catch {
-    /* Local storage may still preserve this page's draft. */
-  }
-  return {
-    read: () => {
-      const value = localStorage.getItem(key) ?? (previousKey ? localStorage.getItem(previousKey) : null);
-      if (value !== null) {
-        // Copy before replacing the pointer, including drafts that cannot be rendered.
-        try {
-          localStorage.setItem(key, value);
-          sessionStorage.setItem(pointerKey, key);
-        } catch {
-          /* Keep the predecessor pointer if storage is full. */
-        }
-      }
-      return value;
-    },
-    write: (value: string) => {
-      localStorage.setItem(key, value);
-      sessionStorage.setItem(pointerKey, key);
-    },
-    remove: () => {
-      localStorage.removeItem(key);
-      sessionStorage.removeItem(pointerKey);
-    },
-  };
-}
 
 async function send(input: SaveInput) {
   if (new TextEncoder().encode(JSON.stringify(input.content)).length > MAX_DOCUMENT_BYTES)

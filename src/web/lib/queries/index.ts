@@ -7,5 +7,6 @@ export { invalidateNavigation, useProjectNavigation } from './navigation';
 export { type ProjectOverview, useProjectOverview } from './overview';
 export { projectsQuery, useHasActiveProject, useProject, useProjects } from './projects';
 export { type SearchInput, type SearchResult, useSearch } from './search';
+export { type TaskWithText, taskQuery, useTask } from './task';
 export { cachedTasks, type TaskList, type TaskListOptions, tasksKey, useTasks } from './tasks';
 export { type TrashItem, trashQuery, useTrash } from './trash';

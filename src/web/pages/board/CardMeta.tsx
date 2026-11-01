@@ -38,20 +38,28 @@ export function CardMeta({
   task,
   late,
   labels,
+  unsaved = false,
 }: {
   id: string;
   task: Task;
   late: boolean;
   labels: ReadonlyMap<string, LabelSummary>;
+  unsaved?: boolean;
 }) {
   const chips = task.labelIds.flatMap((labelId) => labels.get(labelId) ?? []);
   const shown = chips.slice(0, SHOWN_LABELS);
   const more = chips.slice(SHOWN_LABELS);
   const progress = task.checklist;
   // An empty line keeps the title's description pointing somewhere.
-  if (!task.dueOn && !progress && !chips.length) return <span id={id} hidden />;
+  if (!task.dueOn && !progress && !chips.length)
+    return (
+      <span id={id} hidden>
+        {unsaved && 'Não salvo'}
+      </span>
+    );
   return (
     <div id={id} className="card-meta">
+      {unsaved && <span className="sr-only">Não salvo</span>}
       {task.dueOn &&
         (late ? (
           <span className="card-meta__late" title={`Atrasada desde ${shortDate(task.dueOn)}`}>

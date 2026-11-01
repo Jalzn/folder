@@ -151,7 +151,11 @@ button.task-drawer__state {
   gap: 4px;
 }
 
-/* The body scrolls on its own: the properties, and later the description beside them. */
+/*
+ * The body scrolls on its own, one container for both columns: the description (up to 640 px), a 1 px rule
+ * with 24 px on each side, and the properties (300 px). Below 1200 px of drawer the properties become a strip
+ * of two columns above the description, and the rule goes (docs/interface/refino.md, critique 17).
+ */
 .task-drawer__body {
   flex: 1;
   min-height: 0;
@@ -160,7 +164,67 @@ button.task-drawer__state {
   flex-direction: column;
   gap: 12px;
   padding: 4px 32px 28px;
+  container-type: inline-size;
 }
+.task-drawer__banners:empty {
+  display: none;
+}
+.task-drawer__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 665px) 300px;
+  column-gap: 24px;
+  align-items: start;
+}
+/* The text starts under the title, which leaves BlockNote's side menu room inside the drawer. */
+.task-drawer__text {
+  min-width: 0;
+  min-height: 100%;
+  padding: 0 24px 0 30px;
+  border-right: 1px solid var(--line);
+}
+@container (max-width: 1199px) {
+  .task-drawer__columns {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 16px;
+  }
+  .task-drawer__columns > .task-drawer__props {
+    order: -1;
+    width: 100%;
+  }
+  .task-drawer__columns .task-props {
+    grid-template-columns: 88px minmax(0, 1fr) 88px minmax(0, 1fr);
+  }
+  .task-drawer__text {
+    padding-right: 0;
+    border-right: 0;
+  }
+  .task-drawer__columns > .task-drawer__props {
+    padding-left: 30px;
+  }
+}
+@container (max-width: 640px) {
+  .task-drawer__columns .task-props {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+}
+
+/* The description: the shared editor in 14/22, check items of 28 px, done ones in --text-3 and struck. */
+.task-description .bn-editor {
+  font: var(--weight-ui) 14px / 22px var(--font-sans);
+}
+.task-description [data-content-type="checkListItem"] {
+  min-height: 28px;
+}
+.task-description [data-content-type="checkListItem"][data-checked="true"] .bn-inline-content {
+  color: var(--text-3);
+  text-decoration: line-through;
+  text-decoration-color: var(--line-strong);
+}
+.task-description .bn-block-outer:only-child .bn-inline-content[data-is-empty-and-focused]::before,
+.task-description .bn-block-outer:only-child .bn-inline-content:empty::before {
+  color: var(--text-3);
+}
+
 .task-drawer__intro {
   display: flex;
   flex-direction: column;
@@ -251,7 +315,210 @@ button.task-drawer__state {
   opacity: 1;
 }
 
+/* The due date: late with the clock in --late, or "Sem prazo" in --text-3. */
+.task-prop[data-late] {
+  color: var(--late);
+  font-weight: 500;
+}
+.task-prop[data-empty] {
+  color: var(--text-3);
+}
+.task-drawer__title--static {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+
+/* React Aria's calendar in its popover, pt-BR, from Sunday; "Hoje" and "Sem prazo" below. */
+.due-popover .popover__dialog {
+  padding: 8px;
+}
+.due-picker__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+.due-calendar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.due-calendar__month {
+  margin: 0;
+  font: 500 13px / 20px var(--font-sans);
+  color: var(--text);
+}
+.due-calendar__month::first-letter {
+  text-transform: uppercase;
+}
+.due-calendar__nav {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--icon);
+  cursor: pointer;
+}
+.due-calendar__nav[data-hovered] {
+  background: var(--hover-raised);
+  color: var(--text);
+}
+.due-calendar__grid {
+  border-collapse: collapse;
+}
+.due-calendar__grid th {
+  width: 32px;
+  height: 24px;
+  font: var(--weight-ui) 11px / 16px var(--font-sans);
+  color: var(--text-3);
+  text-transform: lowercase;
+}
+.due-calendar__cell {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  font: var(--weight-ui) 13px / 20px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+}
+.due-calendar__cell[data-outside-month] {
+  display: none;
+}
+.due-calendar__cell[data-hovered] {
+  background: var(--hover-raised);
+}
+.due-calendar__cell[data-today] {
+  color: var(--accent);
+  font-weight: 600;
+}
+.due-calendar__cell[data-selected] {
+  background: var(--accent-solid);
+  color: var(--on-accent);
+}
+.due-calendar__cell[data-focus-visible] {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* The labels: editable chips, whose "×" shows on hover or focus, then "+". */
+.task-labels {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+.task-labels .label-chip {
+  padding-right: 2px;
+  transition: border-color var(--duration-hover) var(--ease-out);
+}
+.task-labels .label-chip:hover {
+  border-color: var(--line-strong);
+}
+.label-chip__remove {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-left: -1px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--icon);
+  opacity: 0;
+  cursor: pointer;
+}
+.label-chip:hover .label-chip__remove,
+.label-chip__remove:focus-visible {
+  opacity: 1;
+}
+.label-chip__remove:hover {
+  background: var(--hover-raised);
+  color: var(--text);
+}
+.label-chip__remove:focus-visible {
+  outline: 2px solid var(--accent);
+}
+.label-picker {
+  width: 260px;
+}
+.label-picker__filter {
+  padding: 6px 6px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.label-picker__input {
+  width: 100%;
+  height: 28px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-ui);
+  outline: none;
+}
+.label-picker__list {
+  max-height: 280px;
+  overflow: auto;
+}
+.label-picker__color {
+  width: 8px;
+  height: 8px;
+  margin: 0 4px;
+  border-radius: 2px;
+  background: var(--label-color);
+}
+.label-picker__empty {
+  margin: 0;
+  padding: 8px 10px;
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+
+/* The checklist: a 64×4 bar, --accent over --line-strong, complete in --ok, and "2 de 5". */
+.task-checklist {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+}
+.task-checklist__bar {
+  width: 64px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+.task-checklist__fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--duration-hover) var(--ease-out);
+}
+.task-checklist[data-full] .task-checklist__fill {
+  background: var(--ok);
+}
+
 /* Where the task came from, after a hairline. */
+.task-drawer__props .task-source .task-source__excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  font: var(--weight-ui) 12px / 18px var(--font-sans);
+  color: var(--text-2);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
 .task-drawer__props .task-source {
   margin-top: 8px;
   padding: 10px 0 0;
