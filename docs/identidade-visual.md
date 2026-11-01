@@ -1,6 +1,6 @@
 # Tinyfold — Identidade visual
 
-**Direção aprovada (2026-10-31):** Sumário. Limpa, moderna e tipográfica, no gênero de ferramentas como o Linear, com tema claro e escuro gerados pelo mesmo sistema. Ainda não implementada.
+**Direção aprovada (2026-10-31):** Sumário. Limpa, moderna e tipográfica, no gênero de ferramentas como o Linear, com tema claro e escuro gerados pelo mesmo sistema. Implementada na [etapa 08](etapas/08-fundacao.md): tokens, temas, fontes, componentes base, lateral, seletor, ⌘K, Visão geral, Índice, Lixeira e Perfil. O quadro, a gaveta da tarefa e as páginas de documento e desenho receberam só um restyle por tokens; o desenho completo deles chega com as etapas 10 e 11.
 
 [Protótipo Sumário](https://claude.ai/artifact/1DfmsQAVUE7Tek6pYCkcvW). A especificação completa está em [interface/visual.md](interface/visual.md); a organização das telas, em [interface](interface/README.md).
 
@@ -36,11 +36,11 @@ A tabela completa, com estados, faixas, etiquetas e marcas de projeto, está em 
   - Raios de 4 a 12 px conforme o elemento.
   - Sem degradês.
 - **Ícones e movimento:** ícones Lucide com traço de 1,5 px; movimento de 100 a 200 ms, reduzido a esmaecimentos quando o sistema pede menos movimento.
-- **Fontes:** no aplicativo, servidas pela própria origem, como hoje, com o arquivo completo da Inter para ter `cv05`, `ss03` e algarismos tabulares.
+- **Fontes:** servidas pela própria origem, com o arquivo completo da Inter (`inter-ui`) para ter `cv05`, `ss03`, `case` e algarismos tabulares, e JetBrains Mono da Fontsource.
 
 ## Histórico
 
-Em 2026-10-29 foi aprovada a direção escura em grafite, cinzas frios e azul discreto: [referência Documento primeiro](https://claude.ai/artifact/4XiM1V8GwWfJTEB6MWKyi6). Ela continua sendo a interface implementada. A direção Sumário a substitui:
+Em 2026-10-29 foi aprovada a direção escura em grafite, cinzas frios e azul discreto: [referência Documento primeiro](https://claude.ai/artifact/4XiM1V8GwWfJTEB6MWKyi6). Ela foi a interface implementada até a etapa 07. A direção Sumário a substituiu na etapa 08:
 
 | Uso | Antes | Sumário (escuro) |
 | --- | --- | --- |

@@ -60,7 +60,7 @@ Projetos, documentos, desenhos, tarefas e seus vínculos no mesmo módulo. A int
 
 ## Prévias de desenho
 
-O navegador gera uma prévia PNG depois de salvar e a envia por `workspace.saveCanvasPreview({ id, version, png })`, com `png` como arquivo. A gravação não usa o registro de pedidos (`writeWithoutRequestRecord`) e não muda a versão, as datas nem a revisão do quadro: repetir o envio da mesma versão é seguro.
+O navegador gera uma prévia PNG depois de salvar e a envia por `workspace.saveCanvasPreview({ id, version, sceneFingerprint, png })`, com `png` como arquivo. A gravação não usa o registro de pedidos (`writeWithoutRequestRecord`) e não muda a versão, as datas nem a revisão do quadro: repetir o envio da mesma versão é seguro.
 
 - `readPngInfo` só aceita um PNG bem formado e só com os blocos que o codificador do navegador escreve: CRC de cada bloco, IHDR válido, `PLTE` e blocos auxiliares (`tRNS`, `sRGB`, `gAMA`, `cHRM`, `pHYs`) antes dos dados, blocos `IDAT` seguidos e IEND no fim, sem bytes depois. A paleta tem entradas inteiras, de 1 até as que a profundidade de bits indexa (no máximo 256). Os dados de imagem precisam descomprimir exatamente no tamanho que o IHDR pede (`infra/png-image-data.ts`, com limite de saída), e cada linha de cada passada começa com um dos cinco tipos de filtro. A prévia tem até 1.568 px no lado maior e 256 KiB.
 - Versão futura, PNG inválido ou acima dos limites: `VALIDATION`. Desenho inexistente ou na lixeira: `NOT_FOUND`.

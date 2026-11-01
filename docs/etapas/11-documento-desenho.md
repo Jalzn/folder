@@ -46,7 +46,7 @@ Levar ao documento as ligações do produto: tarefas e desenhos incorporados, vi
 ## Organização do código
 
 - **`src/web/pages/DocumentEditor.tsx`** (845 linhas) vira `pages/document/`:
-  - `DocumentPage.tsx`, `DocumentHeader.tsx`, `DocumentTitle.tsx`, `SaveStatus.tsx` e `DocumentBanners.tsx`;
+  - `DocumentPage.tsx`, `DocumentHeader.tsx`, `DocumentTitle.tsx` e `SaveStatus.tsx`; as faixas já são `SaveBanners`, em `components/editor/`, compartilhadas com o desenho desde a etapa 08;
   - `DocumentMenu.tsx`, `SelectionTaskButton.tsx`, `use-document-autosave.ts` e `use-markdown-io.ts`.
 - **Editor:** `src/web/editor/` (criado na etapa 10) ganha `blocks/TaskEmbed.tsx`, `blocks/DrawingEmbed.tsx`, `blocks/UnavailableEmbed.tsx`, `origin-markers.ts` e `insert-menu.ts`.
 - **`src/web/pages/CanvasEditor.tsx`** (737 linhas) vira `pages/drawing/`:

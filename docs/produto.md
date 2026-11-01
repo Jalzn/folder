@@ -1,6 +1,6 @@
 # Tinyfold — Produto
 
-**Estado:** primeira versão implementada localmente. Ver [validação](validacao.md) para evidências e limites. A definição foi revisada em 2026-10-30 e 2026-10-31; itens marcados como **Planejado** ainda não foram implementados.
+**Estado:** implementado localmente até a [etapa 08](etapas/08-fundacao.md), que pôs tudo dentro de um projeto, com a lateral e o visual Sumário. Ver [validação](validacao.md) para evidências e limites. A definição foi revisada em 2026-10-30 e 2026-10-31; itens marcados como **Planejado** ainda não foram implementados.
 
 Espaço pessoal e minimalista para conduzir projetos, de software ou não. Reúne escrita, desenho e tarefas, que antes ficavam espalhados entre Notion, Excalidraw e Trello, em um só lugar e sem o excesso dessas ferramentas. O aplicativo funciona no navegador e guarda os dados em um servidor acessível de vários dispositivos.
 
@@ -39,25 +39,23 @@ Uma tarefa também pode nascer diretamente no Kanban. Um checklist no documento 
 
 ## Navegação
 
-- Início: ações de escrever e desenhar, com documentos e desenhos recentes.
-- Documentos: lista e busca, incluindo documentos sem projeto.
-- Desenhos: lista e busca por título e texto, incluindo desenhos sem projeto.
-- Projetos: cada projeto tem as abas Documentos, Desenhos e Kanban.
-- Kanban: quadro geral, incluindo tarefas sem projeto, com filtro por projeto.
-- Perfil: senha, sessões e sair.
+Implementada na etapa 08, conforme a [interface](interface/README.md):
 
-**Planejado:** a navegação atual dá lugar à lateral do projeto, especificada em [interface](interface/README.md).
-
-- O aplicativo reabre no último projeto, no item e na posição onde você parou. Não há Início, caixa de entrada, quadro geral nem listas gerais de documentos e desenhos.
+- O aplicativo sempre está dentro de um projeto e reabre no último projeto, no item e na posição onde você parou. Não há Início, caixa de entrada, quadro geral nem listas gerais de documentos e desenhos. Sem projeto ativo, uma tela própria oferece criar um projeto ou desarquivar um.
 - Lateral do projeto:
-  - No topo, o seletor de projetos, com as tarefas atrasadas de cada um e os arquivados.
-  - Em seguida, Buscar, Visão geral, Quadro e os itens do projeto: fixados, pastas e itens soltos.
-  - No pé, a Lixeira e o menu Você, com Perfil, token e tema.
-  - A lateral recolhe numa faixa estreita.
-- Visão geral do projeto: o que pede atenção agora, os itens editados recentemente e as tarefas concluídas nos últimos 14 dias.
-- Índice do projeto com todos os itens, filtrável por tipo e por pasta.
-- A tarefa abre numa gaveta inferior não modal, que empurra o conteúdo e continua aberta durante a navegação.
+  - No topo, o seletor de projetos, com cor, ordem e os arquivados.
+  - Em seguida, Buscar, Visão geral, Quadro e as seções Documentos e Desenhos, com os fixados primeiro, até oito itens na ordem escolhida e "Ver todos".
+  - No pé, o menu Você, com Perfil, token e tema, e a Lixeira.
+  - A lateral recolhe numa faixa estreita e, em telas menores, abre sobre a página.
+- Visão geral do projeto: as tarefas em andamento e os itens editados recentemente.
+- Índice do projeto com todos os documentos e desenhos, filtrável por tipo e ordenável.
+- ⌘K busca em todos os projetos e reúne as ações do item aberto e os comandos. Atalhos de teclado cobrem a navegação.
 - Esc fecha apenas a camada aberta mais recente e nunca navega.
+
+**Planejado:**
+
+- Pastas na lateral e no Índice (etapa 09).
+- As tarefas atrasadas no seletor e no quadro, a gaveta inferior não modal da tarefa, que empurra o conteúdo e continua aberta durante a navegação, e as tarefas concluídas nos últimos 14 dias na Visão geral (etapa 10).
 
 Criar e editar tarefa são estados contextuais da interface. No celular, os fluxos essenciais de escrita, consulta e movimentação de tarefas precisam funcionar com toque e tela estreita.
 
@@ -65,7 +63,7 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 
 - Editor visual em blocos, atalhos Markdown e menu de inserção. Markdown é a sintaxe de digitação; o conteúdo estruturado é a fonte principal.
 - Título, parágrafos, títulos internos, listas, checklist, links, citações, código e equações LaTeX em linha ou em bloco.
-- Documento criado sem título recebe um nome provisório; projeto é opcional.
+- Documento criado sem título recebe um nome provisório e pertence ao projeto em que foi criado.
 - Salvamento automático com estados visíveis: salvando, salvo e falha ao salvar.
 - Rascunho recuperável após recarga, queda de rede ou sessão expirada.
 - Importação e exportação `.md` como formato de intercâmbio, com comportamento documentado para elementos específicos do aplicativo.
@@ -80,12 +78,12 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 
 ## Desenhos
 
-- Canvas Excalidraw em página própria, com título, projeto opcional, formas, setas, texto, quadros de agrupamento e traço livre.
+- Canvas Excalidraw em página própria dentro do projeto, com título, formas, setas, texto, quadros de agrupamento e traço livre.
 - Salvamento automático, rascunho recuperável e resolução de conflitos por versão, como nos documentos.
-- Busca por título e pelos textos do desenho, recentes, filtro de projeto e exclusão recuperável na lixeira.
+- Busca por título e pelos textos do desenho, lista no projeto e exclusão recuperável na lixeira.
 - Importação de `.excalidraw` cria outro desenho; exportação editável ou PNG usa o conteúdo atual, inclusive com salvamento pendente.
 - Seleção, cursor e zoom não criam versões de conteúdo. O histórico de desfazer permanece na sessão do editor.
-- Cópia de recuperação e importação de um desenho em projeto arquivado criam o novo conteúdo sem projeto, com aviso.
+- Cópia de recuperação e importação de um desenho em projeto arquivado criam o novo conteúdo no projeto ativo aberto por último, com aviso.
 - Imagens e conteúdo incorporado ficam para entregas futuras.
 
 ## Pastas
@@ -100,8 +98,11 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 
 ## Projetos e tarefas
 
-- Projeto: nome e agrupamento de documentos, desenhos e tarefas; arquivar preserva o conteúdo.
-- Tarefa: título obrigatório, estado e ordem no quadro. Projeto e origem documental opcionais.
+- Projeto: nome, cor e ordem no seletor, e agrupamento de documentos, desenhos e tarefas; arquivar preserva o conteúdo. Todo item pertence a um projeto; o que era avulso foi para o projeto Geral.
+- Fixados: até oito documentos e desenhos por projeto, no topo da lateral.
+- Mover um documento ou desenho de projeto, com desfazer; mover não conta como edição.
+- Lixeira por projeto, com restaurar, excluir de vez e esvaziar o que está na tela.
+- Tarefa: título obrigatório, projeto, estado e ordem no quadro. Origem documental opcional.
 - Estados iniciais fixos: A fazer, Em andamento e Concluído.
 - Contexto da criação preenche o projeto e a coluna quando existirem.
 - Mover entre colunas e reordenar; oferecer alternativa ao arrastar por menu/teclado.
@@ -120,7 +121,6 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 - Uma coluna é marcada como de conclusão; tarefas nela contam como concluídas. As colunas iniciais são A fazer, Em andamento e Concluído.
 - A coluna de conclusão mostra os últimos 14 dias; as tarefas anteriores ficam na página Concluídas do projeto.
 - Card compacto: título, prazo, etiquetas e progresso do checklist.
-- Lixeira por projeto, com restaurar e excluir de vez.
 
 Colunas diferentes por projeto ficam fora do escopo, para manter o modelo simples.
 
@@ -142,7 +142,6 @@ Servidor MCP somente leitura para o Claude Code consultar o espaço, por exemplo
 ## Em aberto
 
 - Versão de celular da nova interface: ainda não desenhada.
-- Projetos já existentes com itens sem projeto: definir para onde vão na migração.
 
 ## Limites atuais
 

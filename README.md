@@ -1,20 +1,30 @@
 # Tinyfold
 
-Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar. Interface escura em grafite, cinzas frios e azul discreto, com dados em SQLite no servidor e autenticação por senha.
+Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar, sempre dentro de um projeto. Interface Sumário, limpa e tipográfica, em tema claro e escuro, com dados em SQLite no servidor e autenticação por senha.
 
-**Estado:** primeira versão implementada e validada localmente. Hospedagem pública, domínio e destino externo dos backups ainda não estão configurados.
+**Estado:** implementado e validado localmente até a [etapa 08](docs/etapas/08-fundacao.md). Hospedagem pública, domínio e destino externo dos backups ainda não estão configurados.
 
 ## O que funciona
 
-- Documentos independentes de projeto, editor visual em blocos, atalhos Markdown e importação/exportação `.md`.
+- Tudo dentro de um projeto: o aplicativo reabre onde você parou, com a lateral do projeto (seletor, Buscar, Visão geral, Quadro, Documentos, Desenhos e fixados), a faixa recolhida e a lateral sobre a página em telas menores.
+- Projetos com cor e ordem, arquivamento e até oito itens fixados; mover documentos e desenhos entre projetos, com desfazer.
+- Visão geral, Índice do projeto e Lixeira por projeto, com restaurar, excluir de vez e esvaziar.
+- ⌘K para buscar em todos os projetos e rodar comandos, atalhos de teclado e Esc que fecha só a camada mais recente.
+- Tema Sistema, Claro ou Escuro, sem piscar ao carregar.
+- Documentos com editor visual em blocos, atalhos Markdown e importação/exportação `.md`.
 - Equações LaTeX em linha e em bloco, com prévia e preservação da fonte no Markdown.
 - Salvamento automático, recuperação de rascunhos e resolução explícita de conflitos entre dispositivos.
-- Desenhos com Excalidraw: formas, setas, texto, traço livre, projetos opcionais, busca e lixeira; importação/exportação `.excalidraw` e exportação PNG.
-- Projetos, recentes, busca pelo título e conteúdo, arquivamento e lixeira de documentos.
-- Kanban geral ou por projeto; criar, editar, mover, ordenar e concluir tarefas.
+- Desenhos com Excalidraw: formas, setas, texto e traço livre; importação/exportação `.excalidraw` e exportação PNG.
+- Kanban do projeto; criar, editar, mover, ordenar e concluir tarefas.
 - Criar tarefa a partir de um trecho e voltar ao documento de origem.
 - Perfil com troca de senha, gerenciamento de sessões e tokens pessoais para o Claude Code.
 - Acesso do Claude Code por MCP somente leitura: lista projetos, busca, lê documentos em Markdown, desenhos como imagem e estrutura, e tarefas. A lixeira fica de fora.
+
+| Visão geral | Documento | Celular |
+| --- | --- | --- |
+| ![Visão geral no tema claro](docs/screens/visao-geral-claro-1440.png) | ![Documento no tema escuro](docs/screens/documento-escuro-1440.png) | ![Documento no celular](docs/screens/documento-celular.png) |
+
+Mais capturas, nos dois temas e em três larguras, estão na [validação](docs/validacao.md#validação-no-chrome-real-contra-o-protótipo).
 
 ## Executar
 
@@ -49,12 +59,12 @@ Se a porta padrão dos testes estiver ocupada, use `E2E_PORT=5172 mise exec -- p
 
 | Documento | Conteúdo |
 | --- | --- |
-| [Produto](docs/produto.md) | Experiência e limites da primeira versão |
-| [Arquitetura](docs/arquitetura.md) | Módulos, autenticação, SQLite, salvamento e MCP |
+| [Produto](docs/produto.md) | Experiência, navegação e limites |
+| [Arquitetura](docs/arquitetura.md) | Módulos, rotas e shell, tema, autenticação, SQLite, salvamento e MCP |
 | [Equações](docs/equacoes.md) | Inserir, editar e importar/exportar fórmulas LaTeX |
 | [Stack](docs/stack.md) | Tecnologias e adaptações do Orbis |
 | [Identidade visual](docs/identidade-visual.md) | Direção escolhida e referência do Claude |
-| [Interface](docs/interface/README.md) | Próxima interface aprovada: especificações e protótipos |
+| [Interface](docs/interface/README.md) | Interface Sumário: especificações, protótipo e o que falta implementar |
 | [Operação](docs/implantacao.md) | Docker, configuração, senha, backups e Claude Code |
 | [Validação](docs/validacao.md) | Testes executados, Chrome e revisões adversariais |
 | [Etapas](docs/etapas/README.md) | Estado das entregas |

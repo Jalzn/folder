@@ -1,10 +1,45 @@
 # Etapa 08 — Fundação e lateral
 
-**Estado:** planejada, detalhada em 2026-10-31. Nada desta página foi implementado ainda; as verificações listadas são planejadas.
+**Estado:** concluída localmente em 2026-10-31, nas entregas B1 a B5 (backend) e W1 a W9 (web). Seguiram-se três revisões adversariais (dados, segurança e qualidade, interação), duas rodadas de correção com reteste e a validação no Chrome real contra o protótipo. As verificações executadas estão em [validação](../validacao.md#etapa-08-fundação-e-lateral).
+
+As seções a partir de "Referências e precedência" são o plano aprovado. O que mudou na implementação está em [Resultado](#resultado) e [Desvios do plano](#desvios-do-plano); a descrição do que existe está em [arquitetura](../arquitetura.md#rotas-e-shell) e no [README do workspace](../../src/workspace/README.md).
 
 O Tinyfold deixa a navegação atual (Início, listas gerais e quadro geral) e passa a viver sempre dentro de um projeto, com a lateral do projeto e o sistema visual Sumário em tema claro e escuro. A única tela fora de um projeto é o estado vazio, quando não há projeto ativo. Todo item passa a pertencer a um projeto: o que hoje está solto vai para o projeto Geral. A Lixeira passa a ser de cada projeto e ganha a exclusão definitiva.
 
 As páginas de documento, desenho e quadro continuam com o funcionamento atual. Elas passam a viver dentro do shell novo, com os tokens novos e só os ajustes que o shell exige. O restyle completo delas fica para as etapas 10 e 11.
+
+## Resultado
+
+- **Sempre num projeto.** As telas vivem em `/projetos/$id`, com Visão geral, Quadro, Índice, Lixeira, documentos e desenhos. `/` reabre o último lugar do último projeto, na mesma rolagem, e os endereços antigos redirecionam. Sem projeto ativo, `/projetos` mostra "Comece um projeto" ou "Nenhum projeto ativo".
+- **Projeto obrigatório.** A migração 005 levou os itens soltos ao projeto Geral sem mudar versões, e gatilhos recusam projeto nulo. Projetos ganharam cor, ordem no seletor e até 8 fixados. `moveItem` muda um documento ou desenho de projeto sem conteúdo e sem contar como edição; os salvamentos não carregam mais o projeto.
+- **Lateral variante A, seletor, Buscar, ⌘K e menu Você,** com a faixa recolhida (⌘\\), a lateral sobre a página entre 720 e 1.100 px e a barra única abaixo de 720 px. Atalhos da tabela, F6 entre regiões e o Esc fechando só a camada mais recente, sem navegar.
+- **Lixeira por projeto,** com restaurar, excluir de vez e esvaziar exatamente o que está na tela. A listagem e o esvaziamento param nos 1.000 mais recentes; a contagem é sempre exata.
+- **Sistema visual Sumário** gerado de uma fonte só (`src/web/styles/tokens/`), com contraste verificado no `check`, Inter completa e JetBrains Mono servidas pela própria origem, tema Sistema, Claro ou Escuro sem piscar, editores inclusive.
+- **Documento, desenho, quadro e Perfil** no shell novo, com as ações de item compartilhadas (cópia, lixeira, mover, fixar) entre os dois editores.
+- **MCP** sem `withoutProject`, com cor, posição, fixados e origem excluída de vez.
+
+## Desvios do plano
+
+**Dados e contratos**
+
+- B1 dividiu as operações em `infra/operations/`, e não em `infra/rpc/`, porque o serviço, que não é RPC, também é composto delas.
+- Na rodada de correção, as respostas de escrita de documentos, desenhos e tarefas ficaram compactas (sem título, conteúdo nem trecho), para que excluir de vez não deixe o texto no registro de pedidos (`816f323`). Registros gravados antes disso guardam o texto por até 30 dias; ver [operação](../implantacao.md#atualizar-para-a-etapa-08).
+- `moveItem` (`c2e356d`), que o plano não previa, substitui mover pelo salvamento: não leva conteúdo, não muda `updatedAt` e desafixa. A web move só por ele, e `saveDocument`/`saveCanvas` perderam `projectId` (`713bc31`).
+- `listTrash` e `emptyTrash` compartilham um limite de 1.000, e `moveTask` renumera só a coluna do projeto da tarefa; uma tarefa que muda de projeto vai ao fim da coluna.
+- `seed:sample` só grava num arquivo novo ou banco vazio dentro da pasta temporária do sistema. Por isso a validação usa um banco para o estado vazio e outro, novo, para o exemplo, no lugar da sequência de um banco só da seção de validação.
+- A prévia de desenho é enviada com a impressão digital da cena, e uma prévia que ainda estava sendo gerada durante um movimento continua valendo.
+
+**Web**
+
+- `compat.css` saiu em W7 (`8893a16`), e não na etapa 11: nenhuma página lia mais as variáveis antigas. O quadro, o diálogo da tarefa e os editores ganharam um restyle por tokens (colunas, cards, faixas); o restyle completo continua nas etapas 10 e 11.
+- Os tokens de espaço (`--space-*`) e as classes `.t-*` sem uso saíram na rodada de qualidade; ficou `.t-title`. As alturas usam os tokens `--height-*`, com `--height-palette-result` (36 px, resultados do ⌘K) acrescentado.
+- Visão geral, Índice e Lixeira nasceram numa primeira forma em W4, porque tirar `Library.tsx` deixaria os endereços vazios. `PageFrame` chegou em W6, e não em W7.
+- O Perfil se chama "Perfil e token", como no protótipo. Confirmações (mover para a lixeira, revogar token, carregar a versão salva) são `AlertDialog`, e os dois editores usam os mesmos diálogos, com o mesmo texto.
+- Toasts: um por vez, e o mais novo substitui o da tela (sem fila), para que o Desfazer da última ação esteja sempre à mão. Ficam em regiões vivas montadas uma vez, legíveis sob um modal, e no desenho sobem acima dos controles do Excalidraw.
+- Abaixo de 720 px, as ações da página entram na barra do topo (portal), em vez de uma segunda barra. A tabela do Índice não tem como desligar o typeahead do React Aria; as letras são reenviadas à página, e os atalhos ganham.
+- O ⌘K mostra o trecho de um item só quando há texto digitado; "Editados recentemente" vem sem trecho, como no protótipo. O Trecho do Índice usa a regra do domínio (`excerptFromStart`); o salto de títulos (`documentLead`) precisaria dos blocos, que os resumos não trazem.
+- Contagens usam o agrupamento pt-BR ("1.000") em toda a interface.
+- `theme.js` também define `color-scheme` na raiz, para que o primeiro quadro já tenha o tema mesmo antes do CSS, como no `pnpm dev`.
 
 ## Referências e precedência
 
@@ -113,7 +148,7 @@ Quando duas fontes divergem, vale a mais recente, conforme [interface/README.md]
 
 O bloco de mídia só vale sem JavaScript. Com JavaScript, `theme.js` sempre define `data-theme`.
 
-**Camada de compatibilidade:** as páginas que ficam para as etapas 10 e 11 usam variáveis antigas. `src/web/styles/compat.css` as aponta para os tokens novos, e assim tudo troca de tema desde a primeira entrega:
+**Camada de compatibilidade:** as páginas que ficam para as etapas 10 e 11 usam variáveis antigas. `src/web/styles/compat.css` as aponta para os tokens novos, e assim tudo troca de tema desde a primeira entrega. (Implementado assim em W1; o arquivo saiu em W7, quando nenhuma página lia mais essas variáveis. Ver [Desvios](#desvios-do-plano).)
 
 | Antiga | Nova |
 | --- | --- |
@@ -165,6 +200,8 @@ O bloco de mídia só vale sem JavaScript. Com JavaScript, `theme.js` sempre def
 
 - `.t-title` (30/36 600), `.t-task-title`, `.t-h1`, `.t-h2`, `.t-h3`, `.t-body` (15/24) e `.t-desc`;
 - `.t-ui` (13/20, peso `--weight-ui`), `.t-card`, `.t-label` (12/16 500, `--text-3`), `.t-meta` (12/16 com `tnum`), `.t-micro` (11/14 com `tnum` e `case`) e `.t-mono`.
+
+Na implementação, os componentes aplicam os papéis pelos tokens `--type-<papel>` e `--tracking-<papel>`. Das classes, só `.t-title` tinha uso e ficou; as demais saíram na rodada de qualidade.
 
 O espaçamento entre letras segue a tabela. Não há peso 700.
 
@@ -772,7 +809,7 @@ src/web/shell/
 - As regras de telas que deixam de existir saem: Início, bibliotecas, abas do projeto, lateral antiga, cabeçalho móvel e busca antiga.
 - As primitivas são reescritas com os tokens em `ui/*.css`.
 - As regras de documento, quadro, diálogo da tarefa e Perfil vão para o CSS ao lado de cada página (`pages/document-editor.css`, `pages/board.css`, `components/task/task.css` e `pages/profile/profile.css`), mantendo os nomes de classe que essas páginas ainda usam.
-- Ficam `styles/base.css`, `styles/fonts.css`, `styles/compat.css` e o `tokens.css` gerado.
+- Ficam `styles/base.css`, `styles/fonts.css`, `styles/compat.css` e o `tokens.css` gerado. (`compat.css` saiu em W7; ficaram os outros três.)
 - Nenhum CSS novo vai para um arquivo global.
 
 ## Testes
@@ -900,22 +937,22 @@ O banco novo, antes do `seed:sample`, serve para conferir o estado "Comece um pr
 
 ## Critérios de pronto
 
-- [ ] `check`, `test:db`, `build` e `e2e` (desktop e Pixel 7) verdes depois de cada entrega.
-- [ ] Tokens gerados de uma fonte só, com contraste verificado no `check`. Tema Sistema, Claro ou Escuro persistido, sem piscar na carga, nos editores inclusive.
-- [ ] Inter completa (com `cv05`, `ss03`, `case` e `tnum`) e JetBrains Mono servidas pela própria origem, sem violações de CSP.
-- [ ] Toda tela fica dentro de um projeto, exceto o estado vazio, com as rotas novas. As URLs antigas redirecionam, e o aplicativo reabre no último item e na mesma rolagem.
-- [ ] Lateral variante A, seletor, Buscar, ⌘K, Visão geral, Índice, Lixeira e menu Você conforme as especificações.
-- [ ] Faixa recolhida (⌘\) e sobreposição em tela estreita funcionando.
-- [ ] Atalhos da tabela funcionando, e o Esc fechando só a camada mais recente, sem navegar.
-- [ ] Nenhum item sem projeto. A migração moveu os itens soltos para o Geral sem mudar versões, e o banco recusa projeto nulo.
-- [ ] Cor e ordem dos projetos e fixados com limite de 8.
-- [ ] Sem projeto ativo, o estado vazio oferece "Novo projeto" e "Desarquivar". Seletor, ⌘K, atalhos, início, cópias de recuperação e MCP se comportam como descrito.
-- [ ] Exclusão definitiva e esvaziar lixeira com as regras de origem e de rascunho local.
-- [ ] Documento, desenho, quadro e Perfil funcionam no shell novo, no tema escolhido.
-- [ ] `styles.css`, `Library.tsx`, `Canvases.tsx`, `shell.tsx` e `ui.tsx` substituídos pelos módulos previstos.
-- [ ] Saídas do MCP sem `withoutProject` e com origem excluída tratada.
-- [ ] Validação no Chrome real contra o protótipo registrada, com banco temporário e portas 3481 e 5281.
-- [ ] Documentação atualizada conforme a seção final.
+- [x] `check`, `test:db`, `build` e `e2e` (desktop e Pixel 7) verdes depois de cada entrega.
+- [x] Tokens gerados de uma fonte só, com contraste verificado no `check`. Tema Sistema, Claro ou Escuro persistido, sem piscar na carga, nos editores inclusive.
+- [x] Inter completa (com `cv05`, `ss03`, `case` e `tnum`) e JetBrains Mono servidas pela própria origem, sem violações de CSP.
+- [x] Toda tela fica dentro de um projeto, exceto o estado vazio, com as rotas novas. As URLs antigas redirecionam, e o aplicativo reabre no último item e na mesma rolagem.
+- [x] Lateral variante A, seletor, Buscar, ⌘K, Visão geral, Índice, Lixeira e menu Você conforme as especificações.
+- [x] Faixa recolhida (⌘\) e sobreposição em tela estreita funcionando.
+- [x] Atalhos da tabela funcionando, e o Esc fechando só a camada mais recente, sem navegar.
+- [x] Nenhum item sem projeto. A migração moveu os itens soltos para o Geral sem mudar versões, e o banco recusa projeto nulo.
+- [x] Cor e ordem dos projetos e fixados com limite de 8.
+- [x] Sem projeto ativo, o estado vazio oferece "Novo projeto" e "Desarquivar". Seletor, ⌘K, atalhos, início, cópias de recuperação e MCP se comportam como descrito.
+- [x] Exclusão definitiva e esvaziar lixeira com as regras de origem e de rascunho local.
+- [x] Documento, desenho, quadro e Perfil funcionam no shell novo, no tema escolhido.
+- [x] `styles.css`, `Library.tsx`, `Canvases.tsx`, `shell.tsx` e `ui.tsx` substituídos pelos módulos previstos.
+- [x] Saídas do MCP sem `withoutProject` e com origem excluída tratada.
+- [x] Validação no Chrome real contra o protótipo registrada, com banco temporário e portas 3481 e 5281.
+- [x] Documentação atualizada conforme a seção final.
 
 ## Divisão do trabalho
 
@@ -947,7 +984,7 @@ Ao terminar B4, o backend entrega ao web os contratos e exemplos reais de respos
 
 | Ordem | Entrega (commit) |
 | --- | --- |
-| W1 | `feat(web): add Sumário tokens, fonts and theme`. Pipeline de tokens, `compat.css`, fontes, `theme.js`, editores no tema. As páginas atuais já trocam de tema |
+| W1 | `feat(web): add Sumário tokens, fonts and theme`. Pipeline de tokens, `compat.css` (removido em W7), fontes, `theme.js`, editores no tema. As páginas atuais já trocam de tema |
 | W2 | `refactor(web): split ui into base components`. `ui/`, `lib/use-action.ts` e `lib/use-request.ts`, toasts novos, sem mudança de fluxo |
 | W3 | `feat(web): add project routes and redirects`. `router/`, `ItemRoute`, `NotFoundPage`, última localização, ajudantes de E2E e specs atualizadas |
 | W4 | `feat(web): add project sidebar, switcher and Você menu`. `shell/` completo, faixa, sobreposição, barra estreita, diálogo e menu de projeto, fixados, registro de salvamento. `Library.tsx` e `Canvases.tsx` saem |

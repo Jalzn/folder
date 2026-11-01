@@ -12,7 +12,7 @@ src/
 ├── auth/          conta pessoal, senha, sessões e tokens de acesso
 ├── workspace/     projetos, documentos, desenhos, tarefas, vínculos e leitura por agentes
 ├── server/        Hono, oRPC, MCP, composição, configuração e comandos
-└── web/           React: navegação, editor, desenhos, projetos, Kanban e Perfil
+└── web/           React: shell do projeto (lateral, ⌘K e teclado), páginas, editores, quadro e Perfil
 ```
 
 Cada pasta é um pacote `@tinyfold/<nome>`. Auth e workspace seguem domínio, aplicação e infraestrutura. O domínio é puro; casos de uso dependem de portas; a infraestrutura implementa SQL e transporte. O servidor compõe os módulos e a web importa tipos e regras puras. Dependency-cruiser verifica os limites:
@@ -56,17 +56,28 @@ A implantação prevê uma instância e um volume local ao processo. Não há r�
 | `auth_owner` | Conta única, hash de senha e identidade da instalação |
 | `auth_sessions` | Hash do token, aparelho e validade |
 | `auth_access_tokens` | Nome, SHA-256 e prefixo do token pessoal, escopo `read`, criação e último uso |
-| `workspace_projects` | Nome, versão, datas e arquivamento |
-| `workspace_documents` | Projeto opcional, título, JSON, texto de busca, formato, versão e exclusão lógica |
-| `workspace_canvases` | Projeto opcional, título, cena vetorial JSON, texto de busca, formato, versão e exclusão lógica |
+| `workspace_projects` | Nome, cor (`color`), posição no seletor (`position`, nula nos arquivados), versão, datas e arquivamento |
+| `workspace_documents` | Projeto obrigatório, título, JSON, texto de busca, formato, versão, fixado (`pinned_at`) e exclusão lógica |
+| `workspace_canvases` | Projeto obrigatório, título, cena vetorial JSON, texto de busca, formato, versão, fixado (`pinned_at`) e exclusão lógica |
 | `workspace_canvas_previews` | Uma prévia PNG por desenho: versão e impressão digital da cena, largura, altura e bytes; apagada com o desenho |
-| `workspace_tasks` | Projeto opcional, título, estado, posição, versão e exclusão lógica |
-| `workspace_task_sources` | Uma origem por tarefa: documento, bloco opcional e trecho capturado |
+| `workspace_tasks` | Projeto obrigatório, título, estado, posição na coluna do projeto, versão e exclusão lógica |
+| `workspace_task_sources` | Uma origem por tarefa: documento (nulo depois de excluído de vez), título guardado do documento, bloco opcional e trecho capturado |
 | `workspace_state` | Revisão do quadro para validar movimentos concorrentes |
 | `core_mutations` | ID do pedido, operação, fingerprint, resposta compacta e data |
 | `core_schema_migrations` | Migrações aplicadas e checksums |
 
-As relações têm chaves estrangeiras. A lixeira preserva documentos e vínculos; tarefas continuam disponíveis mesmo com a origem excluída. Trechos removidos ou modificados apresentam estado de origem indisponível e o contexto capturado permanece.
+As relações têm chaves estrangeiras, e gatilhos recusam `project_id` nulo em documentos, desenhos e tarefas. A lixeira preserva documentos e vínculos; tarefas continuam disponíveis mesmo com a origem excluída, e excluir o documento de vez deixa na origem o título que ele tinha. Trechos removidos ou modificados apresentam estado de origem indisponível e o contexto capturado permanece.
+
+## Projetos, navegação e lixeira
+
+Todo documento, desenho e tarefa pertence a um projeto ativo na criação. A migração `005_projects_required.sql` levou os itens soltos, inclusive os da lixeira, ao projeto Geral (ID fixo, criado só quando havia itens soltos), sem mudar versões nem datas. As regras completas estão no [README do workspace](../src/workspace/README.md).
+
+- **Projetos:** cor de quatro chaves e ordem manual no seletor (`moveProject`), sem mudar versão. Qualquer projeto pode ser arquivado, inclusive o último ativo; sem projeto ativo, a interface mostra o estado vazio e o MCP devolve `list_projects` vazio.
+- **Fixados:** até 8 documentos e desenhos por projeto, contados juntos. `pinItem` e `unpinItem` não passam pelo registro de pedidos nem mudam versão ou data, então não conflitam com o autosave de uma página aberta.
+- **Mover de projeto:** só por `moveItem`, que não leva conteúdo, não conta como edição (`updatedAt` fica) e desafixa. A versão sobe, para que um editor com a anterior saiba da mudança. `saveDocument` e `saveCanvas` não têm `projectId`.
+- **Consultas da interface:** `projectNavigation` (seções da lateral com fixados, tarefas abertas e itens na lixeira), `projectOverview` (Agora e Editados recentemente, com o trecho cortado pelo domínio) e `search`, o mesmo caso de uso das ferramentas MCP, numa porta `NavigationReader` com SQL em `infra/navigation/`.
+- **Lixeira por projeto:** `listTrash` traz até 1.000 itens, do excluído mais recentemente; a contagem da lateral e da Visão geral é sempre exata. Excluir de vez (`purgeDocument`, `purgeCanvas`, `purgeTask`) só vale para item na lixeira, e `emptyTrash` recebe exatamente os itens mostrados (até 1.000) e responde `{ purged, skipped }`.
+- **Respostas de escrita:** de documentos, desenhos e tarefas são compactas, sem título, conteúdo nem trecho, para que excluir de vez não deixe o texto no registro de pedidos.
 
 ## Salvamento e múltiplos dispositivos
 
@@ -78,10 +89,35 @@ As relações têm chaves estrangeiras. A lixeira preserva documentos e vínculo
 6. A resposta contém metadados compactos, sem duplicar o documento no histórico de pedidos. A retenção é de 30 dias, com limpeza na subida e diariamente.
 7. Conflitos preservam a edição local e oferecem carregar a versão remota ou salvar como cópia. Não há mesclagem automática.
 8. Atualizações das consultas respeitam rascunhos pendentes. Salvamento também atualiza o estado das origens de tarefas vinculadas.
+9. Mover o item aberto de projeto passa pelo autosave: o que está pendente é salvo, `moveItem` vai com a versão salva, e o editor adota o projeto e a versão da resposta; o que foi digitado durante o movimento sai no próximo salvamento.
 
 A recuperação depende do armazenamento disponível no navegador; não equivale a um cliente offline completo. Rascunhos inválidos não são carregados no editor.
 
 O controlador de autosave aceita snapshots e validadores de rascunho específicos de documentos e desenhos. As chaves antigas dos documentos foram preservadas; desenhos usam outro namespace por instalação, recurso e escritor. Durante o desenho contínuo, as gravações locais são agrupadas em intervalos de até 100 ms, com persistência adicional ao soltar o ponteiro ou sair. O envio ao servidor aguarda 650 ms de pausa e mantém uma chamada em voo.
+
+## Rotas e shell
+
+A SPA usa TanStack Router com endereços em português, sempre dentro de um projeto:
+
+| Endereço | Tela |
+| --- | --- |
+| `/projetos/$id` | Visão geral |
+| `/projetos/$id/quadro` (`?tarefa=`) | Quadro, com o diálogo de uma tarefa |
+| `/projetos/$id/indice` (`?tipo=documentos\|desenhos`) | Índice de documentos e desenhos |
+| `/projetos/$id/lixeira` | Lixeira do projeto |
+| `/projetos/$id/documentos/$docId` (`?bloco=`) e `/projetos/$id/desenhos/$canvasId` | Editores |
+| `/projetos` | Estado vazio, sem projeto ativo |
+| `/perfil` e `/entrar` | Perfil e login |
+
+`/` reabre o último lugar do último projeto, com a rolagem, guardado no dispositivo por instalação; o caminho guardado só é usado se for um endereço interno conhecido. Os endereços anteriores (`/documentos/$id`, `/desenhos/$id`, listas e `/login`) redirecionam, e um item aberto no endereço de outro projeto passa ao endereço certo. Uma codificação quebrada ou um endereço desconhecido mostram uma página em português dentro do shell.
+
+O shell (`src/web/shell/`) tem a lateral variante A de 248 px a partir de 1.100 px, a faixa de 52 px (⌘\\) e a lateral sobre a página entre 720 e 1.100 px, e abaixo de 720 px uma barra de 44 px que recebe as ações da página. Buscar filtra na lateral; o ⌘K busca em todos os projetos e lista as ações do item aberto e os comandos. Atalhos de uma tecla não valem em campos editáveis, durante uma composição de IME nem no Excalidraw, e o Esc fecha só a camada mais recente, sem navegar. Toasts mostram um por vez, o mais novo no lugar do anterior, em regiões vivas que um modal não esconde.
+
+## Tema, tokens e fontes
+
+`src/web/styles/tokens/` (`palette.ts` e `scale.ts`) é a fonte das cores, sombras, tipos, raios, alturas e durações; `pnpm tokens` grava `tokens.css`, e o `check` falha quando o arquivo diverge, quando um valor difere de `docs/interface/prototipo/tokens.py` ou quando um par de contraste fica abaixo do exigido. O tema Sistema, Claro ou Escuro fica no dispositivo (`tinyfold:theme`); `public/theme.js` aplica `data-theme`, `color-scheme` e a cor da barra antes da primeira pintura, e `useTheme` mantém isso enquanto o aplicativo roda, inclusive entre abas. BlockNote e Excalidraw seguem o tema; a prévia guardada do desenho continua clara.
+
+Inter vem completa de `inter-ui` (com `cv05`, `ss03`, `case` e `tnum`) e JetBrains Mono da Fontsource, ambas emitidas pelo Vite na própria origem, com o arquivo regular da Inter pré-carregado.
 
 ## Editor e limites
 
@@ -99,7 +135,7 @@ Criar tarefa é uma ação explícita sobre a seleção. Um trecho de um único 
 
 ## Canvas e limites
 
-O Excalidraw 0.18.1 carrega sob demanda em `/desenhos/$canvasId`; a listagem fica em `/desenhos`. O domínio valida JSON vetorial sem depender do runtime do editor. A cena persiste elementos e cor de fundo; viewport, seleção, menus, arquivos de mídia e histórico de desfazer não fazem parte do conteúdo no servidor.
+O Excalidraw 0.18.1 carrega sob demanda em `/projetos/$id/desenhos/$canvasId`; os desenhos de um projeto aparecem na lateral e no Índice. O domínio valida JSON vetorial sem depender do runtime do editor. A cena persiste elementos e cor de fundo; viewport, seleção, menus, arquivos de mídia e histórico de desfazer não fazem parte do conteúdo no servidor.
 
 Cada cena admite até 1 MiB e 5.000 elementos; a recuperação local admite até 5 MiB e 20.000 elementos válidos. A cena gravada remove elementos excluídos sem referências, preservando os necessários aos vínculos ativos. O histórico nativo em memória mantém os elementos para desfazer ações. Texto de busca é derivado apenas dos elementos de texto ativos.
 
@@ -143,13 +179,14 @@ As ferramentas do workspace são objetos simples (`createWorkspaceTools(db, { lo
 - **Listas:** são paginadas por chave (`s~…`, `t~…`, `p~…`). O cursor do quadro fixa a revisão do quadro e é recusado depois de qualquer mudança nas tarefas.
 - **Documentos:** saem em Markdown do serializador puro do domínio (`documentToMarkdown`), em páginas de 36.000 caracteres com cursor `<impressão>:<deslocamento>`, presas ao texto paginado, e não à versão, para que mover ou renomear não as invalide; a primeira reserva 9.000 para cabeçalho e rodapé. Um bloco cortado pela página é fechado e reaberto.
 - **Desenhos:** saem como estrutura textual da cena atual (`outlineCanvasScene`) e a prévia PNG guardada.
+- **Projetos e origens:** `list_projects` traz cor e posição, sem `withoutProject`; a busca diz se o item está fixado; uma origem de tarefa cujo documento foi excluído de vez vem com `documentId: null` e o título guardado.
 - **Respostas:** têm até 45.000 caracteres de texto, rodapés e erros incluídos, só em `content`, sem `structuredContent`. O Claude Code 2.1.310 grava num arquivo o resultado que passa de 50.000 e mostra ao modelo só uma prévia. Cada ferramenta cabe no teto pelo próprio orçamento, e `withTextCeiling` corta, com aviso, o que ainda passasse.
 
 O [README do workspace](../src/workspace/README.md) descreve as regras e as perdas conhecidas do Markdown no parser do BlockNote.
 
 ### Prévias de desenho
 
-O navegador renderiza a prévia com o próprio Excalidraw, em tema claro, 1,5 s depois de um salvamento e com o navegador ocioso. Tenta lados de 1.568 px para baixo até o arquivo caber em 200 KiB, ou 256 KiB no menor lado, e envia por `workspace.saveCanvasPreview`. A gravação não usa o registro de pedidos nem muda versão, datas ou revisão do quadro.
+O navegador renderiza a prévia com o próprio Excalidraw, em tema claro, 1,5 s depois de um salvamento e com o navegador ocioso. Tenta lados de 1.568 px para baixo até o arquivo caber em 200 KiB, ou 256 KiB no menor lado, e envia por `workspace.saveCanvasPreview` com a impressão digital da cena que ela mostra: uma prévia ainda em geração quando o desenho é movido, renomeado ou vai para a lixeira continua valendo. A gravação não usa o registro de pedidos nem muda versão, datas ou revisão do quadro.
 
 O servidor só aceita um PNG completo, cujos dados de imagem descomprimem exatamente no tamanho do cabeçalho, em linhas com tipos de filtro válidos, até 1.568 px e 256 KiB. A prévia guarda a impressão digital da cena (`sceneFingerprint`): renomear, mover ou passar pela lixeira não a torna defasada. `getCanvas` devolve `previewVersion` e `previewCurrent`.
 

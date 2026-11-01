@@ -39,6 +39,21 @@ docker run --detach --name tinyfold --restart unless-stopped \
 
 O proxy HTTPS deve encaminhar para essa porta local. O volume de backups desse exemplo está no mesmo host; uma cópia externa continua necessária para proteger contra perda do servidor. `.env.production` não deve entrar no Git.
 
+## Atualizar para a etapa 08
+
+A versão da etapa 08 aplica na subida a migração `005_projects_required.sql`, a primeira que move conteúdo do usuário. Antes de subir:
+
+1. Criar um backup com `mise exec -- pnpm backup:create` e conferir que ele terminou com a verificação de integridade.
+2. Subir a versão nova. A migração leva documentos, desenhos e tarefas sem projeto, inclusive os da lixeira, ao projeto **Geral**, criado só quando há itens soltos, sem mudar versões nem datas. Projetos ganham cor e ordem no seletor, e documentos e desenhos podem ser fixados.
+3. Abrir o aplicativo: ele reabre num projeto. Os endereços antigos redirecionam.
+
+A migração é atômica: se falhar, o banco fica como estava. Casos conhecidos:
+
+- Um projeto que já se chamava "Geral" continua, e o projeto Geral da migração aparece como um segundo "Geral". Renomeie um deles.
+- Um banco em que as chaves estrangeiras foram desligadas e deixaram itens órfãos pode fazer a migração parar, ou um item ficar invisível. Restaure o backup e corrija os órfãos antes de tentar de novo.
+- Uma aba aberta durante a atualização que repita um pedido antigo com projeto nulo recebe um erro de validação; o rascunho fica, e a aba recarregada mostra o conflito com a versão salva.
+- Respostas de escrita gravadas no registro de pedidos antes desta versão guardam o texto de documentos criados e o título e o trecho de tarefas por até 30 dias. Excluir de vez um desses itens nesse período deixa o texto no banco até os registros expirarem, assim como nos backups anteriores à exclusão.
+
 ## Backup e restauração
 
 `mise exec -- pnpm backup:create` cria um snapshot com a API de backup do SQLite e verifica sua integridade. O diretório padrão é `backups/`; `BACKUP_DIR` configura outro destino. Também é possível passar o arquivo de destino como argumento.

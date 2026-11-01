@@ -2,6 +2,112 @@
 
 Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. Nenhuma publicação na nuvem foi realizada.
 
+## Etapa 08: fundação e lateral
+
+A etapa foi implementada em 2026-10-31 por dois subagentes: backend (B1 a B5) e web (W1 a W9). Três revisores adversariais examinaram, cada um, dados e migração, segurança e qualidade de código, e interação; os achados passaram por duas rodadas de correção, cada uma com reteste pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
+
+| Verificação | Resultado, em `fd8ac38` |
+| --- | --- |
+| `mise exec -- pnpm check` | Biome, tipos de todos os pacotes, E2E e scripts, dependency-cruiser sem violações em 551 módulos, 375 testes unitários em 53 arquivos, com tokens, contraste e paridade com `tokens.py` |
+| `mise exec -- pnpm test:db` | 140 testes em 24 arquivos, com SQLite temporário |
+| `mise exec -- pnpm build` | Bundle de produção aprovado |
+| `mise exec -- pnpm e2e` | 77 aprovados e 3 pulados, em 40 testes por perfil (desktop e Pixel 7). Pulados: a faixa recolhida e a mudança de largura não existem no celular, e a barra única não existe no desktop |
+
+Os testes de unidade e de banco cobrem, além do que já existia:
+
+- **Migração 005:** bases montadas com 001 a 004, itens soltos e na lixeira levados ao Geral sem mudar versões, gatilhos que recusam projeto nulo e origens com o título guardado.
+- **Projetos e fixados:** cor e ordem, arquivar o último ativo, o limite de 8 fixados com pedidos simultâneos, e o que desafixa.
+- **Lixeira:** a de cada projeto, `restoreTask`, a exclusão definitiva dos três tipos, o esvaziamento com item restaurado no meio-tempo, o limite único de 1.000 e a busca de cada título e trecho únicos em todas as tabelas depois da exclusão definitiva.
+- **Navegação:** as seções da lateral, a Visão geral, `moveItem` e `moveTask` renumerando só o próprio projeto.
+- **Web:** endereços antigos e hostis (`%E0%A4%A`, `//host`, `https:host`, `\`), a última localização, o início, a busca e os comandos do ⌘K, as seções do ⌘K e da lateral, os atalhos e a guarda de IME, os textos da Lixeira (filtro, lista cortada e contagens "1.000"), o Trecho do Índice, ids de blocos importados, rascunhos locais, a impressão digital da prévia e o autosave ao mover.
+- **`seed:sample`:** recusa banco com tabelas, caminho fora das pastas temporárias, link simbólico e o banco principal.
+
+### Fluxos no Chrome
+
+Os E2E rodam no Google Chrome instalado, desktop (1440×1000) e emulação Pixel 7:
+
+1. **Navegação:** seletor, G Q, G L, G V, G P, ⌘K e endereços antigos; o Índice guarda a ordem no dispositivo; `/` volta ao último lugar.
+2. **Mover enquanto digita:** o documento aberto vai a outro projeto com o texto não salvo, `moveItem` não leva o conteúdo, e o item **continua** no projeto novo depois do próximo autosave e de recarregar, inclusive depois de um Desfazer.
+3. **Endereços quebrados e lugar guardado hostil:** página em português dentro do shell, sem sair da origem.
+4. **Esc:** uma camada por vez, o Buscar sobre a página, a composição de IME, o diálogo de tarefa alterado ("Descartar alterações?"), a lista da faixa pelo teclado (inclusive o item já aberto) e o foco de volta depois de um diálogo aberto pelo N.
+5. **Barra estreita:** um nome de projeto de 40 caracteres termina antes das ações no documento, na Lixeira, no Quadro e no Índice (Pixel 7); as ações guardam o foco ao cruzar 720 px (desktop).
+6. **Lixeira:** grupos por dia, filtro, "Excluir o mostrado" com o resto ficando, restaurar com "Abrir", excluir de vez avisando da tarefa que nasceu do documento, e esvaziar.
+7. **Tema:** segue o sistema até uma escolha, que vale desde a primeira pintura; um toast novo substitui o anterior.
+8. **Estado vazio:** sem projeto ativo, `/projetos` mostra "Nenhum projeto ativo", "Novo projeto" e os arquivados; Desarquivar abre a Visão geral do projeto com o shell completo.
+9. Os fluxos das etapas anteriores (documento, Markdown, equações, desenho, conflitos, rascunhos, MCP) dentro do shell novo.
+
+### Validação no Chrome real contra o protótipo
+
+```sh
+TF_TMP="$(mktemp -d -t tinyfold-08)"
+export OWNER_PASSWORD='validacao-sumario-08' PORT=3481 WEB_PORT=5281 \
+  APP_ORIGIN=http://localhost:5281 COOKIE_SECURE=false BACKUP_DIR="$TF_TMP/backups"
+DATABASE_PATH="$TF_TMP/vazio.sqlite" mise exec -- pnpm dev      # "Comece um projeto"; depois parar
+DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm seed:sample
+DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm dev
+```
+
+O log confirmou `Banco: <TF_TMP>/…sqlite` e `Tinyfold em http://127.0.0.1:3481`. Como `seed:sample` recusa um banco que já tem tabelas, o estado vazio usou um banco e o exemplo, outro. O protótipo foi servido como UTF-8 de `127.0.0.1:5299` para abrir lado a lado no Google Chrome, pela extensão Claude in Chrome; as medições repetidas e as capturas usaram o mesmo Chrome pelo Playwright.
+
+- **Estados vazios:** banco novo com "Comece um projeto" e "Novo projeto"; com os quatro projetos do exemplo arquivados, "Nenhum projeto ativo" com os arquivados e Desarquivar, e o seletor dizendo "Nenhum projeto ativo". Desarquivados na ordem antiga, voltaram ao seletor na mesma ordem.
+- **Lateral, contra a variante A:** 248 px; ícones em x=16, texto em x=40, contagens com a borda direita em x=232; linhas de 28 px; cabeçalho e rodapé de 44 px; fio sob os fixados; faixa de 52 px.
+- **Cores** (`getComputedStyle`), iguais a `tokens.py` e `sidebar.md`: no escuro, `--bg` `#13161C`, `--sidebar-bg` `#0E1116`, `--text-3` `#9A9FA6`, `--accent` `#86A5FB`; no claro, `#FDFDFE`, `#F2F4F9` (`barra-a-fundo`), `#636568` e `#3856C8`. `theme-color` acompanha o tema.
+- **Tipografia:** Inter carregada da própria origem, `font-feature-settings` com `cv05`, `ss03` e `calt`, título 30/36 600 com −0,021 em, interface 13/20.
+- **Telas:** seletor, ⌘K, menu Você, Visão geral, Índice, Lixeira, Perfil, documento e desenho no shell, toasts no canto inferior direito, nos dois temas, em 1440×900 e 1280×800.
+- **Teclado:** G P, G 1, G 2, G V, G Q, G L, ⌘\, F6, `/`, ? e a sequência do Esc (⌘K sobre Atalhos: um Esc fecha o ⌘K, outro os Atalhos, o terceiro não faz nada). Nenhuma navegação por Esc.
+- **Larguras:** em 1024 px, a faixa de 52 px e, com ⌘\, a lateral sobre a página, que o Esc fecha; no Pixel 7, uma barra de 44 px, sem rolagem horizontal, e a lateral sobre a página com 320 px.
+- **Sem piscar:** tema Escuro escolhido com o sistema em Claro, cache desligado e rede limitada a 165 ms e 9 Mbit/s ("Fast 4G"). No build de produção, o primeiro quadro já tem o fundo escuro, na Visão geral e no documento. No `pnpm dev`, em que o Vite injeta o CSS por JavaScript, o primeiro quadro seguia o sistema; `fd8ac38` passou a definir `color-scheme` em `theme.js`, e o primeiro quadro ficou escuro também ali.
+- **Observação da ferramenta:** o texto inserido pela extensão não gera eventos de tecla, então o ⌘K não destaca o primeiro resultado e o Enter não o abre. Com teclas reais (Playwright no mesmo Chrome), o primeiro resultado fica destacado e o Enter o abre.
+
+**Diferenças aceitas em relação ao protótipo:**
+
+- **Lateral:** o protótipo tem 256 px, texto em x=52 e o fundo `lateral` `#F5F7FA` no claro; a etapa segue a variante A de `sidebar.md` (248 px, x=40, `barra-a-fundo` `#F2F4F9`). A árvore de pastas e a seção "Itens" ficam para a etapa 09; aqui são Documentos e Desenhos.
+- **Prazos e colunas:** "atrasada" no seletor e no Quadro, prazos e progresso no Agora, "Concluídas, últimos 14 dias" e a coluna Revisão chegam com a etapa 10. O Agora mostra as tarefas em andamento.
+- **Quadro e gaveta:** o quadro ganhou só um restyle por tokens; a gaveta da tarefa é um diálogo até a etapa 10.
+- **Documento e desenho:** sem cabeçalho de pasta, tarefas e desenhos incorporados (etapa 11).
+- **⌘K:** os itens aparecem em "Itens" (o protótipo diz "Documentos"), o comando se chama "Visão geral" (lá, "Visão geral de Tinyfold"), e a busca mostra o trecho com as palavras encontradas.
+- **Lixeira:** sem a coluna de origem (pasta), que chega com a etapa 09.
+- **Celular:** o fallback é funcional, não um design aprovado.
+
+| Tela | 1440, claro | 1440, escuro | 1280, claro | 1280, escuro | Pixel 7 |
+| --- | --- | --- | --- | --- | --- |
+| Visão geral | [Captura](screens/visao-geral-claro-1440.png) | [Captura](screens/visao-geral-escuro-1440.png) | [Captura](screens/visao-geral-claro-1280.png) | [Captura](screens/visao-geral-escuro-1280.png) | [Captura](screens/visao-geral-celular.png) |
+| Documento | [Captura](screens/documento-claro-1440.png) | [Captura](screens/documento-escuro-1440.png) | [Captura](screens/documento-claro-1280.png) | [Captura](screens/documento-escuro-1280.png) | [Captura](screens/documento-celular.png) |
+| Desenho | [Captura](screens/desenho-claro-1440.png) | [Captura](screens/desenho-escuro-1440.png) | [Captura](screens/desenho-claro-1280.png) | [Captura](screens/desenho-escuro-1280.png) | [Captura](screens/desenho-celular.png) |
+| Quadro | [Captura](screens/quadro-claro-1440.png) | [Captura](screens/quadro-escuro-1440.png) | [Captura](screens/quadro-claro-1280.png) | [Captura](screens/quadro-escuro-1280.png) | [Captura](screens/quadro-celular.png) |
+| Índice | [Captura](screens/indice-claro-1440.png) | [Captura](screens/indice-escuro-1440.png) | [Captura](screens/indice-claro-1280.png) | [Captura](screens/indice-escuro-1280.png) | [Captura](screens/indice-celular.png) |
+| Lixeira | [Captura](screens/lixeira-claro-1440.png) | [Captura](screens/lixeira-escuro-1440.png) | [Captura](screens/lixeira-claro-1280.png) | [Captura](screens/lixeira-escuro-1280.png) | [Captura](screens/lixeira-celular.png) |
+| Seletor | [Captura](screens/seletor-claro-1440.png) | [Captura](screens/seletor-escuro-1440.png) | [Captura](screens/seletor-claro-1280.png) | [Captura](screens/seletor-escuro-1280.png) | [Captura](screens/seletor-celular.png) |
+| ⌘K | [Captura](screens/cmdk-claro-1440.png) | [Captura](screens/cmdk-escuro-1440.png) | [Captura](screens/cmdk-claro-1280.png) | [Captura](screens/cmdk-escuro-1280.png) | — |
+| Perfil | [Captura](screens/perfil-claro-1440.png) | [Captura](screens/perfil-escuro-1440.png) | [Captura](screens/perfil-claro-1280.png) | [Captura](screens/perfil-escuro-1280.png) | [Captura](screens/perfil-celular.png) |
+| Faixa recolhida e lateral no celular | [Captura](screens/faixa-recolhida-claro-1440.png) | [Captura](screens/faixa-recolhida-escuro-1440.png) | [Captura](screens/faixa-recolhida-claro-1280.png) | [Captura](screens/faixa-recolhida-escuro-1280.png) | [Captura](screens/lateral-celular.png) |
+
+Ao fim, o `dev` e o servidor do protótipo foram parados e `$TF_TMP` foi apagado.
+
+### Rodadas adversariais
+
+Nenhum achado crítico ou alto. Corrigidos e retestados:
+
+- **Dados (médios):** um limite só de 1.000 para listar e esvaziar a lixeira, com a contagem sempre exata; o texto de itens excluídos de vez que ficava nas respostas guardadas do registro de pedidos; `moveTask` que renumerava tarefas de outros projetos, mudando versão e data; `seed:sample` que migrava o banco antes de recusar. No reteste, uma tarefa que mudava de projeto mantinha a posição antiga (corrigido em `1cf81f6`) e a prévia em geração durante um movimento era descartada (`05e98e5`, com a web enviando a impressão digital da cena).
+- **Segurança e qualidade:** esvaziar com filtro excluía itens fora da tela (média); lixeira acima do limite; URL com codificação quebrada derrubando o shell; última localização que levava para fora da origem; `seed:sample` antes da recusa. Na qualidade, os editores de documento e desenho com módulos paralelos já divergindo, o ⌘K montando dados e marcação no mesmo corpo, a lista da faixa duplicada, tokens ignorados no CSS, tipos de item repetidos, restos de `projectId: null`, código morto e a semântica de `AlertDialog` e `Banner`. No reteste, os textos de uma lista cortada em 1.000 ("Excluir os 1.000 mostrados", "Lixeira vazia." só sem sobras), `RequestFor` e links com cara de botão repetidos, as contagens extras para o toast e os diálogos dos editores ainda duplicados.
+- **Interação:** a lista da faixa sem teclado (alta, a única); um Esc fechando duas camadas; atalhos durante a composição de IME; o menu "Mover para projeto…" sem setas; a região viva presa; o popover da faixa aberto depois da escolha; o foco depois de mover uma linha; a fila de toasts; controles só no hover em telas de toque; toasts sobre os controles do Excalidraw; a mesma tarefa pelo ⌘K; o Esc que descartava a tarefa digitada; Esc segurado; G com outra tecla; Shift+N; rádio e typeahead do Índice; páginas de erro em inglês; o tema na aba de login; duas barras abaixo de 720 px; toasts e leitor de tela; e o overscroll. No reteste, 19 de 23 corrigidos e 4 parciais, mais um achado novo (média): um nome de projeto longo passava por baixo das ações da barra estreita. Todos foram corrigidos em `b5bcc1e`, inclusive o foco depois de um Desfazer que remove a linha, de um ⋯ aberto ao cruzar 720 px e de um diálogo aberto pelo N, e o toast acima do "Voltar para o conteúdo" do Excalidraw no celular.
+
+### Aceitos
+
+- **Registros de pedido anteriores a `816f323`:** guardam o texto inteiro de `createDocument` e o título e o trecho das escritas de tarefa por até 30 dias. Excluir de vez um desses itens nesse período deixa o texto no banco até os registros expirarem ([operação](implantacao.md#atualizar-para-a-etapa-08)).
+- **Mover um item fechado:** a web ainda baixa o item uma vez para ler a versão, o título e o fixado. O pedido de mover não leva conteúdo.
+- **Órfãos criados com chaves estrangeiras desligadas** (plausível, exige adulterar o banco): a migração 005 aborta, ou o item fica invisível.
+- **Um projeto já chamado "Geral"** ganha um segundo "Geral" na migração, quando há itens soltos.
+- **Um pedido gravado com `projectId: null` e repetido depois de B5** recebe `VALIDATION`; o rascunho fica, e a aba recarregada mostra o conflito com a versão salva.
+- **O fallback de celular** é funcional, não um design aprovado.
+- **O typeahead da tabela do Índice** deixou de existir para que N, G e ? funcionem; ↑ e ↓ continuam.
+
+### Pendências
+
+- Restyle do quadro e a gaveta da tarefa (etapa 10), pastas (etapa 09), documento e desenho novos (etapa 11).
+- A versão de celular da interface ainda não foi desenhada.
+- As pendências de hospedagem da etapa 07 continuam.
+
 ## Etapa 07: MCP somente leitura
 
 A etapa foi implementada em 2026-10-31 por dois subagentes em sequência: backend (B1 a B5) e web (W1 a W4). Seguiram-se duas rodadas adversariais cruzadas, de segurança e persistência, de protocolo e saída das ferramentas, e de qualidade de código. Cada falha confirmada recebeu correção, teste e nova verificação. Os bancos usados são temporários; `data/tinyfold.sqlite` não foi aberto.
@@ -246,10 +352,10 @@ A captura mobile identificou título longo cortado no editor. A correção permi
 
 | Tela | Desktop | Celular |
 | --- | --- | --- |
-| Início | [Captura](screens/inicio-desktop.png) | [Captura](screens/inicio-mobile.png) |
 | Documento | [Captura](screens/editor-desktop.png) | [Captura](screens/editor-mobile.png) |
-| Kanban | [Captura](screens/kanban-desktop.png) | [Captura](screens/kanban-mobile.png) |
 | Editar equação | [Captura](screens/equacoes-desktop.png) | [Captura](screens/equacoes-mobile.png) |
+
+As capturas do Início e do Kanban da primeira versão saíram com a etapa 08, que tirou o Início e o quadro geral. As telas atuais, Visão geral e Quadro do projeto inclusive, estão na [validação da etapa 08](#validação-no-chrome-real-contra-o-protótipo).
 
 ## Rodadas adversariais
 

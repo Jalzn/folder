@@ -8,7 +8,8 @@
 | Execução | Node 26.12.1 e tsx | Mesmo padrão |
 | Interface | React 19.3.1 e Vite 8.3.5 | Mesmo padrão |
 | Navegação e dados | TanStack Router e Query | Mesmo padrão |
-| UI | React Aria Components, CSS com tokens, Lucide e Inter | Identidade própria, sem Tailwind |
+| UI | React Aria Components (diálogos, menus, `Autocomplete`, `Table`, `Tooltip`, `RadioGroup`), CSS com tokens gerados de `src/web/styles/tokens/`, Lucide | Identidade própria, sem Tailwind |
+| Fontes | Inter completa de `inter-ui` 4.1.1 e JetBrains Mono de `@fontsource-variable/jetbrains-mono` 5.3.0, servidas pela própria origem | `inter-ui` substitui `@fontsource-variable/inter`, que não tem `cv05`, `ss03` nem `case` |
 | Servidor | Hono e oRPC | SPA e API na mesma origem |
 | Validação | Zod na fronteira e validação estrutural do documento | Contratos explícitos |
 | Persistência | Kysely e better-sqlite3 13.0.3, SQLite 3.53.4 | Substitui PostgreSQL |
@@ -21,7 +22,7 @@
 
 O driver inclui binários nativos para as plataformas suportadas; a instalação usa os binários distribuídos, sem executar um build node-gyp redundante. A conexão real e a imagem Linux foram exercitadas nos testes locais.
 
-O editor carrega sob demanda ao abrir um documento. O CSS permanece antecipado para manter a ordem do tema estável. Os componentes React Aria cobrem diálogos e menus; o editor usa o tema Mantine do BlockNote com ajustes para a paleta do aplicativo.
+O editor carrega sob demanda ao abrir um documento. O CSS permanece antecipado para manter a ordem do tema estável. Os componentes React Aria cobrem diálogos, menus, o ⌘K, a tabela do Índice, dicas e grupos de rádio; o editor usa o tema Mantine do BlockNote com as variáveis apontadas para os tokens, e BlockNote e Excalidraw seguem o tema escolhido.
 
 O JSON é a fonte do conteúdo. Importação/exportação Markdown usa a conversão do BlockNote e pode perder propriedades que Markdown não representa. O escopo usa apenas blocos de texto suportados; upload de mídia e recursos XL não estão habilitados.
 

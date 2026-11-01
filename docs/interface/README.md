@@ -1,6 +1,6 @@
 # Tinyfold — Interface
 
-**Estado:** direção aprovada em 2026-10-31, ainda não implementada. O aplicativo atual segue a interface descrita em [produto](../produto.md) e nas capturas de `docs/screens/`.
+**Estado:** direção aprovada em 2026-10-31. A [etapa 08](../etapas/08-fundacao.md) implementou o sistema visual, a lateral variante A sem pastas, o seletor, o ⌘K, a Visão geral, o Índice, a Lixeira e o Perfil; as diferenças aceitas em relação ao protótipo estão na [validação](../validacao.md#validação-no-chrome-real-contra-o-protótipo), e as capturas, em `docs/screens/`. Ainda faltam as pastas (etapa 09), o quadro e a gaveta da tarefa (etapa 10) e as páginas novas de documento e desenho (etapa 11). A versão de celular não foi desenhada; o aplicativo tem um fallback funcional.
 
 Protótipo navegável aprovado: [Sumário](https://claude.ai/artifact/1DfmsQAVUE7Tek6pYCkcvW), versão "Pastas". Ele roda com dados de exemplo em memória; o editor de texto e o de desenho são simulações.
 
