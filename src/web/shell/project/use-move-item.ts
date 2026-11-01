@@ -26,12 +26,16 @@ export function useMoveItem() {
     const destination = projects.find((project) => project.id === to)?.name ?? 'outro projeto';
     toast(`“${displayTitle(moved.title)}” foi para ${destination}.`, {
       undo: () =>
-        action.run(async () => {
-          await moveItem(type, id, from, request.for);
-          request.clear();
-          // A full project keeps the item unpinned.
-          if (moved.pinned) await api.workspace.pinItem({ type, id }).catch(() => undefined);
-        }),
+        action.run(
+          async () => {
+            await moveItem(type, id, from, request.for);
+            request.clear();
+            // A full project keeps the item unpinned.
+            if (moved.pinned) await api.workspace.pinItem({ type, id }).catch(() => undefined);
+          },
+          undefined,
+          { queued: true },
+        ),
     });
     return true;
   }

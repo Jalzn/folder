@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { errorCode, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
+import { inFolderOrRoot } from '../../lib/folder-fallback';
 import { displayTitle, type ItemType } from '../../lib/types';
 import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
@@ -106,8 +107,12 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
       }
       const copied = pending.snapshot;
       const title = `${displayTitle(copied.title)} — cópia`.slice(0, 300);
-      const place = { projectId: pending.projectId, folderId: pending.folderId };
-      const copy = await item.createCopy(copied, place, title, pending.requestId);
+      // A folder deleted elsewhere sends the copy to the root, and a retry goes there too. A refused request
+      // records nothing, so the root takes the same request ID.
+      const { created: copy, atRoot } = await inFolderOrRoot(pending.folderId, (folderId) => {
+        pending.folderId = folderId;
+        return item.createCopy(copied, { projectId: pending.projectId, folderId }, title, pending.requestId);
+      });
       pendingCopy.current = null;
       // A newer local edit made during copying must remain recoverable on the original.
       const unchanged = () => JSON.stringify(copied) === JSON.stringify(controller.getState().snapshot);
@@ -123,7 +128,9 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
       toast(
         pending.redirected
           ? redirectedCopyText(pending.projectName, pending.archivedName)
-          : `Seu rascunho foi salvo em ${words.aNew}.`,
+          : atRoot
+            ? `Seu rascunho foi salvo em ${words.aNew}, na raiz do projeto: a pasta foi excluída.`
+            : `Seu rascunho foi salvo em ${words.aNew}.`,
       );
       void navigate({ href: paths.item(pending.projectId, item.type, copy.id) });
     } catch (error) {

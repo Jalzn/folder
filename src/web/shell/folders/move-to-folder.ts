@@ -1,4 +1,4 @@
-import { api, queryClient, requestId } from '../../lib/api';
+import { api, queryClient } from '../../lib/api';
 import { canvasQuery, documentQuery } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
 
@@ -12,8 +12,14 @@ export type FolderMove = Awaited<ReturnType<typeof api.workspace.moveItem>>;
  * reads the move first, so it never shows the open item at its new place while it still lists it at the old
  * one.
  */
-export async function moveToFolder(type: ItemType, id: string, projectId: string, folderId: string | null) {
-  const moved = await api.workspace.moveItem({ type, id, projectId, folderId, requestId: requestId() });
+export async function moveToFolder(
+  type: ItemType,
+  id: string,
+  projectId: string,
+  folderId: string | null,
+  requestId: string,
+) {
+  const moved = await api.workspace.moveItem({ type, id, projectId, folderId, requestId });
   await queryClient.refetchQueries({ queryKey: ['workspace', 'navigation', projectId], type: 'active' });
   const key = type === 'document' ? documentQuery(id).queryKey : canvasQuery(id).queryKey;
   queryClient.setQueryData(key, (item: { folderId: string | null; pinnedAt: string | null } | undefined) =>

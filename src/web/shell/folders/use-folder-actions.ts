@@ -1,39 +1,56 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { NavFolder, NavItem } from '@tinyfold/workspace/domain';
-import { api, requestId } from '../../lib/api';
+import { api } from '../../lib/api';
 import { useAction } from '../../lib/use-action';
+import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { useToast } from '../../ui';
 import { useShellUi } from '../shell-ui';
 import { deletedText, positionText, restoredText, trashedText } from './folder-text';
 
-/** Folder writes of the sidebar (docs/etapas/09-pastas.md, "Ações de pasta"), with their toasts and undo. */
+/** What an undo of a folder's deletion says when it fails, whatever the server said. */
+export const RESTORE_FAILED = 'Não foi possível desfazer a exclusão da pasta.';
+
+/**
+ * Folder writes of the sidebar (docs/etapas/09-pastas.md, "Ações de pasta"), with their toasts and undo. Each
+ * user intent keeps one request ID until it succeeds, so a retry after a lost answer replays it, the
+ * deletion's lists included; an undo waits for a write in progress instead of being dropped.
+ */
 export function useFolderActions(projectId: string) {
   const action = useAction();
+  const creating = useRequest();
+  const renaming = useRequest();
+  const placing = useRequest();
+  const deleting = useRequest();
+  const restoring = useRequest();
   const toast = useToast();
   const ui = useShellUi();
   const navigate = useNavigate();
 
   /** Creates a folder at the top; resolves to it, or undefined when the server refused. */
   async function create(name: string) {
-    const created = await action.run(() => api.workspace.createFolder({ projectId, name, requestId: requestId() }));
-    return created ? { id: created.id, name } : undefined;
+    const input = { projectId, name };
+    const created = await action.run(() => api.workspace.createFolder({ ...input, requestId: creating.for(input) }));
+    if (!created) return undefined;
+    creating.clear();
+    return { id: created.id, name };
   }
 
   async function rename(folder: NavFolder, name: string) {
-    const renamed = await action.run(() =>
-      api.workspace.renameFolder({ id: folder.id, expectedVersion: folder.version, name, requestId: requestId() }),
-    );
-    if (renamed) ui.announce(`Pasta renomeada: ${name}`);
-    return Boolean(renamed);
+    const input = { id: folder.id, expectedVersion: folder.version, name };
+    const renamed = await action.run(() => api.workspace.renameFolder({ ...input, requestId: renaming.for(input) }));
+    if (!renamed) return false;
+    renaming.clear();
+    ui.announce(`Pasta renomeada: ${name}`);
+    return true;
   }
 
   /** Puts a folder before another, or last with null, announced: "Pasta MCP na posição 2 de 4". */
   async function place(folder: NavFolder, beforeFolderId: string | null) {
-    const moved = await action.run(() =>
-      api.workspace.moveFolder({ id: folder.id, beforeFolderId, requestId: requestId() }),
-    );
+    const input = { id: folder.id, beforeFolderId };
+    const moved = await action.run(() => api.workspace.moveFolder({ ...input, requestId: placing.for(input) }));
     if (!moved) return false;
+    placing.clear();
     const at = moved.folders.findIndex((each) => each.id === folder.id);
     ui.announce(positionText(folder.name, at, moved.folders.length));
     return true;
@@ -54,25 +71,22 @@ export function useFolderActions(projectId: string) {
    * open item that went to the trash leaves its page for the Visão geral.
    */
   async function remove(folder: NavFolder, withItems: boolean, open: NavItem | null, onRestored?: () => void) {
-    const deleted = await action.run(() =>
-      api.workspace.deleteFolder({ id: folder.id, expectedVersion: folder.version, withItems, requestId: requestId() }),
-    );
+    const input = { id: folder.id, expectedVersion: folder.version, withItems };
+    const deleted = await action.run(() => api.workspace.deleteFolder({ ...input, requestId: deleting.for(input) }));
     if (!deleted) return false;
+    deleting.clear();
+    // The lists go back exactly as the deletion answered them.
+    const restore = { id: folder.id, expectedVersion: deleted.version, moved: deleted.moved, trashed: deleted.trashed };
     const undo = deleted.complete
       ? () =>
           action.run(
-            () =>
-              api.workspace.restoreFolder({
-                id: folder.id,
-                expectedVersion: deleted.version,
-                moved: deleted.moved,
-                trashed: deleted.trashed,
-                requestId: requestId(),
-              }),
+            () => api.workspace.restoreFolder({ ...restore, requestId: restoring.for(restore) }),
             (restored) => {
+              restoring.clear();
               toast(restoredText(folder.name, restored.skipped));
               onRestored?.();
             },
+            { queued: true, failure: RESTORE_FAILED },
           )
       : undefined;
     const text = withItems

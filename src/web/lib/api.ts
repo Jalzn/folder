@@ -3,22 +3,9 @@ import { RPCLink } from '@orpc/client/fetch';
 import type { RouterClient } from '@orpc/server';
 import { QueryCache, QueryClient } from '@tanstack/react-query';
 import type { AppRouter } from '@tinyfold/server/router';
+import { errorCode } from './errors';
 
-export function errorCode(error: unknown): string | undefined {
-  if (!error || typeof error !== 'object') return undefined;
-  const value = error as { data?: { code?: string }; code?: string };
-  return value.data?.code ?? value.code;
-}
-
-export function errorMessage(error: unknown): string {
-  const code = errorCode(error);
-  if (code === 'UNAUTHENTICATED' || code === 'UNAUTHORIZED')
-    return 'Sua sessão expirou. Entre novamente para continuar.';
-  if (code === 'VERSION_CONFLICT' || code === 'CONFLICT')
-    return 'Este item mudou em outro dispositivo. Atualizamos os dados; confira e tente novamente.';
-  if (error instanceof Error && code && !['INTERNAL_SERVER_ERROR', 'UNKNOWN'].includes(code)) return error.message;
-  return 'Não foi possível conectar. Confira sua conexão e tente novamente.';
-}
+export { errorCode, errorMessage } from './errors';
 
 export function reportSessionError(error: unknown) {
   if (['UNAUTHENTICATED', 'UNAUTHORIZED'].includes(errorCode(error) ?? '')) {

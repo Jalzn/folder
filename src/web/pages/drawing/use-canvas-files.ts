@@ -6,6 +6,7 @@ import type { AutosaveController } from '../../lib/autosave';
 import { type CanvasSnapshot, canvasFile, canvasFileName, readCanvasImport } from '../../lib/canvas-autosave';
 import { renderCanvasPng } from '../../lib/canvas-png';
 import { downloadFile } from '../../lib/download';
+import { inFolderOrRoot } from '../../lib/folder-fallback';
 import { canvasQuery } from '../../lib/queries';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
@@ -71,19 +72,24 @@ export function useCanvasFiles(controller: AutosaveController<CanvasSnapshot>, c
       // In this drawing's folder when it stays in its project (decision 15).
       const open = queryClient.getQueryData<{ folderId: string | null }>(canvasQuery(canvasId).queryKey);
       const folderId = copyFolder({ projectId: own, folderId: open?.folderId ?? null }, destination);
-      const input = {
-        title: file.name.replace(/\.excalidraw$/i, '').slice(0, 300),
-        projectId: destination.project.id,
-        ...(folderId ? { folderId } : {}),
-        scene,
-      };
-      const imported = await api.workspace.createCanvas({ ...input, requestId: importRequest.for(input) });
+      // A folder deleted elsewhere sends the import to the root.
+      const { created: imported, atRoot } = await inFolderOrRoot(folderId, (folder) => {
+        const input = {
+          title: file.name.replace(/\.excalidraw$/i, '').slice(0, 300),
+          projectId: destination.project.id,
+          ...(folder ? { folderId: folder } : {}),
+          scene,
+        };
+        return api.workspace.createCanvas({ ...input, requestId: importRequest.for(input) });
+      });
       importRequest.clear();
       await refreshWorkspace();
       toast(
         destination.redirected
           ? redirectedCopyText(destination.project.name, projects.find((p) => p.id === own)?.name, 'Importado')
-          : 'Arquivo importado como um novo desenho.',
+          : atRoot
+            ? 'Arquivo importado como um novo desenho, na raiz do projeto: a pasta foi excluída.'
+            : 'Arquivo importado como um novo desenho.',
       );
       void navigate({ href: paths.drawing(destination.project.id, imported.id) });
     } catch (error) {

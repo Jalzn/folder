@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { downloadFile, fileNameFrom } from '../../lib/download';
+import { inFolderOrRoot } from '../../lib/folder-fallback';
 import { exportMarkdownWithMath, importMarkdownWithMath } from '../../lib/markdown';
 import { documentQuery } from '../../lib/queries';
 import { type DocumentContent, displayTitle } from '../../lib/types';
@@ -65,19 +66,24 @@ export function useDocumentFiles(
       // Import into a fresh document, in this one's folder (decision 15): the open draft remains untouched.
       const open = queryClient.getQueryData<{ folderId: string | null }>(documentQuery(documentId).queryKey);
       const folderId = copyFolder({ projectId: own, folderId: open?.folderId ?? null }, destination);
-      const input = {
-        title: file.name.replace(/\.(md|markdown|txt)$/i, '').slice(0, 300),
-        projectId: destination.project.id,
-        ...(folderId ? { folderId } : {}),
-        content: blocks as unknown as DocumentContent,
-      };
-      const imported = await api.workspace.createDocument({ ...input, requestId: importRequest.for(input) });
+      // A folder deleted elsewhere sends the import to the root.
+      const { created: imported, atRoot } = await inFolderOrRoot(folderId, (folder) => {
+        const input = {
+          title: file.name.replace(/\.(md|markdown|txt)$/i, '').slice(0, 300),
+          projectId: destination.project.id,
+          ...(folder ? { folderId: folder } : {}),
+          content: blocks as unknown as DocumentContent,
+        };
+        return api.workspace.createDocument({ ...input, requestId: importRequest.for(input) });
+      });
       importRequest.clear();
       await refreshWorkspace();
       toast(
         destination.redirected
           ? redirectedCopyText(destination.project.name, projects.find((p) => p.id === own)?.name, 'Importado')
-          : 'Markdown importado como um novo documento.',
+          : atRoot
+            ? 'Markdown importado como um novo documento, na raiz do projeto: a pasta foi excluída.'
+            : 'Markdown importado como um novo documento.',
       );
       void navigate({ href: paths.document(destination.project.id, imported.id) });
     } catch (error) {

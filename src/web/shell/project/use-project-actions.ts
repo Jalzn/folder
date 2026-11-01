@@ -25,8 +25,9 @@ export function useProjectActions() {
     const project = await latest(id);
     return api.workspace.updateProject({ id, expectedVersion: project.version, archived, requestId: requestId() });
   }
-  async function unarchive(project: Project, { open = false } = {}) {
-    const restored = await action.run(() => setArchived(project.id, false));
+  /** Unarchives; as the undo of an archive (`queued`), after any write in progress. */
+  async function unarchive(project: Project, { open = false, queued = false } = {}) {
+    const restored = await action.run(() => setArchived(project.id, false), undefined, { queued });
     if (!restored) return;
     toast(`${project.name} desarquivado.`);
     if (open) void navigate({ href: paths.overview(project.id) });
@@ -35,7 +36,7 @@ export function useProjectActions() {
     const archived = await action.run(() => setArchived(project.id, true));
     if (!archived) return;
     toast(`${project.name} arquivado. O conteúdo está preservado.`, {
-      undo: () => unarchive(project),
+      undo: () => unarchive(project, { queued: true }),
       undoLabel: 'Desarquivar',
     });
   }
