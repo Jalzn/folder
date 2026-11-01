@@ -1,5 +1,5 @@
 import './document.css';
-import { TrashedItem } from '../../components/editor';
+import { TrashedItem } from '../../components/item-page';
 import type { Document } from '../../lib/types';
 import { PageFrame } from '../../shell';
 import { DocumentEditor } from './DocumentEditor';

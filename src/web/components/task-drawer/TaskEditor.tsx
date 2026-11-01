@@ -8,9 +8,9 @@ import { paths } from '../../router/paths';
 import { useApp, useOwnerToday } from '../../shell/AppProvider';
 import { useTaskDrawer } from '../../shell/task-drawer-state';
 import { Banner, Button, useToast } from '../../ui';
-import { ReloadDialog } from '../editor/EditorDialogs';
-import { SaveBanners } from '../editor/SaveBanners';
-import { SaveState } from '../editor/SaveState';
+import { ReloadDialog } from '../item-page/EditorDialogs';
+import { SaveBanners } from '../item-page/SaveBanners';
+import { SaveState } from '../item-page/SaveState';
 import { TaskSource } from '../task/TaskSource';
 import { TrashTaskDialog } from '../task/TrashTaskDialog';
 import { ChecklistRow } from './ChecklistRow';
@@ -21,7 +21,7 @@ import { type DescriptionHandle, TaskDescription } from './TaskDescription';
 import { TaskDrawerHeader } from './TaskDrawerHeader';
 import { ColumnField, ProjectField, TaskProperties } from './TaskProperties';
 import { TaskTitleField } from './TaskTitleField';
-import { taskController, taskTextSnapshot } from './task-session';
+import { holdTaskController, taskController, taskTextSnapshot } from './task-session';
 import { useTaskFields } from './use-task-fields';
 import { useTaskTextActions } from './use-task-text-actions';
 
@@ -52,6 +52,8 @@ export function TaskEditor({
   const today = useOwnerToday();
   const labels = useLabels().data ?? [];
   const [controller] = useState(() => taskController(detail, app.owner.installationId));
+  // The session stays while the drawer shows the task, and leaves once saved after that.
+  useEffect(() => holdTaskController(task.id, app.owner.installationId), [task.id, app.owner.installationId]);
   useAutosaveLifecycle(controller);
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   const fields = useTaskFields(task);

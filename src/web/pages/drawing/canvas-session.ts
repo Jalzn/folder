@@ -1,5 +1,5 @@
 import { type Canvas, type CanvasScene, canvasPlainText, readCanvasScene } from '@tinyfold/workspace/domain';
-import type { ItemAdapter } from '../../components/editor';
+import type { ItemAdapter } from '../../components/item-page';
 import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
 import { AutosaveController, type SaveInput } from '../../lib/autosave';
 import { type CanvasSnapshot, canvasDraftStorage, parseCanvasDraft, withCleanLinks } from '../../lib/canvas-autosave';

@@ -1,13 +1,13 @@
-import type { ItemAdapter } from '../../components/editor';
+import type { ItemAdapter } from '../../components/item-page';
 import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
 import { AutosaveController, parseDraft, type SaveInput, type Snapshot } from '../../lib/autosave';
 import { withDraftProject } from '../../lib/draft-project';
 import { draftStorage } from '../../lib/draft-storage';
 import { documentQuery, invalidateNavigation } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
+import { refuseOverLimit } from '../../lib/text-limit';
 import { type Document, displayTitle } from '../../lib/types';
 
-const MAX_DOCUMENT_BYTES = 1_048_576;
 const controllers = new Map<string, AutosaveController>();
 
 export function documentSnapshot(document: Document): Snapshot {
@@ -33,13 +33,10 @@ export const documentItem = (id: string): ItemAdapter<Snapshot, Document> => ({
 });
 
 async function send(input: SaveInput) {
-  if (new TextEncoder().encode(JSON.stringify(input.content)).length > MAX_DOCUMENT_BYTES)
-    throw Object.assign(
-      new Error(
-        'Este documento ultrapassou o limite de 1 MB. Exporte uma cópia e divida o conteúdo em mais documentos.',
-      ),
-      { code: 'VALIDATION' },
-    );
+  refuseOverLimit(
+    input.content,
+    'Este documento ultrapassou o limite de 1 MB. Exporte uma cópia e divida o conteúdo em mais documentos.',
+  );
   try {
     // A save never moves the item: moving goes through moveItem, so the project stays out of it.
     const { projectId: _project, ...save } = input;

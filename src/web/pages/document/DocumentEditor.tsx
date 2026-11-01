@@ -1,6 +1,6 @@
 import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ReloadDialog, SaveBanners, SaveState, TrashItemDialog, useItemActions } from '../../components/editor';
+import { ReloadDialog, SaveBanners, SaveState, TrashItemDialog, useItemActions } from '../../components/item-page';
 import { BlockEditor } from '../../editor/BlockEditor';
 import type { Snapshot } from '../../lib/autosave';
 import { formatCount } from '../../lib/count';

@@ -8,7 +8,7 @@ import {
   TrashedItem,
   TrashItemDialog,
   useItemActions,
-} from '../../components/editor';
+} from '../../components/item-page';
 import { moveThroughController } from '../../lib/editor-move';
 import { useHasActiveProject } from '../../lib/queries';
 import { registerOpenEditor } from '../../lib/save-registry';

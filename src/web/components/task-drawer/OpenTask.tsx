@@ -4,7 +4,7 @@ import { useColumns, useProject, useTask, useTasks } from '../../lib/queries';
 import { displayTitle } from '../../lib/types';
 import { type DrawerContent, useTaskDrawer } from '../../shell/task-drawer-state';
 import { IconButton, Spinner } from '../../ui';
-import { TrashedItem } from '../editor/TrashedItem';
+import { TrashedItem } from '../item-page/TrashedItem';
 import type { DrawerCommands } from './drawer-commands';
 import { TaskEditor } from './TaskEditor';
 

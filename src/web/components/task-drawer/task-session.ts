@@ -4,12 +4,19 @@ import { AutosaveController, type SaveInput } from '../../lib/autosave';
 import { draftStorage } from '../../lib/draft-storage';
 import { type ProjectBoard, type TaskList, type TaskWithText, taskQuery } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
+import { refuseOverLimit } from '../../lib/text-limit';
 import { displayTitle } from '../../lib/types';
 import { parseTaskTextDraft, type TaskTextSnapshot } from './task-text-draft';
 
-/** A description has the document's limit (decision 8). */
-const MAX_TEXT_BYTES = 1_048_576;
-const controllers = new Map<string, AutosaveController<TaskTextSnapshot>>();
+/**
+ * The tab's text sessions, by installation and task: a task held by the drawer, or not saved yet. One leaves
+ * once nothing holds it and its text is saved, so browsing the board card by card keeps no descriptions.
+ */
+const sessions = new Map<
+  string,
+  { controller: AutosaveController<TaskTextSnapshot>; unregister: () => void; holders: number }
+>();
+const identityOf = (taskId: string, installationId: string) => `${installationId}:task:${taskId}`;
 
 export const taskTextSnapshot = (task: TaskWithText): TaskTextSnapshot => ({
   title: task.title,
@@ -17,10 +24,8 @@ export const taskTextSnapshot = (task: TaskWithText): TaskTextSnapshot => ({
 });
 
 async function send(input: SaveInput<TaskTextSnapshot>) {
-  if (new TextEncoder().encode(JSON.stringify(input.description)).length > MAX_TEXT_BYTES)
-    throw Object.assign(new Error('Esta descrição ultrapassou o limite de 1 MB. Divida o texto em mais tarefas.'), {
-      code: 'VALIDATION',
-    });
+  // A description has the document's limit (decision 8).
+  refuseOverLimit(input.description, 'Esta descrição ultrapassou o limite de 1 MB. Divida o texto em mais tarefas.');
   try {
     const saved = await api.workspace.saveTaskText({
       requestId: input.requestId,
@@ -64,28 +69,51 @@ function showSaved(task: TaskWithText, text: TaskTextSnapshot, textVersion: numb
  * leaving, and saves the title and the description together at the text's version.
  */
 export function taskController(task: TaskWithText, installationId: string) {
-  const identity = `${installationId}:task:${task.id}`;
-  let controller = controllers.get(identity);
-  if (!controller) {
-    controller = new AutosaveController<TaskTextSnapshot>({
-      id: task.id,
-      snapshot: taskTextSnapshot(task),
-      version: task.textVersion,
-      storage: draftStorage(identity),
-      readDraft: parseTaskTextDraft,
-      idFactory: () => crypto.randomUUID(),
-      classifyError: errorCode,
-      send,
-      onSaved: (ack, sent) => {
-        showSaved(task, sent, ack.version);
-        void queryClient.invalidateQueries({ queryKey: ['workspace', 'search'] });
-      },
-      onAdopted: (snapshot, version) => showSaved(task, snapshot, version),
-    });
-    controllers.set(identity, controller);
-    registerSave('task', task.id, controller);
-  }
+  const identity = identityOf(task.id, installationId);
+  const session = sessions.get(identity);
+  if (session) return session.controller;
+  const controller = new AutosaveController<TaskTextSnapshot>({
+    id: task.id,
+    snapshot: taskTextSnapshot(task),
+    version: task.textVersion,
+    storage: draftStorage(identity),
+    readDraft: parseTaskTextDraft,
+    idFactory: () => crypto.randomUUID(),
+    classifyError: errorCode,
+    send,
+    onSaved: (ack, sent) => {
+      showSaved(task, sent, ack.version);
+      void queryClient.invalidateQueries({ queryKey: ['workspace', 'search'] });
+    },
+    onAdopted: (snapshot, version) => showSaved(task, snapshot, version),
+  });
+  sessions.set(identity, { controller, unregister: registerSave('task', task.id, controller), holders: 0 });
   return controller;
+}
+
+/**
+ * The drawer holds a task's session while it shows the task; the returned release lets the session go once
+ * its text is saved, at once or when its pending save lands.
+ */
+export function holdTaskController(taskId: string, installationId: string) {
+  const identity = identityOf(taskId, installationId);
+  const session = sessions.get(identity);
+  if (!session) return () => undefined;
+  session.holders += 1;
+  return () => {
+    session.holders -= 1;
+    const drop = () => {
+      if (session.holders > 0 || sessions.get(identity) !== session) return true;
+      if (session.controller.getState().status !== 'saved') return false;
+      sessions.delete(identity);
+      session.unregister();
+      return true;
+    };
+    if (drop()) return;
+    const stop = session.controller.subscribe(() => {
+      if (drop()) stop();
+    });
+  };
 }
 
 export type TaskTextController = ReturnType<typeof taskController>;

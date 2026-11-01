@@ -272,7 +272,7 @@ export class AutosaveController<T = Snapshot> {
           this.emit({ status: 'conflict', error });
         } else {
           // Validation is a definitive refusal. A corrected document gets a new request.
-          if (['VALIDATION', 'DOMAIN_RULE', 'BAD_REQUEST', 'PAYLOAD_TOO_LARGE'].includes(code ?? ''))
+          if (['VALIDATION', 'DOMAIN_RULE', 'BAD_REQUEST', 'PAYLOAD_TOO_LARGE', 'REFUSED'].includes(code ?? ''))
             this.pending = null;
           this.emit({ status: 'error', error });
         }
