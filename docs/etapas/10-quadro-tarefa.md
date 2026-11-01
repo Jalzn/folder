@@ -54,10 +54,11 @@ A Visão geral, o seletor e a lateral ganham as atrasadas e "Concluídas · 14 d
 - **`?tarefa=`** só abre a gaveta no Quadro, o endereço que "Copiar link" dá; o plano previa qualquer página do projeto.
 - **Calendário:** o `Calendar` do React Aria recebe a data por `CalendarStateContext`, porque `@internationalized/date` não é dependência da web e acrescentá-lo mudaria o lockfile.
 - **Tarefa na lixeira com a gaveta aberta:** a faixa "Esta tarefa está na lixeira." oferece "Abrir lixeira", e não Restaurar. O rascunho baixado é um arquivo JSON.
-- **Etiquetas:** o diálogo trata o próprio ⌘Z, porque `acceptsUndo` recusa dentro de diálogos; ali, o ⌘Z desfaz o toast na tela.
+- **Etiquetas:** o diálogo trata o próprio ⌘Z, porque o ⌘Z global não desfaz o toast dentro de diálogos; ali, o ⌘Z desfaz o toast na tela.
 - **"← Quadro"** fica no começo da barra da página (`PageFrame`), que o celular não mostra.
 - **Descrição em 14/22:** o editor compartilhado deixava a descrição nos 15/24 do documento. Achado na validação, corrigido em `2b01510`, com a medida no E2E.
 - **Fuso:** o Perfil mostra a mensagem do servidor quando a troca é recusada, e uma sessão sem fuso, inclusive um deslocamento gravado antes, manda o do aparelho de novo (`1c4303a`).
+- **⌘Z fora de um campo:** sem toast para desfazer, o ⌘Z chegava ao desfazer do navegador, que revertia a última edição de um editor já sem foco (a descrição depois do Esc, ou um documento), e o autosave gravava a reversão. Achado na verificação do coordenador e anterior à etapa. Fora de campos e editores, ⌘Z, ⇧⌘Z e Ctrl+Y não chegam mais ao navegador: o ⌘Z desfaz o toast na tela ou não faz nada (`undoKeyAction`, `248786e`).
 - **Achado da etapa 08:** um Esc que termina uma composição de IME fechava a lateral sobre a página, porque o overlay do React Aria só lê `isComposing` (`70368d6`).
 - **Não feitos:** a dica do Quadro na lateral ("5 abertas · 1 atrasada · G Q") e o calendário em tela cheia no celular.
 

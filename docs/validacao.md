@@ -6,12 +6,12 @@ Validação local a partir de 29 de outubro de 2026. A primeira versão foi impl
 
 A etapa foi implementada em 2026-11-01 por dois subagentes: backend (B1 a B6) e web (W1 a W7), em worktrees próprias até os pontos de integração e depois em `feat/quadro`. Três revisores adversariais examinaram, cada um, dados e migração, o quadro e a gaveta (teclado, acessibilidade e arrastar) e segurança e qualidade; os achados passaram por rodadas de correção, cada uma com reteste pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
 
-| Verificação | Resultado, em `2b01510` |
+| Verificação | Resultado, em `248786e` |
 | --- | --- |
-| `mise exec -- pnpm check` | Biome, tipos de todos os pacotes, E2E e scripts, dependency-cruiser sem violações em 795 módulos, 571 testes unitários em 89 arquivos, com tokens, contraste e paridade com `tokens.py` |
+| `mise exec -- pnpm check` | Biome, tipos de todos os pacotes, E2E e scripts, dependency-cruiser sem violações em 795 módulos, 572 testes unitários em 89 arquivos, com tokens, contraste e paridade com `tokens.py` |
 | `mise exec -- pnpm test:db` | 247 testes em 34 arquivos, com SQLite temporário |
 | `mise exec -- pnpm build` | Bundle de produção aprovado |
-| `E2E_PORT=5171 mise exec -- pnpm e2e` | 147 aprovados e 65 pulados, em 106 testes por perfil (desktop e Pixel 7). Pulados: o que precisa do desktop (teclado, hover e arrastar do quadro e da árvore, faixa e larguras) no celular, e o que é só do celular no desktop |
+| `E2E_PORT=5171 mise exec -- pnpm e2e` | 149 aprovados e 67 pulados, em 108 testes por perfil (desktop e Pixel 7). Pulados: o que precisa do desktop (teclado, hover e arrastar do quadro e da árvore, faixa e larguras) no celular, e o que é só do celular no desktop |
 
 Os testes de unidade e de banco cobrem, além do que já existia:
 
@@ -37,6 +37,7 @@ Os E2E rodam no Google Chrome instalado, desktop (1440×1000) e emulação Pixel
 8. **Fuso:** o Perfil com o fuso do dono e o do aparelho oferecido; uma tarefa que vence hoje não está atrasada.
 9. **Celular:** o quadro rola de lado, o ⋯ move o card e a gaveta cobre a página.
 10. **MCP:** `list_tasks` pelo nome da coluna e `read_task` em Markdown, do que a interface criou.
+11. **⌘Z fora de um campo:** depois do Esc na descrição da gaveta e num documento, a tecla de desfazer do sistema não muda o texto, não salva e deixa a versão gravada igual, conferida por RPC (`getTask` e `getDocument`).
 
 ### Validação no Chrome real contra o protótipo
 
