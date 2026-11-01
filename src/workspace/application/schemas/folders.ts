@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { FOLDER_LIMITS } from '../../domain/folders.js';
 import { NAV_ITEM_TYPES } from '../../domain/navigation.js';
-import { edit, id, request, version } from './common.js';
+import { edit, id, instant, request, version } from './common.js';
 
 /** The raw name, bounded before folderName collapses its spaces; readFolderName checks the rest. */
 const name = z.string().max(10 * FOLDER_LIMITS.nameChars);
 const type = z.enum(NAV_ITEM_TYPES);
-const pinnedAt = z.iso.datetime().nullable();
+const pinnedAt = instant.nullable();
 
 /** Without a project, every project's active folders. */
 export const ListFoldersInput = z.object({ projectId: id.optional() });

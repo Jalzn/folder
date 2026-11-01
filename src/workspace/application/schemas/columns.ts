@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { COLUMN_LIMITS } from '../../domain/columns.js';
-import { edit, id, request, version } from './common.js';
+import { edit, id, instant, request, version } from './common.js';
 
 /** The raw name, bounded before displayName tidies it; readName checks the rest. */
 const name = z.string().max(10 * COLUMN_LIMITS.nameChars);
-const completedAt = z.iso.datetime();
+const completedAt = instant;
 
 export const ListColumnsInput = z.object({});
 export const CreateColumnInput = z.object({ ...request, name });

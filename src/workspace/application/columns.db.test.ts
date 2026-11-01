@@ -344,6 +344,26 @@ describe('columns', () => {
       expect(await taskRow(waiting.id)).toMatchObject({ completed_at: at });
     });
 
+    it('stores an undo completion sent without milliseconds in the server form, which pages', async () => {
+      const review = (await create('Revisão')).id;
+      const [first, second] = [await task('Primeira', done), await task('Segunda', done)];
+      await service.setDoneColumn({ ...request(), id: review });
+      await service.setDoneColumn({
+        ...request(),
+        id: done,
+        restore: [
+          { id: first.id, completedAt: '2026-11-01T11:00:00Z' },
+          { id: second.id, completedAt: '2026-11-01T10:59:59.5Z' },
+        ],
+      });
+      expect(await taskRow(first.id)).toMatchObject({ completed_at: '2026-11-01T11:00:00.000Z' });
+      expect(await taskRow(second.id)).toMatchObject({ completed_at: '2026-11-01T10:59:59.500Z' });
+      const page = await service.listCompletedTasks({ projectId: project.id, limit: 1 });
+      expect(page).toMatchObject({ nextCursor: `c~2026-11-01T11:00:00.000Z~${first.id}` });
+      const next = await service.listCompletedTasks({ projectId: project.id, limit: 1, cursor: page.nextCursor ?? '' });
+      expect(next.items.map((item) => item.id)).toEqual([second.id]);
+    });
+
     it('refuses an undo list with a completion in the future, in setDoneColumn and restoreColumn', async () => {
       const review = (await create('Revisão')).id;
       const finished = await task('Pronta', done);
