@@ -87,6 +87,36 @@ describe('migration runner', () => {
     expect(await foreignKeys()).toBe(1);
   });
 
+  it('leaves violations from before the migrations as they were, with a warning, and refuses only new ones', async () => {
+    const { db, module, write, rows, foreignKeys } = await fixture();
+    await write('001_tables.sql', parentAndChild);
+    await migrate(db, [coreModule, module]);
+    // An orphan left by manual SQL with the keys off, long before the upgrade.
+    await sql`pragma foreign_keys = off`.execute(db);
+    await sql`insert into child values ('c0', 'gone')`.execute(db);
+    await sql`pragma foreign_keys = on`.execute(db);
+    const warnings: string[] = [];
+    const warn = (message: string) => warnings.push(message);
+
+    await write('002_rebuild.sql', rebuildParent("('p1')"));
+    await expect(migrate(db, [coreModule, module], { warn })).rejects.toThrow(
+      'Foreign key check failed after the migrations: child row 2 -> parent.',
+    );
+    expect(await rows("select version from core_schema_migrations where module = 'example'")).toEqual([{ version: 1 }]);
+    expect(warnings).toEqual([]);
+
+    await write('002_rebuild.sql', rebuildParent());
+    expect(await migrate(db, [coreModule, module], { warn })).toEqual([
+      { module: 'example', version: 2, name: 'rebuild' },
+    ]);
+    expect(warnings).toEqual([
+      'Foreign key violations from before the migrations, left as they were (1): child row 3 -> parent. ' +
+        'Run "pragma foreign_key_check" and repair them.',
+    ]);
+    expect(await rows("select id, parent_id from child where id = 'c0'")).toEqual([{ id: 'c0', parent_id: 'gone' }]);
+    expect(await foreignKeys()).toBe(1);
+  });
+
   it('keeps the keys on during a migration without the line', async () => {
     const { db, module, write, rows, foreignKeys } = await fixture();
     await write('001_tables.sql', parentAndChild);

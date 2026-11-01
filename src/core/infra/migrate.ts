@@ -41,6 +41,31 @@ const describeViolations = (violations: readonly ForeignKeyViolation[]) =>
     .map((row) => `${row.table} row ${row.rowid ?? '?'} -> ${row.parent}`)
     .join('; ');
 
+/**
+ * The violations after the migrations that were not there before. A row with the same table, rowid
+ * and parent as before is old; the old ones left unmatched, from a rebuilt table that gave its rows
+ * new rowids, are matched by table and parent alone.
+ */
+function newViolations(before: readonly ForeignKeyViolation[], after: readonly ForeignKeyViolation[]) {
+  const exact = (row: ForeignKeyViolation) => JSON.stringify([row.table, row.rowid, row.parent]);
+  const loose = (row: ForeignKeyViolation) => JSON.stringify([row.table, row.parent]);
+  const seen = new Set(before.map(exact));
+  const kept = new Set(after.map(exact));
+  const unmatched = new Map<string, number>();
+  for (const row of before) if (!kept.has(exact(row))) unmatched.set(loose(row), (unmatched.get(loose(row)) ?? 0) + 1);
+  return after.filter((row) => {
+    if (seen.has(exact(row))) return false;
+    const left = unmatched.get(loose(row)) ?? 0;
+    if (left > 0) unmatched.set(loose(row), left - 1);
+    return left === 0;
+  });
+}
+
+export interface MigrateOptions {
+  /** Receives what the runner leaves as it was but should be repaired, such as an old orphan row. */
+  warn?: (message: string) => void;
+}
+
 /** The migrations already applied, read before the write lock so the runner knows how to start. */
 async function appliedVersions(db: Database): Promise<Set<string>> {
   const table = await sql<{ name: string }>`select name from sqlite_master
@@ -54,12 +79,18 @@ async function appliedVersions(db: Database): Promise<Set<string>> {
 /**
  * Applies every pending migration of the modules in one transaction (BEGIN IMMEDIATE), after
  * registering their SQL functions on the connection. When a pending migration starts with
- * FOREIGN_KEYS_OFF, the keys go off on the connection before the transaction, `foreign_key_check`
- * must come back clean before the commit (any row aborts it, and nothing is applied), and the keys
- * go back on afterwards, also on failure; if they do not, the runner throws and the server does not
- * start. A migration without the line runs with the keys on, as always.
+ * FOREIGN_KEYS_OFF, the keys go off on the connection before the transaction, and `foreign_key_check`
+ * before the commit must find no violation that was not there when the transaction began (any new
+ * row aborts it, and nothing is applied). Older ones, left by manual SQL, do not block the upgrade:
+ * they go to `warn`, with their table and rowid. The keys go back on afterwards, also on failure; if
+ * they do not, the runner throws and the server does not start. A migration without the line runs
+ * with the keys on, as always.
  */
-export async function migrate(db: Database, modules: readonly ModuleDefinition[]): Promise<AppliedMigration[]> {
+export async function migrate(
+  db: Database,
+  modules: readonly ModuleDefinition[],
+  { warn = console.warn }: MigrateOptions = {},
+): Promise<AppliedMigration[]> {
   // Read files before obtaining the database write lock.
   const available = await Promise.all(
     modules.map(async (module) => {
@@ -91,7 +122,7 @@ export async function migrate(db: Database, modules: readonly ModuleDefinition[]
   );
   if (keysOff) setForeignKeys(db, false);
   try {
-    return await applyPending(db, available, keysOff);
+    return await applyPending(db, available, keysOff, warn);
   } finally {
     if (keysOff) setForeignKeys(db, true);
   }
@@ -110,8 +141,10 @@ function applyPending(
   db: Database,
   available: readonly { module: ModuleDefinition; files: MigrationFile[] }[],
   keysOff: boolean,
+  warn: (message: string) => void,
 ): Promise<AppliedMigration[]> {
   return writeTransaction(db, async (trx) => {
+    const before = keysOff ? foreignKeyViolations(db) : [];
     await sql`CREATE TABLE IF NOT EXISTS core_schema_migrations (module TEXT NOT NULL, version INTEGER NOT NULL, name TEXT NOT NULL, checksum TEXT NOT NULL, applied_at TEXT NOT NULL, PRIMARY KEY (module, version))`.execute(
       trx,
     );
@@ -147,9 +180,14 @@ function applyPending(
       }
     }
     if (keysOff) {
-      const violations = foreignKeyViolations(db);
+      const violations = newViolations(before, foreignKeyViolations(db));
       if (violations.length)
         throw new Error(`Foreign key check failed after the migrations: ${describeViolations(violations)}.`);
+      if (before.length)
+        warn(
+          `Foreign key violations from before the migrations, left as they were (${before.length}): ` +
+            `${describeViolations(before)}. Run "pragma foreign_key_check" and repair them.`,
+        );
     }
     return applied;
   });

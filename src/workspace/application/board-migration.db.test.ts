@@ -173,6 +173,30 @@ describe('migration 007', () => {
     });
   });
 
+  it('upgrades a database with an old orphan left by manual SQL, warning about it instead of refusing', async () => {
+    // The orphan-project base of the stage 08 and 09 reviews: a document whose project was deleted
+    // with the keys off. Stage 09 runs on it, and the upgrade must not stop the server.
+    await loadStage09Fixture(db, 'sample');
+    const [site] = await rows<{ id: string }>("select id from workspace_projects where name = 'Site pessoal 2024'");
+    await sql`pragma foreign_keys = off`.execute(db);
+    await sql`delete from workspace_projects where id = ${site?.id}`.execute(db);
+    await sql`pragma foreign_keys = on`.execute(db);
+    const orphans = await rows<{ table: string; rowid: number }>('pragma foreign_key_check');
+    expect(orphans.map((row) => row.table)).toEqual(['workspace_documents']);
+    const warnings: string[] = [];
+    expect(await migrate(db, [coreModule, workspaceModule], { warn: (message) => warnings.push(message) })).toEqual([
+      { module: 'workspace', version: 7, name: 'board' },
+    ]);
+    expect(warnings).toEqual([
+      'Foreign key violations from before the migrations, left as they were (1): ' +
+        `workspace_documents row ${orphans[0]?.rowid} -> workspace_projects. ` +
+        'Run "pragma foreign_key_check" and repair them.',
+    ]);
+    expect(await rows('pragma foreign_key_check')).toEqual(orphans);
+    expect(await rows('pragma foreign_keys')).toEqual([{ foreign_keys: 1 }]);
+    expect(await rows('select count(*) as count from workspace_task_sources')).toEqual([{ count: 1 }]);
+  });
+
   describe('refuses through SQL', () => {
     const now = '2026-11-01T12:00:00.000Z';
     const column = (id: string, name: string, extra: { isDone?: boolean; deletedAt?: string | null } = {}) =>
