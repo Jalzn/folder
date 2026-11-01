@@ -91,7 +91,17 @@ describe('folders', () => {
       for (const name of ['\u{200B}', '\u{3164}', '\u{00AD}\u{2060}', '\u{200D}'])
         await expect(create(name)).rejects.toMatchObject({ code: 'VALIDATION', message: 'Dê um nome à pasta.' });
       await create('Ações');
-      for (const name of ['Ａｃｏｅｓ', 'Aç\u{200B}ões', 'Aç\u{00AD}ões', 'Ações\u{2060}'])
+      // Default ignorable code points, assigned or not, and unassigned ones draw nothing either.
+      for (const name of [
+        'Ａｃｏｅｓ',
+        'Aç\u{200B}ões',
+        'Aç\u{00AD}ões',
+        'Ações\u{2060}',
+        'Ações\u{034F}',
+        'Ações\u{E0080}',
+        'Ações\u{FFF0}',
+        'Ações\u{0378}',
+      ])
         await expect(create(name)).rejects.toMatchObject({
           code: 'DOMAIN_RULE',
           message: 'Já existe uma pasta Ações.',

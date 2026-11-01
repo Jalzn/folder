@@ -76,6 +76,25 @@ describe('visible text', () => {
       expect(withoutHidden(text)).toBe(text);
   });
 
+  it('drops every default ignorable code point and, in names, every unassigned one', () => {
+    for (const hidden of [
+      '\u{034F}',
+      '\u{180B}',
+      '\u{17B4}',
+      '\u{17B5}',
+      '\u{2065}',
+      '\u{FFF0}',
+      '\u{E0080}',
+      '\u{E01F0}',
+      '\u{1D173}',
+      '\u{0378}',
+    ])
+      expect(visibleText(`Notas${hidden}`)).toBe('Notas');
+    expect(visibleText(`M${'\u{034F}'.repeat(20)}CP`)).toBe('MCP');
+    // For agents, only the ignorable ones go: an unassigned letter of a newer Unicode may draw there.
+    expect(withoutHidden('a\u{034F}\u{E0080}b\u{0378}')).toBe('ab\u{0378}');
+  });
+
   it('reads a text with nothing visible as empty', () => {
     for (const text of ['\u{200B}', '\u{200D}', '\u{0301}', ' \u{3164} ', '\u{FEFF}', '\u{E0067}', tags('x'), ''])
       expect(visibleText(text)).toBe('');

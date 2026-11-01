@@ -74,6 +74,11 @@ describe('folders', () => {
       expect(folderNameKey(one)).toBe(folderNameKey(other));
   });
 
+  it('keys "Notas" with a default ignorable or unassigned code point as "Notas"', () => {
+    for (const hidden of ['\u{034F}', '\u{180B}', '\u{17B4}', '\u{2065}', '\u{FFF0}', '\u{E0080}', '\u{0378}'])
+      expect(folderNameKey(`Notas${hidden}`)).toBe(folderNameKey('Notas'));
+  });
+
   it('stores and keys "MCP" with hidden tags as plain "MCP"', () => {
     const hidden = Array.from({ length: 32 }, (_, index) => String.fromCodePoint(0xe0041 + (index % 26))).join('');
     expect(folderName(`MCP${hidden}`)).toBe('MCP');

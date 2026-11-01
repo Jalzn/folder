@@ -1,9 +1,11 @@
 /**
- * Characters that draw nothing: format characters (`\p{Cf}`, such as the zero-width space, the soft
- * hyphen, the word joiner, the BOM and the tag characters), the Hangul fillers and the variation
- * selectors. A name of them looks empty, a name with them looks like another, and they can carry a
- * hidden text for an agent: tags spell ASCII, and each selector can stand for a byte. Three kinds
- * stay, only where they draw something:
+ * Characters that draw nothing: Unicode's default ignorable code points
+ * (`\p{Default_Ignorable_Code_Point}`), such as the zero-width space, the soft hyphen, the word
+ * joiner, the BOM, the tag characters, the variation selectors, the Hangul fillers, the combining
+ * grapheme joiner, the Mongolian selectors and the unassigned ranges kept for more of them. A name of
+ * them looks empty, a name with them looks like another, and they can carry a hidden text for an
+ * agent: tags spell ASCII, and each selector can stand for a byte. Three kinds stay, only where they
+ * draw something:
  *
  * - the tags of the three subdivision flags emoji draw (England, Scotland and Wales: the black flag,
  *   the tags of "gbeng", "gbsct" or "gbwls", then the cancel tag). Any other tag text is hidden text,
@@ -14,7 +16,9 @@
  * - the text and emoji presentation selectors (U+FE0E, U+FE0F) right after a character that has an
  *   emoji form (the heart, the keycap digits). Every other selector goes, U+E0100 to U+E01EF included.
  */
-const INVISIBLE = /[\p{Cf}\u{115F}\u{1160}\u{3164}\u{FFA0}]|[\u{FE00}-\u{FE0F}]|[\u{E0100}-\u{E01EF}]/u;
+const INVISIBLE = /\p{Default_Ignorable_Code_Point}/u;
+/** Code points no character is assigned to yet: they draw nothing today, so a name drops them. */
+const UNASSIGNED = /\p{Cn}/gu;
 const PRESENTATION = /[\u{FE0E}\u{FE0F}]/u;
 const EMOJI = /\p{Emoji}/u;
 const TAG = /[\u{E0000}-\u{E007F}]/u;
@@ -33,8 +37,8 @@ const LETTER_OR_MARK = /[\p{L}\p{M}]/u;
 /** Scripts the joiners never shape, where a joiner is only hidden text. */
 const UNSHAPED = /[\p{sc=Latin}\p{sc=Greek}\p{sc=Cyrillic}\p{sc=Common}\p{sc=Inherited}]/u;
 
-/** What draws something: not a space, a mark or an invisible character. */
-const VISIBLE = /[^\s\p{Cf}\p{M}\u{115F}\u{1160}\u{3164}\u{FFA0}]/u;
+/** What draws something: not a space, a mark, a format or an invisible character. */
+const VISIBLE = /[^\s\p{Cf}\p{M}\p{Default_Ignorable_Code_Point}]/u;
 
 /** Whether the joiner at `index` joins two emoji, past the skin tone or selector of the first. */
 export function joinsEmoji(points: readonly string[], index: number): boolean {
@@ -88,10 +92,11 @@ export function withoutHidden(text: string): string {
 }
 
 /**
- * A name or title as stored: without the characters that draw nothing (withoutHidden), nor spaces
- * at the ends. Empty when nothing visible is left, so that a name of only those or marks reads as none.
+ * A name or title as stored: without the characters that draw nothing (withoutHidden), unassigned
+ * code points or spaces at the ends. Empty when nothing visible is left, so that a name of only
+ * those or marks reads as none.
  */
 export function visibleText(raw: string): string {
-  const text = withoutHidden(raw).trim();
+  const text = withoutHidden(raw).replace(UNASSIGNED, '').trim();
   return VISIBLE.test(text) ? text : '';
 }

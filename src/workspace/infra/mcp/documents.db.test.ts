@@ -98,6 +98,7 @@ describe('read_document', () => {
         paragraph(`bandeira ${payload} e ${split} fim`),
         paragraph(`seletores 😀${selectors} e M\u{FE0F}CP, ❤\u{FE0F} fim`),
         paragraph('zero\u{200B}\u{200C}\u{200D}\u{2060}largura\u{FEFF} fim, می\u{200C}خواهم e ශ්\u{200D}රී'),
+        paragraph(`ignoráveis M${'\u{034F}'.repeat(20)}CP\u{E0080}\u{2065}\u{FFF0}\u{17B4} fim`),
       ],
     });
     // Rows from before visibleText, as only SQL can write them now.
@@ -106,7 +107,8 @@ describe('read_document', () => {
     await sql`update workspace_projects set name = ${`Projeto${split}\u{2060}`} where id = ${agent.project.id}`.execute(
       agent.db,
     );
-    const hiddenText = /[\u{E0000}-\u{E007F}\u{200B}\u{2060}\u{FEFF}]|[\u{E0100}-\u{E01EF}]|[\u{FE00}-\u{FE0D}]/u;
+    const hiddenText =
+      /[\u{E0000}-\u{E007F}\u{200B}\u{2060}\u{FEFF}\u{2065}\u{FFF0}]|[\u{E0080}-\u{E00FF}]|[\u{E0100}-\u{E01EF}]|[\u{FE00}-\u{FE0D}]|\u{034F}|\u{17B4}/u;
     const allowed = (text: string) => text.replaceAll(scotland, '').replaceAll('❤\u{FE0F}', '');
     const { text } = await agent.call('read_document', { id: document.id });
     expect(text).toContain('- Pasta: MCP 🏴\n');
@@ -115,6 +117,7 @@ describe('read_document', () => {
     expect(text).toContain('bandeira 🏴 e 🏴🏴🏴🏴 fim');
     expect(text).toContain('seletores 😀 e MCP, ❤\u{FE0F} fim');
     expect(text).toContain('zerolargura fim, می\u{200C}خواهم e ශ්\u{200D}රී');
+    expect(text).toContain('ignoráveis MCP fim');
     expect(allowed(text)).not.toMatch(hiddenText);
     for (const [name, input] of [
       ['search', { query: 'bandeira' }],
