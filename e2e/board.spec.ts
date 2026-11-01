@@ -44,14 +44,53 @@ const cardTitle = (page: Page, title: string) =>
   page.getByRole('main').getByRole('button', { name: title, exact: true });
 const columnNames = (page: Page) => page.getByRole('main').locator('.board-column__name');
 
-/** A fresh project with its board open. */
+/** A fresh project with its board open; resolves to the project's ID. */
 async function freshBoard(page: Page, name: string) {
   await login(page);
-  await createProject(page, `${name} ${Date.now()}`);
+  const projectId = await createProject(page, `${name} ${Date.now()}`);
   await openBoard(page);
+  return projectId;
 }
 
-test('columns are created, renamed, moved, deleted with a destination and given back', async ({ page }) => {
+type Ack = { id: string; version: number };
+type BoardTask = { id: string; title: string; columnId: string };
+
+/** Tasks made over RPC, in order, in a column or the first open one; the board reads them again. */
+async function seedTasks(page: Page, projectId: string, titles: string[], columnId?: string) {
+  const ids: string[] = [];
+  for (const title of titles) {
+    const input = { requestId: crypto.randomUUID(), title, projectId, ...(columnId ? { columnId } : {}) };
+    ids.push((await rpc<Ack>(page, 'workspace/createTask', input)).id);
+  }
+  await page.reload();
+  for (const title of titles) await expect(cardTitle(page, title)).toBeVisible();
+  return ids;
+}
+
+/** The board as the server has it: each column's titles, in order. */
+async function serverBoard(page: Page, projectId: string) {
+  const board = await rpc<{ tasks: BoardTask[] }>(page, 'workspace/projectBoard', { projectId });
+  const columns = await rpc<{ columns: { id: string; name: string; isDone: boolean }[] }>(
+    page,
+    'workspace/listColumns',
+    {},
+  );
+  return Object.fromEntries(
+    columns.columns.map((each) => [
+      each.name,
+      board.tasks.filter((task) => task.columnId === each.id).map((task) => task.title),
+    ]),
+  );
+}
+
+/** The columns as the server has them: their names in order, the done one marked with ✓. */
+async function serverColumns(page: Page) {
+  type Column = { name: string; position: number; isDone: boolean };
+  const { columns } = await rpc<{ columns: Column[] }>(page, 'workspace/listColumns', {});
+  return [...columns].sort((a, b) => a.position - b.position).map((each) => `${each.name}${each.isDone ? ' ✓' : ''}`);
+}
+
+test('a new column is named in place with its field’s keys, moves, and refuses a taken name', async ({ page }) => {
   await freshBoard(page, 'Colunas');
   await expect(columnNames(page)).toHaveText(['A fazer', 'Em andamento', 'Concluído']);
 
@@ -96,6 +135,19 @@ test('columns are created, renamed, moved, deleted with a destination and given 
   await expect(toast(page)).toContainText('Tarefa criada em Revisão');
   await closeDrawer(page);
   await expect(column(page, 'Revisão').getByRole('button', { name: 'Revisar o texto', exact: true })).toBeVisible();
+});
+
+test('deleting a column with tasks asks where they go, and ⌘Z gives the column and its tasks back', async ({
+  page,
+}) => {
+  const projectId = await freshBoard(page, 'Excluir coluna');
+  const created = await rpc<Ack>(page, 'workspace/createColumn', { requestId: crypto.randomUUID(), name: 'Revisão' });
+  const [taskId] = await seedTasks(page, projectId, ['Revisar o texto'], created.id);
+  await expect(columnNames(page)).toHaveText(['A fazer', 'Em andamento', 'Revisão', 'Concluído']);
+  // Moved left of Em andamento, so its left neighbour is A fazer.
+  await columnName(page, 'Revisão').focus();
+  await page.keyboard.press('Shift+ArrowLeft');
+  await expect(columnNames(page)).toHaveText(['A fazer', 'Revisão', 'Em andamento', 'Concluído']);
 
   // With a task, Excluir… asks where it goes, the left neighbour by default, which has the focus.
   await columnName(page, 'Revisão').focus();
@@ -109,6 +161,8 @@ test('columns are created, renamed, moved, deleted with a destination and given 
   await expect(dialog.getByRole('radio', { name: 'Em andamento' })).toBeChecked();
   await dialog.getByRole('button', { name: 'Mover e excluir', exact: true }).click();
   await expect(toast(page)).toContainText('Coluna excluída. 1 tarefa foi para Em andamento.');
+  expect(await serverColumns(page)).toEqual(['A fazer', 'Em andamento', 'Concluído ✓']);
+  expect((await serverBoard(page, projectId))['Em andamento']).toEqual(['Revisar o texto']);
   await expect(columnNames(page)).toHaveText(['A fazer', 'Em andamento', 'Concluído']);
   await expect(columnName(page, 'Em andamento')).toBeFocused();
   await expect(
@@ -118,18 +172,25 @@ test('columns are created, renamed, moved, deleted with a destination and given 
   // ⌘Z gives the column back with its task.
   await pressCommand(page, 'z');
   await expect(toast(page)).toContainText('Coluna Revisão restaurada.');
+  expect(await serverColumns(page)).toEqual(['A fazer', 'Revisão', 'Em andamento', 'Concluído ✓']);
+  expect((await rpc<BoardTask>(page, 'workspace/getTask', { id: taskId })).columnId).toBe(created.id);
   await expect(columnNames(page)).toHaveText(['A fazer', 'Revisão', 'Em andamento', 'Concluído']);
   await expect(column(page, 'Revisão').getByRole('button', { name: 'Revisar o texto', exact: true })).toBeVisible();
+});
 
+test('the done column passes to another column and back with Desfazer, and cannot be deleted', async ({ page }) => {
+  await freshBoard(page, 'Conclusão da coluna');
   // The done column changes, and Desfazer changes it back.
   await columnName(page, 'Em andamento').focus();
   await page.keyboard.press('Shift+F10');
   await page.getByRole('menuitem', { name: 'Marcar como conclusão' }).click();
   await expect(toast(page)).toContainText('Em andamento agora é a coluna de conclusão.');
+  expect(await serverColumns(page)).toEqual(['A fazer', 'Em andamento ✓', 'Concluído']);
   await expect(columnName(page, 'Em andamento')).toHaveAccessibleName(/coluna de conclusão/);
   await toast(page).getByRole('button', { name: 'Desfazer' }).click();
   await expect(columnName(page, 'Concluído')).toHaveAccessibleName(/coluna de conclusão/);
   await expect(columnName(page, 'Em andamento')).not.toHaveAccessibleName(/coluna de conclusão/);
+  expect(await serverColumns(page)).toEqual(['A fazer', 'Em andamento', 'Concluído ✓']);
 
   // The done column cannot go; the others leave the board as it was for the next tests.
   await columnName(page, 'Concluído').focus();
@@ -139,16 +200,11 @@ test('columns are created, renamed, moved, deleted with a destination and given 
     'Marque outra coluna como conclusão antes.',
   );
   await page.keyboard.press('Escape');
-  await columnName(page, 'Revisão').focus();
-  await page.keyboard.press('Shift+F10');
-  await page.getByRole('menu', { name: 'Coluna Revisão' }).getByRole('menuitem', { name: 'Excluir…' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Mover e excluir', exact: true }).click();
-  await expect(columnNames(page)).toHaveText(['A fazer', 'Em andamento', 'Concluído']);
 });
 
-test('cards move by the keyboard, are announced, and complete with ⌘↵ and Desfazer', async ({ page }) => {
-  await freshBoard(page, 'Cards');
-  for (const title of ['Primeira', 'Segunda', 'Terceira']) await newTask(page, title);
+test('the arrows walk the cards and the columns’ names, and the board is one Tab stop', async ({ page }) => {
+  const projectId = await freshBoard(page, 'Setas');
+  await seedTasks(page, projectId, ['Primeira', 'Segunda', 'Terceira']);
   const todo = column(page, 'A fazer');
   await expect(todo.getByRole('listitem')).toHaveCount(3);
 
@@ -171,6 +227,13 @@ test('cards move by the keyboard, are announced, and complete with ⌘↵ and De
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('ArrowDown');
   await expect(cardTitle(page, 'Segunda')).toBeFocused();
+});
+
+test('⇧ and the arrows move a card and say where; M opens Mover para', async ({ page }) => {
+  const projectId = await freshBoard(page, 'Mover');
+  await seedTasks(page, projectId, ['Primeira', 'Segunda', 'Terceira']);
+  const todo = column(page, 'A fazer');
+  await cardTitle(page, 'Segunda').focus();
 
   // ⇧→ moves it to the next column, with the focus, and says where.
   await page.keyboard.press('Shift+ArrowRight');
@@ -190,6 +253,7 @@ test('cards move by the keyboard, are announced, and complete with ⌘↵ and De
   await page.keyboard.press('Shift+ArrowUp');
   await expect(live(page)).toHaveText('Posição 2 de 3 em A fazer');
   await expect(todo.locator('.task-card__title')).toHaveText(['Primeira', 'Segunda', 'Terceira']);
+  expect((await serverBoard(page, projectId))['A fazer']).toEqual(['Primeira', 'Segunda', 'Terceira']);
   await expect(cardTitle(page, 'Segunda')).toBeFocused();
   // No column with cards to the right: the focus stays.
   await page.keyboard.press('ArrowRight');
@@ -202,6 +266,16 @@ test('cards move by the keyboard, are announced, and complete with ⌘↵ and De
   await move.getByRole('menuitemradio', { name: /Concluído/ }).click();
   await expect(column(page, 'Concluído').getByRole('button', { name: 'Segunda', exact: true })).toBeFocused();
   await expect(live(page)).toHaveText('Movida para Concluído, 1 de 1');
+  expect((await serverBoard(page, projectId)).Concluído).toEqual(['Segunda']);
+});
+
+test('⌘↵ reopens and completes a card with Desfazer; ⇧F10 opens its ⋯ and ↵ the drawer', async ({ page }) => {
+  const projectId = await freshBoard(page, 'Concluir');
+  await seedTasks(page, projectId, ['Primeira', 'Terceira']);
+  const [segunda] = await seedTasks(page, projectId, ['Segunda'], FIRST_COLUMNS.done);
+  await expect(page.getByRole('main').locator('.task-card')).toHaveCount(3);
+  const todo = column(page, 'A fazer');
+  await cardTitle(page, 'Segunda').focus();
 
   // ⌘↵ reopens it at the end of the first open column; Desfazer puts it back.
   await pressCommand(page, 'Enter');
@@ -210,6 +284,7 @@ test('cards move by the keyboard, are announced, and complete with ⌘↵ and De
   await expect(cardTitle(page, 'Segunda')).toBeFocused();
   await pressCommand(page, 'z');
   await expect(column(page, 'Concluído').getByRole('button', { name: 'Segunda', exact: true })).toBeVisible();
+  expect((await rpc<BoardTask>(page, 'workspace/getTask', { id: segunda })).columnId).toBe(FIRST_COLUMNS.done);
   await expect(cardTitle(page, 'Segunda')).toBeFocused();
 
   // ⌘↵ on an open card completes it at the top of the done column.
