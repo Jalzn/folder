@@ -23,6 +23,7 @@ export function canvasRepository(connection: Database): CanvasRepository {
           'updated_at',
           'deleted_at',
           'pinned_at',
+          'folder_id',
         ])
         .where('deleted_at', input.deleted ? 'is not' : 'is', null);
       if (input.projectId) query = query.where('project_id', '=', input.projectId);

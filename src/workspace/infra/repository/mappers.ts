@@ -1,8 +1,9 @@
 import type { TaskRecord } from '../../application/ports.js';
 import type { Canvas, CanvasSummary } from '../../domain/canvas.js';
+import { type Folder, folderNameKey } from '../../domain/folders.js';
 import type { Document, DocumentBlock, DocumentSummary, Project } from '../../domain/models.js';
 import { searchText } from '../../domain/search-text.js';
-import type { CanvasRow, DocumentRow, ProjectRow, TaskRow } from '../db.js';
+import type { CanvasRow, DocumentRow, FolderRow, ProjectRow, TaskRow } from '../db.js';
 
 export const projectModel = (row: ProjectRow): Project => ({
   id: row.id,
@@ -25,6 +26,28 @@ export const projectRow = (project: Project): ProjectRow => ({
   updated_at: project.updatedAt,
 });
 
+export const folderModel = (row: FolderRow): Folder => ({
+  id: row.id,
+  projectId: row.project_id,
+  name: row.name,
+  position: row.position,
+  version: row.version,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+  deletedAt: row.deleted_at,
+});
+export const folderRow = (folder: Folder): FolderRow => ({
+  id: folder.id,
+  project_id: folder.projectId,
+  name: folder.name,
+  name_key: folderNameKey(folder.name),
+  position: folder.position,
+  version: folder.version,
+  created_at: folder.createdAt,
+  updated_at: folder.updatedAt,
+  deleted_at: folder.deletedAt,
+});
+
 export const documentSummary = (row: Omit<DocumentRow, 'content' | 'search_text'>): DocumentSummary => ({
   id: row.id,
   title: row.title,
@@ -36,6 +59,7 @@ export const documentSummary = (row: Omit<DocumentRow, 'content' | 'search_text'
   updatedAt: row.updated_at,
   deletedAt: row.deleted_at,
   pinnedAt: row.pinned_at,
+  folderId: row.folder_id,
 });
 export const documentModel = (row: DocumentRow): Document => ({
   ...documentSummary(row),
@@ -54,6 +78,7 @@ export const documentRow = (document: Document): DocumentRow => ({
   updated_at: document.updatedAt,
   deleted_at: document.deletedAt,
   pinned_at: document.pinnedAt,
+  folder_id: document.folderId,
 });
 
 export const canvasSummary = (row: Omit<CanvasRow, 'scene' | 'search_text'>): CanvasSummary => ({
@@ -67,6 +92,7 @@ export const canvasSummary = (row: Omit<CanvasRow, 'scene' | 'search_text'>): Ca
   updatedAt: row.updated_at,
   deletedAt: row.deleted_at,
   pinnedAt: row.pinned_at,
+  folderId: row.folder_id,
 });
 export const canvasModel = (row: CanvasRow): Canvas => ({
   ...canvasSummary(row),
@@ -85,6 +111,7 @@ export const canvasRow = (canvas: Canvas): CanvasRow => ({
   updated_at: canvas.updatedAt,
   deleted_at: canvas.deletedAt,
   pinned_at: canvas.pinnedAt,
+  folder_id: canvas.folderId,
 });
 
 export const taskModel = (row: TaskRow): TaskRecord => ({

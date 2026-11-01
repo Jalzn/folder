@@ -43,10 +43,11 @@ afterEach(async () => {
   await rm(directory, { recursive: true, force: true });
 });
 
-/** Runs migration 005 over a database the rows were written to with migrations 001 to 004. */
+/** Runs migration 005, and the ones after it, over a database the rows were written to with migrations 001 to 004. */
 async function migrateTo005() {
   expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
     { module: 'workspace', version: 5, name: 'projects_required' },
+    { module: 'workspace', version: 6, name: 'folders' },
   ]);
   expect((await sql<{ integrity_check: string }>`pragma integrity_check`.execute(db)).rows).toEqual([
     { integrity_check: 'ok' },

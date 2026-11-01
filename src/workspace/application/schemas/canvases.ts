@@ -21,6 +21,8 @@ export const CreateCanvasInput = z.object({
   ...request,
   title: z.string().trim().max(300).optional(),
   projectId: id,
+  /** An active folder of the project; at the root without it. */
+  folderId: id.optional(),
   scene: scene.optional(),
 });
 /** A save never moves the drawing: moveItem does. A `projectId` sent anyway is dropped, as any unknown key. */

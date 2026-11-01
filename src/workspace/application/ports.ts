@@ -1,4 +1,5 @@
 import type { Canvas, CanvasSummary } from '../domain/canvas.js';
+import type { Folder } from '../domain/folders.js';
 import type { Document, DocumentSummary, Project, Task, TaskSource, TaskStatus } from '../domain/models.js';
 import type { NavItemType } from '../domain/navigation.js';
 
@@ -32,6 +33,14 @@ export interface ProjectRepository {
   saveProject(project: Project, expectedVersion: number): Promise<void>;
   /** Moves a project in the selector. The order is not an edit: version and dates stay. */
   setProjectPosition(id: string, position: number): Promise<void>;
+}
+
+/** Folders of documents and drawings, active or deleted. */
+export interface FolderRepository {
+  findFolder(id: string): Promise<Folder | undefined>;
+  /** The project's active folders, in manual order. */
+  activeFolders(projectId: string): Promise<Folder[]>;
+  insertFolder(folder: Folder): Promise<void>;
 }
 
 export interface DocumentRepository {
@@ -106,7 +115,10 @@ export interface PinRepository {
 
 /** Documents and drawings moving between projects. */
 export interface MoveRepository {
-  /** Sets the project, at the expected version, and unpins; the version goes up and the dates stay. */
+  /**
+   * Sets the project, at the expected version, at its root and unpinned: a folder belongs to one
+   * project. The version goes up and the dates stay.
+   */
   moveItem(type: NavItemType, id: string, projectId: string, expectedVersion: number): Promise<void>;
 }
 
@@ -117,6 +129,7 @@ export interface BoardRepository {
 }
 
 export type WorkspaceRepository = ProjectRepository &
+  FolderRepository &
   DocumentRepository &
   CanvasRepository &
   CanvasPreviewRepository &

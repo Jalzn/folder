@@ -20,6 +20,7 @@ export {
   readDocumentContent,
 } from './document.js';
 export { excerptAround, excerptFromStart, type TextCut } from './excerpt.js';
+export { FOLDER_LIMITS, type Folder, folderName, folderNameKey } from './folders.js';
 export { documentToMarkdown } from './markdown.js';
 export { displayMathLines, inlineMath, MATH_SEPARATOR, needsMathSeparator } from './markdown-math.js';
 export type {

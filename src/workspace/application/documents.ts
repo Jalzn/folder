@@ -1,5 +1,6 @@
 import { documentPlainText, withBlockIds } from '../domain/document.js';
 import type { DocumentAck } from '../domain/models.js';
+import { requireFolderInProject } from './folders/folder-rules.js';
 import { assertVersion, requireActiveProject, requireDocument } from './helpers.js';
 import type { WorkspaceContext } from './ports.js';
 import type {
@@ -23,6 +24,7 @@ export function getDocument(ctx: WorkspaceContext, input: GetDocumentInput) {
 export function createDocument(ctx: WorkspaceContext, input: CreateDocumentInput): Promise<DocumentAck> {
   return ctx.write('workspace.createDocument', input, async (repo) => {
     const project = await requireActiveProject(repo, input.projectId);
+    if (input.folderId) await requireFolderInProject(repo, input.folderId, project.id);
     const now = ctx.now();
     const content = withBlockIds(input.content ?? [], () => ctx.newId());
     const document = {
@@ -37,6 +39,7 @@ export function createDocument(ctx: WorkspaceContext, input: CreateDocumentInput
       updatedAt: now,
       deletedAt: null,
       pinnedAt: null,
+      folderId: input.folderId ?? null,
     };
     await repo.insertDocument(document);
     return { id: document.id, version: document.version, updatedAt: document.updatedAt };

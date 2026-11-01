@@ -4,6 +4,7 @@ import { boardRepository } from './board.js';
 import { canvasPreviewRepository } from './canvas-previews.js';
 import { canvasRepository } from './canvases.js';
 import { documentRepository } from './documents.js';
+import { folderRepository } from './folders.js';
 import { moveRepository } from './moves.js';
 import { pinRepository } from './pins.js';
 import { projectRepository } from './projects.js';
@@ -14,6 +15,7 @@ import { trashRepository } from './trash.js';
 export function workspaceRepository(connection: Database): WorkspaceRepository {
   return {
     ...projectRepository(connection),
+    ...folderRepository(connection),
     ...documentRepository(connection),
     ...canvasRepository(connection),
     ...canvasPreviewRepository(connection),

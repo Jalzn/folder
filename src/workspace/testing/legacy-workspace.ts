@@ -31,9 +31,14 @@ interface LegacyItem {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  /** Since migration 005. */
+  pinned_at?: string | null;
 }
 
-/** The tables as migrations 001 to 004 left them, before every item needed a project. */
+/**
+ * The tables as migrations 001 to 004 left them, before every item needed a project, with the
+ * columns migration 005 added as optional.
+ */
 interface LegacyTables {
   workspace_projects: {
     id: string;
@@ -42,6 +47,9 @@ interface LegacyTables {
     archived_at: string | null;
     created_at: string;
     updated_at: string;
+    /** Since migration 005. */
+    color?: 'violet' | 'ochre' | 'gray' | 'green';
+    position?: number;
   };
   workspace_documents: LegacyItem & { content: string };
   workspace_canvases: LegacyItem & { scene: string };
@@ -66,7 +74,14 @@ interface LegacyTables {
     updated_at: string;
     deleted_at: string | null;
   };
-  workspace_task_sources: { task_id: string; document_id: string; block_id: string | null; excerpt: string };
+  workspace_task_sources: {
+    task_id: string;
+    document_id: string;
+    block_id: string | null;
+    excerpt: string;
+    /** Since migration 005. */
+    document_title?: string;
+  };
 }
 
 interface Dates {
@@ -79,13 +94,17 @@ interface ItemFields extends Dates {
   projectId?: string | null;
   title?: string;
   version?: number;
+  /** Only at migration 005. */
+  pinnedAt?: string | null;
 }
 
 /**
- * Writes rows as the workspace did before migration 005, with derived text columns computed as the
- * repositories computed them. Each row is a minute after the previous one unless dated.
+ * Writes rows as the workspace did before migration 005, or, with `at: 5`, as migrations 001 to 005
+ * left it (project colour and position, pins, sources with the document's title), with derived text
+ * columns computed as the repositories computed them. Each row is a minute after the previous one
+ * unless dated.
  */
-export function legacyRows(connection: Database) {
+export function legacyRows(connection: Database, { at = 4 }: { at?: 4 | 5 } = {}) {
   const db = tables<LegacyTables>(connection);
   let clock = Date.parse('2026-10-01T12:00:00.000Z');
   const next = () => {
@@ -107,11 +126,15 @@ export function legacyRows(connection: Database) {
       format_version: 1,
       version: fields.version ?? 1,
       ...dates(fields),
+      ...(at === 5 ? { pinned_at: fields.pinnedAt ?? null } : {}),
     };
   };
 
   return {
-    async project(name: string, fields: Dates & { archivedAt?: string | null; version?: number } = {}) {
+    async project(
+      name: string,
+      fields: Dates & { archivedAt?: string | null; version?: number; position?: number } = {},
+    ) {
       const { created_at, updated_at } = dates(fields);
       const row = {
         id: randomUUID(),
@@ -120,6 +143,7 @@ export function legacyRows(connection: Database) {
         archived_at: fields.archivedAt ?? null,
         created_at,
         updated_at,
+        ...(at === 5 ? { color: 'violet' as const, position: fields.position ?? 0 } : {}),
       };
       await db.insertInto('workspace_projects').values(row).execute();
       return row;
@@ -164,7 +188,21 @@ export function legacyRows(connection: Database) {
       return row;
     },
     async source(taskId: string, documentId: string, excerpt: string, blockId: string | null = null) {
-      const row = { task_id: taskId, document_id: documentId, block_id: blockId, excerpt };
+      const documentTitle = async () =>
+        (
+          await db
+            .selectFrom('workspace_documents')
+            .select('title')
+            .where('id', '=', documentId)
+            .executeTakeFirstOrThrow()
+        ).title;
+      const row = {
+        task_id: taskId,
+        document_id: documentId,
+        block_id: blockId,
+        excerpt,
+        ...(at === 5 ? { document_title: await documentTitle() } : {}),
+      };
       await db.insertInto('workspace_task_sources').values(row).execute();
       return row;
     },

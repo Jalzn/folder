@@ -10,7 +10,8 @@ export function moveRepository(connection: Database): MoveRepository {
     async moveItem(type, id, projectId, expectedVersion) {
       const result = await db
         .updateTable(itemTable(db, type))
-        .set({ project_id: projectId, pinned_at: null, version: expectedVersion + 1 })
+        // A folder belongs to one project, so the item leaves it for the new project's root.
+        .set({ project_id: projectId, folder_id: null, pinned_at: null, version: expectedVersion + 1 })
         .where('item.id', '=', id)
         .where('item.version', '=', expectedVersion)
         .executeTakeFirstOrThrow();

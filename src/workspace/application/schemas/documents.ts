@@ -21,6 +21,8 @@ export const CreateDocumentInput = z.object({
   ...request,
   title: z.string().trim().max(300).optional(),
   projectId: id,
+  /** An active folder of the project; at the root without it. */
+  folderId: id.optional(),
   content: content.optional(),
 });
 /** A save never moves the document: moveItem does. A `projectId` sent anyway is dropped, as any unknown key. */

@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DocumentBlock, Project, TaskAck } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
+import { testFolder } from '../testing/folders.js';
 import { testProject } from '../testing/projects.js';
 
 const request = () => ({ requestId: randomUUID() });
@@ -210,6 +211,40 @@ describe('workspace persistence and adversarial cases', () => {
     expect((await service.listDocuments({ query: 'REFERENCIAS' })).map((item) => item.id)).toEqual([document.id]);
     expect(await service.listDocuments({ query: '%' })).toHaveLength(1);
     expect(await service.listDocuments({ query: '_' })).toHaveLength(0);
+  });
+
+  it('creates documents and drawings in an active folder of their project, or at the root', async () => {
+    const other = await testProject(service, 'Outro');
+    const folder = await testFolder(db, project.id, 'MCP');
+    const document = await service.createDocument({ ...request(), projectId: project.id, folderId: folder.id });
+    const canvas = await service.createCanvas({ ...request(), projectId: project.id, folderId: folder.id });
+    const loose = await service.createDocument({ ...request(), projectId: project.id });
+    expect((await service.getDocument({ id: document.id })).folderId).toBe(folder.id);
+    expect((await service.getCanvas({ id: canvas.id })).folderId).toBe(folder.id);
+    expect((await service.getDocument({ id: loose.id })).folderId).toBeNull();
+    expect((await service.listDocuments({ projectId: project.id })).map((item) => item.folderId).sort()).toEqual([
+      folder.id,
+      null,
+    ]);
+    // A save keeps the folder.
+    await service.saveDocument({ ...request(), id: document.id, expectedVersion: 1, title: 'Plano', content: [] });
+    expect((await service.getDocument({ id: document.id })).folderId).toBe(folder.id);
+
+    const elsewhere = await testFolder(db, other.id, 'Alheia');
+    for (const create of [
+      () => service.createDocument({ ...request(), projectId: project.id, folderId: elsewhere.id }),
+      () => service.createCanvas({ ...request(), projectId: project.id, folderId: elsewhere.id }),
+    ])
+      await expect(create()).rejects.toMatchObject({ code: 'VALIDATION', message: 'A pasta não é deste projeto.' });
+    const deleted = await testFolder(db, project.id, 'Excluída');
+    await sql`update workspace_folders set deleted_at = ${'2026-10-31T12:00:00.000Z'} where id = ${deleted.id}`.execute(
+      db,
+    );
+    for (const folderId of [deleted.id, randomUUID()])
+      await expect(service.createDocument({ ...request(), projectId: project.id, folderId })).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+        message: 'A pasta não está disponível.',
+      });
   });
 
   it('assigns and archives projects without losing documents', async () => {

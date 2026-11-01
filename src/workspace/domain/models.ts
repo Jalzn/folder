@@ -37,6 +37,8 @@ export interface DocumentSummary {
   deletedAt: string | null;
   /** When it was pinned at the top of its sidebar section; moving it or trashing it unpins it. */
   pinnedAt: string | null;
+  /** The folder it is in, or null at the project's root. A trashed item keeps it as its origin. */
+  folderId: string | null;
 }
 
 export interface Document extends DocumentSummary {

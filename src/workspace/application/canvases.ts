@@ -1,6 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
 import { type Canvas, type CanvasAck, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
 import { previewShowsScene } from '../domain/canvas-preview.js';
+import { requireFolderInProject } from './folders/folder-rules.js';
 import { assertVersion, requireActiveProject } from './helpers.js';
 import type { WorkspaceContext, WorkspaceRepository } from './ports.js';
 import type {
@@ -40,6 +41,7 @@ export function getCanvas(ctx: WorkspaceContext, input: GetCanvasInput) {
 export function createCanvas(ctx: WorkspaceContext, input: CreateCanvasInput): Promise<CanvasAck> {
   return ctx.write('workspace.createCanvas', input, async (repo) => {
     const project = await requireActiveProject(repo, input.projectId);
+    if (input.folderId) await requireFolderInProject(repo, input.folderId, project.id);
     const now = ctx.now();
     const scene = input.scene ?? emptyCanvasScene();
     const canvas: Canvas = {
@@ -54,6 +56,7 @@ export function createCanvas(ctx: WorkspaceContext, input: CreateCanvasInput): P
       updatedAt: now,
       deletedAt: null,
       pinnedAt: null,
+      folderId: input.folderId ?? null,
     };
     await repo.insertCanvas(canvas);
     return { id: canvas.id, version: canvas.version, updatedAt: now };

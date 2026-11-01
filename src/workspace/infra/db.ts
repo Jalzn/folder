@@ -26,6 +26,8 @@ export interface DocumentRow {
   updated_at: string;
   deleted_at: string | null;
   pinned_at: string | null;
+  /** Null at the project's root. A trashed item may keep a deleted folder, where it came from. */
+  folder_id: string | null;
 }
 
 export interface TaskRow {
@@ -60,8 +62,23 @@ export interface CanvasPreviewRow {
   created_at: string;
 }
 
+/** A deleted folder keeps its row (deleted_at): it names the origin of trashed items and can come back. */
+export interface FolderRow {
+  id: string;
+  project_id: string;
+  name: string;
+  /** folderNameKey(name), unique among the project's active folders. */
+  name_key: string;
+  position: number;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 export interface WorkspaceTables {
   workspace_canvases: CanvasRow;
+  workspace_folders: FolderRow;
   workspace_canvas_previews: CanvasPreviewRow;
   workspace_projects: ProjectRow;
   workspace_documents: DocumentRow;
@@ -84,4 +101,6 @@ export interface CanvasRow {
   updated_at: string;
   deleted_at: string | null;
   pinned_at: string | null;
+  /** Null at the project's root. A trashed item may keep a deleted folder, where it came from. */
+  folder_id: string | null;
 }

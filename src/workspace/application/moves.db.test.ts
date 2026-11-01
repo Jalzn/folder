@@ -8,6 +8,7 @@ import type { DocumentBlock, Project } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
+import { testFolder } from '../testing/folders.js';
 import { testProject } from '../testing/projects.js';
 
 const request = () => ({ requestId: randomUUID() });
@@ -75,6 +76,17 @@ describe('moving items between projects', () => {
     expect(overview.recent.map((item) => item.title)).toEqual(['Depois', 'Fluxo', 'Plano']);
     expect(overview.lastEdited?.id).toBe(later.id);
     expect((await service.projectNavigation({ projectId: from.id })).documents.total).toBe(0);
+  });
+
+  it('takes an item out of its folder when it moves to another project', async () => {
+    const folder = await testFolder(db, from.id, 'MCP');
+    const document = await service.createDocument({ ...request(), projectId: from.id, folderId: folder.id });
+    await service.moveItem({ ...request(), type: 'document', id: document.id, projectId: to.id, expectedVersion: 1 });
+    expect(await service.getDocument({ id: document.id })).toMatchObject({
+      projectId: to.id,
+      folderId: null,
+      version: 2,
+    });
   });
 
   it('refuses an archived or missing project, a stale version and a trashed item, and stays put', async () => {
