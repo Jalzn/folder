@@ -49,7 +49,7 @@ Levar ao documento as ligações do produto: tarefas e desenhos incorporados, vi
 - **`src/web/pages/DocumentEditor.tsx`** (845 linhas) vira `pages/document/`:
   - `DocumentPage.tsx`, `DocumentHeader.tsx`, `DocumentTitle.tsx` e `SaveStatus.tsx`; as faixas já são `SaveBanners`, em `components/editor/`, compartilhadas com o desenho desde a etapa 08;
   - `DocumentMenu.tsx`, `SelectionTaskButton.tsx`, `use-document-autosave.ts` e `use-markdown-io.ts`.
-- **Editor:** `src/web/editor/` (criado na etapa 10) ganha `blocks/TaskEmbed.tsx`, `blocks/DrawingEmbed.tsx`, `blocks/UnavailableEmbed.tsx`, `origin-markers.ts` e `insert-menu.ts`.
+- **Editor:** `src/web/editor/` (criado na etapa 10, com `schema.ts`, `BlockEditor.tsx` e `use-block-editor.ts`) ganha `blocks/TaskEmbed.tsx`, `blocks/DrawingEmbed.tsx`, `blocks/UnavailableEmbed.tsx`, `origin-markers.ts` e `insert-menu.ts`. Os blocos incorporados entram só no esquema do documento: a descrição da tarefa usa o mesmo editor sem eles.
 - **`src/web/pages/CanvasEditor.tsx`** (737 linhas) vira `pages/drawing/`:
   - `DrawingPage.tsx`, `DrawingHeader.tsx` e `ExcalidrawHost.tsx`;
   - `use-canvas-autosave.ts`, `canvas-io.ts` (importar e exportar), `viewport.ts` e `RecoveryBanners.tsx`.
@@ -60,7 +60,7 @@ Levar ao documento as ligações do produto: tarefas e desenhos incorporados, vi
 
 ## Dependências
 
-- Etapa 10: card com coluna, prazo, etiquetas e checklist; gaveta; editor compartilhado.
+- [Etapa 10](10-quadro-tarefa.md): o card com coluna, prazo, etiquetas e checklist; a gaveta no shell (`TaskDrawerProvider`, que diz a tarefa aberta, para "aberta abaixo"); o editor compartilhado em `src/web/editor/`; e `getTask` e `listTasks` com coluna, prazo, etiquetas e checklist para o resolvedor dos incorporados.
 - Etapa 07: prévia PNG.
 - [Etapa 09](09-pastas.md#onde-as-pastas-aparecem): o rótulo da pasta (`FolderLabel`, em `shell/folders/`) no espaço `lead` do `PageFrame`, que os cabeçalhos novos mantêm.
 
