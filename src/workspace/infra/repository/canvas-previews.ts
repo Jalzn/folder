@@ -13,6 +13,23 @@ export function canvasPreviewRepository(connection: Database): CanvasPreviewRepo
         .executeTakeFirst();
       return row && { sceneVersion: row.scene_version, sceneFingerprint: row.scene_fingerprint };
     },
+    async liveCanvasPreviewImage(canvasId) {
+      const row = await db
+        .selectFrom('workspace_canvas_previews as preview')
+        .innerJoin('workspace_canvases as canvas', 'canvas.id', 'preview.canvas_id')
+        .select(['preview.png', 'preview.scene_version', 'preview.scene_fingerprint'])
+        .where('preview.canvas_id', '=', canvasId)
+        .where('canvas.deleted_at', 'is', null)
+        .executeTakeFirst();
+      return (
+        row && {
+          // better-sqlite3 returns BLOBs as Buffer; the rest of the module only sees plain bytes.
+          png: new Uint8Array(row.png.buffer, row.png.byteOffset, row.png.byteLength),
+          sceneVersion: row.scene_version,
+          sceneFingerprint: row.scene_fingerprint,
+        }
+      );
+    },
     async saveCanvasPreview(preview) {
       const values = {
         scene_version: preview.sceneVersion,

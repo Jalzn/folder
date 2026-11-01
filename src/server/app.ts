@@ -3,13 +3,14 @@ import { ORPCError, onError } from '@orpc/server';
 import { BodyLimitPlugin, RPCHandler } from '@orpc/server/fetch';
 import { type AccessTokenService, type AuthService, createAccessTokens, createAuthService } from '@tinyfold/auth';
 import type { Database, RequestContext } from '@tinyfold/core/infra';
-import { createWorkspaceTools } from '@tinyfold/workspace';
+import { createWorkspaceFiles, createWorkspaceTools } from '@tinyfold/workspace';
 import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { secureHeaders } from 'hono/secure-headers';
 import { sql } from 'kysely';
 import { clientIp } from './client-ip.js';
 import type { Config } from './config.js';
+import { mountCanvasPreviewRoute } from './files/canvas-preview-route.js';
 import { mountMcp } from './mcp/endpoint.js';
 import { createRouter } from './router.js';
 import { clearedSessionCookie, sessionCookie, sessionCookieName } from './session-cookie.js';
@@ -92,6 +93,12 @@ export function createApp({
     headers.set('Cache-Control', 'no-store');
     for (const value of setCookies) headers.append('Set-Cookie', value);
     return new Response(response.body, { status: response.status, headers });
+  });
+  mountCanvasPreviewRoute(app, {
+    auth: authService,
+    files: createWorkspaceFiles(db),
+    secureCookie: config.secureCookie,
+    clock,
   });
   mountMcp(app, {
     accessTokens: accessTokenService,

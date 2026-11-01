@@ -226,6 +226,10 @@ export interface CanvasPreviewRepository {
   canvasPreview(canvasId: string): Promise<{ sceneVersion: number; sceneFingerprint: string | null } | undefined>;
   /** Replaces the drawing's preview. */
   saveCanvasPreview(preview: CanvasPreviewRecord): Promise<void>;
+  /** The stored image of a live drawing, out of the trash, with the scene it shows. */
+  liveCanvasPreviewImage(
+    canvasId: string,
+  ): Promise<{ png: Uint8Array; sceneVersion: number; sceneFingerprint: string | null } | undefined>;
 }
 
 /** Inflates PNG image data, which the pure domain cannot do. */

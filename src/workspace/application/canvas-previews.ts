@@ -1,9 +1,31 @@
 import { AppError } from '@tinyfold/core/application';
 import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas-preview.js';
+import { EMBED_ID } from '../domain/embeds.js';
 import { hasValidRowFilters, readPngInfo } from '../domain/png.js';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
 import type { PngImageData, WorkspaceContext } from './ports.js';
 import type { SaveCanvasPreviewInput } from './schemas/canvases.js';
+
+/** A live drawing's stored preview, as the document's figure loads it. */
+export interface CanvasPreviewImage {
+  png: Uint8Array;
+  /** A strong ETag that changes with the scene the image shows. */
+  etag: string;
+}
+
+/**
+ * The stored preview of a drawing out of the trash, for GET /arquivos/desenhos/:id/previa.png, or
+ * undefined when the drawing is in the trash, deleted, never existed or has no preview. The tag is
+ * the scene's fingerprint, or the version a preview from before fingerprints was made at, so the
+ * browser revalidates and never shows an older scene once a newer preview is stored.
+ */
+export function readCanvasPreviewImage(ctx: WorkspaceContext, id: string): Promise<CanvasPreviewImage | undefined> {
+  if (!EMBED_ID.test(id)) throw new AppError('VALIDATION', 'Identificador de desenho inválido.');
+  return ctx.read(async (repo) => {
+    const preview = await repo.liveCanvasPreviewImage(id);
+    return preview && { png: preview.png, etag: `"${preview.sceneFingerprint ?? `v${preview.sceneVersion}`}"` };
+  });
+}
 
 export interface CanvasPreviewAck {
   stored: boolean;

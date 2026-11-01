@@ -10,6 +10,7 @@ export type {
   TaskList,
   TaskSource,
 } from './domain/index.js';
+export { type CanvasPreviewImage, createWorkspaceFiles, type WorkspaceFiles } from './infra/files.js';
 export { type AgentTool, type AgentToolResult, createWorkspaceTools } from './infra/mcp/index.js';
 export { workspaceModule } from './infra/module.js';
 export { createWorkspaceRouter } from './infra/rpc.js';
