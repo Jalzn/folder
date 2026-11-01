@@ -3,6 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { sql } from 'kysely';
 import {
   type Database,
+  type DatabaseTransaction,
   executeMigrationScript,
   type ForeignKeyViolation,
   foreignKeyViolations,
@@ -27,13 +28,60 @@ export interface AppliedMigration {
 }
 
 /**
- * The first line of a migration that rebuilds a table other tables refer to. Inside a transaction
- * SQLite ignores `PRAGMA foreign_keys`, and dropping a referenced table with the keys on would delete
- * or refuse the rows that point at it. The line is part of the file, and of its checksum.
+ * The line a migration that rebuilds a table other tables refer to carries in its leading comments.
+ * Inside a transaction SQLite ignores `PRAGMA foreign_keys`, and dropping a referenced table with the
+ * keys on would delete or refuse the rows that point at it. The line is part of the file, and of its
+ * checksum.
  */
 export const FOREIGN_KEYS_OFF = '-- migrate: foreign_keys off';
 
-const needsForeignKeysOff = (source: string) => source.split(/\r?\n/, 1)[0]?.trim() === FOREIGN_KEYS_OFF;
+const directive = /^--\s*migrate:\s*foreign_keys\s+off$/iu;
+
+/**
+ * Whether the directive is in the comment block that opens the file: any of its `--` lines, in any
+ * case, after blank lines or other comments. A directive after the first statement does not count.
+ */
+function needsForeignKeysOff(source: string): boolean {
+  for (const raw of source.split(/\r?\n/u)) {
+    const line = raw.trim();
+    if (directive.test(line)) return true;
+    if (line && !line.startsWith('--')) return false;
+  }
+  return false;
+}
+
+/** The tables a migration drops, read from its text without comments; names are compared lowercased. */
+function droppedTables(source: string): string[] {
+  const code = source.replace(/\/\*[\s\S]*?\*\//gu, ' ').replace(/--[^\n]*/gu, ' ');
+  const drops = code.matchAll(/\bdrop\s+table\s+(?:if\s+exists\s+)?(?:(?:main|temp)\s*\.\s*)?["`[]?([\w$]+)["`\]]?/giu);
+  return [...drops].flatMap((match) => (match[1] ? [match[1].toLowerCase()] : []));
+}
+
+/**
+ * Refuses a migration without the directive that drops a table another table refers to: with the
+ * keys on, the drop would delete the rows pointing at it by cascade, in silence. Tables the same
+ * migration also drops do not count.
+ */
+async function assertNoUnguardedRebuild(trx: DatabaseTransaction, file: MigrationFile): Promise<void> {
+  const dropped = new Set(droppedTables(file.source));
+  if (!dropped.size) return;
+  const references = await sql<{ child: string; parent: string }>`select m.name as child, f."table" as parent
+    from sqlite_master m, pragma_foreign_key_list(m.name) f
+    where m.type = 'table'`.execute(trx);
+  const blocking = references.rows.filter(
+    (row) =>
+      dropped.has(row.parent.toLowerCase()) &&
+      !dropped.has(row.child.toLowerCase()) &&
+      row.child.toLowerCase() !== row.parent.toLowerCase(),
+  );
+  if (blocking.length) {
+    const tables = [...new Set(blocking.map((row) => `${row.parent} (referenced by ${row.child})`))].join(', ');
+    throw new Error(
+      `Migration drops ${tables} with the foreign keys on: ${file.module}/${file.version}. ` +
+        `Put "${FOREIGN_KEYS_OFF}" in its leading comments.`,
+    );
+  }
+}
 
 const describeViolations = (violations: readonly ForeignKeyViolation[]) =>
   violations
@@ -165,6 +213,7 @@ function applyPending(
         // Another runner may have applied migrations since the keys were set; never run this one with them on.
         if (file.foreignKeysOff && !keysOff)
           throw new Error(`Migration needs foreign keys off: ${module.id}/${file.version}. Run the migrations again.`);
+        if (!file.foreignKeysOff) await assertNoUnguardedRebuild(trx, file);
         executeMigrationScript(db, file.source);
         await store
           .insertInto('core_schema_migrations')
