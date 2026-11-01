@@ -108,7 +108,7 @@ export function EmbedPicker({
                       project ? (
                         <span className="embed-picker__project">
                           <ProjectMark name={project.name} color={project.color} size={16} />
-                          {project.name}
+                          <span className="embed-picker__project-name">{project.name}</span>
                         </span>
                       ) : undefined
                     }
