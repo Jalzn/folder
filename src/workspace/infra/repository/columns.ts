@@ -51,6 +51,9 @@ export function columnRepository(connection: Database): ColumnRepository {
     },
     async makeDoneColumn(id, at) {
       await db.updateTable('workspace_columns').set({ is_done: 1, updated_at: at }).where('id', '=', id).execute();
+      // The handover trigger completes them at `at` only when it is a new updated_at, and at SQLite's
+      // clock otherwise; an injected clock (tests, the sample seed) can repeat one.
+      await db.updateTable('workspace_tasks').set({ completed_at: at }).where('column_id', '=', id).execute();
     },
     async tasksOfColumn(columnId) {
       return (

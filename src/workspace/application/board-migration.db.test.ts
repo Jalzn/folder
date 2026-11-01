@@ -355,6 +355,57 @@ describe('migration 007', () => {
       await consistent();
     });
 
+    it('DELETE or REPLACE of an empty done column, and any insert of an id that exists', async () => {
+      const empty = randomUUID();
+      await column(empty, 'Vazia');
+      await sql`update workspace_columns set is_done = 1, updated_at = ${now} where id = ${empty}`.execute(db);
+      const doneColumns = async () =>
+        (await rows<{ id: string }>('select id from workspace_columns where is_done = 1 and deleted_at is null')).map(
+          (row) => row.id,
+        );
+      expect(await doneColumns()).toEqual([empty]);
+      // The reviewer's attacks on a done column no task holds.
+      await expect(sql`delete from workspace_columns where id = ${empty}`.execute(db)).rejects.toThrow(
+        'workspace_columns cannot delete the done column',
+      );
+      for (const [isDone, deletedAt] of [
+        [0, null],
+        [1, now],
+      ] as const)
+        await expect(
+          sql`insert or replace into workspace_columns (id, name, name_key, position, is_done, version, created_at, updated_at, deleted_at)
+            values (${empty}, 'Vazia', 'vazia', 9, ${isDone}, 1, ${now}, ${now}, ${deletedAt})`.execute(db),
+        ).rejects.toThrow('workspace_columns.id is in use');
+      await expect(
+        sql`insert into workspace_columns (id, name, name_key, position, is_done, version, created_at, updated_at)
+          values (${empty}, 'Outra', 'outra', 9, 0, 1, ${now}, ${now})
+          on conflict (id) do update set is_done = 0`.execute(db),
+      ).rejects.toThrow('workspace_columns.id is in use');
+      expect(await doneColumns()).toEqual([empty]);
+      // An empty open column can still go, and a folder or label nothing points at cannot be replaced.
+      const loose = randomUUID();
+      await column(loose, 'Solta');
+      await sql`delete from workspace_columns where id = ${loose}`.execute(db);
+      const [folder] = await rows<{ id: string; project_id: string }>(
+        `select id, project_id from workspace_folders
+         where id not in (select folder_id from workspace_documents where folder_id is not null)
+           and id not in (select folder_id from workspace_canvases where folder_id is not null) limit 1`,
+      );
+      if (folder)
+        await expect(
+          sql`insert or replace into workspace_folders (id, project_id, name, name_key, position, version, created_at, updated_at)
+            values (${folder.id}, ${folder.project_id}, 'Trocada', 'trocada', 0, 1, ${now}, ${now})`.execute(db),
+        ).rejects.toThrow('workspace_folders.id is in use');
+      const label = randomUUID();
+      await sql`insert into workspace_labels (id, name, name_key, color, version, created_at, updated_at)
+        values (${label}, 'solta', 'solta', 'blue', 1, ${now}, ${now})`.execute(db);
+      await expect(
+        sql`insert or replace into workspace_labels (id, name, name_key, color, version, created_at, updated_at, deleted_at)
+          values (${label}, 'outra', 'outra', 'lime', 1, ${now}, ${now}, ${now})`.execute(db),
+      ).rejects.toThrow('workspace_labels.id is in use');
+      await consistent();
+    });
+
     it('INSERT OR REPLACE of a folder, a column or a label something points at', async () => {
       const [folder] = await rows<{ id: string; project_id: string }>(
         'select id, project_id from workspace_folders where id in (select folder_id from workspace_documents) limit 1',

@@ -157,6 +157,16 @@ WHEN OLD.is_done = 0 AND NEW.is_done = 1 AND NEW.deleted_at IS NOT NULL
 BEGIN
   SELECT RAISE(ABORT, 'workspace_columns: only an active column can be the done one');
 END;
+-- Columns are never deleted for good, and the done column least of all: with no tasks, nothing
+-- else would stop it.
+CREATE TRIGGER workspace_columns_done_on_delete BEFORE DELETE ON workspace_columns
+WHEN OLD.is_done = 1 AND OLD.deleted_at IS NULL
+BEGIN
+  SELECT RAISE(ABORT, 'workspace_columns cannot delete the done column');
+END;
+-- The completions take the column's new updated_at, the application's clock, when the write sets a
+-- new one, and SQLite's clock otherwise; makeDoneColumn then sets them to the application's time
+-- itself, which tests and the sample seed inject.
 CREATE TRIGGER workspace_columns_done_handover AFTER UPDATE OF is_done ON workspace_columns
 WHEN OLD.is_done = 0 AND NEW.is_done = 1
 BEGIN
@@ -174,22 +184,22 @@ BEGIN
   UPDATE workspace_tasks SET completed_at = NULL WHERE column_id = NEW.id AND completed_at IS NOT NULL;
 END;
 
--- INSERT OR REPLACE deletes and inserts a row again without the UPDATE triggers, and the keys are
--- checked only at the end of the statement. A BEFORE INSERT runs before the implicit delete, and a
--- real insert never has rows pointing at a new id. Only hand-written SQL gets here.
+-- INSERT OR REPLACE deletes and inserts a row again without the UPDATE or DELETE triggers, and the
+-- keys are checked only at the end of the statement. A BEFORE INSERT runs before the implicit
+-- delete, and a real insert never repeats an id, so these refuse any insert of one that exists:
+-- that closes REPLACE and upserts on the three tables. Only hand-written SQL gets here.
 CREATE TRIGGER workspace_folders_id_in_use BEFORE INSERT ON workspace_folders
-WHEN EXISTS (SELECT 1 FROM workspace_documents WHERE folder_id = NEW.id)
-  OR EXISTS (SELECT 1 FROM workspace_canvases WHERE folder_id = NEW.id)
+WHEN EXISTS (SELECT 1 FROM workspace_folders WHERE id = NEW.id)
 BEGIN
   SELECT RAISE(ABORT, 'workspace_folders.id is in use');
 END;
 CREATE TRIGGER workspace_columns_id_in_use BEFORE INSERT ON workspace_columns
-WHEN EXISTS (SELECT 1 FROM workspace_tasks WHERE column_id = NEW.id)
+WHEN EXISTS (SELECT 1 FROM workspace_columns WHERE id = NEW.id)
 BEGIN
   SELECT RAISE(ABORT, 'workspace_columns.id is in use');
 END;
 CREATE TRIGGER workspace_labels_id_in_use BEFORE INSERT ON workspace_labels
-WHEN EXISTS (SELECT 1 FROM workspace_task_labels WHERE label_id = NEW.id)
+WHEN EXISTS (SELECT 1 FROM workspace_labels WHERE id = NEW.id)
 BEGIN
   SELECT RAISE(ABORT, 'workspace_labels.id is in use');
 END;

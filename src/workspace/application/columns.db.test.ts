@@ -329,6 +329,21 @@ describe('columns', () => {
       });
     });
 
+    it("completes the new done column's tasks at the application's time, even with a clock that stands still", async () => {
+      const at = '2026-11-10T09:00:00.000Z';
+      const still = createWorkspaceService(db, () => new Date(at));
+      const review = await still.createColumn({ ...request(), name: 'Revisão' });
+      const waiting = await still.createTask({
+        ...request(),
+        projectId: project.id,
+        title: 'Revisando',
+        columnId: review.id,
+      });
+      // The column's updated_at stays the same, so the trigger alone would use SQLite's clock.
+      await still.setDoneColumn({ ...request(), id: review.id });
+      expect(await taskRow(waiting.id)).toMatchObject({ completed_at: at });
+    });
+
     it('refuses an undo list with a completion in the future, in setDoneColumn and restoreColumn', async () => {
       const review = (await create('Revisão')).id;
       const finished = await task('Pronta', done);

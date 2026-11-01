@@ -245,7 +245,8 @@ A última do workspace em `main` é a 006, e esta é a 007. Começa com `-- migr
    | `workspace_columns_done_only_active` (`BEFORE UPDATE OF is_done`, de 0 para 1) | Marcar como de conclusão uma coluna excluída |
    | `workspace_columns_done_handover` (`AFTER UPDATE OF is_done`, de 0 para 1) | Não recusa: passa o papel. A antiga deixa de ser de conclusão, as tarefas dela perdem `completed_at`, e as da nova o ganham na nova `updated_at` da coluna, ou na hora atual se a escrita não a muda |
    | `workspace_columns_done_kept` (`AFTER UPDATE OF is_done`, de 1 para 0) | Tirar a conclusão sem que outra a tenha recebido ("make another column the done one") |
-   | `workspace_folders_id_in_use`, `workspace_columns_id_in_use` e `workspace_labels_id_in_use` (`BEFORE INSERT`) | Inserir com um `id` para o qual documentos, desenhos, tarefas ou ligações já apontam (`RAISE(ABORT, '<tabela>.id is in use')`) |
+   | `workspace_columns_done_on_delete` (`BEFORE DELETE`) | Apagar de vez a coluna de conclusão ativa, mesmo vazia |
+   | `workspace_folders_id_in_use`, `workspace_columns_id_in_use` e `workspace_labels_id_in_use` (`BEFORE INSERT`) | Inserir com um `id` que já existe na tabela (`RAISE(ABORT, '<tabela>.id is in use')`). O plano recusava só o `id` para o qual algo apontava; no reteste de dados, um `REPLACE` da coluna de conclusão vazia a apagava |
 
    Os gatilhos de `is_done` vieram da revisão de dados de B1–B4: sem eles, SQL manual deixava o quadro sem coluna de conclusão ou com conclusões fora dela. Um índice único parcial não permitiria a passagem, que grava a nova coluna de conclusão antes de limpar a antiga, então os gatilhos o substituem, e `setDoneColumn` faz uma só escrita.
 
