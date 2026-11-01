@@ -4,25 +4,35 @@
  * time and days that start after midnight (a spring-forward gap at 00:00) are handled.
  */
 
+/** A fixed offset such as "+03:00", which Intl takes as a zone but which is no place's calendar. */
+const isOffset = (timeZone: string) => /^[+-]/u.test(timeZone);
+
+/**
+ * Formatters by zone, kept only under a canonical IANA name, a set Intl bounds: another spelling of a
+ * zone ("america/sao_paulo") or an offset gets a formatter of its own each time, so no input grows it.
+ */
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
 function formatter(timeZone: string): Intl.DateTimeFormat {
-  let found = formatters.get(timeZone);
-  if (!found) {
-    found = new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      hourCycle: 'h23',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-    formatters.set(timeZone, found);
-  }
-  return found;
+  const kept = formatters.get(timeZone);
+  if (kept) return kept;
+  const created = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  const canonical = created.resolvedOptions().timeZone;
+  if (canonical === timeZone && !isOffset(canonical)) formatters.set(timeZone, created);
+  return created;
 }
+
+/** How many formatters are kept, for tests of the bound. */
+export const keptFormatters = (): number => formatters.size;
 
 /** The wall clock in the zone at `instant`, as the UTC milliseconds that read the same. */
 function wallClock(instant: number, timeZone: string): number {
@@ -44,15 +54,22 @@ function wallClock(instant: number, timeZone: string): number {
 const pad = (value: number, length = 2) => String(value).padStart(length, '0');
 const civil = (utc: Date) => `${pad(utc.getUTCFullYear(), 4)}-${pad(utc.getUTCMonth() + 1)}-${pad(utc.getUTCDate())}`;
 
-/** Whether Intl knows the time zone, such as "America/Sao_Paulo" or "UTC". */
-export function isTimeZone(timeZone: string): boolean {
+/**
+ * The canonical IANA name Intl gives a zone in any spelling ("america/sao_paulo" is
+ * "America/Sao_Paulo", "Etc/UTC" is "UTC"), or undefined for one it does not know and for a fixed
+ * offset such as "+03:00", which has no daylight saving time and so no place's calendar.
+ */
+export function canonicalTimeZone(timeZone: string): string | undefined {
   try {
-    formatter(timeZone);
-    return true;
+    const canonical = formatter(timeZone).resolvedOptions().timeZone;
+    return isOffset(canonical) ? undefined : canonical;
   } catch {
-    return false;
+    return undefined;
   }
 }
+
+/** Whether Intl knows the time zone by an IANA name, such as "America/Sao_Paulo" or "UTC". */
+export const isTimeZone = (timeZone: string): boolean => canonicalTimeZone(timeZone) !== undefined;
 
 /** Whether the text is a real date of the calendar: "2026-02-30" is not. */
 export function isCivilDate(date: string): boolean {

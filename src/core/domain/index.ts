@@ -7,4 +7,4 @@ export class DomainError extends Error {
     this.name = 'DomainError';
   }
 }
-export { addDays, isCivilDate, isTimeZone, startOfDayIn, todayIn } from './time-zone.js';
+export { addDays, canonicalTimeZone, isCivilDate, isTimeZone, startOfDayIn, todayIn } from './time-zone.js';

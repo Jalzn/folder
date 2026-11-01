@@ -135,6 +135,39 @@ describe('owner authentication', () => {
     expect((await auth.authenticate(token))?.owner).toMatchObject({ timeZone: 'America/Sao_Paulo' });
   });
 
+  it('stores the canonical name of a zone in any spelling, and refuses fixed offsets', async () => {
+    const { db, auth } = await fixture();
+    const stored = async () =>
+      (await sql<{ time_zone: string | null }>`select time_zone from auth_owner`.execute(db)).rows;
+    expect(await auth.setTimeZone('AMERICA/SAO_PAULO')).toEqual({ timeZone: 'America/Sao_Paulo' });
+    expect(await stored()).toEqual([{ time_zone: 'America/Sao_Paulo' }]);
+    expect(await auth.setTimeZone('Etc/UTC')).toEqual({ timeZone: 'UTC' });
+    for (const offset of ['+03:00', '-14:00', '+0300'])
+      await expect(auth.setTimeZone(offset)).rejects.toMatchObject({
+        code: 'VALIDATION',
+        message: 'Use o nome de um fuso horário, como America/Sao_Paulo, e não um deslocamento.',
+      });
+    expect(await stored()).toEqual([{ time_zone: 'UTC' }]);
+  });
+
+  it('reads a zone stored in another spelling by its canonical name, and an offset as none', async () => {
+    const { db } = await fixture();
+    const warn = vi.fn();
+    const auth = createAuthService(db, { warn });
+    // As SQL, or the code before this, could have stored them.
+    await sql`update auth_owner set time_zone = 'america/sao_paulo'`.execute(db);
+    expect(await auth.timeZone()).toBe('America/Sao_Paulo');
+    const { token } = await auth.login({ password }, { ip: 'test' });
+    expect((await auth.authenticate(token))?.owner).toMatchObject({ timeZone: 'America/Sao_Paulo' });
+    await sql`update auth_owner set time_zone = '+03:00'`.execute(db);
+    expect(await auth.timeZone()).toBe('UTC');
+    expect(await auth.timeZone()).toBe('UTC');
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      'The owner\'s stored time zone "+03:00" is not a zone name Intl knows; dates use UTC until it is set again.',
+    );
+  });
+
   it('reads a stored zone Intl does not know as none: UTC for dates, null for the web, one warning', async () => {
     const { db } = await fixture();
     const warn = vi.fn();
@@ -147,7 +180,7 @@ describe('owner authentication', () => {
     expect((await auth.authenticate(token))?.owner).toMatchObject({ timeZone: null });
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledWith(
-      'The owner\'s stored time zone "Mars/Olympus" is not one Intl knows; dates use UTC until it is set again.',
+      'The owner\'s stored time zone "Mars/Olympus" is not a zone name Intl knows; dates use UTC until it is set again.',
     );
     // The web sends the browser's zone again, and it holds.
     await auth.setTimeZone('America/Sao_Paulo');

@@ -1,40 +1,28 @@
 import { AppError, type Owner } from '@tinyfold/core/application';
-import { isTimeZone } from '@tinyfold/core/domain';
+import { canonicalTimeZone } from '@tinyfold/core/domain';
 import { deviceLabel, renewalIntervalMs, sessionLifetimeMs, validatePassword } from '../domain/index.js';
 import type { AuthDependencies, StoredOwner } from './ports.js';
 
 /** Where civil dates hold until the owner has a time zone, or while the stored one is unusable. */
 export const DEFAULT_TIME_ZONE = 'UTC';
 
-/**
- * Whether Intl knows the stored zone, remembered per value: setTimeZone checks it, but SQL may have
- * written another, and an ICU update may stop knowing one.
- */
-function zoneChecker() {
-  const known = new Map<string, boolean>();
-  return (zone: string) => {
-    const cached = known.get(zone);
-    if (cached !== undefined) return cached;
-    const valid = isTimeZone(zone);
-    known.set(zone, valid);
-    return valid;
-  };
-}
-
 export function authService(deps: AuthDependencies) {
-  const usableZone = zoneChecker();
-  const warned = new Set<string>();
-  /** The stored zone when Intl knows it; otherwise null, with one warning per stored value. */
+  // The owner has one zone, so one value is remembered: the canonical name the last stored one reads
+  // as, or null when Intl does not know it (written by SQL, or an ICU update stopped knowing it), and
+  // whether that was already said. A changed value is checked, and warned about, again.
+  let read: { stored: string; canonical: string | null; warned: boolean } | undefined;
+  /** The stored zone by its canonical name when Intl knows it; otherwise null, with one warning. */
   function storedZone(owner: StoredOwner): string | null {
-    const zone = owner.timeZone;
-    if (zone === null || usableZone(zone)) return zone;
-    if (!warned.has(zone)) {
-      warned.add(zone);
+    const stored = owner.timeZone;
+    if (stored === null) return null;
+    if (read?.stored !== stored) read = { stored, canonical: canonicalTimeZone(stored) ?? null, warned: false };
+    if (read.canonical === null && !read.warned) {
+      read.warned = true;
       deps.warn(
-        `The owner's stored time zone ${JSON.stringify(zone)} is not one Intl knows; dates use UTC until it is set again.`,
+        `The owner's stored time zone ${JSON.stringify(stored)} is not a zone name Intl knows; dates use UTC until it is set again.`,
       );
     }
-    return null;
+    return read.canonical;
   }
   // An unusable zone reads as none, so the web sends the browser's again on its next load.
   const profile = (owner: StoredOwner): Owner => ({
@@ -147,16 +135,21 @@ export function authService(deps: AuthDependencies) {
   }
 
   /**
-   * Sets the owner's time zone, one Intl knows. Safe to repeat as it is: it keeps no request record,
-   * like a preference.
+   * Sets the owner's time zone, stored by the canonical IANA name Intl gives it, whatever its spelling,
+   * so one zone has one identity. A fixed offset ("+03:00") is refused: it has no daylight saving
+   * time, so dates would drift from the owner's clock for half the year, and the browser always sends
+   * a name. Safe to repeat as it is: it keeps no request record, like a preference.
    */
   async function setTimeZone(timeZone: string) {
-    if (!isTimeZone(timeZone)) throw new AppError('VALIDATION', 'Fuso horário desconhecido.');
+    if (/^\s*[+-]/u.test(timeZone))
+      throw new AppError('VALIDATION', 'Use o nome de um fuso horário, como America/Sao_Paulo, e não um deslocamento.');
+    const canonical = canonicalTimeZone(timeZone);
+    if (!canonical) throw new AppError('VALIDATION', 'Fuso horário desconhecido.');
     await deps.transaction(async (repo) => {
       if (!(await repo.owner())) throw new AppError('NOT_FOUND', 'A conta ainda não foi criada.');
-      await repo.setTimeZone(timeZone);
+      await repo.setTimeZone(canonical);
     });
-    return { timeZone };
+    return { timeZone: canonical };
   }
 
   return {

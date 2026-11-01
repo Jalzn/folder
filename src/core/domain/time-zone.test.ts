@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, isCivilDate, isTimeZone, startOfDayIn, todayIn } from './time-zone.js';
+import {
+  addDays,
+  canonicalTimeZone,
+  isCivilDate,
+  isTimeZone,
+  keptFormatters,
+  startOfDayIn,
+  todayIn,
+} from './time-zone.js';
 
 describe('time zones', () => {
   it('tells the civil date in a zone near midnight UTC', () => {
@@ -39,5 +47,30 @@ describe('time zones', () => {
     expect(isTimeZone('Mars/Olympus')).toBe(false);
     expect(() => todayIn('Mars/Olympus', new Date())).toThrow(RangeError);
     expect(() => addDays('2026-02-30', 1)).toThrow(RangeError);
+  });
+
+  it('names a zone canonically in any spelling, and refuses fixed offsets', () => {
+    expect(canonicalTimeZone('america/sao_paulo')).toBe('America/Sao_Paulo');
+    expect(canonicalTimeZone('AMERICA/SAO_PAULO')).toBe('America/Sao_Paulo');
+    expect(canonicalTimeZone('Etc/UTC')).toBe('UTC');
+    expect(canonicalTimeZone('Etc/GMT+3')).toBe('Etc/GMT+3');
+    for (const offset of ['+03:00', '-14:00', '+0300']) {
+      expect(canonicalTimeZone(offset)).toBeUndefined();
+      expect(isTimeZone(offset)).toBe(false);
+    }
+    expect(canonicalTimeZone('Mars/Olympus')).toBeUndefined();
+  });
+
+  it('keeps formatters only under canonical names, whatever spellings and offsets come in', () => {
+    todayIn('America/Sao_Paulo', new Date());
+    const before = keptFormatters();
+    for (let index = 0; index < 50; index += 1) {
+      const spelling = [...'america/sao_paulo'].map((letter, at) =>
+        (index >> at) & 1 ? letter.toUpperCase() : letter,
+      );
+      expect(todayIn(spelling.join(''), new Date('2026-11-01T12:00:00Z'))).toBe('2026-11-01');
+      isTimeZone(`+${String(index % 15).padStart(2, '0')}:${index % 2 ? '30' : '00'}`);
+    }
+    expect(keptFormatters()).toBe(before);
   });
 });
