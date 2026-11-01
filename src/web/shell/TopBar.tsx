@@ -5,7 +5,7 @@ import type { Project } from '../lib/types';
 import { IconButton, Logo, ProjectMark } from '../ui';
 import { ProjectSwitcher } from './project/ProjectSwitcher';
 import { switcherLabel } from './project/switcher-label';
-import { useShellUi } from './shell-ui';
+import { useShellActions } from './shell-ui';
 
 /**
  * Below 720 px, the one bar of the page: the menu that opens the sidebar over the page, the current project,
@@ -13,7 +13,7 @@ import { useShellUi } from './shell-ui';
  */
 export function TopBar({ project, onMenu }: { project: Project | null; onMenu: () => void }) {
   const label = switcherLabel(project, useProjects(true).data ?? []);
-  const ui = useShellUi();
+  const ui = useShellActions();
   return (
     <header className="top-bar" data-region="sidebar">
       <IconButton label="Abrir navegação" onPress={onMenu}>

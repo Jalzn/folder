@@ -4,7 +4,7 @@ import { type ReactElement, useState } from 'react';
 import { api, errorMessage, queryClient, reportSessionError } from '../../lib/api';
 import { paths } from '../../router/paths';
 import { AlertDialog, Menu, MenuItem, MenuSeparator, MenuTrigger, SubmenuTrigger, useToast } from '../../ui';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 import { THEME_CHOICES, type ThemeChoice, themeChoiceLabels, useTheme } from '../theme';
 
 const themeIcons: Record<ThemeChoice, ReactElement> = {
@@ -24,7 +24,7 @@ export function YouMenu({
   const navigate = useNavigate();
   const toast = useToast();
   const theme = useTheme();
-  const ui = useShellUi();
+  const ui = useShellActions();
   const [leaving, setLeaving] = useState(false);
   const [busy, setBusy] = useState(false);
   async function logout() {

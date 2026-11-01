@@ -104,10 +104,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <main id="main-content" className="app-layout__main" data-region="page" tabIndex={-1}>
         {children}
       </main>
-      {/* Outside main and marked as top layer, so a modal or the sidebar over the page does not hide it. */}
-      <p className="sr-only" aria-live="polite" data-react-aria-top-layer="true">
-        {ui.announcement}
-      </p>
       <span ref={anchor} className="app-layout__anchor" aria-hidden="true" />
       <ModalOverlay
         className="sidebar-overlay"

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { usesCommandKey } from '../../lib/platform';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 import { createChords } from './chords';
 import { acceptsPalette, acceptsPlainKey, acceptsUndo, commandKey, describeTarget, isComposing } from './guards';
 import { escapeAction } from './layers';
@@ -37,7 +37,7 @@ function leaveField(field: EventTarget | null) {
  * most recent layer and nothing else.
  */
 export function useShortcuts(actions: Actions) {
-  const { layers } = useShellUi();
+  const { layers } = useShellActions();
   const latest = useRef(actions);
   latest.current = actions;
   useEffect(() => {

@@ -7,7 +7,7 @@ import { useApp } from '../AppProvider';
 import { activeProjects } from '../project/project-order';
 import { noProjectText } from '../project/switcher-label';
 import { usePins } from '../project/use-pins';
-import { type SwitcherPlace, useShellUi } from '../shell-ui';
+import { type SwitcherPlace, useShellActions } from '../shell-ui';
 import type { ChordCommand } from './chords';
 
 export interface ShortcutLayout {
@@ -38,7 +38,7 @@ function cycleRegions(backwards: boolean) {
 
 /** What each shortcut does, with the rules for a missing or archived project. */
 export function useShortcutActions(layout: ShortcutLayout) {
-  const ui = useShellUi();
+  const ui = useShellActions();
   const app = useApp();
   const navigate = useNavigate();
   const toast = useToast();

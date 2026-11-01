@@ -1,6 +1,6 @@
 import './tree/tree.css';
 import type { NavTree } from '@tinyfold/workspace/domain';
-import type { RefObject } from 'react';
+import { type RefObject, useRef } from 'react';
 import type { Project } from '../../lib/types';
 import { useMoveToFolder } from '../folders/use-move-to-folder';
 import { ItemsHeader } from './ItemsHeader';
@@ -24,13 +24,21 @@ export function ItemsSection({
 }) {
   const prefs = useSidebarPrefs();
   const items = useItemsTree(project, tree);
-  const editing = useTreeEditing({ project, rows: items.rows, expanded: items.expanded, tree: treeRef });
+  const newItem = useRef<HTMLButtonElement>(null);
+  const editing = useTreeEditing({
+    project,
+    rows: items.rows,
+    expanded: items.expanded,
+    tree: treeRef,
+    onDraftCancel: () => newItem.current?.focus(),
+  });
   const moveToFolder = useMoveToFolder();
   const sort = (prefs.project(project.id) ?? defaultProjectPrefs).sort;
   return (
     <section className="items-section" aria-label="Itens">
       <ItemsHeader
         project={project}
+        newItemRef={newItem}
         total={items.total}
         sort={sort}
         hasFolders={Boolean(tree?.folders.length)}

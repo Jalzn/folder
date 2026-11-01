@@ -16,11 +16,14 @@ export function useTreeEditing({
   rows,
   expanded,
   tree,
+  onDraftCancel,
 }: {
   project: Project;
   rows: TreeNode[];
   expanded: ReturnType<typeof useExpandedFolders>;
   tree: RefObject<HTMLElement | null>;
+  /** A new folder given up: where the focus goes back. */
+  onDraftCancel: () => void;
 }) {
   const editable = !project.archivedAt;
   const folders = useTreeFolders({
@@ -29,6 +32,7 @@ export function useTreeEditing({
     expanded,
     enabled: editable,
     rowByKey: (key) => rowIn(tree.current, key),
+    onDraftCancel,
   });
   const moveToFolder = useMoveToFolder();
   const dragAndDropHooks = useTreeDnd({

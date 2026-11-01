@@ -1,23 +1,23 @@
 import { type RefObject, useEffect } from 'react';
+import { focusWhenPresent } from '../../ui';
 import { useShellUi } from '../shell-ui';
+import { rowIn } from './tree/tree-dom';
+import { folderKey } from './tree/tree-rows';
 import { useSidebarPrefs } from './use-sidebar-prefs';
 
 /** How many frames a folder may take to show in the tree, as when another project's data is on its way. */
 const FRAMES = 120;
 
-/** Its first child once the folder is open, or the folder when it has none; retried until the row is there. */
-function focusFirstChild(tree: RefObject<HTMLElement | null>, folderId: string, frames = FRAMES) {
-  requestAnimationFrame(() => {
-    const folder = tree.current?.querySelector<HTMLElement>(`[data-key="folder:${CSS.escape(folderId)}"]`);
-    if (!folder) {
-      if (frames > 0) focusFirstChild(tree, folderId, frames - 1);
-      return;
-    }
-    const next = folder.nextElementSibling;
-    const child = next instanceof HTMLElement && next.getAttribute('aria-level') === '2' ? next : folder;
-    child.focus();
-  });
-}
+/** Its first child once the folder is open, or the folder when it has none, once the folder's row is there. */
+const focusFirstChild = (tree: RefObject<HTMLElement | null>, folderId: string) =>
+  focusWhenPresent(
+    () => {
+      const folder = rowIn(tree.current, folderKey(folderId));
+      const next = folder?.nextElementSibling;
+      return next instanceof HTMLElement && next.getAttribute('aria-level') === '2' ? next : folder;
+    },
+    { frames: FRAMES },
+  );
 
 /**
  * Opening a folder from elsewhere: the sidebar's filter and ⌘K's Pastas. The folder opens in the tree, the

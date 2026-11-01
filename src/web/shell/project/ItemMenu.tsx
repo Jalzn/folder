@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useFolders, useProjects } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
 import { IconButton, Menu, MenuItem, MenuSeparator, MenuTrigger, ProjectMark, SubmenuTrigger } from '../../ui';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 import { activeProjects } from './project-order';
 import { useMoveItem } from './use-move-item';
 import { usePins } from './use-pins';
@@ -43,7 +43,7 @@ export function ItemMenu({
   const projects = useProjects(true).data ?? [];
   const archived = Boolean(projects.find((project) => project.id === projectId)?.archivedAt);
   const pins = usePins();
-  const ui = useShellUi();
+  const ui = useShellActions();
   const { move } = useMoveItem();
   const folder = useFolders(projectId).data?.find((each) => each.id === folderId);
   const label = labels[type];

@@ -3,7 +3,7 @@ import type { ReactElement, RefObject } from 'react';
 import type { ItemType, Project } from '../../lib/types';
 import { Menu, MenuItem, MenuList, MenuSection, MenuTrigger, PopoverSurface, useToast } from '../../ui';
 import { useApp } from '../AppProvider';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 
 /** What "Novo" creates: an item at the project's root or in a folder, a folder or a task. */
 type NewKind = ItemType | 'folder' | 'task' | `here:${ItemType}`;
@@ -16,7 +16,7 @@ export interface NewItemFolder {
 
 function useCreate(project: Project, folder: NewItemFolder | undefined) {
   const app = useApp();
-  const ui = useShellUi();
+  const ui = useShellActions();
   const toast = useToast();
   return (kind: NewKind) => {
     if (project.archivedAt) return toast('Projeto arquivado: desarquive para criar itens.', 'error');

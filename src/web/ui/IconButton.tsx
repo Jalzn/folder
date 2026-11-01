@@ -1,5 +1,5 @@
 import './button.css';
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { Button as AriaButton, type ButtonProps as AriaButtonProps } from 'react-aria-components';
 import { cx } from '../lib/cx';
 import { shortcutLabel } from './Kbd';
@@ -15,6 +15,7 @@ export interface IconButtonProps extends Omit<AriaButtonProps, 'className' | 'ch
   className?: string;
   /** The icon. */
   children: ReactNode;
+  ref?: Ref<HTMLButtonElement> | undefined;
 }
 
 /** A square button with only an icon, named by its label and explained by a tooltip. */

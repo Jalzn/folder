@@ -5,7 +5,7 @@ import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { useToast } from '../../ui';
-import { useShellUi } from '../shell-ui';
+import { useAnnounce } from '../announcer';
 import { deletedText, edgeText, positionText, restoredText, trashedText } from './folder-text';
 
 /** What an undo of a folder's deletion says when it fails, whatever the server said. */
@@ -24,7 +24,7 @@ export function useFolderActions(projectId: string) {
   const deleting = useRequest();
   const restoring = useRequest();
   const toast = useToast();
-  const ui = useShellUi();
+  const announce = useAnnounce();
   const navigate = useNavigate();
 
   /** Creates a folder at the top; resolves to it, or undefined when the server refused. */
@@ -41,7 +41,7 @@ export function useFolderActions(projectId: string) {
     const renamed = await action.run(() => api.workspace.renameFolder({ ...input, requestId: renaming.for(input) }));
     if (!renamed) return false;
     renaming.clear();
-    ui.announce(`Pasta renomeada: ${name}`);
+    announce(`Pasta renomeada: ${name}`);
     return true;
   }
 
@@ -52,7 +52,7 @@ export function useFolderActions(projectId: string) {
     if (!moved) return false;
     placing.clear();
     const at = moved.folders.findIndex((each) => each.id === folder.id);
-    ui.announce(positionText(folder.name, at, moved.folders.length));
+    announce(positionText(folder.name, at, moved.folders.length));
     return true;
   }
 
@@ -62,7 +62,7 @@ export function useFolderActions(projectId: string) {
     const to = direction === 'up' ? at - 1 : at + 1;
     if (at < 0) return false;
     if (to < 0 || to >= folders.length) {
-      ui.announce(edgeText(folder.name, direction));
+      announce(edgeText(folder.name, direction));
       return false;
     }
     // Before the folder now at `to` going up; before the one after it going down, or last.

@@ -8,7 +8,7 @@ import type { SearchResult } from '../../lib/queries';
 import { displayTitle, type ItemType } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { Highlight, Shortcut } from '../../ui';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 
 const icons: Record<ItemType, typeof FileText> = { document: FileText, drawing: Shapes };
 
@@ -44,7 +44,7 @@ export function SearchResults({
   error: unknown;
   onOpenFolder: (folderId: string) => void;
 }) {
-  const ui = useShellUi();
+  const ui = useShellActions();
   const matched = matchingFolders(folders, query);
   const items = itemResults(results);
   return (

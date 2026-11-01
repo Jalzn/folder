@@ -27,6 +27,7 @@ export function useTreeFolders({
   expanded,
   enabled,
   rowByKey,
+  onDraftCancel,
 }: {
   project: Project;
   rows: TreeNode[];
@@ -34,6 +35,8 @@ export function useTreeFolders({
   /** The sidebar's tree, in a project that is not archived; the rail's popover only reads. */
   enabled: boolean;
   rowByKey: (key: string | null) => HTMLElement | null;
+  /** A new folder given up: the focus goes back to the "+" of Itens. */
+  onDraftCancel: () => void;
 }) {
   const ui = useShellUi();
   const toast = useToast();
@@ -58,24 +61,21 @@ export function useTreeFolders({
     const after = all.slice(at + 1).find((row) => row.getAttribute('aria-level') === '1');
     return (after ?? all[at - 1])?.dataset.key ?? null;
   }
-  const backToHeader = () =>
-    document.querySelector<HTMLElement>('.items-header [aria-label="Novo item"], .items-header__count')?.focus();
 
   async function createSubmit(name: string) {
     if (!draft) return false;
     const created = await actions.create(name);
     if (!created) return false;
     expanded.expand(created.id);
-    ui.endFolder();
-    if (draft.onCreated) draft.onCreated(created);
-    else toast(`Pasta “${name}” criada.`);
+    // Whoever asked for the folder takes it, as "Mover para pasta…" moving the item into it.
+    if (!ui.endFolder(created)) toast(`Pasta “${name}” criada.`);
     focusWhenThere(folderKey(created.id));
     return true;
   }
   function createCancel() {
     ui.endFolder();
     ui.announce('Criação da pasta cancelada.');
-    backToHeader();
+    onDraftCancel();
   }
   function createTakenOnLeave(message: string) {
     ui.endFolder();

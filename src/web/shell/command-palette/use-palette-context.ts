@@ -4,7 +4,7 @@ import { useFolders } from '../../lib/queries';
 import { parseProjectPath } from '../../router/paths';
 import { activeProjects } from '../project/project-order';
 import { useCurrentProject } from '../project/use-current-project';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 import { useSidebarPrefs } from '../sidebar/use-sidebar-prefs';
 import { useTheme } from '../theme';
 import type { CommandContext } from './commands';
@@ -12,7 +12,7 @@ import type { CommandContext } from './commands';
 /** What the palette needs to know about the screen behind it. */
 export function usePaletteContext() {
   const { project, projects } = useCurrentProject();
-  const ui = useShellUi();
+  const ui = useShellActions();
   const theme = useTheme();
   const prefs = useSidebarPrefs();
   const queryClient = useQueryClient();

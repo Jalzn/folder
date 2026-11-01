@@ -2,7 +2,7 @@ import './items-header.css';
 import { Link } from '@tanstack/react-router';
 import { NAV_SORTS, type NavSort } from '@tinyfold/workspace/domain';
 import { Ellipsis, FileText, Folder, FoldVertical, Plus, Shapes } from 'lucide-react';
-import { useRef } from 'react';
+import { type Ref, useRef } from 'react';
 import { isTextDropItem, useDrop } from 'react-aria-components';
 import { formatCount } from '../../lib/count';
 import { cx } from '../../lib/cx';
@@ -11,7 +11,7 @@ import { paths } from '../../router/paths';
 import { IconButton, Menu, MenuItem, MenuSection, MenuSeparator, MenuTrigger } from '../../ui';
 import { useApp } from '../AppProvider';
 import type { FolderMoveItem } from '../folders/use-move-to-folder';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 import { ITEM_DRAG } from './tree/use-tree-dnd';
 
 const sortLabels: Record<NavSort, string> = { recent: 'Recentes', title: 'A–Z', created: 'Criação' };
@@ -28,8 +28,11 @@ export function ItemsHeader({
   onSort,
   onCollapseAll,
   onDropToRoot,
+  newItemRef,
 }: {
   project: Project;
+  /** The "+" button, where the focus goes back when a new folder is given up. */
+  newItemRef?: Ref<HTMLButtonElement>;
   total: number | undefined;
   sort: NavSort;
   hasFolders: boolean;
@@ -39,7 +42,7 @@ export function ItemsHeader({
   onDropToRoot?: ((item: FolderMoveItem) => void) | undefined;
 }) {
   const app = useApp();
-  const ui = useShellUi();
+  const ui = useShellActions();
   const header = useRef<HTMLDivElement>(null);
   const { dropProps, isDropTarget } = useDrop({
     ref: header,
@@ -57,7 +60,7 @@ export function ItemsHeader({
       <span className="items-header__tools">
         {!project.archivedAt && (
           <MenuTrigger>
-            <IconButton label="Novo item" size="sm">
+            <IconButton label="Novo item" size="sm" ref={newItemRef}>
               <Plus size={14} />
             </IconButton>
             <Menu

@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 
 /** Keeps a layer on the Esc stack while `open`; Esc closes the most recent layer only. */
 export function useLayer(id: string, open: boolean, close: () => void) {
-  const { layers } = useShellUi();
+  const { layers } = useShellActions();
   useEffect(() => (open ? layers.open({ id, close }) : undefined), [layers, id, open, close]);
 }

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { type PageCommands, useShellUi } from './shell-ui';
+import { type PageCommands, useShellActions } from './shell-ui';
 
 /** A page offers ⌘S and its palette actions while it is mounted; the shell reads the latest ones. */
 export function usePageCommands(commands: PageCommands) {
-  const { page } = useShellUi();
+  const { page } = useShellActions();
   const latest = useRef(commands);
   latest.current = commands;
   useEffect(() => {

@@ -5,8 +5,8 @@ import type { Project } from '../../../lib/types';
 import { paths } from '../../../router/paths';
 import { focusPageTitle, focusWhenPresent } from '../../../ui';
 import { useApp } from '../../AppProvider';
+import { useAnnounce } from '../../announcer';
 import { usePins } from '../../project/use-pins';
-import { useShellUi } from '../../shell-ui';
 import { modifiedClick } from './ItemRow';
 import { type Moving, TreeOverlays } from './TreeOverlays';
 import { rowIn } from './tree-dom';
@@ -53,7 +53,7 @@ export function ItemsTree({
   const app = useApp();
   const navigate = useNavigate();
   const pins = usePins();
-  const ui = useShellUi();
+  const announce = useAnnounce();
   const ownRef = useRef<HTMLDivElement>(null);
   const tree = treeRef ?? ownRef;
   const rowByKey = (key: string | null) => rowIn(tree.current, key);
@@ -65,7 +65,7 @@ export function ItemsTree({
   // "MCP aberta", "MCP recolhida": the live region says what a toggle did.
   const say = (folderId: string, opened: boolean) => {
     const folder = rows.find((row): row is FolderNode => row.key === folderKey(folderId));
-    if (folder) ui.announce(`${folder.folder.name} ${opened ? 'aberta' : 'recolhida'}`);
+    if (folder) announce(`${folder.folder.name} ${opened ? 'aberta' : 'recolhida'}`);
   };
   const setOpenFolders = (ids: string[]) => {
     const before = expanded.expanded;
@@ -101,7 +101,7 @@ export function ItemsTree({
     onPin: (node) => {
       const pinned = Boolean(node.item.pinnedAt);
       void (pinned ? pins.unpin(node.item.type, node.item.id) : pins.pin(node.item.type, node.item.id)).then(
-        (done) => done && ui.announce(pinned ? 'Desafixado.' : 'Fixado.'),
+        (done) => done && announce(pinned ? 'Desafixado.' : 'Fixado.'),
       );
     },
     onMove: (node, neighbour) => !archived && setMoving({ node, neighbour }),

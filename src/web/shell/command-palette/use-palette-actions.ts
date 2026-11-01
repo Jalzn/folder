@@ -3,7 +3,7 @@ import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { useApp } from '../AppProvider';
 import { useProjectActions } from '../project/use-project-actions';
-import { type SwitcherPlace, useShellUi } from '../shell-ui';
+import { type SwitcherPlace, useShellActions } from '../shell-ui';
 import { useSidebarPrefs } from '../sidebar/use-sidebar-prefs';
 import { type ThemeChoice, useTheme } from '../theme';
 import type { CommandId } from './commands';
@@ -29,7 +29,7 @@ export function usePaletteActions({
   switcherPlace: SwitcherPlace;
   toggleSidebar: () => void;
 }) {
-  const ui = useShellUi();
+  const ui = useShellActions();
   const app = useApp();
   const navigate = useNavigate();
   const theme = useTheme();

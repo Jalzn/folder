@@ -3,7 +3,7 @@ import type { ItemType } from '../../lib/types';
 import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { useToast } from '../../ui';
-import { useShellUi } from '../shell-ui';
+import { useAnnounce } from '../announcer';
 import { movedText } from './folder-text';
 import { moveToFolder } from './move-to-folder';
 
@@ -24,7 +24,7 @@ export interface FolderMoveItem {
 export function useMoveToFolder() {
   const action = useAction();
   const toast = useToast();
-  const ui = useShellUi();
+  const announce = useAnnounce();
   // One request per move and per undo: a retry after a lost answer replays it.
   const moving = useRequest();
   const undoing = useRequest();
@@ -32,7 +32,7 @@ export function useMoveToFolder() {
   async function move(item: FolderMoveItem, folder: { id: string; name: string } | null) {
     const to = folder?.id ?? null;
     if (to === item.folderId) {
-      ui.announce('O item já está aí.');
+      announce('O item já está aí.');
       return false;
     }
     const input = { type: item.type, id: item.id, folderId: to };

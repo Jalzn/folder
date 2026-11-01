@@ -95,6 +95,8 @@ test('⌘Z pressed while a rename is on its way undoes the deletion once the ren
   await page.keyboard.press('Shift+F10');
   await page.getByRole('menuitem', { name: /^Excluir pasta/ }).click();
   await expect(toast(page)).toContainText('Pasta “Primeira” excluída.');
+  // The deletion gives the focus to the next folder.
+  await expect(folderRow(page, 'Segunda')).toBeFocused();
 
   // The rename waits at the network while ⌘Z comes.
   let release = () => {};

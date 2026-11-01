@@ -7,7 +7,7 @@ import { formatCount } from '../../lib/count';
 import { queryWords } from '../../lib/highlight';
 import { useFolders } from '../../lib/queries';
 import { MenuItem, MenuSeparator, PopoverSurface } from '../../ui';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 import { type FolderMoveItem, useMoveToFolder } from './use-move-to-folder';
 
 const ROOT = 'root';
@@ -39,7 +39,7 @@ export function MoveToFolderPopover({
   /** After the item went somewhere else, with where: the tree keeps the focus on it. */
   onMoved?: (folderId: string | null) => void;
 }) {
-  const ui = useShellUi();
+  const ui = useShellActions();
   const folders = useFolders(item.projectId).data ?? [];
   const { move } = useMoveToFolder();
   function choose(key: string) {

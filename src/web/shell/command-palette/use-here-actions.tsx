@@ -2,7 +2,7 @@ import { ArrowRightLeft, FolderInput, Pin, PinOff, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ItemType, Project } from '../../lib/types';
 import { usePins } from '../project/use-pins';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 import type { HereAction } from './palette-sections';
 
 export type RunnableHereAction = HereAction & { icon?: ReactNode; run: () => void };
@@ -21,7 +21,7 @@ export function useHereActions({
   project: Project | null;
   pinned: boolean;
 }): RunnableHereAction[] {
-  const ui = useShellUi();
+  const ui = useShellActions();
   const pins = usePins();
   if (!item) return [];
   const page = ui.page.current;

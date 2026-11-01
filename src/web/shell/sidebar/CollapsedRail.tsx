@@ -9,7 +9,7 @@ import { paths } from '../../router/paths';
 import { IconButton, Logo, ProjectMark } from '../../ui';
 import { ProjectSwitcher } from '../project/ProjectSwitcher';
 import { switcherLabel } from '../project/switcher-label';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 import { ItemsPopover } from './ItemsPopover';
 import { Avatar } from './SidebarFooter';
 import { useNavigationData } from './use-navigation-data';
@@ -26,7 +26,7 @@ export function CollapsedRail({
   onExpand: () => void;
 }) {
   const navigation = useNavigationData(project);
-  const ui = useShellUi();
+  const ui = useShellActions();
   const navigate = useNavigate();
   const pathname = useLocation({ select: (location) => location.pathname });
   const go = (href: string) => void navigate({ href });
