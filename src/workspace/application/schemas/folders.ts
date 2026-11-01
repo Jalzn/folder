@@ -19,7 +19,7 @@ export const DeleteFolderInput = z.object({ ...edit, withItems: z.boolean() });
 /** Undoes a deletion with the lists deleteFolder answered. */
 export const RestoreFolderInput = z.object({
   ...edit,
-  moved: z.array(z.object({ type, id, pinnedAt })).max(FOLDER_LIMITS.restoredItems),
+  moved: z.array(z.object({ type, id, pinnedAt, keptPin: z.boolean() })).max(FOLDER_LIMITS.restoredItems),
   trashed: z.array(z.object({ type, id, version, pinnedAt })).max(FOLDER_LIMITS.restoredItems),
 });
 

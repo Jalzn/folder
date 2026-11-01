@@ -5,15 +5,23 @@ import type { FolderItem, WorkspaceContext } from '../ports.js';
 import type { DeleteFolderInput } from '../schemas/folders.js';
 import { renumberFolders, requireActiveFolder, requireProjectForFolders } from './folder-rules.js';
 
-/** An item a deletion moved to the root, with the pin it had before, for the undo. */
-export interface MovedToRoot {
+/** An item a deletion took out of the folder, with the pin it had in the folder, for the undo. */
+interface ListedItem {
   type: FolderItem['type'];
   id: string;
   pinnedAt: string | null;
 }
 
-/** An item a deletion sent to the trash, at its new version, with the pin it had before. */
-export interface MovedToTrash extends MovedToRoot {
+/**
+ * An item a deletion moved to the root. `keptPin` says it is still pinned there; otherwise it had no
+ * pin, or lost it to a full root, and only then may the undo give `pinnedAt` back.
+ */
+export interface MovedToRoot extends ListedItem {
+  keptPin: boolean;
+}
+
+/** An item a deletion sent to the trash, at its new version; the trash took its pin. */
+export interface MovedToTrash extends ListedItem {
   version: number;
 }
 
@@ -23,7 +31,7 @@ export interface MovedToTrash extends MovedToRoot {
  * FOLDER_LIMITS.restoredItems items, with `complete` false when there were more.
  *
  * - To the root, an item is not edited (version and dates stay) and keeps its pin while the root has
- *   room, in pin order; `unpinned` counts the others.
+ *   room, in pin order (`keptPin`); `unpinned` counts the others.
  * - To the trash, an item gets the folder's instant, a new version and no pin, and keeps the folder
  *   as its origin.
  *
@@ -51,7 +59,7 @@ export function deleteFolder(ctx: WorkspaceContext, input: DeleteFolderInput) {
         if (keepsPin) rootPins += 1;
         else if (item.pinnedAt !== null) unpinned += 1;
         await repo.placeItem(item.type, item.id, null, keepsPin ? item.pinnedAt : null);
-        moved.push({ type: item.type, id: item.id, pinnedAt: item.pinnedAt });
+        moved.push({ type: item.type, id: item.id, pinnedAt: item.pinnedAt, keptPin: keepsPin });
       }
     }
     const version = folder.version + 1;

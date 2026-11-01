@@ -8,6 +8,20 @@ Agrupar documentos e desenhos do mesmo assunto em pastas mistas de um único ní
 
 A lateral troca as seções Documentos e Desenhos pela árvore "Itens", feita com o `Tree` do React Aria. A pasta passa a aparecer no cabeçalho do item, no ⌘K, no Índice, na Visão geral, na Lixeira e no MCP. Excluir uma pasta tem "Desfazer", e o ⌘Z passa a desfazer a ação do toast na tela.
 
+## Desvios do plano
+
+**Dados e contratos (backend)**
+
+- O teste do custo do autosave confere por `EXPLAIN QUERY PLAN` que os gatilhos buscam a pasta pela chave primária, em vez de medir o tempo dos salvamentos, porque as razões de tempo foram instáveis na etapa 08.
+- `moveFolder` recusa a própria pasta como referência com `VALIDATION` ("Escolha outra pasta como referência."), como `moveProject`.
+- `moveItem` no mesmo projeto ignora `expectedVersion` mesmo quando ele vem, porque o plano diz que ele não é usado ali.
+- `listFolders` também responde `version`, para que renomear ou excluir uma pasta achada pelo ⌘K ou pelo Índice não dependa da árvore.
+- Na revisão de dados, `deleteFolder` passou a responder `keptPin` em cada item de `moved`, e `restoreFolder` passou a exigi-lo: só um item que perdeu o fixado na exclusão e continua sem ele recebe o fixado de volta. Da lixeira, só volta o que foi excluído no mesmo instante da pasta, e um fixado posterior à exclusão recusa a lista.
+
+**Aceitos**
+
+- A lista `moved` de `restoreFolder` é a palavra do cliente: nada guarda de onde veio um item da raiz, então um item da raiz listado por engano entra na pasta, com o fixado enviado, desde que anterior à exclusão. O mesmo vale para o fixado de um item da lixeira. Guardar a origem pediria uma coluna e uma migração, para um cliente que é o próprio dono.
+
 ## Referências e precedência
 
 | Assunto | Fonte |

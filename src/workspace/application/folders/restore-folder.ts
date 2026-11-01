@@ -11,18 +11,26 @@ import { assertNameFree, assertRoomForFolder, renumberFolders, requireProjectFor
  * at the end, with a new version. Then each listed item still as the deletion left it comes back:
  *
  * - `moved`: a live item of the folder's project still at the root goes back into the folder, without
- *   an edit. It keeps the pin it has, or gets back the one it lost.
- * - `trashed`: an item still in the trash, from this folder and at the listed version, is restored
- *   into it, with a new version, the current date and its pin back.
+ *   an edit. It takes the pin it has now; only an item that lost its pin to the deletion
+ *   (`keptPin: false`) and is still unpinned gets the listed one back, so an item unpinned since
+ *   stays unpinned. Nothing records where a root item came from, so this list is the client's word:
+ *   a root item listed by mistake goes into the folder too.
+ * - `trashed`: an item still in the trash, trashed with the folder (at its instant), from this folder
+ *   and at the listed version, is restored into it, with a new version, the current date and its pin
+ *   back.
  *
- * Pins come back while the folder has room for them. Every other item, changed since, is skipped.
+ * A listed pin later than the deletion is not one the deletion answered, and the whole list is
+ * refused. Pins come back while the folder has room for them. Every other item, changed since, is
+ * skipped.
  */
 export function restoreFolder(ctx: WorkspaceContext, input: RestoreFolderInput) {
   return ctx.write('workspace.restoreFolder', input, async (repo) => {
     const folder = await repo.findFolder(input.id);
     if (!folder) throw new AppError('NOT_FOUND', 'A pasta não está disponível.');
     assertVersion(folder.version, input.expectedVersion);
-    if (!folder.deletedAt) throw new AppError('DOMAIN_RULE', 'Esta pasta não foi excluída.');
+    const { deletedAt } = folder;
+    if (!deletedAt) throw new AppError('DOMAIN_RULE', 'Esta pasta não foi excluída.');
+    assertPinsBefore([...input.moved, ...input.trashed], deletedAt);
     await requireProjectForFolders(repo, folder.projectId);
     const folders = await repo.activeFolders(folder.projectId);
     assertNameFree(folders, folder.name, folder.id, ' Renomeie-a antes de desfazer.');
@@ -44,12 +52,14 @@ export function restoreFolder(ctx: WorkspaceContext, input: RestoreFolderInput) 
     for (const listed of input.moved) {
       const item = await repo.findItem(listed.type, listed.id);
       if (!item || item.deletedAt || item.projectId !== folder.projectId || item.folderId !== null) continue;
-      await repo.placeItem(item.type, item.id, folder.id, pinIfRoom(item.pinnedAt ?? listed.pinnedAt));
+      const pinnedAt = listed.keptPin ? item.pinnedAt : (item.pinnedAt ?? listed.pinnedAt);
+      await repo.placeItem(item.type, item.id, folder.id, pinIfRoom(pinnedAt));
       restored += 1;
     }
     for (const listed of input.trashed) {
       const item = await repo.findItem(listed.type, listed.id);
-      if (!item?.deletedAt || item.folderId !== folder.id || item.version !== listed.version) continue;
+      const fromDeletion = item?.deletedAt === deletedAt && item.folderId === folder.id;
+      if (!fromDeletion || item.version !== listed.version) continue;
       const place = { folderId: folder.id, pinnedAt: pinIfRoom(listed.pinnedAt) };
       await repo.restoreItem(item.type, item.id, place, now, item.version);
       restored += 1;
@@ -62,4 +72,11 @@ export function restoreFolder(ctx: WorkspaceContext, input: RestoreFolderInput) 
       skipped: input.moved.length + input.trashed.length - restored,
     };
   });
+}
+
+/** Refuses lists with a pin set after the deletion, which no answer of deleteFolder can hold. */
+function assertPinsBefore(listed: readonly { pinnedAt: string | null }[], deletedAt: string): void {
+  const deletion = Date.parse(deletedAt);
+  if (listed.some((item) => item.pinnedAt !== null && Date.parse(item.pinnedAt) > deletion))
+    throw new AppError('VALIDATION', 'Esta lista não é a da exclusão da pasta.');
 }
