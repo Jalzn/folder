@@ -93,6 +93,7 @@ const legacyRoutes = [
   legacyRoute('/documentos/$documentId'),
   legacyRoute('/desenhos'),
   legacyRoute('/desenhos/$canvasId'),
+  legacyRoute('/tarefas/$taskId'),
   legacyRoute('/kanban'),
   legacyRoute('/lixeira'),
 ] as const;

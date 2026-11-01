@@ -19,6 +19,10 @@
 .page-frame__actions {
   display: contents;
 }
+/* An editor's bands: under the bar, outside the scroll area, so they stay in view while the text scrolls. */
+.page-frame__bands {
+  flex: none;
+}
 .page-frame__body {
   flex: 1;
   min-height: 0;

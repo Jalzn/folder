@@ -96,10 +96,14 @@ async function drawStroke(page: Page, touch = false) {
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
 }
 
+/** An item of "Exportar ▾" by its label; its name goes on with its note, as "PNG Imagem com o conteúdo atual". */
+const exportItem = (page: Page, label: string) =>
+  page.getByRole('menuitem', { name: new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} `) });
+
 async function exportDrawing(page: Page) {
-  await page.getByRole('button', { name: 'Opções do desenho', exact: true }).click();
+  await page.getByRole('button', { name: 'Exportar', exact: true }).click();
   const download = page.waitForEvent('download');
-  await page.getByRole('menuitem', { name: 'Exportar desenho editável', exact: true }).click();
+  await exportItem(page, '.excalidraw editável').click();
   const file = await download;
   expect(file.suggestedFilename()).toMatch(/\.excalidraw$/);
   const path = await file.path();
@@ -132,9 +136,9 @@ test('draw, reload, export PNG and round-trip an editable drawing with local fon
   await page.reload();
   await expect(page.getByTestId('canvas-editor')).toBeVisible();
   expect((await exportDrawing(page)).data.elements).toEqual(before.data.elements);
-  await page.getByRole('button', { name: 'Opções do desenho', exact: true }).click();
+  await page.getByRole('button', { name: 'Exportar', exact: true }).click();
   const pngDownload = page.waitForEvent('download');
-  await page.getByRole('menuitem', { name: 'Exportar PNG', exact: true }).click();
+  await exportItem(page, 'PNG').click();
   const png = await pngDownload;
   expect(png.suggestedFilename()).toMatch(/\.png$/);
   const pngPath = await png.path();
@@ -302,7 +306,7 @@ test('a duplicated canvas tab keeps its own failed draft after the original save
   await expect(titleField(duplicate)).toBeVisible();
   await duplicate.route('**/rpc/workspace/saveCanvas', (route) => route.abort('failed'));
   await titleField(duplicate).fill('Rascunho exclusivo da aba de desenho');
-  await expect(duplicate.getByText('Não salvo', { exact: true })).toBeVisible();
+  await expect(duplicate.getByText('Não salvou', { exact: true })).toBeVisible();
   await saveTitle(page, 'Desenho confirmado na aba original');
   await duplicate.reload();
   await expect(titleField(duplicate)).toHaveValue('Rascunho exclusivo da aba de desenho');
@@ -318,7 +322,7 @@ test('a remote deletion leaves the local draft available for recovery as a copy'
   const scene = (await exportDrawing(page)).data.elements;
   await page.route('**/rpc/workspace/saveCanvas', (route) => route.abort('failed'));
   await titleField(page).fill('Rascunho mantido apos exclusao remota');
-  await expect(page.getByText('Não salvo', { exact: true })).toBeVisible();
+  await expect(page.getByText('Não salvou', { exact: true })).toBeVisible();
   const other = await context.newPage();
   await other.goto(original);
   await expect(titleField(other)).toBeVisible();

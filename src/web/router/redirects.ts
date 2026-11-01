@@ -1,12 +1,17 @@
 import type { ItemType, Project } from '../lib/types';
 import { type IndexType, paths, safeDecode } from './paths';
 
-/** The addresses before stage 08, which keep working by redirecting (docs/etapas/08-fundacao.md). */
+/**
+ * The addresses before stage 08, which keep working by redirecting (docs/etapas/08-fundacao.md), and the
+ * permanent link of a task, `/tarefas/$id`, which a Markdown export writes (docs/etapas/11-documento-desenho.md,
+ * decision 7): it opens the task in the drawer on its project's board, wherever the task went.
+ */
 export type LegacyAddress =
   | { kind: 'login' }
   | { kind: 'list'; target: 'documents' | 'drawings' | 'board' | 'trash' }
   | { kind: 'document'; id: string; block: string | null }
-  | { kind: 'drawing'; id: string };
+  | { kind: 'drawing'; id: string }
+  | { kind: 'task'; id: string };
 
 /** Reads an address of the old navigation, or null; a broken encoding is not one. The `q` of the old lists is dropped. */
 export function parseLegacyAddress(pathname: string, search: Record<string, unknown> = {}): LegacyAddress | null {
@@ -25,6 +30,10 @@ export function parseLegacyAddress(pathname: string, search: Record<string, unkn
     if (!second) return { kind: 'list', target: 'drawings' };
     const id = safeDecode(second);
     return id ? { kind: 'drawing', id } : null;
+  }
+  if (first === 'tarefas' && second) {
+    const id = safeDecode(second);
+    return id ? { kind: 'task', id } : null;
   }
   return null;
 }

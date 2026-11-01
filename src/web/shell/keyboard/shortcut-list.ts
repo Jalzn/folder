@@ -78,6 +78,7 @@ export const shortcutGroups: ShortcutGroup[] = [
     rows: [
       { label: 'Fixar ou desafixar', alternatives: [['P']] },
       { label: 'Mover para pasta', alternatives: [['M']] },
+      { label: 'Criar tarefa a partir do trecho selecionado', alternatives: [['mod', '⌥', 'T']] },
     ],
   },
 ];

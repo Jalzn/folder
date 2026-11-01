@@ -2,12 +2,6 @@
  * An open drawing (docs/interface/prototipo, "desenho"): the title in the page style over a frame with radius
  * 8 that takes the rest of the page. Excalidraw's dark surfaces follow the Sumário elevation.
  */
-.editor-banners--wide {
-  flex: none;
-  max-width: none;
-  margin: 0;
-  padding: 0 32px 8px;
-}
 .drawing__top {
   flex: none;
   padding: 28px 32px 16px;
@@ -60,9 +54,6 @@
   min-height: unset;
 }
 @media (max-width: 760px) {
-  .editor-banners--wide {
-    padding: 0 16px 8px;
-  }
   .drawing__top {
     padding: 16px 16px 12px;
   }

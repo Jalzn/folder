@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { CHORD_TIMEOUT_MS, createChords } from './chords';
-import { acceptsPalette, acceptsPlainKey, commandKey, isComposing, type KeyPress, undoKeyAction } from './guards';
+import {
+  acceptsPalette,
+  acceptsPlainKey,
+  commandKey,
+  isComposing,
+  isCreateTaskKey,
+  type KeyPress,
+  undoKeyAction,
+} from './guards';
 import { createLayerStack, escapeAction } from './layers';
 
 const press = (key: string, modifiers: Partial<KeyPress> = {}): KeyPress => ({
@@ -38,6 +46,21 @@ describe('guards', () => {
     expect(undoKeyAction(press('y', { ctrlKey: true }), outside, false)).toBe('nothing');
     expect(undoKeyAction(press('y', { ctrlKey: true }), { editable: false, inDrawing: true }, false)).toBe('native');
     expect(undoKeyAction(press('y', { metaKey: true }), outside, true)).toBeNull();
+  });
+
+  it('takes ⌘⌥T for the page in the editor and in fields, never in the drawing editor', () => {
+    // ⌥T types "†" on a Mac; the physical key stays KeyT.
+    const mac = press('†', { metaKey: true, altKey: true, code: 'KeyT' });
+    expect(isCreateTaskKey(mac, outside, true)).toBe(true);
+    expect(isCreateTaskKey(mac, { editable: true, inDrawing: false }, true)).toBe(true);
+    expect(isCreateTaskKey(mac, { editable: false, inDrawing: true }, true)).toBe(false);
+    expect(isCreateTaskKey(press('t', { ctrlKey: true, altKey: true, code: 'KeyT' }), outside, false)).toBe(true);
+    // Not without ⌥, not with ⇧, and not with the other platform's command key.
+    expect(isCreateTaskKey(press('t', { metaKey: true, code: 'KeyT' }), outside, true)).toBe(false);
+    expect(
+      isCreateTaskKey(press('T', { metaKey: true, altKey: true, shiftKey: true, code: 'KeyT' }), outside, true),
+    ).toBe(false);
+    expect(isCreateTaskKey(press('t', { ctrlKey: true, altKey: true, code: 'KeyT' }), outside, true)).toBe(false);
   });
 
   it('lets single keys work only outside fields and the drawing editor, without modifiers', () => {

@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { closeDrawer, createInDrawer, drawer } from './support/board.js';
+import { createTaskFromSelection, openDocumentTasks } from './support/document.js';
 import { newDocument } from './support/items.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -42,7 +43,7 @@ test('a duplicated tab keeps its unsaved draft when the original tab saves and t
   await expect(editor(duplicate)).toContainText('Ideia original antes de duplicar a aba.');
   await duplicate.route('**/rpc/workspace/saveDocument', (route) => route.abort('failed'));
   await editor(duplicate).fill('Rascunho exclusivo da aba duplicada.');
-  await expect(duplicate.getByText('Não salvo', { exact: true })).toBeVisible();
+  await expect(duplicate.getByText('Não salvou', { exact: true })).toBeVisible();
 
   await writeAndSave(page, 'Versao confirmada na aba original.');
   await duplicate.reload();
@@ -59,13 +60,15 @@ test('saving changed source text refreshes linked-task availability without leav
   await createDocument(page, `Origem atualizada ${info.project.name} ${Date.now()}`);
   await editor(page).click();
   await editor(page).press('ControlOrMeta+a');
-  await page.getByRole('button', { name: 'Criar tarefa da seleção', exact: true }).click();
+  await createTaskFromSelection(page);
   const taskTitle = `Tarefa com origem ${Date.now()}`;
   await createInDrawer(page, taskTitle);
   await closeDrawer(page);
-  await expect(page.getByRole('button', { name: new RegExp(`${taskTitle}.*A fazer`) })).toBeVisible();
+  const linked = new RegExp(`${taskTitle}.*A fazer`);
+  await expect((await openDocumentTasks(page)).getByRole('button', { name: linked })).toBeVisible();
+  await page.keyboard.press('Escape');
   await writeAndSave(page, 'Texto substituido depois da criacao da tarefa.');
-  await page.getByRole('button', { name: new RegExp(`${taskTitle}.*A fazer`) }).click();
+  await (await openDocumentTasks(page)).getByRole('button', { name: linked }).click();
   await expect(
     page
       .getByRole('region', { name: `Tarefa: ${taskTitle}`, exact: true })

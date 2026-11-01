@@ -1,5 +1,4 @@
 import { checklistProgress, isOverdue } from '@tinyfold/workspace/domain';
-import { RotateCcw } from 'lucide-react';
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { type ColumnSummary, type TaskWithText, useLabels } from '../../lib/queries';
 import { type Task, UNTITLED } from '../../lib/types';
@@ -7,7 +6,7 @@ import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { paths } from '../../router/paths';
 import { useApp, useOwnerToday } from '../../shell/AppProvider';
 import { useTaskDrawer } from '../../shell/task-drawer-state';
-import { Banner, Button, useToast } from '../../ui';
+import { Banner, useToast } from '../../ui';
 import { ReloadDialog } from '../item-page/EditorDialogs';
 import { SaveBanners } from '../item-page/SaveBanners';
 import { SaveState } from '../item-page/SaveState';
@@ -124,16 +123,7 @@ export function TaskEditor({
         }
         moveOpen={moveOpen}
         onMoveOpenChange={setMoveOpen}
-        saveState={
-          <>
-            <SaveState status={state.status} />
-            {state.status === 'error' && (
-              <Button size="sm" icon={<RotateCcw size={14} />} onPress={() => void controller.flush()}>
-                Tentar de novo
-              </Button>
-            )}
-          </>
-        }
+        saveState={<SaveState status={state.status} onRetry={() => void controller.flush()} />}
         onMove={(columnId, name) => void fields.setColumn(columnId, name)}
         onToggleDone={() => void fields.toggleDone()}
         onCopyLink={() => void copyLink()}

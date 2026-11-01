@@ -1,5 +1,6 @@
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer, openDrawer } from './support/board.js';
+import { createTaskFromSelection, openDocumentTasks } from './support/document.js';
 import { moveToTrash, newDocument, restoreFromTrash } from './support/items.js';
 import { openBoard, overviewAddress } from './support/navigation.js';
 import { answers } from './support/rpc.js';
@@ -91,13 +92,15 @@ test('a task created from selected text survives document trash and restores its
   const documentUrl = await createDocument(page, title, 'Organizar as referencias do projeto.');
   await editor(page).click();
   await editor(page).press('ControlOrMeta+a');
-  await page.getByRole('button', { name: 'Criar tarefa da seleção', exact: true }).click();
+  await createTaskFromSelection(page);
   await expect(newTaskDrawer(page).getByRole('textbox', { name: 'Título da nova tarefa' })).toHaveValue(
     'Organizar as referencias do projeto.',
   );
   await createInDrawer(page, taskTitle);
   await closeDrawer(page);
-  await expect(page.getByRole('button', { name: new RegExp(`${taskTitle}.*A fazer`) })).toBeVisible();
+  const tasks = await openDocumentTasks(page);
+  await expect(tasks.getByRole('button', { name: new RegExp(`${taskTitle}.*A fazer`) })).toBeVisible();
+  await page.keyboard.press('Escape');
   await moveToTrash(page, 'documento');
   await expect(page).toHaveURL(overviewAddress);
   await openBoard(page);

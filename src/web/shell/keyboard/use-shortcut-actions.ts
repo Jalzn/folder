@@ -98,6 +98,12 @@ export function useShortcutActions(layout: ShortcutLayout) {
       save?.();
       return Boolean(save);
     },
+    /** ⌘⌥T belongs to the document's page only; false elsewhere, where the key stays with the browser. */
+    createTask: () => {
+      const create = ui.page.current.createTask;
+      create?.();
+      return Boolean(create);
+    },
     back: () => window.history.back(),
     cycleRegions,
     chord,

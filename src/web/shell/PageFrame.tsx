@@ -26,18 +26,21 @@ function sameAction(place: Element | null, focus: ActionFocus) {
 /**
  * A page in the shell: a 44 px bar with the page's actions on the right (the save state and ⋯ of an
  * editor, Novo, Esvaziar lixeira) and `lead` on the left (an item's folder), over the page's own scroll
- * area; below 720 px the actions go to the top bar instead, and `lead` is left out. The scroll area carries
- * `data-scroll-key`, so the last location keeps its position. The page's focusable `h1` goes in `children`.
- * `fill` gives the body the whole height without scrolling, for the drawing editor.
+ * area; below 720 px the actions go to the top bar instead, and `lead` is left out. `bands` sit between the
+ * bar and the scroll area and never scroll with it: an editor's failure, conflict and draft bands. The scroll
+ * area carries `data-scroll-key`, so the last location keeps its position. The page's focusable `h1` goes in
+ * `children`. `fill` gives the body the whole height without scrolling, for the drawing editor.
  */
 export function PageFrame({
   actions,
   lead,
+  bands,
   fill = false,
   children,
 }: {
   actions?: ReactNode;
   lead?: ReactNode;
+  bands?: ReactNode;
   fill?: boolean;
   children: ReactNode;
 }) {
@@ -90,6 +93,7 @@ export function PageFrame({
           {tracked}
         </div>
       )}
+      {bands && <div className="page-frame__bands">{bands}</div>}
       <div className="page-frame__body" data-fill={fill || undefined} {...(fill ? {} : { 'data-scroll-key': 'page' })}>
         {children}
       </div>

@@ -5,6 +5,9 @@ import { type Document, displayTitle } from '../../lib/types';
 import { useTaskDrawer } from '../../shell';
 import { useToast } from '../../ui';
 
+/** What ⌘⌥T and "Criar tarefa" say without an excerpt to take. */
+export const NO_EXCERPT = 'Selecione um trecho do documento primeiro.';
+
 /** The text selected in the editor, as plain text. */
 // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
 export function selectedText(editor: BlockNoteEditor<any, any, any>) {
@@ -21,7 +24,6 @@ export function useTaskFromSelection(
   editor: BlockNoteEditor<any, any, any>,
   controller: AutosaveController,
   document: Document,
-  onTaskClosed: () => void,
 ) {
   const drawer = useTaskDrawer();
   const toast = useToast();
@@ -30,7 +32,7 @@ export function useTaskFromSelection(
   async function create() {
     const text = selectedText(editor);
     if (!text) {
-      toast('Selecione um trecho do documento para criar uma tarefa.', 'error');
+      toast(NO_EXCERPT);
       return;
     }
     const blocks = editor.getSelection()?.blocks;
@@ -53,7 +55,6 @@ export function useTaskFromSelection(
         expectedVersion: controller.getState().version,
       },
       title: excerpt.slice(0, 300),
-      onClose: onTaskClosed,
     });
   }
 

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { usesCommandKey } from '../../lib/platform';
 import { useShellActions } from '../shell-ui';
 import { createChords } from './chords';
-import { acceptsPalette, acceptsPlainKey, commandKey, describeTarget, isComposing, undoKeyAction } from './guards';
+import { acceptsPlainKey, describeTarget, isComposing } from './guards';
 import { escapeAction } from './layers';
+import { handleModifierKey } from './modifier-keys';
 import type { useShortcutActions } from './use-shortcut-actions';
 
 type Actions = ReturnType<typeof useShortcutActions>;
@@ -35,10 +35,9 @@ function leaveField(field: EventTarget | null) {
 }
 
 /**
- * The single keyboard listener of the app (docs/etapas/08-fundacao.md, "Teclado e Esc"). ⌘K and ⌘\ work
- * anywhere, ⌘K not inside the drawing editor; ⌘Z undoes the toast on screen outside fields, editors and
- * overlays, and never reaches the browser's own undo outside fields and editors; single keys and G chords
- * only outside fields, the drawing editor and open menus; Esc closes the most recent layer and nothing else.
+ * The single keyboard listener of the app (docs/etapas/08-fundacao.md, "Teclado e Esc"). The keys with ⌘ go
+ * to `handleModifierKey`; single keys and G chords work only outside fields, the drawing editor and open
+ * menus; Esc closes the most recent layer and nothing else.
  */
 export function useShortcuts(actions: Actions) {
   const { layers } = useShellActions();
@@ -71,30 +70,7 @@ export function useShortcuts(actions: Actions) {
           });
         return;
       }
-      // Outside fields and editors, the browser's own undo and redo never run: ⌘Z undoes the toast or nothing.
-      const undo = undoKeyAction(event, target, usesCommandKey());
-      if (undo) {
-        if (undo === 'native') return;
-        const handled = event.defaultPrevented;
-        event.preventDefault();
-        if (undo === 'toast' && !handled) run.undo();
-        return;
-      }
-      if (commandKey(event, usesCommandKey()) && !event.altKey) {
-        const key = event.key.toLowerCase();
-        if (key === 'k' && acceptsPalette(target)) {
-          event.preventDefault();
-          run.palette();
-        } else if (key === '\\') {
-          event.preventDefault();
-          run.toggleSidebar();
-        } else if (key === 's' && run.saveNow()) event.preventDefault();
-        else if (key === '[' && !target.inDrawing) {
-          event.preventDefault();
-          run.back();
-        }
-        return;
-      }
+      if (handleModifierKey(event, target, run)) return;
       if (event.key === 'F6') {
         event.preventDefault();
         run.cycleRegions(event.shiftKey);

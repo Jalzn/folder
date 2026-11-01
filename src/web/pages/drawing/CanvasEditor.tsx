@@ -1,31 +1,25 @@
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { ArrowDownToLine, ArrowUpFromLine, ImageDown } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import {
-  ReloadDialog,
-  SaveBanners,
-  SaveState,
-  TrashedItem,
-  TrashItemDialog,
-  useItemActions,
-} from '../../components/item-page';
+import { ReloadDialog, SaveBanners, TrashedItem, TrashItemDialog, useItemActions } from '../../components/item-page';
 import { moveThroughController } from '../../lib/editor-move';
 import { useHasActiveProject } from '../../lib/queries';
 import { registerOpenEditor } from '../../lib/save-registry';
 import { displayTitle, UNTITLED } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
-import { FolderLabel, ItemMenu, type ItemMenuAction, PageFrame, useApp, usePageCommands } from '../../shell';
+import { FolderLabel, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
 import { canvasItem, canvasSession, canvasSnapshot, type EditableCanvas } from './canvas-session';
 import { DrawingCanvas } from './DrawingCanvas';
+import { DrawingHeader } from './DrawingHeader';
 import { useCanvasFiles } from './use-canvas-files';
 import { useSceneChanges } from './use-scene-changes';
 import { useViewport } from './use-viewport';
 
 /**
- * An open drawing: the page bar with the save state and the ⋯, the bands, the title, and Excalidraw in a
- * frame that takes the rest of the page, in the resolved theme.
+ * An open drawing: the page bar with its folder, the save state, "Exportar ▾" and the ⋯; the bands; the
+ * title; and Excalidraw in a frame that takes the rest of the page, in the resolved theme.
  */
 export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const app = useApp();
@@ -48,32 +42,19 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const [reloadOpen, setReloadOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const openImport = () => fileInput.current?.click();
-  const fileActions: ItemMenuAction[] = [
-    {
-      id: 'import',
-      label: 'Importar desenho',
-      icon: <ArrowUpFromLine size={16} />,
-      action: openImport,
-      disabled: files.importing,
-    },
-    {
-      id: 'export',
-      label: 'Exportar desenho editável',
-      icon: <ArrowDownToLine size={16} />,
-      action: files.exportEditable,
-    },
-    {
-      id: 'png',
-      label: 'Exportar PNG',
-      icon: <ImageDown size={16} />,
-      action: () => void files.exportPNG(),
-      disabled: files.exporting,
-    },
-  ];
   // ⌘S saves now and, after a failure, tries again; ⌘K lists the item's actions under "Neste item".
   usePageCommands({
     saveNow: () => void controller.flush(),
-    files: fileActions.map(({ id, label, icon, action }) => ({ id, label, icon, run: action })),
+    files: [
+      { id: 'import', label: 'Importar desenho', icon: <ArrowUpFromLine size={16} />, run: openImport },
+      {
+        id: 'export',
+        label: 'Exportar desenho editável',
+        icon: <ArrowDownToLine size={16} />,
+        run: files.exportEditable,
+      },
+      { id: 'png', label: 'Exportar PNG', icon: <ImageDown size={16} />, run: () => void files.exportPNG() },
+    ],
     trash: () => setTrashOpen(true),
   });
 
@@ -106,18 +87,31 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
       fill
       lead={<FolderLabel projectId={projectId} folderId={canvas.folderId} />}
       actions={
-        <>
-          <SaveState status={state.status} />
-          <ItemMenu
-            type="drawing"
-            id={canvas.id}
-            projectId={projectId}
-            folderId={canvas.folderId}
-            pinned={Boolean(canvas.pinnedAt)}
-            onTrash={() => setTrashOpen(true)}
-            actions={fileActions}
-          />
-        </>
+        <DrawingHeader
+          canvas={canvas}
+          projectId={projectId}
+          status={state.status}
+          files={{ ...files, exportPNG: () => void files.exportPNG() }}
+          onRetry={() => void controller.flush()}
+          onImport={openImport}
+          onTrash={() => setTrashOpen(true)}
+        />
+      }
+      bands={
+        <SaveBanners
+          className="editor-banners editor-banners--wide"
+          state={state}
+          noun="Este desenho"
+          trashed={Boolean(canvas.deletedAt)}
+          projectId={canvas.projectId}
+          canCopy={hasActiveProject}
+          copying={actions.copying}
+          onDownloadRecovery={files.downloadRecovery}
+          onReload={() => setReloadOpen(true)}
+          onSaveCopy={() => void actions.saveCopy()}
+          onRetry={() => void controller.flush()}
+          onExport={files.exportEditable}
+        />
       }
     >
       <input
@@ -131,20 +125,6 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
           event.target.value = '';
           if (file) void files.importDrawing(file);
         }}
-      />
-      <SaveBanners
-        className="editor-banners editor-banners--wide"
-        state={state}
-        noun="Este desenho"
-        trashed={Boolean(canvas.deletedAt)}
-        projectId={canvas.projectId}
-        canCopy={hasActiveProject}
-        copying={actions.copying}
-        onDownloadRecovery={files.downloadRecovery}
-        onReload={() => setReloadOpen(true)}
-        onSaveCopy={() => void actions.saveCopy()}
-        onRetry={() => void controller.flush()}
-        onExport={files.exportEditable}
       />
       <div className="drawing__top">
         <h1 className="sr-only" tabIndex={-1}>

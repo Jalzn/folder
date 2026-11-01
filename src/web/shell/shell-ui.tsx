@@ -23,6 +23,8 @@ export interface PageCommands {
   trash?: (() => void) | undefined;
   /** The board's column in focus, where N's "Tarefa" creates, read when N is pressed. */
   newTaskColumn?: (() => string | undefined) | undefined;
+  /** ⌘⌥T: a task from the excerpt selected in the page's editor; only a document's page offers it. */
+  createTask?: (() => void) | undefined;
 }
 
 /** A folder being named in the sidebar, before it exists: from "+", N, ⌘K or "Mover para pasta…". */

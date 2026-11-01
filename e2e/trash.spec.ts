@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { closeDrawer, createInDrawer, drawer, openDrawer } from './support/board.js';
+import { createTaskFromSelection } from './support/document.js';
 import { moveToTrash, newDocument, newDrawing, newTask } from './support/items.js';
 import { createProject, openBoard, openTrash } from './support/navigation.js';
 import { login } from './support/session.js';
@@ -12,7 +13,7 @@ async function documentWithTask(page: Page, title: string, task: string) {
   await editor.fill('Trecho que vira tarefa.');
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   await editor.press('ControlOrMeta+a');
-  await page.getByRole('button', { name: 'Criar tarefa da seleção', exact: true }).click();
+  await createTaskFromSelection(page);
   await createInDrawer(page, task);
   await closeDrawer(page);
 }

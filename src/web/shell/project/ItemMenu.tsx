@@ -14,6 +14,10 @@ export interface ItemMenuAction {
   icon?: ReactNode;
   action: () => void;
   disabled?: boolean;
+  /** A note under the label, such as where "Criar tarefa" takes the task from. */
+  description?: string;
+  /** Keys of the action's shortcut, such as `['mod', '⌥', 'T']`. */
+  shortcut?: readonly string[];
 }
 
 const labels: Record<ItemType, string> = { document: 'Opções do documento', drawing: 'Opções do desenho' };
@@ -58,7 +62,14 @@ export function ItemMenu({
         disabledKeys={actions.filter((action) => action.disabled).map((action) => action.id)}
       >
         {actions.map((action) => (
-          <MenuItem key={action.id} id={action.id} icon={action.icon} onAction={action.action}>
+          <MenuItem
+            key={action.id}
+            id={action.id}
+            icon={action.icon}
+            {...(action.description ? { description: action.description } : {})}
+            {...(action.shortcut ? { shortcut: action.shortcut } : {})}
+            onAction={action.action}
+          >
             {action.label}
           </MenuItem>
         ))}

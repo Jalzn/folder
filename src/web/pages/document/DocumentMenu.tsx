@@ -1,0 +1,62 @@
+import { ArrowDownToLine, ArrowUpFromLine, Plus } from 'lucide-react';
+import { ItemMenu, type ItemMenuAction } from '../../shell';
+
+/** The ⌘⌥T of "Criar tarefa": ⌘⌥T on Apple platforms, Ctrl+Alt+T elsewhere. */
+export const CREATE_TASK_KEYS = ['mod', '⌥', 'T'] as const;
+
+/**
+ * The document's ⋯ (docs/etapas/11-documento-desenho.md, "Página do documento"): "Criar tarefa" (⌘⌥T), which
+ * says whether it takes the selected excerpt, Exportar and Importar Markdown; then the item menu's Fixar,
+ * Mover para pasta…, Mover para projeto… and Mover para a lixeira.
+ */
+export function DocumentMenu({
+  document,
+  projectId,
+  selected,
+  preparing,
+  onCreateTask,
+  onExport,
+  onImport,
+  onTrash,
+}: {
+  document: { id: string; folderId: string | null; pinnedAt: string | null };
+  projectId: string;
+  /** Whether the editor has a selected excerpt, which "Criar tarefa" takes. */
+  selected: boolean;
+  preparing: boolean;
+  onCreateTask: () => void;
+  onExport: () => void;
+  onImport: () => void;
+  onTrash: () => void;
+}) {
+  const actions: ItemMenuAction[] = [
+    {
+      id: 'create-task',
+      label: 'Criar tarefa',
+      icon: <Plus size={16} />,
+      shortcut: CREATE_TASK_KEYS,
+      description: selected ? 'A partir do trecho selecionado' : 'Selecione um trecho para criar a partir dele',
+      action: onCreateTask,
+      disabled: preparing,
+    },
+    { id: 'export', label: 'Exportar Markdown', icon: <ArrowDownToLine size={16} />, action: onExport },
+    {
+      id: 'import',
+      label: 'Importar Markdown',
+      icon: <ArrowUpFromLine size={16} />,
+      description: 'Cria outro documento',
+      action: onImport,
+    },
+  ];
+  return (
+    <ItemMenu
+      type="document"
+      id={document.id}
+      projectId={projectId}
+      folderId={document.folderId}
+      pinned={Boolean(document.pinnedAt)}
+      onTrash={onTrash}
+      actions={actions}
+    />
+  );
+}

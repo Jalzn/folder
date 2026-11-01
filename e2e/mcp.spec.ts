@@ -1,6 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
 import { closeDrawer, createInDrawer } from './support/board.js';
+import { createTaskFromSelection } from './support/document.js';
 import { createFolder, folderRow } from './support/folders.js';
 import { moveToTrash, newDocument, newDrawing } from './support/items.js';
 import { connectMcp, jsonOf, mcpStatus, textOf } from './support/mcp.js';
@@ -128,7 +129,7 @@ async function createDocumentWithTask(page: Page, title: string, taskTitle: stri
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
 
   await editor.getByText('O acesso usa um token pessoal somente leitura.').click({ clickCount: 3 });
-  await page.getByRole('button', { name: 'Criar tarefa da seleção', exact: true }).click();
+  await createTaskFromSelection(page);
   await createInDrawer(page, taskTitle);
   await closeDrawer(page);
   return page.url();

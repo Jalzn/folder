@@ -10,6 +10,8 @@ export interface KeyTarget {
 
 export interface KeyPress {
   key: string;
+  /** The physical key, which ⌥ does not change: ⌥T types "†" on a Mac, and its code stays KeyT. */
+  code?: string;
   metaKey: boolean;
   ctrlKey: boolean;
   altKey: boolean;
@@ -77,3 +79,15 @@ export function undoKeyAction(press: KeyPress, target: KeyTarget, apple: boolean
   if (target.editable || target.inDrawing) return 'native';
   return !redo && !target.inOverlay && commandKey(press, apple) ? 'toast' : 'nothing';
 }
+
+/**
+ * ⌘⌥T (Ctrl+Alt+T off Apple platforms): a task from the excerpt selected in the document, which works in the
+ * editor too, being a modifier shortcut, but never in the drawing editor (docs/etapas/11-documento-desenho.md,
+ * "Teclado e Esc").
+ */
+export const isCreateTaskKey = (press: KeyPress, target: KeyTarget, apple: boolean) =>
+  commandKey(press, apple) &&
+  press.altKey &&
+  !press.shiftKey &&
+  (press.code === 'KeyT' || press.key.toLowerCase() === 't') &&
+  !target.inDrawing;

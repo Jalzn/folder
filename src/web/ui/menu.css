@@ -72,3 +72,17 @@
   border: 0;
   background: var(--line);
 }
+/*
+ * On a phone a long note wraps, and the shortcuts, which need a keyboard, leave the rows: a menu keeps room
+ * beside it for its submenu, as "Mover para projeto…" beside the document's ⋯, whose "Criar tarefa" says
+ * "Selecione um trecho para criar a partir dele".
+ */
+@media (max-width: 719px) {
+  .menu-item__description {
+    max-width: 168px;
+    white-space: normal;
+  }
+  .menu-item > .kbd {
+    display: none;
+  }
+}

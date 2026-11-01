@@ -9,6 +9,28 @@
 .editor-banners:empty {
   display: none;
 }
+/*
+ * In a page's bands slot (PageFrame `bands`), under the bar: a document's centered on its column, up to
+ * 744 px with the page's 32 px sides, as the prototype's `.banners.col`; a drawing's across the page.
+ */
+.editor-banners--column,
+.editor-banners--wide {
+  box-sizing: border-box;
+  padding: 0 32px 8px;
+}
+.editor-banners--column {
+  max-width: 744px;
+}
+.editor-banners--wide {
+  max-width: none;
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .editor-banners--column,
+  .editor-banners--wide {
+    padding: 0 16px 8px;
+  }
+}
 .save-state {
   display: inline-flex;
   align-items: center;
@@ -32,4 +54,10 @@
   max-width: 720px;
   margin: 0 auto;
   padding: 72px 0;
+}
+/* In the phone's top bar, beside the other actions, "Salvo" stands alone; the hint keeps the time. */
+@media (max-width: 719px) {
+  .save-state__edited {
+    display: none;
+  }
 }

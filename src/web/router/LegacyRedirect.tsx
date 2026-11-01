@@ -1,12 +1,13 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { errorCode } from '../lib/api';
-import { useCanvas, useDocument, useProjects } from '../lib/queries';
+import { useCanvas, useDocument, useProjects, useTask } from '../lib/queries';
 import type { ItemType } from '../lib/types';
 import { ItemNotFound, NotFoundPage } from '../pages/project/NotFoundPage';
 import { PageStatus, useApp } from '../shell';
 import { ErrorNotice, Spinner } from '../ui';
 import { loadNavState } from './nav-store';
+import { paths } from './paths';
 import {
   itemRedirectPath,
   type LegacyAddress,
@@ -64,7 +65,30 @@ function DrawingRedirect({ address }: { address: Extract<LegacyAddress, { kind: 
   return <ItemRedirect address={address} item={useCanvas(address.id)} />;
 }
 
-/** The addresses before stage 08: lists open in the last project, items under their own project. */
+/** A task's permanent link: its project's board, with the task in the drawer, or a page when it is gone for good. */
+function TaskRedirect({ id }: { id: string }) {
+  const task = useTask(id);
+  if (task.error && errorCode(task.error) === 'NOT_FOUND')
+    return (
+      <NotFoundPage
+        title="Esta tarefa não existe mais"
+        description="Ela foi excluída de vez e não pode ser restaurada."
+      />
+    );
+  const projectId = task.data?.projectId;
+  return (
+    <Redirecting
+      to={projectId ? paths.task(projectId, id) : null}
+      error={task.error}
+      retry={() => void task.refetch()}
+    />
+  );
+}
+
+/**
+ * The addresses before stage 08: lists open in the last project, items under their own project; and a task's
+ * permanent link, on its project's board.
+ */
 export function LegacyRedirect() {
   const location = useLocation();
   // Read once: while the redirect runs, the location already shows the new address.
@@ -76,5 +100,6 @@ export function LegacyRedirect() {
   if (address.kind === 'login') return <Redirecting to="/entrar" />;
   if (address.kind === 'list') return <ListRedirect target={address.target} />;
   if (address.kind === 'document') return <DocumentRedirect address={address} />;
+  if (address.kind === 'task') return <TaskRedirect id={address.id} />;
   return <DrawingRedirect address={address} />;
 }
