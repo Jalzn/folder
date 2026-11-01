@@ -23,6 +23,13 @@ A lateral troca as seções Documentos e Desenhos pela árvore "Itens", feita co
 
 - A lista `moved` de `restoreFolder` é a palavra do cliente: nada guarda de onde veio um item da raiz, então um item da raiz listado por engano entra na pasta, com o fixado enviado, desde que anterior à exclusão. O mesmo vale para o fixado de um item da lixeira. Guardar a origem pediria uma coluna e uma migração, para um cliente que é o próprio dono.
 - Um `INSERT OR REPLACE` em `workspace_folders`, que só SQL manual faz, contorna os gatilhos de pasta da 006, e `integrity_check` e `foreign_key_check` não percebem: a pasta pode mudar de projeto ou ser excluída com itens vivos. A 006 é imutável, e a migração 007 da [etapa 10](10-quadro-tarefa.md#mudanças-previstas-de-dados-e-contratos) acrescenta o gatilho `BEFORE INSERT` que recusa um `id` em uso.
+- Restam canais de texto invisível de pouca capacidade nos nomes, títulos e saídas do MCP, aceitos para um aplicativo pessoal em português:
+  - *joiners* entre letras do hebraico e do devanágari sem virama, que essas escritas não juntam;
+  - o *zero-width joiner* entre emoji fora das sequências RGI, um bit por par, que só uma lista RGI fecharia.
+- E remoções em excesso, que mudam só o desenho de casos raros:
+  - o chillu malaiala na codificação antiga e a forma árabe com ZWJ no fim da palavra perdem o ZWJ;
+  - RLM, LRM e ALM saem dos títulos e nomes, e a pontuação de um texto misto da direita para a esquerda pode mudar de lado;
+  - os seletores de variação ideográfica do japonês (U+E0100 a U+E01EF) saem, e o ideograma volta ao desenho padrão.
 
 ## Referências e precedência
 
