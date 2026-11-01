@@ -215,7 +215,7 @@ describe('workspace persistence and adversarial cases', () => {
 
   it('creates documents and drawings in an active folder of their project, or at the root', async () => {
     const other = await testProject(service, 'Outro');
-    const folder = await testFolder(db, project.id, 'MCP');
+    const folder = await testFolder(service, project.id, 'MCP');
     const document = await service.createDocument({ ...request(), projectId: project.id, folderId: folder.id });
     const canvas = await service.createCanvas({ ...request(), projectId: project.id, folderId: folder.id });
     const loose = await service.createDocument({ ...request(), projectId: project.id });
@@ -230,16 +230,14 @@ describe('workspace persistence and adversarial cases', () => {
     await service.saveDocument({ ...request(), id: document.id, expectedVersion: 1, title: 'Plano', content: [] });
     expect((await service.getDocument({ id: document.id })).folderId).toBe(folder.id);
 
-    const elsewhere = await testFolder(db, other.id, 'Alheia');
+    const elsewhere = await testFolder(service, other.id, 'Alheia');
     for (const create of [
       () => service.createDocument({ ...request(), projectId: project.id, folderId: elsewhere.id }),
       () => service.createCanvas({ ...request(), projectId: project.id, folderId: elsewhere.id }),
     ])
       await expect(create()).rejects.toMatchObject({ code: 'VALIDATION', message: 'A pasta não é deste projeto.' });
-    const deleted = await testFolder(db, project.id, 'Excluída');
-    await sql`update workspace_folders set deleted_at = ${'2026-10-31T12:00:00.000Z'} where id = ${deleted.id}`.execute(
-      db,
-    );
+    const deleted = await testFolder(service, project.id, 'Excluída');
+    await service.deleteFolder({ ...request(), id: deleted.id, expectedVersion: 1, withItems: false });
     for (const folderId of [deleted.id, randomUUID()])
       await expect(service.createDocument({ ...request(), projectId: project.id, folderId })).rejects.toMatchObject({
         code: 'NOT_FOUND',

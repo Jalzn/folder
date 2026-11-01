@@ -79,7 +79,7 @@ describe('moving items between projects', () => {
   });
 
   it('takes an item out of its folder when it moves to another project', async () => {
-    const folder = await testFolder(db, from.id, 'MCP');
+    const folder = await testFolder(service, from.id, 'MCP');
     const document = await service.createDocument({ ...request(), projectId: from.id, folderId: folder.id });
     await service.moveItem({ ...request(), type: 'document', id: document.id, projectId: to.id, expectedVersion: 1 });
     expect(await service.getDocument({ id: document.id })).toMatchObject({
