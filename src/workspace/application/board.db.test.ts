@@ -74,6 +74,15 @@ describe('board reads', () => {
     expect(await service.projectBoard({ projectId: project.id })).toMatchObject({ today: '2026-10-31' });
   });
 
+  it('reads a time zone Intl does not know as UTC instead of failing', async () => {
+    timeZone = 'Mars/Olympus';
+    expect(await service.projectBoard({ projectId: project.id })).toMatchObject({
+      today: '2026-10-31',
+      doneSince: '2026-10-18T00:00:00.000Z',
+    });
+    expect(await service.projectNavigation({ projectId: project.id })).toMatchObject({ overdueTasks: 0 });
+  });
+
   it('pages the completed tasks, the latest first, without repeating or skipping on changes', async () => {
     const done = [];
     for (let day = 1; day <= 5; day += 1) done.push(await taskAt(`2026-10-0${day}T12:00:00Z`, `Concluída ${day}`));

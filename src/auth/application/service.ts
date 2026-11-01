@@ -3,16 +3,46 @@ import { isTimeZone } from '@tinyfold/core/domain';
 import { deviceLabel, renewalIntervalMs, sessionLifetimeMs, validatePassword } from '../domain/index.js';
 import type { AuthDependencies, StoredOwner } from './ports.js';
 
-const profile = (owner: StoredOwner): Owner => ({
-  name: owner.name,
-  installationId: owner.installationId,
-  timeZone: owner.timeZone,
-});
-
-/** Where civil dates hold until the owner has a time zone. */
+/** Where civil dates hold until the owner has a time zone, or while the stored one is unusable. */
 export const DEFAULT_TIME_ZONE = 'UTC';
 
+/**
+ * Whether Intl knows the stored zone, remembered per value: setTimeZone checks it, but SQL may have
+ * written another, and an ICU update may stop knowing one.
+ */
+function zoneChecker() {
+  const known = new Map<string, boolean>();
+  return (zone: string) => {
+    const cached = known.get(zone);
+    if (cached !== undefined) return cached;
+    const valid = isTimeZone(zone);
+    known.set(zone, valid);
+    return valid;
+  };
+}
+
 export function authService(deps: AuthDependencies) {
+  const usableZone = zoneChecker();
+  const warned = new Set<string>();
+  /** The stored zone when Intl knows it; otherwise null, with one warning per stored value. */
+  function storedZone(owner: StoredOwner): string | null {
+    const zone = owner.timeZone;
+    if (zone === null || usableZone(zone)) return zone;
+    if (!warned.has(zone)) {
+      warned.add(zone);
+      deps.warn(
+        `The owner's stored time zone ${JSON.stringify(zone)} is not one Intl knows; dates use UTC until it is set again.`,
+      );
+    }
+    return null;
+  }
+  // An unusable zone reads as none, so the web sends the browser's again on its next load.
+  const profile = (owner: StoredOwner): Owner => ({
+    name: owner.name,
+    installationId: owner.installationId,
+    timeZone: storedZone(owner),
+  });
+
   async function ensureOwner(input: { name: string; password?: string }) {
     const existing = await deps.read.owner();
     if (existing) return profile(existing);
@@ -133,9 +163,10 @@ export function authService(deps: AuthDependencies) {
     ensureOwner,
     login,
     setTimeZone,
-    /** The time zone civil dates hold in: the owner's, or UTC until it has one. */
+    /** The time zone civil dates hold in: the owner's, or UTC until it has a usable one. */
     async timeZone() {
-      return (await deps.read.owner())?.timeZone ?? DEFAULT_TIME_ZONE;
+      const owner = await deps.read.owner();
+      return (owner && storedZone(owner)) ?? DEFAULT_TIME_ZONE;
     },
     authenticate,
     changePassword,

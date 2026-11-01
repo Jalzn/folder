@@ -7,6 +7,7 @@ import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { todayIn } from '@tinyfold/core/domain';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { createWorkspaceService } from '@tinyfold/workspace';
+import { sql } from 'kysely';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { drawingFixture } from '../workspace/testing/canvas-scenes.js';
@@ -30,7 +31,7 @@ async function fixture(options: { trustProxy?: boolean } = {}) {
   const db = createDatabase(join(folder, 'test.sqlite'));
   resources.push({ db, folder });
   await migrate(db, modules);
-  const auth = createAuthService(db);
+  const auth = createAuthService(db, { warn: () => {} });
   await auth.ensureOwner({ name: 'Você', password });
   const accessTokens = createAccessTokens(db);
   const webDir = join(folder, 'web');
@@ -196,6 +197,13 @@ describe('MCP protocol', () => {
     expect(await overdue()).toBe(true);
     expect(textOf(await client.callTool({ name: 'read_task', arguments: { id: task.id } }))).toContain(
       `\n- Prazo: atrasada desde ${dueOn} (hoje é ${todayIn('Pacific/Kiritimati', new Date())})\n`,
+    );
+    // A stored zone Intl does not know reads as UTC instead of failing every read.
+    await sql`update auth_owner set time_zone = 'Mars/Olympus'`.execute(db);
+    const listed = await client.callTool({ name: 'list_tasks', arguments: {} });
+    expect(listed.isError).toBeFalsy();
+    expect(textOf(await client.callTool({ name: 'read_task', arguments: { id: task.id } }))).toContain(
+      `(hoje é ${todayIn('UTC', new Date())})`,
     );
   });
 

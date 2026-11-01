@@ -38,4 +38,6 @@ export interface AuthDependencies {
   id(): string;
   now(): Date;
   throttle: LoginThrottle;
+  /** Receives what the service works around but someone should repair, such as a bad stored zone. */
+  warn(message: string): void;
 }

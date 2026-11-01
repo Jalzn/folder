@@ -12,6 +12,7 @@ Registrados durante a implementação; a seção se completa ao concluir.
   - **O que se perde:** dentro de uma migração, nenhuma cascata dispara e nenhuma referência é conferida na escrita.
   - **O que guarda:** o `foreign_key_check` antes do `COMMIT` recusa toda violação que não existia no começo da transação. Uma migração que apague um pai contando com o `ON DELETE CASCADE`, ou que grave uma referência inválida, deixa um órfão e é recusada inteira, com a tabela e o `rowid`. Ela precisa apagar os filhos ela mesma.
   - **Violações antigas:** as anteriores, deixadas por SQL manual, não impedem a atualização e vão para um aviso.
+- **Fuso gravado inválido.** Um fuso que o Intl não conhece, gravado por SQL ou deixado assim por uma atualização do ICU, vale como nenhum. As datas usam UTC, `auth.session` responde `timeZone: null` (e a web manda o do navegador de novo), e o servidor registra um aviso por valor, em vez de responder 500 em toda leitura com `today`.
 - **Uma coluna de conclusão, por gatilhos.** O índice único parcial de `is_done` deu lugar aos gatilhos da tabela de gatilhos da 007, porque a passagem do papel grava a nova coluna de conclusão antes de limpar a antiga.
 
 ## Objetivo

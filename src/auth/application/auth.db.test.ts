@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createAccessTokens } from '../infra/access-tokens.js';
 import { createAuthService } from '../infra/context.js';
 import { authModule } from '../infra/module.js';
@@ -133,6 +133,26 @@ describe('owner authentication', () => {
     expect(await auth.timeZone()).toBe('America/Sao_Paulo');
     const { token } = await auth.login({ password }, { ip: 'test' });
     expect((await auth.authenticate(token))?.owner).toMatchObject({ timeZone: 'America/Sao_Paulo' });
+  });
+
+  it('reads a stored zone Intl does not know as none: UTC for dates, null for the web, one warning', async () => {
+    const { db } = await fixture();
+    const warn = vi.fn();
+    const auth = createAuthService(db, { warn });
+    // Written by SQL, or a zone an ICU update stopped knowing: setTimeZone refuses it.
+    await sql`update auth_owner set time_zone = 'Mars/Olympus'`.execute(db);
+    expect(await auth.timeZone()).toBe('UTC');
+    expect(await auth.timeZone()).toBe('UTC');
+    const { token } = await auth.login({ password }, { ip: 'test' });
+    expect((await auth.authenticate(token))?.owner).toMatchObject({ timeZone: null });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      'The owner\'s stored time zone "Mars/Olympus" is not one Intl knows; dates use UTC until it is set again.',
+    );
+    // The web sends the browser's zone again, and it holds.
+    await auth.setTimeZone('America/Sao_Paulo');
+    expect(await auth.timeZone()).toBe('America/Sao_Paulo');
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 
   it('adds the time zone, null, to an owner created with migrations 001 and 002', async () => {

@@ -5,7 +5,10 @@ import { authService } from '../application/service.js';
 import { authRepository } from './repository.js';
 import { createLoginThrottle, passwordHasher, sessionTokens } from './security.js';
 
-export function createAuthService(db: Database, options: { clock?: () => Date; throttle?: LoginThrottle } = {}) {
+export function createAuthService(
+  db: Database,
+  options: { clock?: () => Date; throttle?: LoginThrottle; warn?: (message: string) => void } = {},
+) {
   return authService({
     read: authRepository(db),
     transaction: (work) => writeTransaction(db, (trx) => work(authRepository(trx))),
@@ -14,5 +17,6 @@ export function createAuthService(db: Database, options: { clock?: () => Date; t
     id: randomUUID,
     now: options.clock ?? (() => new Date()),
     throttle: options.throttle ?? createLoginThrottle(),
+    warn: options.warn ?? console.warn,
   });
 }
