@@ -133,7 +133,7 @@ describe('migration 007', () => {
       await consistent();
     });
 
-  it('keeps the sources, refuses a stored createTask replayed with its status and finds accented titles by their plain form', async () => {
+  it('keeps the sources, refuses a stored createTask replayed with or without its status and finds accented titles by their plain form', async () => {
     await loadStage09Fixture(db, 'sample');
     const [stored] = await rows<{ request_id: string; response: string }>(
       `select request_id, response from core_mutations where operation = 'workspace.createTask'
@@ -143,16 +143,13 @@ describe('migration 007', () => {
     await migrateTo007();
     if (!stored || !geral) throw new Error('The sample database changed.');
     const service = createWorkspaceService(db);
-    // The same request, as the stage 09 seed sent it: its status is dropped as an unknown key, so its
-    // data no longer match what was recorded, and it is refused without a second task.
-    await expect(
-      service.createTask({
-        requestId: stored.request_id,
-        projectId: geral.id,
-        title: 'Renovar domínio',
-        status: 'todo',
-      } as Parameters<typeof service.createTask>[0]),
-    ).rejects.toMatchObject({ code: 'REQUEST_REUSED' });
+    // The same request, as the stage 09 seed sent it: the task writes refuse its status, a key they no
+    // longer know. Sent without it, its data no longer match what was recorded. Neither makes a second task.
+    const replay = { requestId: stored.request_id, projectId: geral.id, title: 'Renovar domínio' };
+    expect(() => service.createTask({ ...replay, status: 'todo' } as Parameters<typeof service.createTask>[0])).toThrow(
+      'Unrecognized key',
+    );
+    await expect(service.createTask(replay)).rejects.toMatchObject({ code: 'REQUEST_REUSED' });
     expect(JSON.parse(stored.response)).toMatchObject({ id: expect.any(String), revision: expect.any(Number) });
     expect(await rows("select count(*) as count from workspace_tasks where title = 'Renovar domínio'")).toEqual([
       { count: 1 },

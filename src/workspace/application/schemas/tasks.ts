@@ -16,12 +16,17 @@ const labelIds = z.array(id).max(5 * TASK_LIMITS.labels);
 export const ListTasksInput = z.object({ projectId: id.optional(), documentId: id.optional() });
 /** A task, live or in the trash, with its description. */
 export const GetTaskInput = z.object({ id });
+/*
+ * The task writes refuse a key they do not know (strictObject), where the other aggregates' inputs
+ * drop it: after B6 a tab from before still sends `status` and updateTask's `title`, and dropping them
+ * answered its complete or rename as if done. A refusal shows it an error instead.
+ */
 /**
  * A task needs a project, unless it comes from a document excerpt: with no project, or null, it
  * joins the document's project. A copy ("Salvar como cópia") brings its fields and description.
  */
 export const CreateTaskInput = z
-  .object({
+  .strictObject({
     ...request,
     title,
     projectId: id.nullable().optional(),
@@ -44,7 +49,7 @@ export const CreateTaskInput = z
     path: ['projectId'],
   });
 /** The fields, at the fields' version: column, project, due date and labels. The title is text. */
-export const UpdateTaskInput = z.object({
+export const UpdateTaskInput = z.strictObject({
   ...edit,
   projectId: id.optional(),
   columnId: id.optional(),
@@ -52,7 +57,7 @@ export const UpdateTaskInput = z.object({
   labelIds: labelIds.optional(),
 });
 /** The text, at the text's version: the title and the description together. */
-export const SaveTaskTextInput = z.object({
+export const SaveTaskTextInput = z.strictObject({
   ...request,
   id,
   expectedTextVersion: version,
@@ -73,7 +78,7 @@ export const RestoreTaskInput = z.object(edit);
  * Moves a task within its project's board. With `expectedRevision`, the board must not have changed;
  * without it, only for an undo, the place is `beforeTaskId`, or the end once that task left.
  */
-export const MoveTaskInput = z.object({
+export const MoveTaskInput = z.strictObject({
   ...edit,
   expectedRevision: z.number().int().nonnegative().optional(),
   columnId: id,

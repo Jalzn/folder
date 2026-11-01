@@ -148,6 +148,44 @@ describe('server boundaries', () => {
       version: 2,
     });
   });
+  it("refuses a key the task writes do not know, as a tab from before B6 sends status and updateTask's title", async () => {
+    const { browser } = await fixture();
+    const { client } = browser();
+    await client.auth.login({ password });
+    const project = await newProject(client);
+    const task = await client.workspace.createTask({ requestId: randomUUID(), title: 'Tarefa', projectId: project.id });
+    const legacy = (input: object) => input as never;
+    for (const call of [
+      () =>
+        client.workspace.createTask(
+          legacy({ requestId: randomUUID(), title: 'Antiga', projectId: project.id, status: 'done' }),
+        ),
+      () =>
+        client.workspace.updateTask(
+          legacy({ requestId: randomUUID(), id: task.id, expectedVersion: 1, status: 'done' }),
+        ),
+      () =>
+        client.workspace.updateTask(
+          legacy({ requestId: randomUUID(), id: task.id, expectedVersion: 1, title: 'Nova' }),
+        ),
+      () =>
+        client.workspace.moveTask(
+          legacy({ requestId: randomUUID(), id: task.id, expectedVersion: 1, status: 'doing' }),
+        ),
+      () =>
+        client.workspace.saveTaskText(
+          legacy({ requestId: randomUUID(), id: task.id, expectedTextVersion: 1, title: 'T', description: [], x: 1 }),
+        ),
+    ])
+      await expect(call()).rejects.toMatchObject({ status: 400, data: { code: 'VALIDATION' } });
+    expect(await client.workspace.getTask({ id: task.id })).toMatchObject({
+      title: 'Tarefa',
+      version: 1,
+      textVersion: 1,
+    });
+    expect((await client.workspace.listTasks({ projectId: project.id })).tasks).toHaveLength(1);
+  });
+
   it('refuses a folder name with a NUL or another control character with VALIDATION, not a 500', async () => {
     const { browser } = await fixture();
     const { client } = browser();

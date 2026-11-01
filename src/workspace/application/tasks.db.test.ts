@@ -284,31 +284,83 @@ describe('tasks', () => {
     expect((await service.listLabels({})).labels).toMatchObject([{ id: mcp, taskCount: 0 }]);
   });
 
-  it("drops the stage 09 status and updateTask's title like any key the schemas do not know", async () => {
-    // A tab opened before B6 still sends them; Zod strips unknown keys, so they change nothing.
+  it('refuses the keys the task writes do not know, such as the status and title a tab from before B6 sends', async () => {
     const legacy = <T>(input: object) => input as T;
     type Create = Parameters<typeof service.createTask>[0];
     type Update = Parameters<typeof service.updateTask>[0];
     type Move = Parameters<typeof service.moveTask>[0];
-    const created = await service.createTask(
-      legacy<Create>({ ...request(), projectId: project.id, title: 'Antiga', status: 'done' }),
-    );
-    expect(await service.getTask({ id: created.id })).toMatchObject({ columnId: todo, completedAt: null });
-    expect(
-      await service.updateTask(
-        legacy<Update>({ ...request(), id: created.id, expectedVersion: 1, status: 'done', title: 'Renomeada' }),
-      ),
-    ).toMatchObject({ version: 2 });
-    expect(await service.getTask({ id: created.id })).toMatchObject({
-      columnId: todo,
-      title: 'Antiga',
-      textVersion: 1,
-    });
-    // moveTask needs columnId: the schema refuses the move, a 400 VALIDATION over /rpc.
+    type Text = Parameters<typeof service.saveTaskText>[0];
+    const created = await service.createTask({ ...request(), projectId: project.id, title: 'Antiga' });
+    // The schemas refuse them before any write: a 400 VALIDATION over /rpc (server.db.test.ts).
+    const refused = 'Unrecognized key';
     expect(() =>
-      service.moveTask(legacy<Move>({ ...request(), id: created.id, expectedVersion: 2, status: 'doing' })),
-    ).toThrow('expected string, received undefined');
-    const [listed] = (await service.listTasks({})).tasks;
-    expect(listed).not.toHaveProperty('status');
+      service.createTask(legacy<Create>({ ...request(), projectId: project.id, title: 'Outra', status: 'done' })),
+    ).toThrow(refused);
+    expect(() =>
+      service.updateTask(legacy<Update>({ ...request(), id: created.id, expectedVersion: 1, status: 'done' })),
+    ).toThrow(refused);
+    expect(() =>
+      service.updateTask(legacy<Update>({ ...request(), id: created.id, expectedVersion: 1, title: 'Renomeada' })),
+    ).toThrow(refused);
+    expect(() =>
+      service.moveTask(
+        legacy<Move>({ ...request(), id: created.id, expectedVersion: 1, columnId: doing, status: 'doing' }),
+      ),
+    ).toThrow(refused);
+    expect(() =>
+      service.saveTaskText(
+        legacy<Text>({
+          ...request(),
+          id: created.id,
+          expectedTextVersion: 1,
+          title: 'T',
+          description: [],
+          status: 'done',
+        }),
+      ),
+    ).toThrow(refused);
+    expect(await service.getTask({ id: created.id })).toMatchObject({ title: 'Antiga', version: 1, columnId: todo });
+    expect((await service.listTasks({})).tasks).toHaveLength(1);
+  });
+
+  it('answers an updateTask that changes no field with the task as it is, without a new version or date', async () => {
+    const mcp = await service.createLabel({ ...request(), name: 'mcp' });
+    const backend = await service.createLabel({ ...request(), name: 'backend' });
+    const created = await service.createTask({
+      ...request(),
+      projectId: project.id,
+      title: 'Parada',
+      dueOn: '2026-11-20',
+      labelIds: [mcp.id, backend.id],
+    });
+    const before = await service.getTask({ id: created.id });
+    const same = { ...request(), id: created.id, expectedVersion: 1 };
+    const ack = {
+      id: created.id,
+      projectId: project.id,
+      version: 1,
+      updatedAt: before.updatedAt,
+      revision: await revision(),
+    };
+    expect(await service.updateTask(same)).toEqual(ack);
+    expect(
+      await service.updateTask({
+        ...request(),
+        id: created.id,
+        expectedVersion: 1,
+        projectId: project.id,
+        columnId: todo,
+        dueOn: '2026-11-20',
+        labelIds: [backend.id, mcp.id],
+      }),
+    ).toEqual(ack);
+    expect(await service.getTask({ id: created.id })).toEqual(before);
+    // A real change is an edit, and a stale tab still learns it is stale, even changing nothing.
+    expect(await service.updateTask({ ...request(), id: created.id, expectedVersion: 1, dueOn: null })).toMatchObject({
+      version: 2,
+    });
+    await expect(service.updateTask({ ...request(), id: created.id, expectedVersion: 1 })).rejects.toMatchObject({
+      code: 'VERSION_CONFLICT',
+    });
   });
 });
