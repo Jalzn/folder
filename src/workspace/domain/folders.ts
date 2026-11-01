@@ -1,4 +1,4 @@
-import { searchText } from './search-text.js';
+import { visibleText, withoutInvisible } from './visible-text.js';
 
 /** Bounds of folders: the name, the active folders of a project, and the items a restore takes back. */
 export const FOLDER_LIMITS = {
@@ -24,14 +24,26 @@ export interface Folder {
   deletedAt: string | null;
 }
 
-/** A folder's name with every run of spaces, line breaks included, as one space, and no edge spaces. */
+/**
+ * A folder's name as stored: without characters that draw nothing (visibleText), with every run of
+ * spaces, line breaks included, as one space, and no edge spaces. Empty when nothing visible is left.
+ */
 export function folderName(raw: string): string {
-  return raw.replace(/\s+/gu, ' ').trim();
+  return visibleText(raw).replace(/\s+/gu, ' ');
 }
 
-/** What makes two names the same folder: case and accents aside, as search compares them. */
+/** Compatibility forms (full width, ligatures) as their plain letters, without marks nor invisibles. */
+const fold = (text: string) => withoutInvisible(text.normalize('NFKD'));
+
+/**
+ * What makes two names the same folder: case, accents, compatibility forms and characters that draw
+ * nothing aside, so "Ａｃｏｅｓ" and "Aç\u200Bões" are "Ações". Folded again after lowercasing, which
+ * can bring marks back ("İ").
+ */
 export function folderNameKey(name: string): string {
-  return searchText(folderName(name));
+  return fold(fold(folderName(name)).toLocaleLowerCase('pt-BR'))
+    .replace(/\s+/gu, ' ')
+    .trim();
 }
 
 /**

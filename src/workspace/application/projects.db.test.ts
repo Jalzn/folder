@@ -48,6 +48,51 @@ describe('projects: colour and selector order', () => {
     expect((await create('Sexto')).color).toBe('violet');
   });
 
+  it('drops what draws nothing from names and titles, and reads a name of only that as none', async () => {
+    // The service parses before it returns a promise, so a refusal is thrown right away.
+    const refusal = async (call: () => Promise<unknown>) => {
+      try {
+        await call();
+      } catch (error) {
+        return error;
+      }
+    };
+    expect(await refusal(() => create('\u{200B}\u{2060}'))).toMatchObject({
+      issues: [expect.objectContaining({ path: ['name'] })],
+    });
+    const project = await create('Vis\u{200B}ão\u{00AD} ');
+    expect(project.name).toBe('Visão');
+    const renamed = await service.updateProject({
+      ...request(),
+      id: project.id,
+      expectedVersion: 1,
+      name: 'Ou\u{FEFF}tro\u{3164}',
+    });
+    expect(renamed.name).toBe('Outro');
+    const document = await service.createDocument({ ...request(), projectId: project.id, title: '\u{200B}' });
+    const drawing = await service.createCanvas({ ...request(), projectId: project.id, title: 'De\u{2060}senho' });
+    expect([
+      (await service.getDocument({ id: document.id })).title,
+      (await service.getCanvas({ id: drawing.id })).title,
+    ]).toEqual(['Sem título', 'Desenho']);
+    await service.saveDocument({
+      ...request(),
+      id: document.id,
+      expectedVersion: 1,
+      title: 'No\u{00AD}tas',
+      content: [],
+    });
+    expect((await service.getDocument({ id: document.id })).title).toBe('Notas');
+    expect(
+      await refusal(() => service.createTask({ ...request(), projectId: project.id, title: '\u{200B}' })),
+    ).toMatchObject({ issues: [expect.objectContaining({ message: 'Escreva um título.' })] });
+    // Joiners stay: they draw emoji and shape scripts.
+    await service.createTask({ ...request(), projectId: project.id, title: '👩\u{200D}💻 Revisar' });
+    expect((await service.listTasks({ projectId: project.id })).tasks.map((task) => task.title)).toEqual([
+      '👩\u{200D}💻 Revisar',
+    ]);
+  });
+
   it('recolours and renames as edits, and archives any project, the last active one too', async () => {
     const project = await create('Tinyfold');
     const recoloured = await service.updateProject({

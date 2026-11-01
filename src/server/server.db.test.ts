@@ -148,6 +148,42 @@ describe('server boundaries', () => {
       version: 2,
     });
   });
+  it('refuses a folder name with a NUL or another control character with VALIDATION, not a 500', async () => {
+    const { browser } = await fixture();
+    const { client } = browser();
+    await client.auth.login({ password });
+    const project = await newProject(client);
+    const refused = {
+      status: 400,
+      message: 'Use só letras, números, espaços e símbolos no nome da pasta.',
+      data: { code: 'VALIDATION' },
+    };
+    for (const name of ['\u{0000}x', 'a\u{0000}b', '\u{0001}'])
+      await expect(
+        client.workspace.createFolder({ requestId: randomUUID(), projectId: project.id, name }),
+      ).rejects.toMatchObject(refused);
+    const folder = await client.workspace.createFolder({ requestId: randomUUID(), projectId: project.id, name: 'MCP' });
+    await expect(
+      client.workspace.renameFolder({
+        requestId: randomUUID(),
+        id: folder.id,
+        expectedVersion: 1,
+        name: '\u{0000}MCP',
+      }),
+    ).rejects.toMatchObject(refused);
+    // Project names and titles have no length CHECK, so a NUL there is stored as sent, never a 500.
+    const named = await client.workspace.createProject({ requestId: randomUUID(), name: '\u{0000}Projeto' });
+    const titled = await client.workspace.createDocument({
+      requestId: randomUUID(),
+      projectId: named.id,
+      title: '\u{0000}Título',
+    });
+    expect([named.name, (await client.workspace.getDocument({ id: titled.id })).title]).toEqual([
+      '\u{0000}Projeto',
+      '\u{0000}Título',
+    ]);
+  });
+
   it('saves a document above the old 64KiB limit and rejects excessive request size', async () => {
     const { browser, app } = await fixture();
     const { client } = browser();

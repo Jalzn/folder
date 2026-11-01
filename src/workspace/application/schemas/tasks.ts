@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { TASK_STATUSES } from '../../domain/task-status.js';
-import { edit, id, request, version } from './common.js';
+import { edit, id, request, version, visible } from './common.js';
 
-const title = z.string().trim().min(1, 'Escreva um título.').max(300);
+const title = visible(z.string().min(1, 'Escreva um título.').max(300));
 const status = z.enum(TASK_STATUSES);
 
 export const ListTasksInput = z.object({ projectId: id.optional(), documentId: id.optional() });

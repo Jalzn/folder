@@ -68,6 +68,10 @@ export function useAgentTools() {
     get service() {
       return service;
     },
+    /** The database under the tools, for rows the service no longer writes. */
+    get db() {
+      return db;
+    },
     /** The project each test's items go to, unless the test makes its own. */
     get project() {
       return project;

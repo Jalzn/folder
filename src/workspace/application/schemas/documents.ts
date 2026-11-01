@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { readDocumentContent } from '../../domain/document.js';
-import { edit, id, request } from './common.js';
+import { edit, id, request, visible } from './common.js';
 
+/** Empty, or of only characters that draw nothing, it becomes "Sem título". */
+const title = visible(z.string().max(300));
 const content = z.unknown().transform((value, ctx) => {
   try {
     return readDocumentContent(value);
@@ -19,7 +21,7 @@ export const ListDocumentsInput = z.object({
 export const GetDocumentInput = z.object({ id });
 export const CreateDocumentInput = z.object({
   ...request,
-  title: z.string().trim().max(300).optional(),
+  title: title.optional(),
   projectId: id,
   /** An active folder of the project; at the root without it. */
   folderId: id.optional(),
@@ -28,7 +30,7 @@ export const CreateDocumentInput = z.object({
 /** A save never moves the document: moveItem does. A `projectId` sent anyway is dropped, as any unknown key. */
 export const SaveDocumentInput = z.object({
   ...edit,
-  title: z.string().trim().max(300),
+  title,
   content,
 });
 export const DeleteDocumentInput = z.object(edit);

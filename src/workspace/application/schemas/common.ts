@@ -1,7 +1,14 @@
 import { z } from 'zod';
+import { visibleText } from '../../domain/visible-text.js';
 
 /** Fields every aggregate's inputs share. */
 export const id = z.string().uuid();
 export const version = z.number().int().positive();
 export const request = { requestId: id };
 export const edit = { ...request, id, expectedVersion: version };
+/**
+ * A project name or an item title: without characters that draw nothing nor edge spaces
+ * (visibleText), then checked by `checked`, which sees the empty text a name of only those has.
+ */
+export const visible = <T extends z.ZodType<string, string>>(checked: T) =>
+  z.string().transform(visibleText).pipe(checked);

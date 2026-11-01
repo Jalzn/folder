@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { missingId, paragraph, request, useAgentTools } from '../../testing/agent-tools.js';
@@ -114,12 +115,14 @@ describe('agent read tools', () => {
     if (!heaviest) throw new Error('No project to fill.');
     const projectId = heaviest.id;
     // Folders with names as heavy as they get: 200 in one project, of which list_projects shows 50, and 50
-    // in each of ten others.
+    // in each of ten others. A client can no longer send the control characters that grow the most in
+    // JSON, so the names are written by SQL, as a table edited by hand could hold them.
     const folder = (inProject: string, index: number) =>
-      agent.service.createFolder({ ...request(), projectId: inProject, name: `${heavy(96)}${index}` });
+      agent.service.createFolder({ ...request(), projectId: inProject, name: `Pasta ${index}` });
     const filedIn = await folder(projectId, 0);
     for (let index = 1; index < 200; index += 1) await folder(projectId, index);
     for (const other of others.slice(0, 10)) for (let index = 0; index < 50; index += 1) await folder(other.id, index);
+    await sql`update workspace_folders set name = ${heavy(96)} || substr(name, 7)`.execute(agent.db);
     let listed = 0;
     for (let cursor: string | null | undefined; cursor !== null; ) {
       const page = JSON.parse((await record('list_projects', cursor ? { cursor } : {})).text) as {

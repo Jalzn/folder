@@ -17,6 +17,7 @@ A lateral troca as seções Documentos e Desenhos pela árvore "Itens", feita co
 - `moveItem` no mesmo projeto ignora `expectedVersion` mesmo quando ele vem, porque o plano diz que ele não é usado ali.
 - `listFolders` também responde `version`, para que renomear ou excluir uma pasta achada pelo ⌘K ou pelo Índice não dependa da árvore.
 - Na revisão de dados, `deleteFolder` passou a responder `keptPin` em cada item de `moved`, e `restoreFolder` passou a exigi-lo: só um item que perdeu o fixado na exclusão e continua sem ele recebe o fixado de volta. Da lixeira, só volta o que foi excluído no mesmo instante da pasta, e um fixado posterior à exclusão recusa a lista.
+- Também na revisão de dados, nomes de pasta, nomes de projeto e títulos perdem os caracteres que não desenham nada (`visibleText`), e a chave do nome da pasta compara também as formas de compatibilidade (NFKD). Os *joiners* (U+200C e U+200D) e as etiquetas das bandeiras ficam no que é guardado, porque formam emoji como "👩‍💻" e escritas; só a chave os ignora. Um caractere de controle no nome da pasta dá `VALIDATION`, e não mais 500. Nomes de projeto e títulos, que não têm `CHECK` de comprimento e nunca deram 500, continuam aceitando caracteres de controle.
 
 **Aceitos**
 

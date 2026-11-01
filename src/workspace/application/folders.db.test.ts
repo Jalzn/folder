@@ -86,6 +86,35 @@ describe('folders', () => {
       });
     });
 
+    it('refuses a name that draws nothing, a look-alike of another and control characters', async () => {
+      const create = (name: string) => service.createFolder({ ...request(), projectId: project.id, name });
+      for (const name of ['\u{200B}', '\u{3164}', '\u{00AD}\u{2060}', '\u{200D}'])
+        await expect(create(name)).rejects.toMatchObject({ code: 'VALIDATION', message: 'Dê um nome à pasta.' });
+      await create('Ações');
+      for (const name of ['Ａｃｏｅｓ', 'Aç\u{200B}ões', 'Aç\u{00AD}ões', 'Ações\u{2060}'])
+        await expect(create(name)).rejects.toMatchObject({
+          code: 'DOMAIN_RULE',
+          message: 'Já existe uma pasta Ações.',
+        });
+      // A NUL ends the text for SQLite's length(): refused before it reaches the CHECK.
+      const controls = { code: 'VALIDATION', message: 'Use só letras, números, espaços e símbolos no nome da pasta.' };
+      for (const name of ['\u{0000}x', 'a\u{0000}b', '\u{0001}', 'a\u{007F}', 'a\u{0085}'])
+        await expect(create(name)).rejects.toMatchObject(controls);
+      const mcp = await create('M\u{200B}CP\tdo\nprojeto');
+      await expect(
+        service.renameFolder({ ...request(), id: mcp.id, expectedVersion: 1, name: '\u{0000}MCP' }),
+      ).rejects.toMatchObject(controls);
+      expect(
+        (
+          await sql<{ name: string; name_key: string }>`select name, name_key from workspace_folders
+          order by position`.execute(db)
+        ).rows,
+      ).toEqual([
+        { name: 'MCP do projeto', name_key: 'mcp do projeto' },
+        { name: 'Ações', name_key: 'acoes' },
+      ]);
+    });
+
     it('refuses an archived or missing project', async () => {
       await service.updateProject({ ...request(), id: project.id, expectedVersion: 1, archived: true });
       await expect(service.createFolder({ ...request(), projectId: project.id, name: 'MCP' })).rejects.toMatchObject({

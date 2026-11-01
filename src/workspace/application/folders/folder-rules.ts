@@ -42,9 +42,15 @@ export async function requireProjectForFolders(repo: WorkspaceRepository, projec
   return project;
 }
 
-/** A name as stored: spaces collapsed, from 1 to 100 characters, with something left to tell it apart. */
+/**
+ * A name as stored (folderName), from 1 to 100 characters, with something left to tell it apart and
+ * no control character: line breaks and tabs are spaces by then, and the others, a NUL above all,
+ * which SQLite counts as the end of the text, are refused.
+ */
 export function readFolderName(raw: string): string {
   const name = folderName(raw);
+  if (/\p{Cc}/u.test(name))
+    throw new AppError('VALIDATION', 'Use só letras, números, espaços e símbolos no nome da pasta.');
   if (!name || !folderNameKey(name)) throw new AppError('VALIDATION', 'Dê um nome à pasta.');
   if (Array.from(name).length > FOLDER_LIMITS.nameChars)
     throw new AppError('VALIDATION', `Use até ${FOLDER_LIMITS.nameChars} caracteres no nome da pasta.`);

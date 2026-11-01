@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { PROJECT_COLORS } from '../../domain/project.js';
-import { edit, id, request } from './common.js';
+import { edit, id, request, visible } from './common.js';
 
-const name = z.string().trim().min(1).max(100);
+const name = visible(z.string().min(1).max(100));
 const color = z.enum(PROJECT_COLORS);
 
 export const ListProjectsInput = z.object({ includeArchived: z.boolean().optional() });

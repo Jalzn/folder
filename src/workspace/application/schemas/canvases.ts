@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { readCanvasScene } from '../../domain/canvas.js';
-import { edit, id, request, version } from './common.js';
+import { edit, id, request, version, visible } from './common.js';
 
+/** Empty, or of only characters that draw nothing, it becomes "Sem título". */
+const title = visible(z.string().max(300));
 const scene = z.unknown().transform((value, ctx) => {
   try {
     return readCanvasScene(value);
@@ -19,7 +21,7 @@ export const ListCanvasesInput = z.object({
 export const GetCanvasInput = z.object({ id });
 export const CreateCanvasInput = z.object({
   ...request,
-  title: z.string().trim().max(300).optional(),
+  title: title.optional(),
   projectId: id,
   /** An active folder of the project; at the root without it. */
   folderId: id.optional(),
@@ -28,7 +30,7 @@ export const CreateCanvasInput = z.object({
 /** A save never moves the drawing: moveItem does. A `projectId` sent anyway is dropped, as any unknown key. */
 export const SaveCanvasInput = z.object({
   ...edit,
-  title: z.string().trim().max(300),
+  title,
   scene,
 });
 export const DeleteCanvasInput = z.object(edit);

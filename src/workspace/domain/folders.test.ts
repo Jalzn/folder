@@ -16,6 +16,23 @@ describe('folders', () => {
     expect(folderNameKey('́')).toBe('');
   });
 
+  it('drops what draws nothing from a name, and keeps the joiners of emoji', () => {
+    for (const name of ['Aç\u{200B}ões', 'Aç\u{00AD}ões', 'Ações\u{2060}', '\u{FEFF}Ações', 'A\u{3164}ções'])
+      expect(folderName(name)).toBe('Ações');
+    expect(folderName('a \u{200B} b')).toBe('a b');
+    for (const name of ['\u{200B}', '\u{3164}', '\u{200D}', '\u{0301}']) expect(folderName(name)).toBe('');
+    expect(folderName('👩\u{200D}💻 Dev')).toBe('👩\u{200D}💻 Dev');
+  });
+
+  it('keys look-alike names as one: full width, ligatures, invisible characters and a dotted I', () => {
+    for (const name of ['Ａｃｏｅｓ', 'Aç\u{200B}ões', 'Aç\u{00AD}ões', 'Ações\u{2060}', 'AÇÕES'])
+      expect(folderNameKey(name)).toBe('acoes');
+    expect(folderNameKey('ﬁo')).toBe(folderNameKey('fio'));
+    expect(folderNameKey('İ')).toBe(folderNameKey('i'));
+    expect(folderNameKey('™')).toBe(folderNameKey('TM'));
+    expect(folderNameKey('\u{200B}')).toBe('');
+  });
+
   it('orders a folder before another, at the end, and refuses unknown or identical ids', () => {
     const ids = ['a', 'b', 'c', 'd'];
     expect(folderOrder(ids, 'd', 'a')).toEqual(['d', 'a', 'b', 'c']);
