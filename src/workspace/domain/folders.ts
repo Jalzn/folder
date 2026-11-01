@@ -32,9 +32,20 @@ export function folderName(raw: string): string {
   return visibleText(raw).replace(/\s+/gu, ' ');
 }
 
-/** Letters whose accents a key drops, as Portuguese reads "Ações" and "Acoes" as one name. */
-const ACCENTED_SCRIPT = /[\p{sc=Latin}\p{sc=Greek}\p{sc=Cyrillic}]/u;
 const LETTER = /\p{L}/u;
+/** Letters whose accents a key drops, as Portuguese reads "Ações" and "Acoes" as one name. */
+const ACCENTED_SCRIPT = /[\p{sc=Latin}\p{sc=Greek}]/u;
+const CYRILLIC = /\p{sc=Cyrillic}/u;
+/**
+ * In Cyrillic only the stress accents fold, the acute and the grave written over a vowel. The breve
+ * and the diaeresis make other letters (й, ў, ї, ё), and so does the acute of Macedonian ѓ and ќ.
+ */
+const STRESS = /[\u{0300}\u{0301}]/u;
+const ACUTE_LETTER = /[\u{0413}\u{0433}\u{041A}\u{043A}]/u;
+const foldsOn = (base: string, mark: string) =>
+  LETTER.test(base) &&
+  (ACCENTED_SCRIPT.test(base) ||
+    (CYRILLIC.test(base) && STRESS.test(mark) && !(mark === '\u{0301}' && ACUTE_LETTER.test(base))));
 const MARK = /\p{M}/u;
 /** The text and emoji presentation selectors: one heart either way. */
 const PRESENTATION = /[\u{FE0E}\u{FE0F}]/u;
@@ -42,7 +53,8 @@ const JOINER = /[\u{200C}\u{200D}]/u;
 
 /**
  * Compatibility forms (full width, ligatures) as their plain letters (NFKD), without the marks of
- * Latin, Greek and Cyrillic letters, the presentation selectors, nor joiners other than an emoji's.
+ * Latin and Greek letters, the stress accents of Cyrillic ones, the presentation selectors, nor
+ * joiners other than an emoji's.
  * Marks of other scripts stay, since in Hindi and Thai they are letters and tones ("काम" is not
  * "कम"), and so do emoji sequences (the family is not three people, the Scotland flag not England's).
  */
@@ -57,13 +69,13 @@ function fold(text: string): string {
         base = point;
         return true;
       }
-      return !(LETTER.test(base) && ACCENTED_SCRIPT.test(base));
+      return !foldsOn(base, point);
     })
     .join('');
 }
 
 /**
- * What makes two names the same folder: case, Latin, Greek and Cyrillic accents, compatibility forms
+ * What makes two names the same folder: case, Latin and Greek accents, Cyrillic stress, compatibility forms
  * and characters that draw nothing aside, so "Ａｃｏｅｓ" and "Aç\u{200B}ões" are "Ações". Folded again
  * after lowercasing, which can bring marks back ("İ").
  */

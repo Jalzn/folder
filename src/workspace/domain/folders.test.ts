@@ -45,6 +45,13 @@ describe('folders', () => {
       ['1\u{FE0F}\u{20E3}', '1'],
       ['👍\u{1F3FB}', '👍\u{1F3FF}'],
       ['Pr\u{043E}jeto', 'Projeto'],
+      // Cyrillic letters with a breve, a diaeresis or the Macedonian acute.
+      ['мой', 'мои'],
+      ['ў', 'у'],
+      ['ї', 'і'],
+      ['ё', 'е'],
+      ['ѓ', 'г'],
+      ['Ќ', 'К'],
     ] as [string, string][])
       expect(folderNameKey(one)).not.toBe(folderNameKey(other));
   });
@@ -59,6 +66,10 @@ describe('folders', () => {
       ['❤\u{FE0F}', '❤'],
       ['می\u{200C}خواهم', 'میخواهم'],
       ['ά', 'α'],
+      // Cyrillic stress, the acute and the grave over a vowel.
+      ['за\u{0301}мок', 'замок'],
+      ['ѐ', 'е'],
+      ['ё\u{0301}', 'ё'],
     ] as [string, string][])
       expect(folderNameKey(one)).toBe(folderNameKey(other));
   });
