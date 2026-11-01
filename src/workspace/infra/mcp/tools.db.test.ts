@@ -98,6 +98,7 @@ describe('agent read tools', () => {
     ]);
   });
 
+  // About a second alone, past five on a loaded machine: it writes hundreds of heavy rows.
   it('keeps every text result within the output ceiling, by its own budget', async () => {
     // Quotes, backslashes and control characters grow the most when written as JSON.
     const heavy = (length: number) => '"\\\u0001'.repeat(length).slice(0, length);
@@ -244,7 +245,7 @@ describe('agent read tools', () => {
       expect(text.length, name).toBeLessThanOrEqual(READING_LIMITS.toolTextChars);
       expect(text, name).not.toContain('resposta cortada');
     }
-  });
+  }, 30_000);
 
   it('logs unexpected failures and answers with a generic message', async () => {
     await agent.closeDatabase();
