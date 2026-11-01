@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { downloadFile } from '../../lib/download';
@@ -6,7 +5,7 @@ import { draftDownload, localDrafts } from '../../lib/local-drafts';
 import type { ItemType } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { PageStatus, useApp } from '../../shell';
-import { Button, PageHeader } from '../../ui';
+import { Button, ButtonLink, PageHeader } from '../../ui';
 
 /**
  * A missing address inside the shell: an unknown page, an item deleted for good, or a project that does
@@ -16,9 +15,7 @@ export function NotFoundPage({ title, description }: { title: string; descriptio
   return (
     <PageStatus>
       <PageHeader title={title} description={description}>
-        <Link to={paths.start} className="btn" data-variant="secondary" data-size="md">
-          Ir para o início
-        </Link>
+        <ButtonLink to={paths.start}>Ir para o início</ButtonLink>
       </PageHeader>
     </PageStatus>
   );

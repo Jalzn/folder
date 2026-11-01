@@ -1,11 +1,12 @@
 import { useNavigate } from '@tanstack/react-router';
-import { createContext, type ReactNode, useCallback, useContext, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from 'react';
 import { TaskDialog, type TaskOrigin } from '../components/task';
 import { api } from '../lib/api';
 import type { Project, Task, TaskStatus } from '../lib/types';
 import { useAction } from '../lib/use-action';
 import { useRequest } from '../lib/use-request';
 import { paths } from '../router/paths';
+import { pageFocus, returnFocus } from '../ui';
 import type { Owner } from './LoginScreen';
 import { ProjectDialog } from './project/ProjectDialog';
 
@@ -57,6 +58,12 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
   const [projectDialog, setProjectDialog] = useState<{ project?: Project } | null>(null);
   // One task dialog for every screen. Closing keeps its content, so it does not change while it leaves.
   const [taskDialog, setTaskDialog] = useState<TaskDialogState>({ open: false });
+  // Where the focus was on the page before a dialog opened from a menu, N or ⌘K, whose item is gone by the
+  // time it closes: the focus goes back there, or to the page's title.
+  const focusBefore = useRef<HTMLElement | null>(null);
+  const noteFocus = useCallback(() => {
+    focusBefore.current = pageFocus();
+  }, []);
 
   async function newDocument(projectId: string) {
     const input = { projectId };
@@ -79,29 +86,50 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
     );
   }
   const newTask = useCallback(
-    (projectId: string, options: NewTaskOptions = {}) => setTaskDialog({ open: true, projectId, ...options }),
-    [],
+    (projectId: string, options: NewTaskOptions = {}) => {
+      noteFocus();
+      setTaskDialog({ open: true, projectId, ...options });
+    },
+    [noteFocus],
   );
-  const openTask = useCallback((task: Task) => setTaskDialog({ open: true, task }), []);
+  const openTask = useCallback(
+    (task: Task) => {
+      noteFocus();
+      setTaskDialog({ open: true, task });
+    },
+    [noteFocus],
+  );
   const value: AppContextValue = {
     owner,
     newDocument,
     newCanvas,
     newTask,
     openTask,
-    openProjectDialog: (project) => setProjectDialog(project ? { project } : {}),
+    openProjectDialog: (project) => {
+      noteFocus();
+      setProjectDialog(project ? { project } : {});
+    },
     creatingDocument: documentAction.busy,
     creatingCanvas: canvasAction.busy,
   };
   return (
     <AppContext.Provider value={value}>
       {children}
-      {projectDialog && <ProjectDialog project={projectDialog.project} onClose={() => setProjectDialog(null)} />}
+      {projectDialog && (
+        <ProjectDialog
+          project={projectDialog.project}
+          onClose={() => {
+            setProjectDialog(null);
+            returnFocus(focusBefore.current);
+          }}
+        />
+      )}
       <TaskDialog
         open={taskDialog.open}
         onClose={() => {
           taskDialog.onClose?.();
           setTaskDialog((current) => ({ ...current, open: false }));
+          returnFocus(focusBefore.current);
         }}
         task={taskDialog.task}
         initialProjectId={taskDialog.task ? undefined : (taskDialog.projectId ?? null)}

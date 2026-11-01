@@ -1,5 +1,5 @@
 import { AlertDialog } from '../../../ui';
-import { emptyTrashBody } from './trash-text';
+import { emptyTrashBody, emptyTrashTitle } from './trash-text';
 import { type Confirmation, type EmptyTarget, type PurgeTarget, trashTitle } from './use-trash-actions';
 
 /** "Excluir de vez “<título>”?", saying that a document's tasks stay when it had any. */
@@ -34,8 +34,8 @@ export function PurgeDialog({
 }
 
 /**
- * "Esvaziar a lixeira de <projeto>?", counting the items it deletes; with a filter on, "Excluir de vez os
- * itens mostrados?", since the others stay.
+ * "Esvaziar a lixeira de <projeto>?", counting the items it deletes; when only part of the trash is shown,
+ * "Excluir de vez os 3 itens mostrados?", since the others stay.
  */
 export function EmptyTrashDialog({
   projectName,
@@ -50,18 +50,18 @@ export function EmptyTrashDialog({
   onConfirm: () => void;
   onClose: () => void;
 }) {
+  const shown = confirmation?.value.items.length ?? 0;
+  const partial = confirmation?.value.partial ?? false;
   return (
     <AlertDialog
       open={confirmation?.open ?? false}
-      title={
-        confirmation?.value.filtered ? 'Excluir de vez os itens mostrados?' : `Esvaziar a lixeira de ${projectName}?`
-      }
-      confirmLabel={confirmation?.value.filtered ? 'Excluir de vez' : 'Esvaziar lixeira'}
+      title={emptyTrashTitle(shown, partial, projectName)}
+      confirmLabel={partial ? 'Excluir de vez' : 'Esvaziar lixeira'}
       isPending={pending}
       onConfirm={onConfirm}
       onClose={onClose}
     >
-      <p>{emptyTrashBody(confirmation?.value.items.length ?? 0, confirmation?.value.filtered ?? false)}</p>
+      <p>{emptyTrashBody(shown, partial)}</p>
     </AlertDialog>
   );
 }

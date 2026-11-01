@@ -1,21 +1,20 @@
 import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { SaveBanners, SaveState, useItemActions } from '../../components/editor';
-import { api } from '../../lib/api';
+import { ReloadDialog, SaveBanners, SaveState, TrashItemDialog, useItemActions } from '../../components/editor';
 import type { Snapshot } from '../../lib/autosave';
+import { formatCount } from '../../lib/count';
 import { moveThroughController } from '../../lib/editor-move';
-import { documentQuery, useHasActiveProject, useTasks } from '../../lib/queries';
+import { useHasActiveProject, useTasks } from '../../lib/queries';
 import { registerOpenEditor } from '../../lib/save-registry';
 import { type Document, type DocumentContent, displayTitle, UNTITLED } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
-import { paths } from '../../router/paths';
 import { ItemMenu, type ItemMenuAction, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
-import { AlertDialog, Banner, Button, IconButton } from '../../ui';
+import { Banner, Button, IconButton } from '../../ui';
 import { DocumentContentEditor } from './DocumentContentEditor';
 import { DocumentTitle } from './DocumentTitle';
-import { documentController, documentSnapshot } from './document-session';
+import { documentController, documentItem } from './document-session';
 import { LinkedTasksPanel } from './LinkedTasksPanel';
 import { useBlockAnchor, useDocumentEditor } from './use-document-editor';
 import { useDocumentFiles } from './use-document-files';
@@ -48,19 +47,7 @@ export function DocumentEditor({ document }: { document: Document }) {
   const files = useDocumentFiles(editor, controller, document.id);
   const taskFromSelection = useTaskFromSelection(editor, controller, document, () => setTasksOpen(true));
   const projectId = state.snapshot.projectId;
-  const actions = useItemActions(controller, {
-    id: document.id,
-    projectId,
-    queryKey: documentQuery(document.id).queryKey,
-    read: () => api.workspace.getDocument({ id: document.id }),
-    snapshot: documentSnapshot,
-    version: (current) => current.version,
-    createCopy: (snapshot, to, title, requestId) =>
-      api.workspace.createDocument({ title, content: snapshot.content, projectId: to, requestId }),
-    remove: (input) => api.workspace.deleteDocument(input),
-    path: (to, id) => paths.document(to, id),
-    words: { the: 'o documento', aNew: 'um novo documento', capital: 'Documento' },
-  });
+  const actions = useItemActions(controller, documentItem(document.id));
   const fileActions: ItemMenuAction[] = [
     {
       id: 'import',
@@ -99,7 +86,7 @@ export function DocumentEditor({ document }: { document: Document }) {
             aria-controls="linked-tasks-panel"
             onPress={() => setTasksOpen(!tasksOpen)}
           >
-            Tarefas <span className="document-page__count">{openCount}</span>
+            Tarefas <span className="document-page__count">{formatCount(openCount)}</span>
           </Button>
           <ItemMenu
             type="document"
@@ -197,31 +184,20 @@ export function DocumentEditor({ document }: { document: Document }) {
           />
         )}
       </div>
-      <AlertDialog
+      <TrashItemDialog
+        type="document"
         open={trashOpen}
-        title="Mover para a lixeira?"
-        confirmLabel="Mover para a lixeira"
-        cancelLabel="Manter documento"
-        isPending={actions.trashing}
+        pending={actions.trashing}
         onClose={() => setTrashOpen(false)}
         onConfirm={() => void actions.moveToTrash().then((moved) => moved && setTrashOpen(false))}
       >
-        <p>Você pode restaurar este documento depois. As tarefas vinculadas continuam no quadro.</p>
-      </AlertDialog>
-      <AlertDialog
+        As tarefas vinculadas continuam no quadro.
+      </TrashItemDialog>
+      <ReloadDialog
         open={reloadOpen}
-        title="Carregar a versão salva?"
-        confirmLabel="Carregar versão salva"
-        cancelLabel="Voltar"
-        destructive={false}
         onClose={() => setReloadOpen(false)}
         onConfirm={() => void actions.reloadRemote().then((loaded) => loaded && setReloadOpen(false))}
-      >
-        <p>
-          Isso substitui o rascunho desta aba. Para guardar as duas versões, volte e escolha “Salvar meu rascunho como
-          cópia”.
-        </p>
-      </AlertDialog>
+      />
     </PageFrame>
   );
 }

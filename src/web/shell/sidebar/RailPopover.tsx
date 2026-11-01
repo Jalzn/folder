@@ -2,9 +2,10 @@ import { useLocation } from '@tanstack/react-router';
 import type { NavSection } from '@tinyfold/workspace/domain';
 import { FileText, Shapes } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { formatCount } from '../../lib/count';
 import { displayTitle, type Project } from '../../lib/types';
 import { paths } from '../../router/paths';
-import { IconButton, Popover, PopoverTrigger } from '../../ui';
+import { IconButton, Popover, PopoverTrigger, returnFocus } from '../../ui';
 import { SectionList } from './SectionList';
 import { SidebarRow } from './SidebarRow';
 import { sectionKinds, sectionRows } from './section-rows';
@@ -18,7 +19,18 @@ const icons = { documents: FileText, drawings: Shapes } as const;
  * The popover's list, mounted with the popover, so its rows get their tab stop and the first focus: ↓ and
  * ↑ move, ↵ opens.
  */
-function RailList({ project, kind, section }: { project: Project; kind: SectionKind; section: NavSection }) {
+function RailList({
+  project,
+  kind,
+  section,
+  onChooseOpen,
+}: {
+  project: Project;
+  kind: SectionKind;
+  section: NavSection;
+  /** The row of the item already open: following it changes no page, so the list closes itself. */
+  onChooseOpen: () => void;
+}) {
   const { type, index } = sectionKinds[kind];
   const Icon = icons[kind];
   const open = useOpenItem(type);
@@ -35,6 +47,7 @@ function RailList({ project, kind, section }: { project: Project; kind: SectionK
         icon={<Icon size={16} />}
         label={displayTitle(item.title)}
         current={open?.id === item.id}
+        {...(open?.id === item.id ? { onClick: onChooseOpen } : {})}
       />
     </li>
   );
@@ -52,7 +65,7 @@ function RailList({ project, kind, section }: { project: Project; kind: SectionK
 
 /**
  * On the collapsed rail, Documentos and Desenhos open the same short list in a 280 px popover. Choosing an
- * item closes it, and the new page takes the focus.
+ * item, even the one already open, closes it, and the page's title takes the focus.
  */
 export function RailPopover({
   project,
@@ -69,6 +82,12 @@ export function RailPopover({
   const pathname = useLocation({ select: (location) => location.pathname });
   // biome-ignore lint/correctness/useExhaustiveDependencies: A new page, from a row of the list, closes it.
   useEffect(() => setOpen(false), [pathname]);
+  function chooseOpen() {
+    // The popover gives the focus back to its button as it closes; the page's title takes it instead.
+    const trigger = document.querySelector('.rail__button[aria-expanded="true"]');
+    setOpen(false);
+    returnFocus(null, { from: trigger });
+  }
   return (
     <PopoverTrigger isOpen={isOpen} onOpenChange={setOpen}>
       <IconButton label={label} className="rail__button">
@@ -77,9 +96,9 @@ export function RailPopover({
       <Popover aria-label={`${label} de ${project.name}`} placement="right top" className="rail-popover">
         <div className="rail-popover__head">
           <span>{label}</span>
-          <span className="rail-popover__count">{section?.total ?? ''}</span>
+          <span className="rail-popover__count">{section ? formatCount(section.total) : ''}</span>
         </div>
-        {section && <RailList project={project} kind={kind} section={section} />}
+        {section && <RailList project={project} kind={kind} section={section} onChooseOpen={chooseOpen} />}
       </Popover>
     </PopoverTrigger>
   );

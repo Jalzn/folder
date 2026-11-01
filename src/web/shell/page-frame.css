@@ -15,6 +15,10 @@
   height: var(--height-header);
   padding: 0 12px 0 32px;
 }
+/* Only notes where the focus is: the actions stay items of the bar they are in. */
+.page-frame__actions {
+  display: contents;
+}
 .page-frame__body {
   flex: 1;
   min-height: 0;

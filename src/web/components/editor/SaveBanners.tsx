@@ -1,11 +1,10 @@
 import './editor.css';
-import { Link } from '@tanstack/react-router';
 import { ArrowDownToLine, RotateCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { errorMessage } from '../../lib/api';
 import type { SaveState } from '../../lib/autosave';
 import { paths } from '../../router/paths';
-import { Banner, Button } from '../../ui';
+import { Banner, Button, ButtonLink } from '../../ui';
 
 /**
  * The bands of an open document or drawing, under the page bar: a draft that could not open, an edit made
@@ -75,9 +74,9 @@ export function SaveBanners({
           actions={
             <>
               {trashed ? (
-                <Link to={paths.trash(projectId)} className="btn" data-variant="secondary" data-size="sm">
+                <ButtonLink to={paths.trash(projectId)} size="sm">
                   Abrir lixeira
-                </Link>
+                </ButtonLink>
               ) : (
                 <Button size="sm" onPress={onReload}>
                   Carregar versão salva

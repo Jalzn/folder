@@ -1,4 +1,4 @@
-import { type CanvasScene, MAX_PREVIEW_SIDE } from '@tinyfold/workspace/domain';
+import { type CanvasScene, MAX_PREVIEW_SIDE, sceneFingerprint } from '@tinyfold/workspace/domain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pngFile } from '../../workspace/testing/png';
 import {
@@ -65,7 +65,7 @@ describe('renderPreview', () => {
 
 describe('CanvasPreviewUploader', () => {
   let ready: boolean;
-  let uploads: { id: string; version: number; png: File }[];
+  let uploads: Parameters<CanvasPreviewOptions['upload']>[0][];
   let upload: ReturnType<typeof vi.fn<CanvasPreviewOptions['upload']>>;
   const uploader = (options: Partial<CanvasPreviewOptions> = {}) =>
     new CanvasPreviewUploader({
@@ -101,6 +101,8 @@ describe('CanvasPreviewUploader', () => {
     expect(uploads.map(({ version }) => version)).toEqual([3]);
     expect(uploads[0]?.png.type).toBe('image/png');
     expect(uploads[0]?.id).toBe('canvas');
+    // The scene it shows, so the server keeps a preview rendered before a move or a rename.
+    expect(uploads[0]?.sceneFingerprint).toBe(sceneFingerprint(scene('Editor')));
   });
 
   it('generates one preview at a time and then the version saved meanwhile', async () => {

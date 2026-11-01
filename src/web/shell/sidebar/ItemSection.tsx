@@ -1,6 +1,7 @@
 import type { NavSection, NavSort } from '@tinyfold/workspace/domain';
 import { ChevronRight, Ellipsis, Plus } from 'lucide-react';
 import { type KeyboardEvent, useId } from 'react';
+import { formatCount } from '../../lib/count';
 import { isPendingSave } from '../../lib/save-registry';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
@@ -102,7 +103,7 @@ export function ItemSection({
             </Menu>
           </MenuTrigger>
         </span>
-        <span className="sidebar-section__count">{section?.total ?? ''}</span>
+        <span className="sidebar-section__count">{section ? formatCount(section.total) : ''}</span>
       </div>
       {expanded && rows && section && (
         <SectionList

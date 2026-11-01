@@ -3,9 +3,7 @@ import { Refusal } from '../../lib/errors';
 import { canvasQuery, documentQuery } from '../../lib/queries';
 import { openEditor } from '../../lib/save-registry';
 import type { ItemType } from '../../lib/types';
-
-/** A request id per intent, from useRequest: a retry of the same move replays it. */
-export type RequestFor = (input: unknown) => string;
+import type { RequestFor } from '../../lib/use-request';
 
 /**
  * Moves a document or drawing to another active project with moveItem, which carries no content and is

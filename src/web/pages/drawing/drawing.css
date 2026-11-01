@@ -84,4 +84,8 @@
   :root:has(.drawing__frame) {
     --toast-bottom: 72px;
   }
+  /* On a phone, Excalidraw's "Scroll back to content" sits centered 80 px over the bottom, up to two lines. */
+  :root:has(.drawing__frame .scroll-back-to-content) {
+    --toast-bottom: 168px;
+  }
 }

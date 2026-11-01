@@ -1,11 +1,12 @@
 import { type Canvas, type CanvasScene, canvasPlainText, readCanvasScene } from '@tinyfold/workspace/domain';
+import type { ItemAdapter } from '../../components/editor';
 import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
 import { AutosaveController, type SaveInput } from '../../lib/autosave';
 import { type CanvasSnapshot, canvasDraftStorage, parseCanvasDraft, withCleanLinks } from '../../lib/canvas-autosave';
 import { renderCanvasPng } from '../../lib/canvas-png';
 import { CanvasPreviewUploader } from '../../lib/canvas-preview';
 import { withDraftProject } from '../../lib/draft-project';
-import { invalidateNavigation } from '../../lib/queries';
+import { canvasQuery, invalidateNavigation } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
 import { displayTitle } from '../../lib/types';
 
@@ -25,6 +26,18 @@ export const canvasSnapshot = (canvas: Canvas): CanvasSnapshot => ({
   projectId: canvas.projectId,
   // Older scenes may hold links the server now refuses; the next save cleans them.
   scene: withCleanLinks(canvas.scene),
+});
+
+/** A drawing for the actions both editors share: read it, copy it and move it to the trash. */
+export const canvasItem = (id: string): ItemAdapter<CanvasSnapshot, EditableCanvas> => ({
+  type: 'drawing',
+  id,
+  queryKey: canvasQuery(id).queryKey,
+  read: () => api.workspace.getCanvas({ id }),
+  snapshot: canvasSnapshot,
+  createCopy: (snapshot, projectId, title, requestId) =>
+    api.workspace.createCanvas({ title, scene: snapshot.scene, projectId, requestId }),
+  remove: (input) => api.workspace.deleteCanvas(input),
 });
 
 /** What identifies a scene's content: Excalidraw versions change for edits, not for selection or viewport. */

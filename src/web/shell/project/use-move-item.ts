@@ -28,7 +28,7 @@ export function useMoveItem() {
       action: {
         label: 'Desfazer',
         onAction: () =>
-          void action.run(async () => {
+          action.run(async () => {
             await moveItem(type, id, from, request.for);
             request.clear();
             // A full project keeps the item unpinned.

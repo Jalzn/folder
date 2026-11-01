@@ -1,12 +1,12 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
-import { errorMessage, reportSessionError } from '../../../lib/api';
-import type { TrashItem } from '../../../lib/queries';
+import { errorMessage, queryClient, reportSessionError } from '../../../lib/api';
+import { type TrashItem, trashQuery } from '../../../lib/queries';
 import { displayTitle, type Project } from '../../../lib/types';
 import { useAction } from '../../../lib/use-action';
 import { useRequest } from '../../../lib/use-request';
 import { focusPageTitle, useToast } from '../../../ui';
-import { emptyTrash, hasOriginatedTasks, itemAddress, keptAfterEmptying, purgeItem, restoreItem } from './trash-api';
+import { emptyTrash, hasOriginatedTasks, itemAddress, purgeItem, restoreItem } from './trash-api';
 import { emptiedText } from './trash-text';
 
 export const trashTitle = (item: TrashItem) => displayTitle(item.title);
@@ -17,10 +17,10 @@ export interface Confirmation<Value> {
   value: Value;
 }
 
-/** The items an emptying deletes: the ones shown, which a filter may narrow. */
+/** The items an emptying deletes: the ones shown, which may be part of the trash, by a filter or a cut listing. */
 export interface EmptyTarget {
   items: TrashItem[];
-  filtered: boolean;
+  partial: boolean;
 }
 
 export interface PurgeTarget {
@@ -87,12 +87,12 @@ export function useTrashActions(project: Project) {
 
   async function confirmEmpty() {
     if (!empty) return;
-    const { items, filtered } = empty.value;
-    const result = await action.run(() => emptyTrash(project.id, items, emptyRequest.for));
+    const result = await action.run(() => emptyTrash(project.id, empty.value.items, emptyRequest.for));
     if (result) {
       emptyRequest.clear();
-      const kept = result.skipped ? await keptAfterEmptying(project.id, items).catch(() => 0) : 0;
-      toast(emptiedText(kept, filtered));
+      // The action refetched the trash: an empty listing is an empty trash.
+      const left = queryClient.getQueryData(trashQuery(project.id).queryKey)?.items.length ?? 0;
+      toast(emptiedText(result, left === 0));
     }
     setEmpty({ ...empty, open: false });
     focusPageTitle();

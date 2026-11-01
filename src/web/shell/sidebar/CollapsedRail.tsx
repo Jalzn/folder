@@ -2,6 +2,7 @@ import './sidebar.css';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { LayoutDashboard, PanelLeftOpen, Search, SquareKanban, Trash2 } from 'lucide-react';
 import { Button as AriaButton } from 'react-aria-components';
+import { formatCount } from '../../lib/count';
 import { useProjects } from '../../lib/queries';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
@@ -78,7 +79,7 @@ export function CollapsedRail({
       <hr className="rail__rule" />
       {project && (
         <IconButton
-          label={`Lixeira${navigation?.trashCount ? ` · ${navigation.trashCount}` : ''}`}
+          label={`Lixeira${navigation?.trashCount ? ` · ${formatCount(navigation.trashCount)}` : ''}`}
           className="rail__button"
           data-on={on(paths.trash(project.id))}
           onPress={() => go(paths.trash(project.id))}

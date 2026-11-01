@@ -1,6 +1,6 @@
-import { type ErrorComponentProps, Link } from '@tanstack/react-router';
+import type { ErrorComponentProps } from '@tanstack/react-router';
 import { PageStatus } from '../shell';
-import { Button, PageHeader } from '../ui';
+import { Button, ButtonLink, PageHeader } from '../ui';
 
 /** A page that failed to render: said in Portuguese, inside the shell, with a retry and the way back. */
 export function RouteError({ reset }: ErrorComponentProps) {
@@ -11,9 +11,7 @@ export function RouteError({ reset }: ErrorComponentProps) {
         description="O resto do aplicativo continua aqui. Tente de novo ou volte ao início."
       >
         <Button onPress={reset}>Tentar de novo</Button>
-        <Link to="/" className="btn" data-variant="secondary" data-size="md">
-          Ir para o início
-        </Link>
+        <ButtonLink to="/">Ir para o início</ButtonLink>
       </PageHeader>
     </PageStatus>
   );

@@ -1,9 +1,7 @@
 import { api } from '../../../lib/api';
 import type { TrashItem } from '../../../lib/queries';
+import type { RequestFor } from '../../../lib/use-request';
 import { paths } from '../../../router/paths';
-
-/** One user intent's request: a retry sends the same id, so the server replays its first answer. */
-export type RequestFor = (input: unknown) => string;
 
 const edit = (item: TrashItem, requestFor: RequestFor) => {
   const input = { id: item.id, expectedVersion: item.version };
@@ -28,26 +26,6 @@ export async function purgeItem(item: TrashItem, requestFor: RequestFor) {
 export function emptyTrash(projectId: string, shown: readonly TrashItem[], requestFor: RequestFor) {
   const items = shown.map((item) => ({ type: item.type, id: item.id, version: item.version }));
   return api.workspace.emptyTrash({ requestId: requestFor({ projectId, items }), projectId, items });
-}
-
-/**
- * How many of the items an emptying skipped still exist: restored into the project or back in the trash
- * at another version. Items already gone, deleted for good elsewhere, are not "kept".
- */
-export async function keptAfterEmptying(projectId: string, shown: readonly TrashItem[]) {
-  const [trash, documents, drawings, { tasks }] = await Promise.all([
-    api.workspace.listTrash({ projectId }),
-    api.workspace.listDocuments({ projectId }),
-    api.workspace.listCanvases({ projectId }),
-    api.workspace.listTasks({ projectId }),
-  ]);
-  const existing = new Set([
-    ...trash.items.map((item) => `${item.type}:${item.id}`),
-    ...documents.map((item) => `document:${item.id}`),
-    ...drawings.map((item) => `drawing:${item.id}`),
-    ...tasks.map((item) => `task:${item.id}`),
-  ]);
-  return shown.filter((item) => existing.has(`${item.type}:${item.id}`)).length;
 }
 
 /** Whether tasks were created from a document's excerpts; they outlive the document, excerpt kept. */

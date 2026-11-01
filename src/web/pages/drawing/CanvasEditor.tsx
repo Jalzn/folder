@@ -1,19 +1,23 @@
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { ArrowDownToLine, ArrowUpFromLine, ImageDown } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { SaveBanners, SaveState, TrashedItem, useItemActions } from '../../components/editor';
-import { api } from '../../lib/api';
+import {
+  ReloadDialog,
+  SaveBanners,
+  SaveState,
+  TrashedItem,
+  TrashItemDialog,
+  useItemActions,
+} from '../../components/editor';
 import { moveThroughController } from '../../lib/editor-move';
-import { canvasQuery, useHasActiveProject } from '../../lib/queries';
+import { useHasActiveProject } from '../../lib/queries';
 import { registerOpenEditor } from '../../lib/save-registry';
 import { displayTitle, UNTITLED } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
-import { paths } from '../../router/paths';
 import { ItemMenu, type ItemMenuAction, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
-import { AlertDialog } from '../../ui';
-import { canvasSession, canvasSnapshot, type EditableCanvas } from './canvas-session';
+import { canvasItem, canvasSession, canvasSnapshot, type EditableCanvas } from './canvas-session';
 import { DrawingCanvas } from './DrawingCanvas';
 import { useCanvasFiles } from './use-canvas-files';
 import { useSceneChanges } from './use-scene-changes';
@@ -38,19 +42,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const scene = useSceneChanges(controller, state, editor);
   const viewport = useViewport(`tinyfold:canvas-view:${app.owner.installationId}:${canvas.id}`);
   const files = useCanvasFiles(controller, canvas.id, theme.resolved === 'dark');
-  const actions = useItemActions(controller, {
-    id: canvas.id,
-    projectId: state.snapshot.projectId,
-    queryKey: canvasQuery(canvas.id).queryKey,
-    read: () => api.workspace.getCanvas({ id: canvas.id }),
-    snapshot: canvasSnapshot,
-    version: (current) => current.version,
-    createCopy: (snapshot, to, title, requestId) =>
-      api.workspace.createCanvas({ title, scene: snapshot.scene, projectId: to, requestId }),
-    remove: (input) => api.workspace.deleteCanvas(input),
-    path: (to, id) => paths.drawing(to, id),
-    words: { the: 'o desenho', aNew: 'um novo desenho', capital: 'Desenho' },
-  });
+  const actions = useItemActions(controller, canvasItem(canvas.id));
   const hasActiveProject = useHasActiveProject();
   const [trashOpen, setTrashOpen] = useState(false);
   const [reloadOpen, setReloadOpen] = useState(false);
@@ -180,26 +172,18 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
         }}
         menu={{ onImport: openImport, onExport: files.exportEditable, onExportPNG: () => void files.exportPNG() }}
       />
-      <AlertDialog
+      <TrashItemDialog
+        type="drawing"
         open={trashOpen}
-        title="Mover desenho para a lixeira?"
-        confirmLabel="Mover para a lixeira"
-        isPending={actions.trashing}
+        pending={actions.trashing}
         onClose={() => setTrashOpen(false)}
         onConfirm={() => void actions.moveToTrash().then((moved) => moved && setTrashOpen(false))}
-      >
-        <p>Você poderá restaurar o desenho depois.</p>
-      </AlertDialog>
-      <AlertDialog
+      />
+      <ReloadDialog
         open={reloadOpen}
-        title="Carregar a versão salva?"
-        confirmLabel="Carregar versão salva"
-        destructive={false}
         onClose={() => setReloadOpen(false)}
         onConfirm={() => void actions.reloadRemote().then((loaded) => loaded && setReloadOpen(false))}
-      >
-        <p>A versão salva substituirá este rascunho. Exporte uma cópia se quiser guardar as duas versões.</p>
-      </AlertDialog>
+      />
     </PageFrame>
   );
 }

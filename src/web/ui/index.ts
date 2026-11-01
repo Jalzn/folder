@@ -1,10 +1,12 @@
 export { AlertDialog, type AlertDialogProps } from './AlertDialog';
 export { Banner, type BannerTone } from './Banner';
 export { Button, type ButtonProps } from './Button';
+export { ButtonLink } from './ButtonLink';
 export { Dialog, DialogActions, type DialogProps } from './Dialog';
 export { EmptyState } from './EmptyState';
 export { ErrorNotice } from './ErrorNotice';
 export { FilterMenu, type FilterOption } from './FilterMenu';
+export { focusPageTitle, pageFocus, returnFocus } from './focus';
 export { ColumnRing } from './glyphs/ColumnRing';
 export { Logo } from './glyphs/Logo';
 export { ProjectMark } from './glyphs/ProjectMark';
@@ -23,7 +25,7 @@ export {
   MenuTrigger,
   SubmenuTrigger,
 } from './Menu';
-export { focusPageTitle, PageHeader } from './PageHeader';
+export { PageHeader } from './PageHeader';
 export { Popover, PopoverSurface, PopoverTrigger } from './Popover';
 export { RadioChip, RadioGroup } from './RadioGroup';
 export { SearchField, type SearchFieldProps } from './SearchField';

@@ -1,26 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import { emptiedText, emptyTrashBody, shownOfTotal } from './trash-text';
+import { emptiedText, emptyButtonLabel, emptyTrashBody, emptyTrashTitle, shownOfTotal } from './trash-text';
 
 describe('trash copy', () => {
-  it('counts what emptying deletes', () => {
+  it('empties the whole trash only when the page shows all of it', () => {
+    expect(emptyButtonLabel(7, false)).toBe('Esvaziar lixeira');
+    expect(emptyTrashTitle(7, false, 'Site')).toBe('Esvaziar a lixeira de Site?');
     expect(emptyTrashBody(7, false)).toBe('7 itens serão excluídos de vez. Não dá para desfazer.');
     expect(emptyTrashBody(1, false)).toBe('1 item será excluído de vez. Não dá para desfazer.');
   });
 
-  it('says that a filter keeps the other items', () => {
-    expect(emptyTrashBody(2, true)).toBe(
-      'Os 2 itens mostrados serão excluídos de vez; os outros continuam na lixeira. Não dá para desfazer.',
+  it('deletes the items shown when others stay, by a filter or a cut listing', () => {
+    expect(emptyButtonLabel(1000, true)).toBe('Excluir os 1.000 mostrados');
+    expect(emptyButtonLabel(1, true)).toBe('Excluir o mostrado');
+    expect(emptyTrashTitle(1000, true, 'Site')).toBe('Excluir de vez os 1.000 itens mostrados?');
+    expect(emptyTrashTitle(1, true, 'Site')).toBe('Excluir de vez o item mostrado?');
+    expect(emptyTrashBody(1000, true)).toBe(
+      'Os 1.000 itens mostrados serão excluídos de vez; os outros continuam na lixeira. Não dá para desfazer.',
     );
     expect(emptyTrashBody(1, true)).toBe(
       'O item mostrado será excluído de vez; os outros continuam na lixeira. Não dá para desfazer.',
     );
   });
 
-  it('says how many items emptying kept', () => {
-    expect(emptiedText(0)).toBe('Lixeira vazia.');
-    expect(emptiedText(1)).toBe('Lixeira vazia. 1 item mudou em outro lugar e foi mantido.');
-    expect(emptiedText(2)).toBe('Lixeira vazia. 2 itens mudaram em outro lugar e foram mantidos.');
-    expect(emptiedText(0, true)).toBe('Itens mostrados excluídos de vez.');
+  it('says the trash is empty only when nothing is left', () => {
+    expect(emptiedText({ purged: 7, skipped: 0 }, true)).toBe('Lixeira vazia.');
+    expect(emptiedText({ purged: 1000, skipped: 0 }, false)).toBe('1.000 excluídos de vez.');
+    expect(emptiedText({ purged: 1, skipped: 0 }, false)).toBe('1 excluído de vez.');
+  });
+
+  it('counts the items that were no longer in the trash', () => {
+    expect(emptiedText({ purged: 3, skipped: 1 }, false)).toBe('3 excluídos de vez. 1 não estava mais na lixeira.');
+    expect(emptiedText({ purged: 0, skipped: 2 }, true)).toBe('Lixeira vazia. 2 não estavam mais na lixeira.');
   });
 
   it('says when a long trash shows only the most recent items', () => {

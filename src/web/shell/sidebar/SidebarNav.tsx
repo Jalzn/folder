@@ -1,5 +1,6 @@
 import { useLocation } from '@tanstack/react-router';
 import { LayoutDashboard, SquareKanban } from 'lucide-react';
+import { formatCount } from '../../lib/count';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { SidebarRow } from './SidebarRow';
@@ -22,7 +23,7 @@ export function SidebarNav({ project, openTasks }: { project: Project; openTasks
         icon={<SquareKanban size={16} />}
         label="Quadro"
         current={pathname === board}
-        meta={openTasks || undefined}
+        meta={openTasks ? formatCount(openTasks) : undefined}
       />
     </>
   );

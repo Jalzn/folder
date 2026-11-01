@@ -5,4 +5,4 @@ export { type ProjectOverview, useProjectOverview } from './overview';
 export { projectsQuery, useHasActiveProject, useProject, useProjects } from './projects';
 export { type SearchInput, type SearchResult, useSearch } from './search';
 export { type TaskListOptions, useTasks } from './tasks';
-export { type TrashItem, useTrash } from './trash';
+export { type TrashItem, trashQuery, useTrash } from './trash';

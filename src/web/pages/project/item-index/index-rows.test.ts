@@ -24,6 +24,16 @@ describe('indexRows', () => {
     expect(keys(indexRows(documents, drawings, 'desenhos'))).toEqual(['drawing:c1', 'drawing:c2']);
     expect(indexRows(documents, [])[0]).toMatchObject({ type: 'document', excerpt: 'Visão do produto…' });
   });
+
+  it('cuts the excerpt as the Visão geral does: one line, its pieces joined, an ellipsis when it goes on', () => {
+    const text = (plainText: string) => indexRows([{ ...documents[0], plainText } as never], [])[0]?.excerpt;
+    expect(text('Por que existe\nUm espaço   para  pensar')).toBe('Por que existe, Um espaço para pensar');
+    expect(text('Primeiro.\nSegundo')).toBe('Primeiro. Segundo');
+    // A summary stops at 280 characters, so a text that long goes on after it.
+    const long = 'a'.repeat(280);
+    expect(text(long)).toBe(`${'a'.repeat(239)}…`);
+    expect(text('curto')).toBe('curto');
+  });
 });
 
 describe('sortIndexRows', () => {

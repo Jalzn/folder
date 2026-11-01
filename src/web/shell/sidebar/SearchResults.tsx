@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { FileText, Search, Shapes } from 'lucide-react';
 import { errorMessage } from '../../lib/api';
+import { formatCount } from '../../lib/count';
 import type { SearchResult } from '../../lib/queries';
 import { displayTitle, type ItemType } from '../../lib/types';
 import { paths } from '../../router/paths';
@@ -35,9 +36,13 @@ export function SearchResults({
         groups.map(({ type, label, icon: Icon }) => {
           const items = (results ?? []).filter((result) => result.type === type);
           return (
-            <section key={type} className="sidebar-results__group" aria-label={`${label}: ${items.length}`}>
+            <section
+              key={type}
+              className="sidebar-results__group"
+              aria-label={`${label}: ${formatCount(items.length)}`}
+            >
               <div className="sidebar-results__label">
-                {label} · {items.length}
+                {label} · {formatCount(items.length)}
               </div>
               <ul className="sidebar-section__list">
                 {items.map((item) => (

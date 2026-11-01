@@ -56,6 +56,8 @@ export interface CanvasPreviewOptions {
   upload: (input: {
     id: string;
     version: number;
+    /** The scene's sceneFingerprint: a preview rendered before a move or a rename still counts for it. */
+    sceneFingerprint: string;
     png: File;
   }) => Promise<{ stored: boolean; previewVersion: number | null }>;
   /** False while an edit waits to be saved; that save asks for a newer preview. */
@@ -144,7 +146,12 @@ export class CanvasPreviewUploader {
         return;
       }
       const file = new File([png], 'preview.png', { type: 'image/png' });
-      const ack = await this.options.upload({ id: this.options.id, version: job.version, png: file });
+      const ack = await this.options.upload({
+        id: this.options.id,
+        version: job.version,
+        sceneFingerprint: job.fingerprint,
+        png: file,
+      });
       this.uploaded = Math.max(this.uploaded, ack.previewVersion ?? 0);
       if (ack.stored) this.shown = job.fingerprint;
     } catch {

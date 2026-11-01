@@ -1,6 +1,7 @@
 import type { NavItem } from '@tinyfold/workspace/domain';
 import { ChevronRight } from 'lucide-react';
 import type { KeyboardEvent, ReactElement, Ref } from 'react';
+import { formatCount } from '../../lib/count';
 import { SidebarRow } from './SidebarRow';
 import { type SectionRows, showsPinnedRule } from './section-rows';
 
@@ -44,7 +45,12 @@ export function SectionList({
       ]}
       {rows.seeAll !== null && (
         <li>
-          <SidebarRow href={seeAllHref} icon={<ChevronRight size={16} />} label="Ver todos" meta={rows.seeAll} />
+          <SidebarRow
+            href={seeAllHref}
+            icon={<ChevronRight size={16} />}
+            label="Ver todos"
+            meta={formatCount(rows.seeAll)}
+          />
         </li>
       )}
       {total === 0 && <li className="sidebar-section__empty">Nada aqui ainda.</li>}

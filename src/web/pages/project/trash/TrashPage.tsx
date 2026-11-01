@@ -10,7 +10,7 @@ import { Button, ErrorNotice, FilterMenu, type FilterOption, PageHeader, Spinner
 import { EmptyTrashDialog, PurgeDialog } from './TrashDialogs';
 import { TrashGroups } from './TrashGroups';
 import { filterTrash, groupTrash, type TrashFilter } from './trash-groups';
-import { shownOfTotal } from './trash-text';
+import { emptyButtonLabel, shownOfTotal } from './trash-text';
 import { useTrashActions } from './use-trash-actions';
 
 const filterOptions: FilterOption<TrashFilter>[] = [
@@ -48,9 +48,11 @@ function TrashContent({
   const actions = useTrashActions(project);
   const items = trash.data?.items ?? [];
   const total = useTrashCount(project);
-  // What emptying deletes is exactly what the page shows: the listing, narrowed by the filter.
+  // What emptying deletes is exactly what the page shows: the listing, narrowed by the filter. It is part of
+  // the trash under a filter, or when the listing stops at the most recent items.
   const shown = filterTrash(items, filter);
-  const filtered = filter !== 'all';
+  const cut = total !== undefined && total > items.length;
+  const partial = filter !== 'all' || cut;
   return (
     <PageFrame
       actions={
@@ -58,9 +60,9 @@ function TrashContent({
           <Button
             variant="ghost-danger"
             icon={<Trash2 size={16} />}
-            onPress={() => actions.askEmpty({ items: shown, filtered })}
+            onPress={() => actions.askEmpty({ items: shown, partial })}
           >
-            {filtered ? 'Excluir os mostrados' : 'Esvaziar lixeira'}
+            {emptyButtonLabel(shown.length, partial)}
           </Button>
         )
       }
@@ -70,7 +72,7 @@ function TrashContent({
         <div className="project-filters trash-filters">
           <p className="project-summary">
             Itens excluídos de {project.name} podem ser restaurados.
-            {total !== undefined && total > items.length && ` ${shownOfTotal(items.length, total)}`}
+            {cut && ` ${shownOfTotal(items.length, total)}`}
           </p>
           <FilterMenu label="Tipo" options={filterOptions} value={filter} onChange={onFilter} placement="bottom end" />
         </div>

@@ -12,10 +12,21 @@ export interface SidebarRowProps {
   /** The item has a change the server has not confirmed, or a failed save. */
   pending?: boolean;
   onKeyDown?: (event: KeyboardEvent<HTMLAnchorElement>) => void;
+  /** After the link is followed, as a choice that closes the list it is in. */
+  onClick?: () => void;
 }
 
 /** A 28 px row of the sidebar: a real link, so a middle click opens another tab. */
-export function SidebarRow({ href, icon, label, current = false, meta, pending = false, onKeyDown }: SidebarRowProps) {
+export function SidebarRow({
+  href,
+  icon,
+  label,
+  current = false,
+  meta,
+  pending = false,
+  onKeyDown,
+  onClick,
+}: SidebarRowProps) {
   return (
     <Link
       to={href}
@@ -25,6 +36,7 @@ export function SidebarRow({ href, icon, label, current = false, meta, pending =
       tabIndex={-1}
       aria-current={current ? 'page' : undefined}
       {...(onKeyDown ? { onKeyDown } : {})}
+      {...(onClick ? { onClick } : {})}
     >
       {icon}
       <span className="sidebar-row__name">{label}</span>

@@ -1,7 +1,8 @@
+import type { ItemAdapter } from '../../components/editor';
 import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
 import { AutosaveController, parseDraft, type SaveInput, type Snapshot } from '../../lib/autosave';
 import { withDraftProject } from '../../lib/draft-project';
-import { invalidateNavigation } from '../../lib/queries';
+import { documentQuery, invalidateNavigation } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
 import { type Document, displayTitle } from '../../lib/types';
 
@@ -11,6 +12,18 @@ const controllers = new Map<string, AutosaveController>();
 export function documentSnapshot(document: Document): Snapshot {
   return { title: document.title, projectId: document.projectId, content: document.content };
 }
+
+/** A document for the actions both editors share: read it, copy it and move it to the trash. */
+export const documentItem = (id: string): ItemAdapter<Snapshot, Document> => ({
+  type: 'document',
+  id,
+  queryKey: documentQuery(id).queryKey,
+  read: () => api.workspace.getDocument({ id }),
+  snapshot: documentSnapshot,
+  createCopy: (snapshot, projectId, title, requestId) =>
+    api.workspace.createDocument({ title, content: snapshot.content, projectId, requestId }),
+  remove: (input) => api.workspace.deleteDocument(input),
+});
 
 /**
  * The document's local draft. A duplicated browser tab inherits sessionStorage, so each opening writes to a

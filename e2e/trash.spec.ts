@@ -52,11 +52,12 @@ test('the project trash groups, filters, restores, deletes for good and empties'
   await page.getByRole('menuitemradio', { name: 'Tarefas' }).click();
   await expect(today.getByRole('listitem')).toHaveCount(1);
   await expect(today.getByRole('listitem')).toContainText(loose);
-  await page.getByRole('button', { name: 'Excluir os mostrados', exact: true }).click();
-  const shown = page.getByRole('alertdialog', { name: 'Excluir de vez os itens mostrados?' });
+  await page.getByRole('button', { name: 'Excluir o mostrado', exact: true }).click();
+  const shown = page.getByRole('alertdialog', { name: 'Excluir de vez o item mostrado?' });
   await expect(shown).toContainText('O item mostrado será excluído de vez; os outros continuam na lixeira.');
   await shown.getByRole('button', { name: 'Excluir de vez', exact: true }).click();
-  await expect(page.getByText('Itens mostrados excluídos de vez.')).toBeVisible();
+  // Other items are left, so the trash is not empty.
+  await expect(page.getByText('1 excluído de vez.')).toBeVisible();
   await page.getByRole('button', { name: 'Tipo: Tarefas' }).click();
   await page.getByRole('menuitemradio', { name: 'Todos' }).click();
   await expect(today.getByRole('listitem')).toHaveCount(3);

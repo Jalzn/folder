@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { formatCount } from '../../lib/count';
 import { TASK_STATUSES, type Task, type TaskStatus, taskStatusLabels } from '../../lib/types';
 import { useApp } from '../../shell';
 import { ColumnRing, IconButton } from '../../ui';
@@ -64,7 +65,7 @@ export function Kanban({
             <header className="kanban-column__header">
               <ColumnRing index={columnIndex} count={TASK_STATUSES.length} />
               <h2 className="kanban-column__name">{label}</h2>
-              <span className="kanban-column__count">{column.length}</span>
+              <span className="kanban-column__count">{formatCount(column.length)}</span>
               {!archived && (
                 <IconButton
                   label={`Adicionar tarefa em ${label}`}

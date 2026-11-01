@@ -1,6 +1,7 @@
 import { ChevronDown, X } from 'lucide-react';
 import { useState } from 'react';
 import { LinkedTask } from '../../components/task';
+import { countOf } from '../../lib/count';
 import type { Task } from '../../lib/types';
 import { useApp } from '../../shell';
 import { ErrorNotice, IconButton, Spinner } from '../../ui';
@@ -54,7 +55,7 @@ export function LinkedTasksPanel({
             aria-expanded={showDone}
           >
             <ChevronDown size={14} aria-hidden="true" />
-            {done.length} {done.length === 1 ? 'concluída' : 'concluídas'}
+            {countOf(done.length, 'concluída', 'concluídas')}
           </button>
           {showDone && done.map(row)}
         </>

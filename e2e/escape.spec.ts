@@ -118,5 +118,29 @@ test('the rail lists work from the keyboard and close on a choice', async ({ pag
   await page.keyboard.press('Enter');
   await expect(list).toBeHidden();
   await expect(page).toHaveURL(new RegExp(`${target}$`));
+
+  // The item already open changes no page, and still closes the list; the page's title takes the focus.
+  await documents.focus();
+  await page.keyboard.press('Enter');
+  const current = list.locator('a[aria-current="page"]');
+  await expect(current).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(list).toBeHidden();
+  await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeFocused();
   await pressCommand(page, 'Backslash');
+});
+
+test('a dialog opened from N gives the focus back to where it was', async ({ page }, info) => {
+  await login(page);
+  const phone = info.project.name === 'chrome-mobile';
+  const before = phone
+    ? page.getByRole('button', { name: 'Abrir navegação', exact: true })
+    : page.getByRole('navigation', { name: /^Projeto / }).getByRole('link', { name: 'Quadro' });
+  await before.focus();
+  await page.keyboard.press('n');
+  await page.getByRole('menuitem', { name: 'Tarefa' }).click();
+  await expect(page.getByRole('dialog', { name: 'Um próximo passo' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(before).toBeFocused();
 });

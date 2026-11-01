@@ -9,12 +9,13 @@ import {
   useRef,
   useState,
 } from 'react';
-import { focusPageTitle } from './PageHeader';
+import { focusPageTitle } from './focus';
 
 export type ToastKind = 'success' | 'error';
 export interface ToastAction {
   label: string;
-  onAction: () => void;
+  /** May return the work it starts, such as an undo, so the focus is checked again once it is done. */
+  onAction: () => unknown;
 }
 export interface ToastOptions {
   kind?: ToastKind;
@@ -93,12 +94,17 @@ function Toast({ toast, onRemove }: { toast: ShownToast; onRemove: (id: number) 
 
   function act() {
     const hadFocus = element.current?.contains(document.activeElement) ?? false;
-    toast.action?.onAction();
+    const done = toast.action?.onAction();
     leave();
     if (!hadFocus) return;
     const back = returnTo.current;
     if (back?.isConnected) back.focus();
     else focusPageTitle();
+    // The work may take that element away once it is done, as an undo that moves a row's item out of the
+    // project: the focus then goes to the page's title, which only happens when it was lost.
+    void Promise.resolve(done)
+      .catch(() => undefined)
+      .then(() => focusPageTitle());
   }
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: Hover and focus only pause the timer; the action is a button.

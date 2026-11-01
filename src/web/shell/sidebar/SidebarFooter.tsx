@@ -1,6 +1,7 @@
 import { Link, useLocation } from '@tanstack/react-router';
 import { ChevronDown, Trash2 } from 'lucide-react';
 import { Button as AriaButton } from 'react-aria-components';
+import { countOf, formatCount } from '../../lib/count';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { useApp } from '../AppProvider';
@@ -37,11 +38,11 @@ export function SidebarFooter({ project, trashCount }: { project: Project | null
           activeOptions={{ exact: true }}
           className="sidebar-footer__trash"
           aria-current={pathname === trash ? 'page' : undefined}
-          aria-label={`Lixeira de ${project?.name}${trashCount ? `, ${trashCount} ${trashCount === 1 ? 'item' : 'itens'}` : ''}`}
+          aria-label={`Lixeira de ${project?.name}${trashCount ? `, ${countOf(trashCount, 'item', 'itens')}` : ''}`}
           title="Lixeira"
         >
           <Trash2 size={16} />
-          {trashCount ? <span className="sidebar-footer__count">{trashCount}</span> : null}
+          {trashCount ? <span className="sidebar-footer__count">{formatCount(trashCount)}</span> : null}
         </Link>
       )}
     </footer>

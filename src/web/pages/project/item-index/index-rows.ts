@@ -1,3 +1,5 @@
+import { excerptFromStart, NAVIGATION_LIMITS } from '@tinyfold/workspace/domain';
+import { countOf } from '../../../lib/count';
 import { displayTitle, type ItemType, itemTypeLabels } from '../../../lib/types';
 import type { IndexType } from '../../../router/paths';
 
@@ -28,6 +30,13 @@ interface Listed {
   updatedAt: string;
 }
 
+/** A summary's text stops at its first 280 characters: an excerpt of a text that long goes on after it. */
+const SUMMARY_TEXT = 280;
+
+/** The Trecho of a row, as the Visão geral cuts it: one line, its pieces joined, and an ellipsis when it goes on. */
+const excerptOf = (plainText: string) =>
+  excerptFromStart(plainText, NAVIGATION_LIMITS.overview.excerptChars, plainText.length >= SUMMARY_TEXT);
+
 /** The project's documents and drawings as rows, keeping only the type the `tipo` filter asks for. */
 export function indexRows(documents: readonly Listed[], drawings: readonly Listed[], tipo?: IndexType): IndexRow[] {
   const row = (type: ItemType) => (item: Listed) => ({
@@ -35,7 +44,7 @@ export function indexRows(documents: readonly Listed[], drawings: readonly Liste
     type,
     id: item.id,
     title: item.title,
-    excerpt: item.plainText,
+    excerpt: excerptOf(item.plainText),
     updatedAt: item.updatedAt,
   });
   return [
@@ -94,5 +103,5 @@ const nouns: Record<IndexType | 'all', [string, string, string]> = {
 export function indexSummary(count: number, projectName: string, tipo?: IndexType) {
   const [none, one, many] = nouns[tipo ?? 'all'];
   if (!count) return `${none} em ${projectName}.`;
-  return `${count} ${count === 1 ? one : many} em ${projectName}. Clique no cabeçalho de uma coluna para ordenar.`;
+  return `${countOf(count, one, many)} em ${projectName}. Clique no cabeçalho de uma coluna para ordenar.`;
 }

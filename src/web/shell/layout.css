@@ -31,7 +31,11 @@
   border-bottom: 1px solid var(--line);
   background: var(--sidebar-bg);
 }
+.top-bar > .btn {
+  flex: none;
+}
 .top-bar__project {
+  flex: 0 1 auto;
   min-width: 0;
   height: 32px;
   display: flex;
@@ -108,12 +112,13 @@
     width: min(320px, 100vw - 48px);
   }
 }
+/* The page's actions keep their size; the project's name is what gives way, with an ellipsis. */
 .top-bar__actions {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
-  min-width: 0;
   margin-left: auto;
 }
 .top-bar__actions .btn:not(.btn-icon) {
