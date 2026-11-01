@@ -42,6 +42,9 @@ test('an item dropped on a folder goes into it, and on the Itens header back to 
   await page.mouse.up();
   await expect(toast(page)).toContainText('Movido para Segunda.');
   await expect(treeRow(page, 'Solto')).toHaveAttribute('aria-level', '2');
+  // The tree has drawn that move: Primeira is empty, with its "Pasta vazia" row, so the rows below moved.
+  await expect(folderRow(page, 'Primeira')).toHaveAttribute('aria-label', /, 0 itens$/);
+  await expect(itemsTree(page).getByRole('row', { name: /^Pasta vazia/ })).toBeVisible();
 
   // The header takes it back to the root.
   const header = projectNavigation(page).locator('.items-header');

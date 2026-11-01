@@ -68,22 +68,35 @@ export async function rpcFolder(page: Page, projectId: string, name: string) {
   ).id;
 }
 
-/** A row's box once the tree stops moving, as after a move redraws it: two reads 100 ms apart agree. */
-async function settledBox(page: Page, locator: Locator) {
-  let box = await locator.boundingBox();
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    await page.waitForTimeout(100);
-    const next = await locator.boundingBox();
-    if (box && next && box.x === next.x && box.y === next.y && box.height === next.height) return next;
-    box = next;
-  }
-  return box;
+/**
+ * A row's box once the tree stops moving, as after a move redraws it and a folder's "Pasta vazia" row comes
+ * in above: the row has to keep its place for a few frames running before it is measured.
+ */
+async function settledBox(locator: Locator) {
+  await locator.evaluate(
+    (element) =>
+      new Promise<void>((resolve) => {
+        let last = '';
+        let still = 0;
+        let frames = 0;
+        const look = () => {
+          const rect = element.getBoundingClientRect();
+          const now = `${rect.left},${rect.top},${rect.height}`;
+          still = now === last ? still + 1 : 0;
+          last = now;
+          if (still >= 5 || frames++ > 300) resolve();
+          else requestAnimationFrame(look);
+        };
+        requestAnimationFrame(look);
+      }),
+  );
+  return locator.boundingBox();
 }
 
 /** Presses on a row, moves in steps onto the target (at `y` of its height) and lets go, or not. */
 export async function drag(page: Page, source: Locator, target: Locator, { y = 0.5, release = true } = {}) {
-  const from = await settledBox(page, source);
-  const to = await settledBox(page, target);
+  const from = await settledBox(source);
+  const to = await settledBox(target);
   if (!from || !to) throw new Error('A row to drag is not on screen.');
   await page.mouse.move(from.x + 60, from.y + from.height / 2);
   await page.mouse.down();
