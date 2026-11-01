@@ -85,7 +85,7 @@ A ordem de precedência é a de [interface/README.md](../interface/README.md): v
 
 ## Decisões técnicas
 
-As duas perguntas em aberto do escopo inicial: a do fuso foi resolvida aqui (linha 1); a da etiqueta em uso foi para [Perguntas para o usuário](#perguntas-para-o-usuário).
+As duas perguntas em aberto do escopo inicial: a do fuso foi resolvida aqui (linha 1); a da etiqueta em uso, o usuário respondeu, em [Decisões do usuário](#decisões-do-usuário), junto com o lugar da gestão das etiquetas.
 
 | # | Decisão | Motivo |
 | --- | --- | --- |
@@ -648,13 +648,13 @@ Cada resultado fica com no máximo 45.000 caracteres sem disparar `withTextCeili
 
 ### Etiquetas
 
-- **"Gerenciar etiquetas…"** fica no ⋯ do quadro, no fim do filtro Etiquetas e no ⌘K. Abre um `Dialog` "Etiquetas" de 480 px.
+- **"Gerenciar etiquetas…"** fica no ⋯ do quadro, no fim do filtro Etiquetas e no ⌘K ([decisão do usuário 2](#decisões-do-usuário)). Abre um `Dialog` "Etiquetas" de 480 px.
 - **Cada linha:** o quadrado de cor, o nome (↵ ou duplo clique renomeiam no lugar), a contagem "4 tarefas" e o ⋯, com:
   - Renomear;
   - Cor ▸, com as sete cores em rádio e os nomes Azul, Ardósia, Roxo, Verde-água, Âmbar, Coral e Lima;
   - Excluir.
 - **No pé:** "+ Nova etiqueta".
-- **Excluir:** segue a [pergunta 1](#perguntas-para-o-usuário).
+- **Excluir** ([decisão do usuário 1](#decisões-do-usuário)): sai na hora, sem diálogo, mesmo com a etiqueta em tarefas. O toast diz "Etiqueta mcp excluída. Estava em 4 tarefas." (ou "Não estava em nenhuma tarefa.") e oferece Desfazer e ⌘Z, que devolve a etiqueta a todas elas, como "Excluir pasta". O foco vai à linha seguinte da lista, ou à anterior na última.
 - **Nomes:** os erros de nome aparecem inline, como nas colunas.
 - **Seletor da gaveta:** cria etiquetas sem abrir o diálogo.
 
@@ -927,7 +927,7 @@ As specs existentes trocam o diálogo da tarefa pela gaveta sem mudar o que veri
 | `board-drag.spec.ts` (novo, só desktop) | Card para outra coluna, entre dois cards, para o fim; fundo da coluna sob o card; Esc sem mover nada |
 | `task-drawer.spec.ts` (novo) | **Abrir:** pelo card, pela Visão geral, pelo ⌘K (outro projeto leva à Visão geral dele), pelo painel do documento e por `?tarefa=`; F6 até a gaveta; foco ao abrir e ao fechar.<br>**Campos:** coluna; prazo pelo calendário só com teclas (setas, PageDown, ↵, "Sem prazo"); etiqueta criada pelo seletor digitando e removida pelo "×"; projeto com Desfazer.<br>**Texto:** título com ↵ para a descrição; checklist marcado atualiza a barra e o card; autosave; recarregar recupera o rascunho; conflito entre duas páginas com "Carregar a versão salva" e "Salvar como cópia".<br>**Navegação:** a gaveta continua aberta entre páginas e projetos, e a origem abre o documento com ela aberta.<br>**Altura:** pela alça e por ⌥↑ e ⌥↓.<br>**Esc:** a ordem na descrição, no calendário e com a lateral sobre a página.<br>**⌘↵:** conclui da descrição e não age num bloco de código.<br>**Tarefa nova:** com "Descartar a nova tarefa?". |
 | `completed.spec.ts` (novo) | Grupos por mês, "Mostrar mais" no banco grande, Reabrir com Desfazer |
-| `labels.spec.ts` (novo) | Gerenciar etiquetas: criar, renomear no lugar com teclas reais, recolorir, nome repetido, excluir conforme a pergunta 1 e desfazer |
+| `labels.spec.ts` (novo) | Gerenciar etiquetas: criar, renomear no lugar com teclas reais, recolorir, nome repetido, excluir uma etiqueta em uso sem diálogo, com o toast que conta as tarefas, e desfazer pelo toast e por ⌘Z, com a etiqueta de volta nos cards |
 | `time-zone.spec.ts` (novo) | Com `timezoneId: 'America/Sao_Paulo'` e o relógio do navegador fixado (`page.clock`): a primeira carga grava o fuso, o Perfil mostra o fuso, e uma tarefa que vence hoje não aparece atrasada. Outro contexto em `Asia/Tokyo` oferece "Usar o fuso deste aparelho" |
 | `narrow.spec.ts` | Colunas com rolagem horizontal; mover pelo ⋯; gaveta na área da página |
 | `mcp.spec.ts` | `read_task` com a descrição escrita pela interface e `list_tasks` com o filtro de coluna |
@@ -1002,7 +1002,7 @@ DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm dev
 - [ ] Colunas criadas, renomeadas, reordenadas, excluídas com destino e com a conclusão trocada, com Desfazer pelo toast e por ⌘Z.
 - [ ] A descrição com autosave, rascunho recuperável, conflito explícito, checklist ao vivo e a gaveta aberta durante a navegação.
 - [ ] Prazo, atraso e janela de 14 dias no fuso do dono, iguais no card, nas contagens e no MCP.
-- [ ] Etiquetas com nome único pela chave, cor, filtro, gestão e o comportamento escolhido na exclusão.
+- [ ] Etiquetas com nome único pela chave, cor, filtro, o diálogo "Etiquetas" e a exclusão sem diálogo, com Desfazer.
 - [ ] Quadro, gaveta e Concluídas conforme visual.md e o protótipo, com o teclado da tabela, o Esc em camadas e o arrastar.
 - [ ] Visão geral, seletor e lateral com as atrasadas e "Concluídas · 14 dias".
 - [ ] MCP com coluna, prazo, atraso, etiquetas, checklist e conclusão; `read_task` com a descrição em páginas; busca na descrição; tudo dentro de 45.000 caracteres.
@@ -1088,13 +1088,11 @@ Dois subagentes, backend e web. Diferente da etapa 09, eles se sobrepõem onde o
 | `src/workspace/README.md` | Regras de colunas, etiquetas, campos, texto, conclusão, revisão e as leituras do quadro |
 | `etapas/README.md` e esta página | Estado, critérios marcados, Resultado e Desvios |
 
-## Perguntas para o usuário
+## Decisões do usuário
 
-1. **Excluir uma etiqueta que está em tarefas.** Ela sai de todas as tarefas que a usam; o que muda é como isso acontece.
-   - **A — Excluir na hora, sem diálogo, com o toast "Etiqueta mcp excluída. Estava em 4 tarefas." e Desfazer (recomendado).** É o que "Excluir pasta" faz: nada se perde, e o Desfazer devolve a etiqueta a todas elas.
-   - **B — Confirmar antes, num diálogo que diz em quantas tarefas ela está, e ainda oferecer Desfazer.** É a proposta do escopo inicial: um passo a mais, mais cautela.
-   - **C — Impedir enquanto ela estiver em alguma tarefa.** Para excluir, é preciso tirá-la de cada tarefa antes.
-2. **Onde gerenciar as etiquetas** (renomear, mudar a cor, excluir). As especificações não dizem, e o protótipo só cria etiquetas pelo seletor da tarefa.
-   - **A — Num diálogo "Etiquetas", aberto pelo ⋯ do quadro, pelo fim do filtro Etiquetas e pelo ⌘K (recomendado).** Fica perto de onde as etiquetas são usadas, como as colunas.
-   - **B — Numa seção do Perfil.** Junto das configurações do espaço, longe do quadro.
-   - **C — Só no seletor de etiquetas da gaveta,** com renomear, cor e excluir no ⋯ de cada etiqueta da lista. Sem tela própria.
+Respostas de 2026-11-01, registradas em [decisões](../decisoes.md):
+
+1. **Excluir uma etiqueta em uso sai na hora, sem diálogo:** o toast "Etiqueta mcp excluída. Estava em 4 tarefas." oferece Desfazer e ⌘Z, que devolvem a etiqueta a todas as tarefas, como em "Excluir pasta". A confirmação antes, proposta no escopo inicial, e a recusa enquanto a etiqueta estiver em uso foram descartadas.
+2. **As etiquetas são geridas num diálogo "Etiquetas",** aberto pelo ⋯ do quadro, pelo fim do filtro Etiquetas e pelo ⌘K, perto de onde são usadas, como as colunas. Uma seção no Perfil e a gestão só pelo seletor da gaveta foram descartadas.
+
+As escolhas que o plano fez sem perguntar, cada uma com a fonte citada, foram aceitas como estão: o anel decorativo do card (decisão 18), nomes de coluna únicos (decisão 7), etiquetas em ordem alfabética (decisão 16), o filtro de etiquetas que vale só na aba (decisão 17), a janela de 14 dias que conta hoje (regras de tarefas) e a gaveta na página inteira abaixo de 720 px (decisão 19).
