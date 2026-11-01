@@ -1,0 +1,37 @@
+/* "Mover para pasta…": a filter over the folders' menu, 280 px wide. */
+.move-folder {
+  width: 280px;
+}
+.move-folder__filter {
+  padding: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.move-folder__input {
+  width: 100%;
+  height: var(--height-field-dense);
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-ui);
+  letter-spacing: var(--tracking-ui);
+  outline: none;
+}
+.move-folder__input::placeholder {
+  color: var(--text-3);
+}
+.move-folder__input::-webkit-search-cancel-button {
+  display: none;
+}
+.move-folder__list {
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+}
+.move-folder__current {
+  color: var(--accent);
+}
+.move-folder__count {
+  font: var(--type-meta);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}

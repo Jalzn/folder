@@ -57,7 +57,7 @@ export const shortcutGroups: ShortcutGroup[] = [
     title: 'Documento e desenho',
     rows: [
       { label: 'Fixar ou desafixar', alternatives: [['P']] },
-      { label: 'Mover para projeto', alternatives: [['M']] },
+      { label: 'Mover para pasta', alternatives: [['M']] },
     ],
   },
 ];

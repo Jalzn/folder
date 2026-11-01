@@ -2,12 +2,17 @@ import './items-header.css';
 import { Link } from '@tanstack/react-router';
 import { NAV_SORTS, type NavSort } from '@tinyfold/workspace/domain';
 import { Ellipsis, FileText, Folder, FoldVertical, Plus, Shapes } from 'lucide-react';
+import { useRef } from 'react';
+import { isTextDropItem, useDrop } from 'react-aria-components';
 import { formatCount } from '../../lib/count';
+import { cx } from '../../lib/cx';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { IconButton, Menu, MenuItem, MenuSection, MenuSeparator, MenuTrigger } from '../../ui';
 import { useApp } from '../AppProvider';
+import type { FolderMoveItem } from '../folders/use-move-to-folder';
 import { useShellUi } from '../shell-ui';
+import { ITEM_DRAG } from './tree/use-tree-dnd';
 
 const sortLabels: Record<NavSort, string> = { recent: 'Recentes', title: 'A–Z', created: 'Criação' };
 
@@ -22,6 +27,7 @@ export function ItemsHeader({
   hasFolders,
   onSort,
   onCollapseAll,
+  onDropToRoot,
 }: {
   project: Project;
   total: number | undefined;
@@ -29,11 +35,24 @@ export function ItemsHeader({
   hasFolders: boolean;
   onSort: (sort: NavSort) => void;
   onCollapseAll: () => void;
+  /** An item dragged onto the header goes to the root; none in an archived project. */
+  onDropToRoot?: ((item: FolderMoveItem) => void) | undefined;
 }) {
   const app = useApp();
   const ui = useShellUi();
+  const header = useRef<HTMLDivElement>(null);
+  const { dropProps, isDropTarget } = useDrop({
+    ref: header,
+    isDisabled: !onDropToRoot,
+    getDropOperation: (types) => (types.has(ITEM_DRAG) ? 'move' : 'cancel'),
+    onDrop: async (event) => {
+      const dropped = event.items.find(isTextDropItem);
+      if (!dropped || !onDropToRoot) return;
+      onDropToRoot(JSON.parse(await dropped.getText(ITEM_DRAG)) as FolderMoveItem);
+    },
+  });
   return (
-    <div className="items-header">
+    <div ref={header} {...dropProps} className={cx('items-header', isDropTarget && 'is-drop-target')}>
       <span className="items-header__label">Itens</span>
       <span className="items-header__tools">
         {!project.archivedAt && (

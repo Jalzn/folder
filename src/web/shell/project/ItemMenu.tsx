@@ -1,8 +1,9 @@
-import { ArrowRightLeft, Ellipsis, Pin, PinOff, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, Ellipsis, FolderInput, Pin, PinOff, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useProjects } from '../../lib/queries';
+import { useFolders, useProjects } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
 import { IconButton, Menu, MenuItem, MenuSeparator, MenuTrigger, ProjectMark, SubmenuTrigger } from '../../ui';
+import { useShellUi } from '../shell-ui';
 import { activeProjects } from './project-order';
 import { useMoveItem } from './use-move-item';
 import { usePins } from './use-pins';
@@ -18,13 +19,15 @@ export interface ItemMenuAction {
 const labels: Record<ItemType, string> = { document: 'Opções do documento', drawing: 'Opções do desenho' };
 
 /**
- * The ⋯ of an open document or drawing: its own actions first, then Fixar or Desafixar and "Mover para
- * projeto…" (left out in an archived project), and Mover para a lixeira last.
+ * The ⋯ of an open document or drawing: its own actions first, then Fixar or Desafixar, "Mover para pasta…"
+ * (M), which says where the item is, and "Mover para projeto…" (left out in an archived project), and Mover
+ * para a lixeira last.
  */
 export function ItemMenu({
   type,
   id,
   projectId,
+  folderId,
   pinned,
   actions,
   onTrash,
@@ -32,6 +35,7 @@ export function ItemMenu({
   type: ItemType;
   id: string;
   projectId: string;
+  folderId: string | null;
   pinned: boolean;
   actions: ItemMenuAction[];
   onTrash: () => void;
@@ -39,7 +43,9 @@ export function ItemMenu({
   const projects = useProjects(true).data ?? [];
   const archived = Boolean(projects.find((project) => project.id === projectId)?.archivedAt);
   const pins = usePins();
+  const ui = useShellUi();
   const { move } = useMoveItem();
+  const folder = useFolders(projectId).data?.find((each) => each.id === folderId);
   const label = labels[type];
   return (
     <MenuTrigger>
@@ -69,8 +75,20 @@ export function ItemMenu({
           </MenuItem>
         )}
         {!archived && (
+          <MenuItem
+            key="move-folder"
+            id="move-folder"
+            icon={<FolderInput size={16} />}
+            shortcut={['M']}
+            description={folder ? `Em ${folder.name}` : 'Na raiz do projeto'}
+            onAction={() => ui.setMoveOpen('folder')}
+          >
+            Mover para pasta…
+          </MenuItem>
+        )}
+        {!archived && (
           <SubmenuTrigger>
-            <MenuItem key="move" id="move" icon={<ArrowRightLeft size={16} />} shortcut={['M']}>
+            <MenuItem key="move" id="move" icon={<ArrowRightLeft size={16} />}>
               Mover para projeto…
             </MenuItem>
             <Menu

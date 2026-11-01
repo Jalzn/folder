@@ -28,19 +28,24 @@ export function useFolderActions(projectId: string) {
     return Boolean(renamed);
   }
 
-  /** One place up or down among the folders, announced: "Pasta MCP na posição 2 de 4". */
+  /** Puts a folder before another, or last with null, announced: "Pasta MCP na posição 2 de 4". */
+  async function place(folder: NavFolder, beforeFolderId: string | null) {
+    const moved = await action.run(() =>
+      api.workspace.moveFolder({ id: folder.id, beforeFolderId, requestId: requestId() }),
+    );
+    if (!moved) return false;
+    const at = moved.folders.findIndex((each) => each.id === folder.id);
+    ui.announce(positionText(folder.name, at, moved.folders.length));
+    return true;
+  }
+
+  /** One place up or down among the folders. */
   async function move(folder: NavFolder, folders: readonly NavFolder[], direction: 'up' | 'down') {
     const at = folders.findIndex((each) => each.id === folder.id);
     const to = direction === 'up' ? at - 1 : at + 1;
     if (at < 0 || to < 0 || to >= folders.length) return false;
     // Before the folder now at `to` going up; before the one after it going down, or last.
-    const before = direction === 'up' ? (folders[to]?.id ?? null) : (folders[to + 1]?.id ?? null);
-    const moved = await action.run(() =>
-      api.workspace.moveFolder({ id: folder.id, beforeFolderId: before, requestId: requestId() }),
-    );
-    if (!moved) return false;
-    ui.announce(positionText(folder.name, to, folders.length));
-    return true;
+    return place(folder, direction === 'up' ? (folders[to]?.id ?? null) : (folders[to + 1]?.id ?? null));
   }
 
   /**
@@ -78,5 +83,5 @@ export function useFolderActions(projectId: string) {
     return true;
   }
 
-  return { busy: action.busy, create, rename, move, remove };
+  return { busy: action.busy, create, rename, place, move, remove };
 }

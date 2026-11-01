@@ -8,8 +8,9 @@ import { focusPageTitle } from '../../../ui';
 import { useApp } from '../../AppProvider';
 import { DeleteFolderDialog } from '../../folders/DeleteFolderDialog';
 import { FolderTools } from '../../folders/FolderMenu';
+import { MoveMenus } from '../../folders/MoveMenus';
+import { useMoveToFolder } from '../../folders/use-move-to-folder';
 import { chordPending, forwardToShortcuts } from '../../keyboard/use-shortcuts';
-import { MoveToProjectMenu } from '../../project/MoveToProjectMenu';
 import { NewItemPopover } from '../../project/NewItemMenu';
 import { usePins } from '../../project/use-pins';
 import { useShellUi } from '../../shell-ui';
@@ -22,6 +23,7 @@ import { rowKind, treeKeyAction } from './tree-keys';
 import { folderLabel, itemLabel, moreLabel } from './tree-labels';
 import { type FolderNode, folderKey, type ItemNode, type TreeNode } from './tree-rows';
 import type { useExpandedFolders } from './use-expanded-folders';
+import { useTreeDnd } from './use-tree-dnd';
 import { DRAFT_KEY, useTreeFolders } from './use-tree-folders';
 
 type Expanded = ReturnType<typeof useExpandedFolders>;
@@ -93,6 +95,18 @@ export function ItemsTree({
   };
   const editable = variant === 'sidebar' && !archived;
   const folders = useTreeFolders({ project, rows, expanded, enabled: editable, rowByKey });
+  const moveToFolder = useMoveToFolder();
+  const dragAndDropHooks = useTreeDnd({
+    projectId: project.id,
+    rows,
+    expanded,
+    enabled: editable && !folders.renaming && !folders.draft,
+    onMoveItem: (item, folderId) => {
+      const folder = folders.folders.find((each) => each.id === folderId) ?? null;
+      void moveToFolder.move(item, folder).then((moved) => moved && folderId && expanded.expand(folderId));
+    },
+    onReorder: (folderId, beforeFolderId) => void folders.place(folderId, beforeFolderId),
+  });
   const newHereAnchor: RefObject<HTMLElement | null> = {
     get current() {
       return rowByKey(folders.newHere?.key ?? null) ?? tree.current;
@@ -322,6 +336,7 @@ export function ItemsTree({
         className="items-tree__tree"
         selectionMode="none"
         escapeKeyBehavior="none"
+        dragAndDropHooks={dragAndDropHooks}
         expandedKeys={expandedKeys}
         onExpandedChange={(keys) =>
           setOpenFolders(
@@ -352,14 +367,26 @@ export function ItemsTree({
         />
       )}
       {moving && (
-        <MoveToProjectMenu
-          type={moving.node.item.type}
-          id={moving.node.item.id}
-          projectId={project.id}
+        <MoveMenus
+          item={{
+            type: moving.node.item.type,
+            id: moving.node.item.id,
+            projectId: project.id,
+            folderId: moving.node.item.folderId,
+            pinned: moving.node.item.pinnedAt !== null,
+          }}
           triggerRef={moveAnchor}
-          isOpen
-          onOpenChange={(isOpen) => !isOpen && setMoving(null)}
-          onMoved={() => {
+          onClose={() => setMoving(null)}
+          onMovedToFolder={(folderId) => {
+            // The folder that receives an item opens, and the item keeps the focus in its new place.
+            if (folderId) expanded.expand(folderId);
+            folders.focusWhenThere(moving.node.key, () => {
+              const next = rowByKey(moving.neighbour);
+              if (next) next.focus();
+              else focusPageTitle();
+            });
+          }}
+          onMovedToProject={() => {
             const next = rowByKey(moving.neighbour);
             if (next) next.focus();
             else focusPageTitle();

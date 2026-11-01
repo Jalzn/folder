@@ -1,4 +1,4 @@
-import { ArrowRightLeft, Pin, PinOff, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, FolderInput, Pin, PinOff, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ItemType, Project } from '../../lib/types';
 import { usePins } from '../project/use-pins';
@@ -8,8 +8,9 @@ import type { HereAction } from './palette-sections';
 export type RunnableHereAction = HereAction & { icon?: ReactNode; run: () => void };
 
 /**
- * "Neste item" for the open document or drawing: its files (from the page), then Fixar or Desafixar and
- * Mover para projeto… (not in an archived project), then Mover para a lixeira. None outside an item.
+ * "Neste item" for the open document or drawing: its files (from the page), then Fixar or Desafixar, Mover
+ * para pasta… (M) and Mover para projeto… (not in an archived project), then Mover para a lixeira. None
+ * outside an item.
  */
 export function useHereActions({
   item,
@@ -37,11 +38,17 @@ export function useHereActions({
             run: () => void (pinned ? pins.unpin(item.type, item.id) : pins.pin(item.type, item.id)),
           },
           {
+            id: 'move-folder',
+            label: 'Mover para pasta…',
+            icon: <FolderInput size={16} />,
+            shortcut: ['M'],
+            run: () => ui.setMoveOpen('folder'),
+          },
+          {
             id: 'move',
             label: 'Mover para projeto…',
             icon: <ArrowRightLeft size={16} />,
-            shortcut: ['M'],
-            run: () => ui.setMoveOpen(true),
+            run: () => ui.setMoveOpen('project'),
           },
         ]
       : []),

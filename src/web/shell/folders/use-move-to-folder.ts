@@ -1,0 +1,47 @@
+import { api } from '../../lib/api';
+import type { ItemType } from '../../lib/types';
+import { useAction } from '../../lib/use-action';
+import { useToast } from '../../ui';
+import { useShellUi } from '../shell-ui';
+import { movedText } from './folder-text';
+import { moveToFolder } from './move-to-folder';
+
+/** An item that changes folder, where it is and whether it is pinned there. */
+export interface FolderMoveItem {
+  type: ItemType;
+  id: string;
+  projectId: string;
+  folderId: string | null;
+  pinned: boolean;
+}
+
+/**
+ * Moving an item between the folders of its project and the root, with the toast of each move: "Movido para
+ * MCP." or "Movido para a raiz do projeto.", and when the destination has no room for its pin, that it went
+ * unpinned. Desfazer (⌘Z) moves it back and pins it again if it lost its pin.
+ */
+export function useMoveToFolder() {
+  const action = useAction();
+  const toast = useToast();
+  const ui = useShellUi();
+  /** Resolves true once the item moved; the same place only says so. */
+  async function move(item: FolderMoveItem, folder: { id: string; name: string } | null) {
+    const to = folder?.id ?? null;
+    if (to === item.folderId) {
+      ui.announce('O item já está aí.');
+      return false;
+    }
+    const moved = await action.run(() => moveToFolder(item.type, item.id, item.projectId, to));
+    if (!moved) return false;
+    const lostPin = item.pinned && moved.pinnedAt === null;
+    toast(movedText(folder?.name ?? null, lostPin), {
+      undo: () =>
+        action.run(async () => {
+          await moveToFolder(item.type, item.id, item.projectId, item.folderId);
+          if (lostPin) await api.workspace.pinItem({ type: item.type, id: item.id }).catch(() => undefined);
+        }),
+    });
+    return true;
+  }
+  return { busy: action.busy, move };
+}

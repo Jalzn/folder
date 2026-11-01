@@ -32,3 +32,11 @@ export const positionText = (name: string, position: number, of: number) =>
 
 /** "Já existe uma pasta MCP.", the same words as the server's. */
 export const takenText = (name: string) => `Já existe uma pasta ${name}.`;
+
+/** "Movido para MCP.", "Movido para a raiz do projeto.", or "…, sem fixar: a pasta já tem 8 fixados." */
+export function movedText(folderName: string | null, lostPin: boolean) {
+  const place = folderName === null ? 'a raiz do projeto' : folderName;
+  if (!lostPin) return `Movido para ${place}.`;
+  const full = folderName === null ? 'a raiz já tem 8 fixados' : 'a pasta já tem 8 fixados';
+  return `Movido para ${place}, sem fixar: ${full}.`;
+}

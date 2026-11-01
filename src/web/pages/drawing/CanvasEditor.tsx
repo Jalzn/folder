@@ -111,6 +111,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
             type="drawing"
             id={canvas.id}
             projectId={projectId}
+            folderId={canvas.folderId}
             pinned={Boolean(canvas.pinnedAt)}
             onTrash={() => setTrashOpen(true)}
             actions={fileActions}

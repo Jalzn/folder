@@ -86,7 +86,7 @@ export function useShortcutActions(layout: ShortcutLayout) {
   }
   function moveCurrent() {
     if (!project) return ui.announce(noProjectText(layout.projects));
-    if (item) ui.setMoveOpen(true);
+    if (item) ui.setMoveOpen('folder');
   }
   return {
     palette: () => ui.openPalette(),

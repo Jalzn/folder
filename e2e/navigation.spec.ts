@@ -101,14 +101,18 @@ test('an open document moves with its unsaved text, stays in the new project and
   await editor.click();
   await page.keyboard.type('Escrito antes de mover.');
 
-  // M on the document's own row in the sidebar, while the edit may still be on its way.
+  // M on the document's own row in the sidebar, while the edit may still be on its way: "Mover para
+  // pasta…" opens first, and "Outro projeto…" leads to the projects.
   const moved = page.waitForResponse(
     (response) => answers(response, 'workspace/moveItem') && response.status() === 200,
   );
   await showSidebar(page);
-  const row = projectNavigation(page).getByRole('link', { name: new RegExp(`^${title}, documento`) });
+  // The focus goes to the row: React Aria sends a focus that lands on the link inside it, while the
+  // keyboard is in use, to the tree's last row.
+  const row = projectNavigation(page).getByRole('row', { name: new RegExp(`^${title}, documento`) });
   await row.focus();
   await page.keyboard.press('m');
+  await page.getByRole('menu', { name: 'Pastas' }).getByRole('menuitem', { name: 'Outro projeto…' }).click();
   await page.getByRole('menuitemradio', { name: destination }).click();
   expect((await moved).request().postData()).not.toContain('Escrito antes de mover.');
   await expect(page).toHaveURL(new RegExp(`/projetos/${target}/documentos/`));

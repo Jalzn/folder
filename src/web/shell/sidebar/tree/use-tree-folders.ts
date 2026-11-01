@@ -159,7 +159,15 @@ export function useTreeFolders({
   const isFirst = (folder: NavFolder) => folders[0]?.id === folder.id;
   const isLast = (folder: NavFolder) => folders.at(-1)?.id === folder.id;
 
+  /** A folder dragged before another, or last. */
+  async function place(folderId: string, beforeFolderId: string | null) {
+    const folder = folders.find((each) => each.id === folderId);
+    if (folder && (await actions.place(folder, beforeFolderId))) focusWhenThere(folderKey(folderId));
+  }
+
   return {
+    place,
+    focusWhenThere,
     busy: actions.busy,
     draft,
     folders,

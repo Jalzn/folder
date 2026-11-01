@@ -11,6 +11,11 @@
   padding: 0 16px 0 28px;
   background: var(--sidebar-bg);
 }
+.items-header.is-drop-target {
+  border-radius: var(--radius-sm);
+  background: var(--selected);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
 .items-header__label {
   flex: 1;
   font: var(--type-label);

@@ -92,6 +92,7 @@ export function DocumentEditor({ document }: { document: Document }) {
             type="document"
             id={document.id}
             projectId={projectId}
+            folderId={document.folderId}
             pinned={Boolean(document.pinnedAt)}
             onTrash={() => setTrashOpen(true)}
             actions={fileActions}

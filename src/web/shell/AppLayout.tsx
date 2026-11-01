@@ -2,21 +2,21 @@ import './layout.css';
 import { useLocation } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Dialog as AriaDialog, Modal, ModalOverlay } from 'react-aria-components';
-import { parseProjectPath } from '../router/paths';
 import { useLastLocation } from '../router/use-last-location';
 import { useRouteFocus } from '../router/use-route-focus';
 import { useApp } from './AppProvider';
 import { CommandPalette } from './command-palette/CommandPalette';
+import { MoveMenus } from './folders/MoveMenus';
 import { ShortcutsDialog } from './keyboard/ShortcutsDialog';
 import { useShellLayers } from './keyboard/use-shell-layers';
 import { useShortcutActions } from './keyboard/use-shortcut-actions';
 import { useShortcuts } from './keyboard/use-shortcuts';
-import { MoveToProjectMenu } from './project/MoveToProjectMenu';
 import { NewItemPopover } from './project/NewItemMenu';
 import { useCurrentProject } from './project/use-current-project';
 import { type SwitcherPlace, useShellUi } from './shell-ui';
 import { CollapsedRail } from './sidebar/CollapsedRail';
 import { ProjectSidebar } from './sidebar/ProjectSidebar';
+import { useOpenItem } from './sidebar/use-open-item';
 import { useSidebarPrefs } from './sidebar/use-sidebar-prefs';
 import { TopBar } from './TopBar';
 import { useLayoutMode } from './use-layout-mode';
@@ -68,7 +68,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   useShortcuts(
     useShortcutActions({ project, projects, switcherPlace, sidebarShown: !rail && mode !== 'narrow', toggleSidebar }),
   );
-  const item = parseProjectPath(pathname)?.item;
+  const openItem = useOpenItem();
 
   return (
     <div className="app-layout" data-mode={mode} data-rail={rail || undefined}>
@@ -126,14 +126,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {project && ui.newItemOpen && (
         <NewItemPopover project={project} triggerRef={anchor} isOpen onOpenChange={ui.setNewItemOpen} />
       )}
-      {project && item && ui.moveOpen && (
-        <MoveToProjectMenu
-          type={item.type}
-          id={item.id}
-          projectId={project.id}
+      {project && openItem && ui.moveOpen && (
+        <MoveMenus
+          key={ui.moveOpen}
+          item={{
+            type: openItem.type,
+            id: openItem.id,
+            projectId: project.id,
+            folderId: openItem.folderId,
+            pinned: openItem.pinnedAt !== null,
+          }}
           triggerRef={anchor}
-          isOpen
-          onOpenChange={ui.setMoveOpen}
+          start={ui.moveOpen}
+          onClose={() => ui.setMoveOpen(false)}
         />
       )}
     </div>

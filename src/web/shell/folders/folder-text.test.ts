@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { deletedText, deleteWithItemsTitle, positionText, restoredText, takenText, trashedText } from './folder-text';
+import {
+  deletedText,
+  deleteWithItemsTitle,
+  movedText,
+  positionText,
+  restoredText,
+  takenText,
+  trashedText,
+} from './folder-text';
 
 describe('folder copy', () => {
   it('says where a deleted folder’s items went', () => {
@@ -28,5 +36,12 @@ describe('folder copy', () => {
   it('announces a position and refuses a taken name with the server’s words', () => {
     expect(positionText('MCP', 1, 4)).toBe('Pasta MCP na posição 2 de 4');
     expect(takenText('MCP')).toBe('Já existe uma pasta MCP.');
+  });
+
+  it('says where an item moved, and when it lost its pin there', () => {
+    expect(movedText('MCP', false)).toBe('Movido para MCP.');
+    expect(movedText(null, false)).toBe('Movido para a raiz do projeto.');
+    expect(movedText('MCP', true)).toBe('Movido para MCP, sem fixar: a pasta já tem 8 fixados.');
+    expect(movedText(null, true)).toBe('Movido para a raiz do projeto, sem fixar: a raiz já tem 8 fixados.');
   });
 });

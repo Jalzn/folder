@@ -43,8 +43,9 @@ interface ShellUi {
   setShortcutsOpen: (open: boolean) => void;
   newItemOpen: boolean;
   setNewItemOpen: (open: boolean) => void;
-  moveOpen: boolean;
-  setMoveOpen: (open: boolean) => void;
+  /** The open item's move menu: "Mover para pasta…" (M), "Mover para projeto…", or closed. */
+  moveOpen: false | 'folder' | 'project';
+  setMoveOpen: (open: false | 'folder' | 'project') => void;
   /** Grows by one at each request to focus the sidebar's Buscar. */
   searchRequest: number;
   requestSearch: () => void;
@@ -76,7 +77,7 @@ export function ShellUiProvider({ children }: { children: ReactNode }) {
   const [palette, setPalette] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [newItemOpen, setNewItemOpen] = useState(false);
-  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState<false | 'folder' | 'project'>(false);
   const [searchRequest, setSearchRequest] = useState(0);
   const [announcement, setAnnouncement] = useState('');
   const [folderDraft, setFolderDraft] = useState<FolderDraft | null>(null);

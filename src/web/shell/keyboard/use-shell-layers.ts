@@ -29,5 +29,5 @@ export function useShellLayers() {
   useLayer('palette', ui.palette !== null, close.palette);
   useLayer('shortcuts', ui.shortcutsOpen, close.shortcuts);
   useLayer('new-item', ui.newItemOpen, close.newItem);
-  useLayer('move', ui.moveOpen, close.move);
+  useLayer('move', Boolean(ui.moveOpen), close.move);
 }
