@@ -176,3 +176,30 @@ test('⌘↵ in the label picker or the calendar completes nothing', async ({ pa
   await expect(toast(page)).not.toContainText('Concluída');
   await expect(openTask(page).getByRole('button', { name: 'Concluir', exact: true })).toBeVisible();
 });
+
+test('a task left unsaved offline saves by itself when the network comes back, with the drawer on another task', async ({
+  page,
+  context,
+}) => {
+  await login(page);
+  await createProject(page, `De volta à rede ${Date.now()}`);
+  await newTask(page, 'Anotar os custos');
+  await newTask(page, 'Ligar para o banco');
+  await openDrawer(page, 'Anotar os custos');
+  await context.setOffline(true);
+  await openTask(page).getByRole('textbox', { name: 'Descrição da tarefa' }).click();
+  await page.keyboard.type('Planilha de março');
+  await expect(openTask(page).getByRole('button', { name: 'Tentar de novo', exact: true })).toBeVisible();
+
+  // Another task takes the drawer; the first keeps its dot and its draft.
+  await page.getByRole('main').getByRole('button', { name: 'Ligar para o banco', exact: true }).click();
+  await expect(drawerOf(page, 'Ligar para o banco')).toBeVisible();
+  const unsaved = card(page, 'Anotar os custos').locator('.task-card__unsaved');
+  await expect(unsaved).toBeVisible();
+
+  // Back online, its session tries again on its own.
+  await context.setOffline(false);
+  await expect(unsaved).toHaveCount(0);
+  await openDrawer(page, 'Anotar os custos');
+  await expect(openTask(page).getByRole('textbox', { name: 'Descrição da tarefa' })).toContainText('Planilha de março');
+});
