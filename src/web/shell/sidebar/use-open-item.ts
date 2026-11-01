@@ -2,21 +2,19 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation } from '@tanstack/react-router';
 import type { NavItem } from '@tinyfold/workspace/domain';
 import { canvasQuery, documentQuery } from '../../lib/queries';
-import type { ItemType } from '../../lib/types';
 import { parseProjectPath } from '../../router/paths';
 
-/** The document or drawing the page shows, as a sidebar row, from the data its page already loaded. */
-export function useOpenItem(type: ItemType): NavItem | null {
+/** The document or drawing the page shows, as a tree row, from the data its page already loaded. */
+export function useOpenItem(): NavItem | null {
   const pathname = useLocation({ select: (location) => location.pathname });
-  const open = parseProjectPath(pathname)?.item;
-  const id = open?.type === type ? open.id : '';
-  const document = useQuery({ ...documentQuery(id), enabled: id !== '' && type === 'document' });
-  const drawing = useQuery({ ...canvasQuery(id), enabled: id !== '' && type === 'drawing' });
-  const item = type === 'document' ? document.data : drawing.data;
-  if (!id || !item || item.deletedAt) return null;
+  const open = parseProjectPath(pathname)?.item ?? null;
+  const document = useQuery({ ...documentQuery(open?.id ?? ''), enabled: open?.type === 'document' });
+  const drawing = useQuery({ ...canvasQuery(open?.id ?? ''), enabled: open?.type === 'drawing' });
+  const item = open?.type === 'document' ? document.data : open?.type === 'drawing' ? drawing.data : undefined;
+  if (!open || !item || item.deletedAt) return null;
   return {
-    type,
-    id,
+    type: open.type,
+    id: open.id,
     title: item.title,
     updatedAt: item.updatedAt,
     createdAt: item.createdAt,

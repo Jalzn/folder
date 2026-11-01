@@ -62,3 +62,19 @@
 .rail-popover__count {
   font-variant-numeric: tabular-nums;
 }
+
+/* Itens: the dot of unsaved items sits on the button's corner. */
+.rail__items {
+  position: relative;
+  display: grid;
+}
+.rail__pending {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--late);
+  pointer-events: none;
+}

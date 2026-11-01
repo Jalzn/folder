@@ -96,34 +96,36 @@ test('Esc in a changed task dialog asks before discarding, and Esc there goes ba
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
-test('the rail lists work from the keyboard and close on a choice', async ({ page }, info) => {
+test('the rail’s Itens tree works from the keyboard and closes on a choice', async ({ page }, info) => {
   test.skip(info.project.name === 'chrome-mobile', 'Phones have no rail.');
+  const title = `Pela faixa ${Date.now()}`;
   await login(page);
   await newDocument(page);
-  await page.getByRole('textbox', { name: 'Título do documento' }).fill(`Pela faixa ${Date.now()}`);
+  await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   await newDocument(page);
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   await page.locator('body').click({ position: { x: 1000, y: 700 } });
   await pressCommand(page, 'Backslash');
-  const documents = page.getByRole('button', { name: 'Documentos', exact: true });
-  await documents.focus();
+  const items = page.getByRole('button', { name: 'Itens', exact: true });
+  await items.focus();
   await page.keyboard.press('Enter');
-  const list = page.getByRole('dialog', { name: /^Documentos de / });
-  const rows = list.getByRole('link');
-  await expect(rows.first()).toBeFocused();
+  const list = page.getByRole('dialog', { name: /^Itens de / });
+  const tree = list.getByRole('treegrid');
+  // The open item's row takes the focus; the one written just before it comes next.
+  await expect(tree.locator('[role="row"].is-current')).toBeFocused();
   await page.keyboard.press('ArrowDown');
-  await expect(rows.nth(1)).toBeFocused();
-  const target = await rows.nth(1).getAttribute('href');
+  const titled = tree.getByRole('row', { name: new RegExp(`^${title}, documento`) });
+  await expect(titled).toBeFocused();
+  const target = await titled.getByRole('link').getAttribute('href');
   await page.keyboard.press('Enter');
   await expect(list).toBeHidden();
   await expect(page).toHaveURL(new RegExp(`${target}$`));
 
   // The item already open changes no page, and still closes the list; the page's title takes the focus.
-  await documents.focus();
+  await items.focus();
   await page.keyboard.press('Enter');
-  const current = list.locator('a[aria-current="page"]');
-  await expect(current).toBeFocused();
+  await expect(tree.locator('[role="row"].is-current')).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(list).toBeHidden();
   await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeFocused();

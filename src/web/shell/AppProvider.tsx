@@ -26,10 +26,10 @@ interface TaskDialogState extends NewTaskOptions {
 
 interface AppContextValue {
   owner: Owner;
-  /** Creates a document in the project and opens it. */
-  newDocument: (projectId: string) => Promise<void>;
-  /** Creates a drawing in the project and opens it. */
-  newCanvas: (projectId: string) => Promise<void>;
+  /** Creates a document in the project, or in one of its folders, and opens it. */
+  newDocument: (projectId: string, folderId?: string) => Promise<void>;
+  /** Creates a drawing in the project, or in one of its folders, and opens it. */
+  newCanvas: (projectId: string, folderId?: string) => Promise<void>;
   /** Opens the dialog of a new task in the project, in a column or from a document's selection. */
   newTask: (projectId: string, options?: NewTaskOptions) => void;
   /** Opens a task's dialog over the current page. */
@@ -65,8 +65,8 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
     focusBefore.current = pageFocus();
   }, []);
 
-  async function newDocument(projectId: string) {
-    const input = { projectId };
+  async function newDocument(projectId: string, folderId?: string) {
+    const input = { projectId, ...(folderId ? { folderId } : {}) };
     await documentAction.run(
       () => api.workspace.createDocument({ ...input, requestId: documentRequest.for(input) }),
       (document) => {
@@ -75,8 +75,8 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
       },
     );
   }
-  async function newCanvas(projectId: string) {
-    const input = { projectId };
+  async function newCanvas(projectId: string, folderId?: string) {
+    const input = { projectId, ...(folderId ? { folderId } : {}) };
     await canvasAction.run(
       () => api.workspace.createCanvas({ ...input, requestId: canvasRequest.for(input) }),
       (canvas) => {

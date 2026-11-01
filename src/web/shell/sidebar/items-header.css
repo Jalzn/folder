@@ -1,0 +1,60 @@
+/* "Itens n" over the tree: the label at x=28, "+" and "⋯" on hover or focus, the count ending at x=240. */
+.items-header {
+  position: sticky;
+  top: -16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  margin: 0 -8px 2px;
+  padding: 0 16px 0 28px;
+  background: var(--sidebar-bg);
+}
+.items-header__label {
+  flex: 1;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-3);
+}
+.items-header__tools {
+  display: inline-flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+.items-header:hover .items-header__tools,
+.items-header:focus-within .items-header__tools,
+.items-header__tools:has([aria-expanded="true"]) {
+  opacity: 1;
+}
+.items-header__tools .btn-icon {
+  width: 20px;
+  height: 20px;
+}
+.items-header__count {
+  min-width: 18px;
+  padding: 2px 0 2px 4px;
+  border-radius: var(--radius-xs);
+  text-align: right;
+  font: var(--type-meta);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+.items-header__count:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.items-header__count:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Touch screens have no hover: "+" and "⋯" stay visible. */
+@media (hover: none) {
+  .items-header__tools {
+    opacity: 1;
+  }
+}

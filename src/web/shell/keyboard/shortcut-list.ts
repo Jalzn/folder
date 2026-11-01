@@ -38,8 +38,9 @@ export const shortcutGroups: ShortcutGroup[] = [
       { label: 'Buscar no projeto', alternatives: [['/']] },
       { label: 'Percorrer as linhas', alternatives: [['↑'], ['↓']] },
       { label: 'Primeira e última linha', alternatives: [['Home'], ['End']] },
-      { label: 'Recolher ou expandir a seção, no rótulo', alternatives: [['←'], ['→']] },
-      { label: 'Abrir', alternatives: [['↵']] },
+      { label: 'Recolher ou expandir a pasta; ir ao primeiro item ou à pasta', alternatives: [['←'], ['→']] },
+      { label: 'Abrir o item; numa pasta, abrir ou fechar', alternatives: [['↵']] },
+      { label: 'Ir ao item que começa com as letras digitadas', alternatives: [['a–z']] },
     ],
   },
   {

@@ -1,15 +1,13 @@
-import { type NavigationSorts, useProjectNavigation } from '../../lib/queries';
+import { useProjectNavigation } from '../../lib/queries';
 import type { Project } from '../../lib/types';
+import { defaultProjectPrefs } from './sidebar-prefs';
 import { useSidebarPrefs } from './use-sidebar-prefs';
 
-/** The sidebar's data for a project, in the order each section keeps on this device. */
+/** The sidebar's data for a project, its items in the order chosen on this device. */
 export function useNavigationData(project: Project | null) {
   const prefs = useSidebarPrefs();
-  const sorts: NavigationSorts = {
-    documents: project ? prefs.section(project.id, 'documents').sort : 'recent',
-    drawings: project ? prefs.section(project.id, 'drawings').sort : 'recent',
-  };
-  return useProjectNavigation(project?.id ?? null, sorts).data;
+  const sort = project ? (prefs.project(project.id) ?? defaultProjectPrefs).sort : defaultProjectPrefs.sort;
+  return useProjectNavigation(project?.id ?? null, sort).data;
 }
 
 /** The exact number of items in a project's trash, which a trash listing may cut. */

@@ -6,7 +6,7 @@
 .sidebar-search__icon {
   position: absolute;
   top: 6px;
-  left: 8px;
+  left: 20px;
   z-index: 1;
   color: var(--icon);
   pointer-events: none;
@@ -14,7 +14,7 @@
 .sidebar-search__input {
   width: 100%;
   height: var(--height-sidebar-row);
-  padding: 0 34px 0 31px;
+  padding: 0 34px 0 43px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -66,7 +66,7 @@
   display: flex;
   align-items: center;
   height: 24px;
-  padding: 0 8px;
+  padding: 0 8px 0 20px;
   font: var(--type-label);
   color: var(--text-3);
 }
@@ -76,9 +76,14 @@
   font: var(--type-meta);
   color: var(--text-3);
 }
+.sidebar-results__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 .sidebar-row--result {
   display: grid;
-  grid-template-columns: 16px minmax(0, 1fr);
+  grid-template-columns: 16px minmax(0, 1fr) auto;
   column-gap: 8px;
   padding-top: 5px;
   padding-bottom: 5px;
@@ -87,8 +92,19 @@
   margin-top: 2px;
   align-self: start;
 }
+/* The folder of a result, on the right of its title. */
+.sidebar-row__folder {
+  grid-column: 3;
+  grid-row: 1;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--type-meta);
+  color: var(--text-3);
+}
 .sidebar-row__excerpt {
-  grid-column: 2;
+  grid-column: 2 / -1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

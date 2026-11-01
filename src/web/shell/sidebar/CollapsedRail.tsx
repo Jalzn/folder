@@ -10,7 +10,7 @@ import { IconButton, Logo, ProjectMark } from '../../ui';
 import { ProjectSwitcher } from '../project/ProjectSwitcher';
 import { switcherLabel } from '../project/switcher-label';
 import { useShellUi } from '../shell-ui';
-import { RailPopover } from './RailPopover';
+import { ItemsPopover } from './ItemsPopover';
 import { Avatar } from './SidebarFooter';
 import { useNavigationData } from './use-navigation-data';
 import { YouMenu } from './YouMenu';
@@ -71,8 +71,7 @@ export function CollapsedRail({
             <SquareKanban size={16} />
           </IconButton>
           <span className="rail__gap" />
-          <RailPopover project={project} kind="documents" section={navigation?.documents} />
-          <RailPopover project={project} kind="drawings" section={navigation?.drawings} />
+          <ItemsPopover project={project} tree={navigation?.tree} />
         </>
       )}
       <span className="rail__grow" />

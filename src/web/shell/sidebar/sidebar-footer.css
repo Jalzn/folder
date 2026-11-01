@@ -34,6 +34,9 @@
 .sidebar-footer__you > svg {
   margin-left: -4px;
 }
+.sidebar-footer__you {
+  padding-left: 18px;
+}
 .sidebar-footer__trash {
   height: var(--height-button);
   gap: 6px;

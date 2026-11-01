@@ -7,14 +7,15 @@ import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { Kbd } from '../../ui';
 import { useShellUi } from '../shell-ui';
-import { ItemSection } from './ItemSection';
-import { SearchResults } from './SearchResults';
+import { ItemsSection } from './ItemsSection';
+import { itemResults, SearchResults } from './SearchResults';
 import { SidebarFooter } from './SidebarFooter';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarNav } from './SidebarNav';
 import { SidebarSearch } from './SidebarSearch';
 import { useNavigationData } from './use-navigation-data';
 import { useRovingFocus } from './use-roving-focus';
+import { useSidebarPrefs } from './use-sidebar-prefs';
 
 /**
  * The project's sidebar, variant A (docs/interface/sidebar.md): the switcher, Buscar, Visão geral and Quadro
@@ -39,7 +40,9 @@ export function ProjectSidebar({
   const ui = useShellUi();
   const navigate = useNavigate();
   const navigation = useNavigationData(project);
+  const prefs = useSidebarPrefs();
   const roving = useRovingFocus<HTMLElement>();
+  const treeRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
   const searchInput = useRef<HTMLInputElement>(null);
   const handledRequest = useRef(ui.searchRequest);
@@ -59,11 +62,23 @@ export function ProjectSidebar({
     if (focusSearch) searchInput.current?.focus();
   }, [focusSearch]);
 
+  // A folder from the filter: it opens in the tree, the filter clears, and its first child takes the focus.
+  function openFolder(folderId: string) {
+    if (!project) return;
+    const expanded = prefs.project(project.id)?.expanded ?? [];
+    prefs.setProject(project.id, { expanded: [...new Set([...expanded, folderId])] });
+    setQuery('');
+    requestAnimationFrame(() => {
+      const folder = treeRef.current?.querySelector<HTMLElement>(`[data-key="folder:${CSS.escape(folderId)}"]`);
+      const next = folder?.nextElementSibling;
+      const child = next instanceof HTMLElement && next.getAttribute('aria-level') === '2' ? next : folder;
+      child?.focus();
+    });
+  }
+
   function openFirst() {
-    const results = search.data?.items ?? [];
-    const first = results.find((item) => item.type === 'document') ?? results.find((item) => item.type === 'drawing');
-    if (project && first && first.type !== 'task')
-      void navigate({ href: paths.item(project.id, first.type, first.id) });
+    const first = itemResults(search.data?.items)[0];
+    if (project && first) void navigate({ href: paths.item(project.id, first.type, first.id) });
   }
   return (
     <div className="sidebar" data-region="sidebar">
@@ -73,7 +88,21 @@ export function ProjectSidebar({
           ref={roving.ref}
           className="sidebar__nav"
           aria-label={`Projeto ${project.name}`}
-          onKeyDown={roving.onKeyDown}
+          onKeyDown={(event) => {
+            // ↓ on the last row of the navigation goes on into the tree, at its current row.
+            const rows = [...(roving.ref.current?.querySelectorAll<HTMLElement>('[data-roving]') ?? [])];
+            if (event.key === 'ArrowDown' && rows.at(-1) === event.target && treeRef.current) {
+              const row =
+                treeRef.current.querySelector<HTMLElement>('[role="row"][tabindex="0"]') ??
+                treeRef.current.querySelector<HTMLElement>('[role="row"]');
+              if (row) {
+                event.preventDefault();
+                row.focus();
+                return;
+              }
+            }
+            roving.onKeyDown(event);
+          }}
         >
           <div className="sidebar-nav">
             <SidebarSearch
@@ -87,12 +116,28 @@ export function ProjectSidebar({
           </div>
           <div className="sidebar__sections">
             {searching ? (
-              <SearchResults projectId={project.id} query={query} results={search.data?.items} error={search.error} />
+              <SearchResults
+                projectId={project.id}
+                query={query}
+                folders={navigation?.tree.folders ?? []}
+                results={search.data?.items}
+                error={search.error}
+                onOpenFolder={openFolder}
+              />
             ) : (
-              <>
-                <ItemSection project={project} kind="documents" section={navigation?.documents} />
-                <ItemSection project={project} kind="drawings" section={navigation?.drawings} />
-              </>
+              <ItemsSection
+                project={project}
+                tree={navigation?.tree}
+                treeRef={treeRef}
+                onLeaveUp={() => {
+                  const rows = roving.ref.current?.querySelectorAll<HTMLElement>('[data-roving]');
+                  const last = rows?.[rows.length - 1];
+                  if (last) {
+                    for (const row of rows ?? []) row.tabIndex = row === last ? 0 : -1;
+                    last.focus();
+                  }
+                }}
+              />
             )}
           </div>
         </nav>

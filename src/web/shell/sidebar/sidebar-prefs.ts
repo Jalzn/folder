@@ -1,33 +1,34 @@
 import { NAV_SORTS, type NavSort } from '@tinyfold/workspace/domain';
 
-/** A sidebar section: Documentos or Desenhos, as projectNavigation names them. */
-export type SectionKind = 'documents' | 'drawings';
-
-export interface SectionPrefs {
-  open: boolean;
+/** One project's items on this device: their order and the folders left open. */
+export interface ProjectPrefs {
   sort: NavSort;
+  expanded: string[];
 }
 
-/** The sidebar on this device: `tinyfold:<installationId>:sidebar`. */
+/** The sidebar on this device: `tinyfold:<installationId>:sidebar` (docs/etapas/09-pastas.md, decision 1). */
 export interface SidebarPrefs {
   collapsed: boolean;
-  sections: Record<string, Partial<Record<SectionKind, SectionPrefs>>>;
+  projects: Record<string, ProjectPrefs>;
 }
 
 export const sidebarPrefsKey = (installationId: string) => `tinyfold:${installationId}:sidebar`;
 
-export const defaultSectionPrefs: SectionPrefs = { open: true, sort: 'recent' };
+export const defaultProjectPrefs: ProjectPrefs = { sort: 'recent', expanded: [] };
 
-function readSection(value: unknown): SectionPrefs | null {
+function readProject(value: unknown): ProjectPrefs | null {
   if (!value || typeof value !== 'object') return null;
-  const { open, sort } = value as Record<string, unknown>;
+  const { sort, expanded } = value as Record<string, unknown>;
   return {
-    open: typeof open === 'boolean' ? open : defaultSectionPrefs.open,
-    sort: NAV_SORTS.includes(sort as NavSort) ? (sort as NavSort) : defaultSectionPrefs.sort,
+    sort: NAV_SORTS.includes(sort as NavSort) ? (sort as NavSort) : defaultProjectPrefs.sort,
+    expanded: Array.isArray(expanded) ? [...new Set(expanded.filter((id) => typeof id === 'string'))] : [],
   };
 }
 
-/** Reads stored preferences tolerantly: anything invalid falls back to the defaults. */
+/**
+ * Reads stored preferences tolerantly: anything invalid falls back to the defaults, and the per-section
+ * format of stage 08 (`sections`) is dropped, so the order goes back to Recentes once.
+ */
 export function parseSidebarPrefs(raw: string | null): SidebarPrefs {
   let value: unknown = null;
   try {
@@ -36,30 +37,20 @@ export function parseSidebarPrefs(raw: string | null): SidebarPrefs {
     // Broken preferences start over.
   }
   const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
-  const sections: SidebarPrefs['sections'] = {};
-  if (record.sections && typeof record.sections === 'object')
-    for (const [projectId, entry] of Object.entries(record.sections)) {
-      if (!entry || typeof entry !== 'object') continue;
-      const documents = readSection((entry as Record<string, unknown>).documents);
-      const drawings = readSection((entry as Record<string, unknown>).drawings);
-      sections[projectId] = { ...(documents ? { documents } : {}), ...(drawings ? { drawings } : {}) };
+  const projects: SidebarPrefs['projects'] = {};
+  if (record.projects && typeof record.projects === 'object')
+    for (const [projectId, entry] of Object.entries(record.projects)) {
+      const prefs = readProject(entry);
+      if (prefs) projects[projectId] = prefs;
     }
-  return { collapsed: record.collapsed === true, sections };
+  return { collapsed: record.collapsed === true, projects };
 }
 
-export function sectionPrefs(prefs: SidebarPrefs, projectId: string, kind: SectionKind): SectionPrefs {
-  return prefs.sections[projectId]?.[kind] ?? defaultSectionPrefs;
-}
+/** A project's preferences, or null on the first visit to it from this device. */
+export const projectPrefs = (prefs: SidebarPrefs, projectId: string): ProjectPrefs | null =>
+  prefs.projects[projectId] ?? null;
 
-export function withSection(
-  prefs: SidebarPrefs,
-  projectId: string,
-  kind: SectionKind,
-  patch: Partial<SectionPrefs>,
-): SidebarPrefs {
-  const current = sectionPrefs(prefs, projectId, kind);
-  return {
-    ...prefs,
-    sections: { ...prefs.sections, [projectId]: { ...prefs.sections[projectId], [kind]: { ...current, ...patch } } },
-  };
+export function withProject(prefs: SidebarPrefs, projectId: string, patch: Partial<ProjectPrefs>): SidebarPrefs {
+  const current = projectPrefs(prefs, projectId) ?? defaultProjectPrefs;
+  return { ...prefs, projects: { ...prefs.projects, [projectId]: { ...current, ...patch } } };
 }

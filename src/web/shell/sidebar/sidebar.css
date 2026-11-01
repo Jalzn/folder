@@ -1,12 +1,12 @@
 /*
- * The sidebar, variant A (docs/interface/sidebar.md): 248 px; 16 px icons at x=16, text at x=40, counts and
- * meta aligned at x=232; 28 px rows of radius 6; header and footer of 44 px.
+ * The sidebar (docs/interface/pastas.md §1, over variant A of sidebar.md): 256 px; a chevron column at x 12–24,
+ * 16 px icons at x=28, text at x=52, counts and meta ending at x=240; 28 px rows of radius 6; header and footer
+ * of 44 px.
  */
 
 /* One file per part, in cascade order: a later part may restyle an earlier one, as a result row does a row. */
 @import "./sidebar-panel.css";
 @import "./sidebar-row.css";
-@import "./sidebar-section.css";
 @import "./sidebar-footer.css";
 @import "./rail.css";
 @import "./sidebar-search.css";

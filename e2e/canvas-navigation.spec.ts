@@ -49,7 +49,7 @@ test('a project keeps its drawings through the sidebar, the Índice, the trash a
   await expect(row).toBeVisible();
   await (await projectSearchbox(page)).fill('Uma busca sem resultado neste desenho');
   await expect(row).toHaveCount(0);
-  await expect(results.getByRole('region', { name: 'Desenhos: 0' })).toBeVisible();
+  await expect(results.getByRole('region', { name: 'Itens: 0' })).toBeVisible();
   await (await projectSearchbox(page)).fill(drawingTitle);
   await row.click();
   await expect(page).toHaveURL(drawingUrl);
@@ -69,7 +69,7 @@ test('a project keeps its drawings through the sidebar, the Índice, the trash a
   const archived = page.getByText('Projeto arquivado. O conteúdo está preservado.');
   await expect(archived).toBeVisible();
   await showSidebar(page);
-  await expect(projectNavigation(page).getByRole('button', { name: 'Novo desenho', exact: true })).toHaveCount(0);
+  await expect(projectNavigation(page).getByRole('button', { name: 'Novo item', exact: true })).toHaveCount(0);
   await expect(projectNavigation(page).getByRole('link', { name: new RegExp(`^${drawingTitle}`) })).toBeVisible();
   await hideSidebar(page);
   await page.getByRole('main').getByRole('button', { name: 'Desarquivar', exact: true }).click();

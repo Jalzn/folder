@@ -8,6 +8,7 @@ import {
   type MenuProps as AriaMenuProps,
   MenuSection as AriaMenuSection,
   Header,
+  type MenuSectionProps,
   MenuTrigger,
   type PopoverProps,
   Separator,
@@ -86,9 +87,17 @@ export function MenuItem({ icon, shortcut, description, detail, danger = false, 
   );
 }
 
-export function MenuSection<T extends object>({ title, children }: { title?: string; children: ReactNode }) {
+/** A titled group of a menu; it may hold its own selection, as an order chosen among options. */
+export function MenuSection<T extends object>({
+  title,
+  children,
+  ...props
+}: { title?: string; children: ReactNode } & Pick<
+  MenuSectionProps<T>,
+  'selectionMode' | 'selectedKeys' | 'onSelectionChange' | 'disallowEmptySelection'
+>) {
   return (
-    <AriaMenuSection<T> className="menu-section">
+    <AriaMenuSection<T> {...props} className="menu-section">
       {title && <Header className="menu-section__header">{title}</Header>}
       {children}
     </AriaMenuSection>

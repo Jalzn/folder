@@ -1,13 +1,12 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { useApp } from '../AppProvider';
 import {
+  type ProjectPrefs,
   parseSidebarPrefs,
-  type SectionKind,
-  type SectionPrefs,
+  projectPrefs,
   type SidebarPrefs,
-  sectionPrefs,
   sidebarPrefsKey,
-  withSection,
+  withProject,
 } from './sidebar-prefs';
 
 const stores = new Map<string, { prefs: SidebarPrefs; listeners: Set<() => void> }>();
@@ -27,7 +26,7 @@ function storeFor(installationId: string) {
   return store;
 }
 
-/** The collapsed rail and each section's state and order, kept on this device and shared by the shell. */
+/** The collapsed rail and each project's order and open folders, kept on this device and shared by the shell. */
 export function useSidebarPrefs() {
   const installationId = useApp().owner.installationId;
   const store = storeFor(installationId);
@@ -54,8 +53,8 @@ export function useSidebarPrefs() {
   return {
     collapsed: prefs.collapsed,
     setCollapsed: (collapsed: boolean) => save({ ...prefs, collapsed }),
-    section: (projectId: string, kind: SectionKind) => sectionPrefs(prefs, projectId, kind),
-    setSection: (projectId: string, kind: SectionKind, patch: Partial<SectionPrefs>) =>
-      save(withSection(prefs, projectId, kind, patch)),
+    /** A project's order and open folders, or null on its first visit from this device. */
+    project: (projectId: string) => projectPrefs(prefs, projectId),
+    setProject: (projectId: string, patch: Partial<ProjectPrefs>) => save(withProject(prefs, projectId, patch)),
   };
 }

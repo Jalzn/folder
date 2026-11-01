@@ -8,6 +8,22 @@ import type { useShortcutActions } from './use-shortcut-actions';
 
 type Actions = ReturnType<typeof useShortcutActions>;
 
+/** The app's G chords, one for every listener: the Itens tree hands a key over while one is pending. */
+const chords = createChords();
+
+/** Whether a G waits for its second key. */
+export const chordPending = () => chords.pending;
+
+/**
+ * Hands a key to the shortcuts, as if pressed on the page, from a list that would take it for itself, such as
+ * a tree's type-to-select.
+ */
+export function forwardToShortcuts(event: { key: string; shiftKey: boolean }) {
+  document.body.dispatchEvent(
+    new KeyboardEvent('keydown', { key: event.key, shiftKey: event.shiftKey, bubbles: true }),
+  );
+}
+
 /** Returns focus from a text field to the page, the first Esc in a field. */
 function leaveField(field: EventTarget | null) {
   if (field instanceof HTMLElement) field.blur();
@@ -25,7 +41,7 @@ export function useShortcuts(actions: Actions) {
   const latest = useRef(actions);
   latest.current = actions;
   useEffect(() => {
-    const chords = createChords();
+    chords.reset();
     const onKeyDown = (event: KeyboardEvent) => {
       // Keys that confirm or cancel an IME composition belong to it, Esc included.
       if (isComposing(event)) return;

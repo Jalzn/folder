@@ -16,6 +16,7 @@
   top: 0;
   right: 0;
   bottom: 0;
+  z-index: 3;
   width: 1px;
   background: var(--line);
   pointer-events: none;
@@ -35,7 +36,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 8px;
+  padding: 0 8px 0 18px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;

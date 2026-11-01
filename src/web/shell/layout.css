@@ -1,7 +1,7 @@
 /* The shell (docs/etapas/08-fundacao.md, "Layout e larguras"). */
 .app-layout {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: 256px minmax(0, 1fr);
   height: 100dvh;
   background: var(--bg);
   color: var(--text);
@@ -80,7 +80,7 @@
   top: 0;
   bottom: 0;
   left: 0;
-  width: 248px;
+  width: 256px;
   box-shadow: var(--shadow-float);
   outline: none;
 }

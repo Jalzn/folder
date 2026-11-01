@@ -2,24 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import type { NavSort } from '@tinyfold/workspace/domain';
 import { api, queryClient } from '../api';
 
-export interface NavigationSorts {
-  documents: NavSort;
-  drawings: NavSort;
-}
-
 /**
- * The sidebar of a project: each section's total, pinned items and first items (the server's default of
- * eight), open tasks and the trash.
+ * The sidebar of a project: the Itens tree (the root's pins, the folders and the loose items, each level up
+ * to the server's default of eight in `sort` order), the open tasks and the trash count.
  */
-export function useProjectNavigation(projectId: string | null, sorts: NavigationSorts) {
+export function useProjectNavigation(projectId: string | null, sort: NavSort) {
   return useQuery({
-    queryKey: ['workspace', 'navigation', projectId, sorts],
-    queryFn: () =>
-      api.workspace.projectNavigation({
-        projectId: projectId ?? '',
-        documentsSort: sorts.documents,
-        drawingsSort: sorts.drawings,
-      }),
+    queryKey: ['workspace', 'navigation', projectId, sort],
+    queryFn: () => api.workspace.projectNavigation({ projectId: projectId ?? '', sort }),
     enabled: projectId !== null,
   });
 }

@@ -1,17 +1,22 @@
 import { expect, type Page } from '@playwright/test';
 import { openBoard, openTrash, projectNavigation, showSidebar } from './navigation.js';
 
-/** Creates a document in the current project, with the "+" of the sidebar's Documentos, and opens it. */
-export async function newDocument(page: Page) {
+/** Creates an item at the root of the current project, from the "+" of the sidebar's Itens. */
+async function newItem(page: Page, kind: 'Documento' | 'Desenho') {
   await showSidebar(page);
-  await projectNavigation(page).getByRole('button', { name: 'Novo documento', exact: true }).click();
+  await projectNavigation(page).getByRole('button', { name: 'Novo item', exact: true }).click();
+  await page.getByRole('menuitem', { name: kind, exact: true }).click();
+}
+
+/** Creates a document in the current project, from the "+" of the sidebar's Itens, and opens it. */
+export async function newDocument(page: Page) {
+  await newItem(page, 'Documento');
   await expect(page.getByRole('textbox', { name: 'Título do documento' })).toBeVisible();
 }
 
-/** Creates a drawing in the current project, with the "+" of the sidebar's Desenhos, and opens it. */
+/** Creates a drawing in the current project, from the "+" of the sidebar's Itens, and opens it. */
 export async function newDrawing(page: Page) {
-  await showSidebar(page);
-  await projectNavigation(page).getByRole('button', { name: 'Novo desenho', exact: true }).click();
+  await newItem(page, 'Desenho');
   await expect(page.getByTestId('canvas-editor')).toBeVisible();
 }
 
