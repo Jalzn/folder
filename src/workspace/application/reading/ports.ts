@@ -5,12 +5,13 @@ import type { DocumentBlock, TaskSource } from '../../domain/models.js';
 import type { BoardKey, ProjectKey, SearchItemType, SearchKey } from '../../domain/paging.js';
 import type { ProjectColor } from '../../domain/project.js';
 import type { Calendar } from '../calendar.js';
+import type { EmbedReader } from '../embeds/ports.js';
 
 /**
  * Queries of the agent read model. Nothing in the trash is ever returned: a trashed item reads as
  * missing, and a trashed source document has no title.
  */
-export interface WorkspaceReader {
+export interface WorkspaceReader extends EmbedReader {
   projectsWithCounts(query: ProjectQuery): Promise<Page<ProjectWithCounts>>;
   searchItems(query: SearchQuery): Promise<Page<SearchHit>>;
   documentForReading(id: string): Promise<DocumentForReading | undefined>;

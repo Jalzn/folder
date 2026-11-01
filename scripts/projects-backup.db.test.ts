@@ -23,6 +23,7 @@ test('restores project colours and order, pins and task sources with their title
     const tinyfold = await workspace.createProject({ ...request(), name: 'Tinyfold' });
     const reforma = await workspace.createProject({ ...request(), name: 'Reforma', color: 'green' });
     await workspace.moveProject({ ...request(), id: reforma.id, beforeProjectId: tinyfold.id });
+    const embedded = await workspace.createCanvas({ ...request(), projectId: tinyfold.id, title: 'Navegação' });
     const pinned = await workspace.createDocument({ ...request(), projectId: tinyfold.id, title: 'Visão' });
     const { pinnedAt } = await workspace.pinItem({ type: 'document', id: pinned.id });
     const draft = await workspace.createDocument({
@@ -36,6 +37,17 @@ test('restores project colours and order, pins and task sources with their title
       title: 'Gerar token',
       source: { documentId: draft.id, excerpt: 'Gerar token pessoal' },
     });
+    // A document with embeds keeps its blocks: they are its JSON.
+    const withEmbeds = await workspace.createDocument({
+      ...request(),
+      projectId: tinyfold.id,
+      title: 'Com incorporados',
+      content: [
+        { id: 'e1', type: 'taskEmbed', props: { taskId: task.id }, children: [] },
+        { id: 'e2', type: 'drawingEmbed', props: { canvasId: embedded.id }, children: [] },
+      ],
+    });
+    const embedding = await workspace.getDocument({ id: withEmbeds.id });
     const trashed = await workspace.deleteDocument({ ...request(), id: draft.id, expectedVersion: 1 });
     await workspace.purgeDocument({ ...request(), id: draft.id, expectedVersion: trashed.version });
     const projects = await workspace.listProjects();
@@ -55,6 +67,11 @@ test('restores project colours and order, pins and task sources with their title
         ['Tinyfold', 'violet', 1],
       ]);
       expect((await copy.getDocument({ id: pinned.id })).pinnedAt).toBe(pinnedAt);
+      expect(await copy.getDocument({ id: withEmbeds.id })).toEqual(embedding);
+      expect(await copy.resolveEmbeds({ taskIds: [task.id], canvasIds: [embedded.id] })).toMatchObject({
+        tasks: [{ state: 'live', id: task.id }],
+        drawings: [{ state: 'live', id: embedded.id }],
+      });
       expect(await copy.listTasks()).toEqual(tasks);
       expect(tasks.tasks[0]).toMatchObject({
         id: task.id,

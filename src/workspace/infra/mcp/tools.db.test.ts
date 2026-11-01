@@ -230,6 +230,39 @@ describe('agent read tools', () => {
       pages += 1;
     }
     expect(pages).toBeGreaterThan(5);
+    // A document with 200 embeds, the most there can be, of heavy titles in heavily named columns, half of
+    // them in the trash, read to its last page.
+    const embeds = [];
+    for (let index = 0; index < 100; index += 1) {
+      const task = await agent.service.createTask({
+        ...request(),
+        title: heavy(300),
+        projectId,
+        columnId: columns[index % columns.length]?.id,
+      });
+      const drawing = await agent.service.createCanvas({ ...request(), title: heavy(300), projectId });
+      if (index % 2) {
+        await agent.service.deleteTask({ ...request(), id: task.id, expectedVersion: 1 });
+        await agent.service.deleteCanvas({ ...request(), id: drawing.id, expectedVersion: 1 });
+      }
+      embeds.push({ type: 'taskEmbed', props: { taskId: task.id }, children: [] });
+      embeds.push({ type: 'drawingEmbed', props: { canvasId: drawing.id }, children: [] });
+    }
+    const embedding = await agent.service.createDocument({
+      ...request(),
+      title: heavy(300),
+      projectId,
+      content: [...embeds, paragraph('palavra '.repeat(8_000))],
+    });
+    let embedPages = 0;
+    let embedCursor: string | undefined;
+    do {
+      const next = await record('read_document', { id: embedding.id, ...(embedCursor ? { cursor: embedCursor } : {}) });
+      expect(next.isError).toBe(false);
+      embedCursor = /"cursor":"([0-9a-f]+:\d+)"/u.exec(next.text)?.[1];
+      embedPages += 1;
+    } while (embedCursor);
+    expect(embedPages).toBeGreaterThan(2);
     const filtered = await record('list_tasks', {
       columns: columns.map((column) => column.name),
       labels: [`${heavy(27)}${40}`, `${heavy(27)}${50}`],

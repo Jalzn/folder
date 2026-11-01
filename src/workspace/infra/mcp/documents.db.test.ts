@@ -181,6 +181,85 @@ describe('read_document', () => {
     });
   });
 
+  it('writes embeds as tinyfold: links, and an item in the trash, deleted or never there as unavailable', async () => {
+    const live = await agent.service.createTask({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Gerar [token] pessoal',
+      columnId: INITIAL_COLUMN_IDS.doing,
+    });
+    const binned = await agent.service.createTask({ ...request(), projectId: agent.project.id, title: 'Na lixeira' });
+    await agent.service.deleteTask({ ...request(), id: binned.id, expectedVersion: 1 });
+    const canvas = await agent.service.createCanvas({ ...request(), projectId: agent.project.id, title: 'Navegação' });
+    const purged = await agent.service.createCanvas({ ...request(), projectId: agent.project.id, title: 'Apagado' });
+    await agent.service.deleteCanvas({ ...request(), id: purged.id, expectedVersion: 1 });
+    await agent.service.purgeCanvas({ ...request(), id: purged.id, expectedVersion: 2 });
+    const never = '7d1b6c1e-1f3e-4a8b-9c2d-0a1b2c3d4e5f';
+    const task = (id: string) => ({ type: 'taskEmbed', props: { taskId: id }, children: [] });
+    const drawing = (id: string) => ({ type: 'drawingEmbed', props: { canvasId: id }, children: [] });
+    const document = await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Com incorporados',
+      content: [
+        paragraph('Antes'),
+        task(live.id),
+        drawing(canvas.id),
+        task(binned.id),
+        drawing(purged.id),
+        task(never),
+      ],
+    });
+    const { text } = await agent.call('read_document', { id: document.id });
+    expect(text.split('\n\n---\n\n')[1]).toBe(
+      [
+        'Antes',
+        `[Tarefa: Gerar \\[token\\] pessoal (Em andamento)](tinyfold:task/${live.id})`,
+        `[Desenho: Navegação](tinyfold:drawing/${canvas.id})`,
+        '[Item indisponível]',
+        '[Item indisponível]',
+        '[Item indisponível]',
+      ].join('\n\n'),
+    );
+    expect(text).not.toContain('Na lixeira');
+    // The IDs of the links are what read_task and read_drawing take.
+    expect((await agent.call('read_task', { id: live.id })).text).toContain('# Gerar [token] pessoal');
+    expect((await agent.call('read_drawing', { id: canvas.id, image: false })).isError).toBe(false);
+    const tool = agent.tools.find((candidate) => candidate.name === 'read_document');
+    expect(tool?.description).toContain(
+      'Tarefas e desenhos incorporados aparecem como links tinyfold:task/<id> e tinyfold:drawing/<id>; leia-os com ' +
+        'read_task e read_drawing, que recebem esses IDs. [Item indisponível] é um item na lixeira ou excluído.',
+    );
+  });
+
+  it('refuses a cursor when an embedded task changes its title or column between the pages', async () => {
+    const task = await agent.service.createTask({ ...request(), projectId: agent.project.id, title: 'Antes' });
+    const blocks = [
+      { type: 'taskEmbed', props: { taskId: task.id }, children: [] },
+      ...Array.from({ length: 15 }, (_, index) => paragraph(`${index} ${'palavra '.repeat(400)}`)),
+    ];
+    const document = await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Longo',
+      content: blocks,
+    });
+    const first = await agent.call('read_document', { id: document.id });
+    const cursor = /"cursor":"([0-9a-f]+:\d+)"/u.exec(first.text)?.[1];
+    expect(cursor).toBeDefined();
+    await agent.service.saveTaskText({
+      ...request(),
+      id: task.id,
+      expectedTextVersion: 1,
+      title: 'Depois',
+      description: [],
+    });
+    expect(await agent.call('read_document', { id: document.id, cursor })).toEqual({
+      isError: true,
+      text: 'O documento mudou desde a primeira página. Leia de novo sem cursor.',
+    });
+  });
+
   it('keeps the space at a mid-line page cut', async () => {
     const document = await agent.service.createDocument({
       ...request(),

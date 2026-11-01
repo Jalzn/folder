@@ -134,6 +134,42 @@ describe('workspace persistence and adversarial cases', () => {
     expect((await service.getDocument({ id: document.id })).version).toBe(1);
   });
 
+  it('saves and creates documents with task and drawing embeds, and refuses bad ones before writing', async () => {
+    const task = await service.createTask({ ...request(), projectId: project.id, title: 'Incorporada' });
+    const canvas = await service.createCanvas({ ...request(), projectId: project.id, title: 'Figura' });
+    const embeds = [
+      { id: 'e1', type: 'taskEmbed', props: { taskId: task.id }, children: [] },
+      { id: 'p1', type: 'paragraph', content: [{ type: 'text', text: 'Entre os dois', styles: {} }], children: [] },
+      { id: 'e2', type: 'drawingEmbed', props: { canvasId: canvas.id }, children: [] },
+    ];
+    const created = await service.createDocument({
+      ...request(),
+      projectId: project.id,
+      title: 'Com',
+      content: embeds,
+    });
+    expect((await service.getDocument({ id: created.id })).content).toEqual(embeds);
+    const saved = await service.saveDocument({
+      ...request(),
+      id: created.id,
+      expectedVersion: 1,
+      title: 'Com',
+      content: [...embeds].reverse(),
+    });
+    const stored = await service.getDocument({ id: created.id });
+    expect(stored).toMatchObject({ version: saved.version, plainText: 'Entre os dois' });
+    expect(stored.content.map((block) => block.id)).toEqual(['e2', 'p1', 'e1']);
+    const save = (content: unknown) =>
+      service.saveDocument({ ...request(), id: created.id, expectedVersion: saved.version, title: 'Com', content });
+    expect(() => save([{ type: 'taskEmbed', props: { taskId: 'nada' }, children: [] }])).toThrow(
+      'As propriedades do item incorporado são inválidas.',
+    );
+    expect(() =>
+      save(Array.from({ length: 201 }, () => ({ type: 'drawingEmbed', props: { canvasId: canvas.id }, children: [] }))),
+    ).toThrow('Um documento aceita até 200 itens incorporados.');
+    expect((await service.getDocument({ id: created.id })).version).toBe(saved.version);
+  });
+
   it('retries a save once, rejects request reuse and leaves a compact acknowledgment', async () => {
     const document = await service.createDocument({ ...request(), projectId: project.id });
     const input = {

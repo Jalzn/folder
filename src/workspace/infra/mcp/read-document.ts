@@ -11,7 +11,9 @@ export const readDocumentTool = (reading: ReadingContext) =>
     title: 'Ler documento',
     description:
       'Lê um documento em Markdown, com projeto, versão e as tarefas criadas a partir dele. ' +
-      'Documentos longos vêm em páginas; o fim de cada página diz como pedir a próxima.',
+      'Documentos longos vêm em páginas; o fim de cada página diz como pedir a próxima. Tarefas e desenhos ' +
+      'incorporados aparecem como links tinyfold:task/<id> e tinyfold:drawing/<id>; leia-os com read_task e ' +
+      'read_drawing, que recebem esses IDs. [Item indisponível] é um item na lixeira ou excluído.',
     inputSchema: ReadDocumentInput,
     annotations: readOnlyAnnotations,
     async handler(input) {

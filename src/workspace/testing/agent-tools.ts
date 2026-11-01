@@ -72,6 +72,10 @@ export function useAgentTools() {
     get service() {
       return service;
     },
+    /** The tools themselves, for their names, descriptions and schemas. */
+    get tools() {
+      return tools;
+    },
     /** The database under the tools, for rows the service no longer writes. */
     get db() {
       return db;

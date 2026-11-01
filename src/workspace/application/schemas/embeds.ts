@@ -1,0 +1,12 @@
+import { z } from 'zod';
+import { EMBED_ID, EMBED_LIMITS } from '../../domain/embeds.js';
+
+/** The IDs embed blocks take (EMBED_ID), so every block the validator accepts can be resolved. */
+const embedIds = z
+  .array(z.string().regex(EMBED_ID, 'Identificador de item inválido.'))
+  .max(EMBED_LIMITS.perDocument, `Um documento aceita até ${EMBED_LIMITS.perDocument} itens incorporados.`);
+
+/** The items one document embeds, at most EMBED_LIMITS.perDocument of each kind. */
+export const ResolveEmbedsInput = z.strictObject({ taskIds: embedIds, canvasIds: embedIds });
+
+export type ResolveEmbedsInput = z.infer<typeof ResolveEmbedsInput>;

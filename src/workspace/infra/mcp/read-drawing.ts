@@ -22,7 +22,8 @@ export const readDrawingTool = (reading: ReadingContext) =>
     description:
       'Lê um desenho do Tinyfold como imagem PNG e como estrutura textual: formas, textos, quadros, setas ' +
       'e o que cada seta liga, com coordenadas. A estrutura sempre reflete a versão atual; a imagem pode ser ' +
-      'de uma versão anterior, o que a resposta informa. Use image: false quando a estrutura bastar.',
+      'de uma versão anterior, o que a resposta informa. Use image: false quando a estrutura bastar. Recebe o ' +
+      'ID de um link tinyfold:drawing/<id> de read_document.',
     inputSchema: ReadDrawingInput,
     annotations: readOnlyAnnotations,
     async handler(input) {

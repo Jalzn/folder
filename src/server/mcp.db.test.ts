@@ -150,6 +150,19 @@ describe('MCP protocol', () => {
     const search = JSON.parse(textOf(await call('search', { query: 'token' }))) as { items: { id: string }[] };
     expect(search.items.map((item) => item.id)).toEqual([task.id, document.id]);
     expect(textOf(await call('read_document', { id: document.id }))).toContain('Gerar token pessoal');
+    // The embeds the interface writes come back as links to follow with read_task and read_drawing.
+    const embedding = await workspace.createDocument({
+      requestId: randomUUID(),
+      title: 'Visão',
+      projectId: project.id,
+      content: [
+        { id: 'e1', type: 'taskEmbed', props: { taskId: task.id }, children: [] },
+        { id: 'e2', type: 'drawingEmbed', props: { canvasId: canvas.id }, children: [] },
+      ],
+    });
+    expect(textOf(await call('read_document', { id: embedding.id }))).toContain(
+      `[Tarefa: Gerar token (A fazer)](tinyfold:task/${task.id})\n\n[Desenho: Fluxo](tinyfold:drawing/${canvas.id})`,
+    );
     const drawing = await call('read_drawing', { id: canvas.id });
     expect(textOf(drawing)).toContain('Imagem: versão 1 (atual), 800×600 px');
     const image = (drawing.content as { type: string; data?: string; mimeType?: string }[])[1];

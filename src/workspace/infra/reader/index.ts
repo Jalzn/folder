@@ -3,6 +3,7 @@ import type { WorkspaceReader } from '../../application/reading/ports.js';
 import type { WorkspaceTables } from '../db.js';
 import { canvasReads } from './canvases.js';
 import { documentReads } from './documents.js';
+import { embedReads } from './embeds.js';
 import { folderReads } from './folders.js';
 import { projectReads } from './projects.js';
 import { searchReads } from './search.js';
@@ -18,5 +19,6 @@ export function workspaceReader(connection: Database): WorkspaceReader {
     ...canvasReads(db),
     ...taskReads(db),
     ...folderReads(db),
+    ...embedReads(db),
   };
 }

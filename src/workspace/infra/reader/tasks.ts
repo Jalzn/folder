@@ -17,7 +17,7 @@ const hasSource = <Row extends { excerpt: string | null; kept_title: string | nu
 ): row is Row & { excerpt: string; kept_title: string } => row.excerpt !== null && row.kept_title !== null;
 
 /** The active labels of the tasks, in alphabetical order: links to deleted labels stay hidden. */
-async function taskLabels(db: Kysely<WorkspaceTables>, taskIds: readonly string[]) {
+export async function taskLabels(db: Kysely<WorkspaceTables>, taskIds: readonly string[]) {
   const byTask = new Map<string, TaskLabel[]>();
   if (!taskIds.length) return byTask;
   const rows = await db

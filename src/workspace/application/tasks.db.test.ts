@@ -284,6 +284,24 @@ describe('tasks', () => {
     expect((await service.listLabels({})).labels).toMatchObject([{ id: mcp, taskCount: 0 }]);
   });
 
+  it('refuses embeds in a description, which only documents take', async () => {
+    const embed = [{ type: 'taskEmbed', props: { taskId: randomUUID() }, children: [] }];
+    expect(() =>
+      service.createTask({ ...request(), projectId: project.id, title: 'Com card', description: embed }),
+    ).toThrow('A descrição não aceita itens incorporados.');
+    const created = await service.createTask({ ...request(), projectId: project.id, title: 'Sem card' });
+    expect(() =>
+      service.saveTaskText({
+        ...request(),
+        id: created.id,
+        expectedTextVersion: 1,
+        title: 'Sem card',
+        description: embed,
+      }),
+    ).toThrow('A descrição não aceita itens incorporados.');
+    expect((await service.getTask({ id: created.id })).description).toEqual([]);
+  });
+
   it('refuses the keys the task writes do not know, such as the status and title a tab from before B6 sends', async () => {
     const legacy = <T>(input: object) => input as T;
     type Create = Parameters<typeof service.createTask>[0];

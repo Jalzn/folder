@@ -6,6 +6,7 @@ import { readingContext } from '../reading-context.js';
 import { canvasOperations } from './canvases.js';
 import { columnOperations } from './columns.js';
 import { documentOperations } from './documents.js';
+import { embedOperations } from './embeds.js';
 import { folderOperations } from './folders.js';
 import { labelOperations } from './labels.js';
 import { moveOperations } from './moves.js';
@@ -21,6 +22,7 @@ export type { Operation } from './operation.js';
 export function workspaceOperations(db: Database, clock = () => new Date(), timeZone: TimeZoneSource = utc) {
   const ctx = workspaceContext(db, clock, timeZone);
   const navigation = navigationContext(db, clock, timeZone);
+  const reading = readingContext(db, clock, timeZone);
   return {
     ...projectOperations(ctx),
     ...folderOperations(ctx),
@@ -32,6 +34,7 @@ export function workspaceOperations(db: Database, clock = () => new Date(), time
     ...trashOperations(ctx, navigation),
     ...pinOperations(ctx),
     ...moveOperations(ctx),
-    ...navigationOperations(navigation, readingContext(db, clock, timeZone)),
+    ...navigationOperations(navigation, reading),
+    ...embedOperations(reading),
   };
 }

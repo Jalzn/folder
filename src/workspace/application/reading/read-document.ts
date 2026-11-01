@@ -1,16 +1,20 @@
 import { AppError } from '@tinyfold/core/application';
+import { embedIds } from '../../domain/embeds.js';
 import { textFingerprint } from '../../domain/fingerprint.js';
 import { documentToMarkdown } from '../../domain/markdown.js';
 import { pageMarkdown } from '../../domain/markdown-pages.js';
 import { documentCursor, readDocumentCursor } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
+import { agentEmbedHref, embedResolver } from '../embeds/embed-resolver.js';
 import type { ReadingContext } from './ports.js';
 import type { ReadDocumentInput } from './schemas.js';
 
 /**
  * A document as Markdown, in pages pinned to one text: a cursor taken from an earlier text is
- * refused. The first page also lists the tasks created from it. The read is short: conversion and
- * paging run after the transaction.
+ * refused. Its embeds are resolved in the same read and written as `tinyfold:` links, so a change
+ * to an embedded task's title or column between pages changes the text, and the cursor is refused
+ * too (stage 11, decision 13). The first page also lists the tasks created from it. The read is
+ * short: conversion and paging run after the transaction.
  */
 export async function readDocument(ctx: ReadingContext, input: ReadDocumentInput) {
   const cursor = input.cursor === undefined ? undefined : readDocumentCursor(input.cursor);
@@ -20,11 +24,11 @@ export async function readDocument(ctx: ReadingContext, input: ReadDocumentInput
     const tasks = cursor
       ? { items: [], total: 0 }
       : await reader.tasksFromDocument(document.id, READING_LIMITS.document.originTasks);
-    return { document, tasks };
+    return { document, tasks, embeds: await reader.embeds(embedIds(document.content)) };
   });
   if (!found) throw new AppError('NOT_FOUND', 'Documento não encontrado ou na lixeira.');
   const { content, ...document } = found.document;
-  const markdown = documentToMarkdown(content);
+  const markdown = documentToMarkdown(content, { embeds: embedResolver(found.embeds, agentEmbedHref) });
   const textPrint = textFingerprint(markdown);
   if (cursor && cursor.textPrint !== textPrint)
     throw new AppError('VERSION_CONFLICT', 'O documento mudou desde a primeira página. Leia de novo sem cursor.');
