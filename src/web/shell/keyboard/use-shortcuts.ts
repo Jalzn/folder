@@ -24,10 +24,14 @@ export function forwardToShortcuts(event: { key: string; shiftKey: boolean }) {
   );
 }
 
-/** Returns focus from a text field to the page, the first Esc in a field. */
+/**
+ * Returns focus from a text field to the region it is in, the first Esc in a field: the task drawer for its
+ * title and description, so its keys and the next Esc stay there, or else the page.
+ */
 function leaveField(field: EventTarget | null) {
+  const drawer = field instanceof HTMLElement ? field.closest<HTMLElement>('[data-region="drawer"]') : null;
   if (field instanceof HTMLElement) field.blur();
-  document.getElementById('main-content')?.focus({ preventScroll: true });
+  (drawer ?? document.getElementById('main-content'))?.focus({ preventScroll: true });
 }
 
 /**
@@ -63,7 +67,7 @@ export function useShortcuts(actions: Actions) {
         // The document editor leaves itself on Esc; focus then belongs to the page, not to the body.
         if (target.editable && !target.inDrawing)
           requestAnimationFrame(() => {
-            if (document.activeElement === document.body) leaveField(null);
+            if (document.activeElement === document.body) leaveField(event.target);
           });
         return;
       }

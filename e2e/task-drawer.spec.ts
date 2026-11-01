@@ -121,3 +121,21 @@ test('a description typed offline survives a reload, and ⌘↵ in a code block 
     'Pauta: prazos e custos',
   );
 });
+
+test('Esc in the description leaves it for the drawer, whose keys keep working', async ({ page }) => {
+  await login(page);
+  await createProject(page, `Esc na descrição ${Date.now()}`);
+  await newTask(page, 'Revisar o orçamento');
+  await openDrawer(page, 'Revisar o orçamento');
+  const region = openTask(page);
+  await region.getByRole('textbox', { name: 'Descrição da tarefa' }).click();
+  await page.keyboard.type('Conferir os valores');
+  await page.keyboard.press('Escape');
+  await expect(region).toBeFocused();
+  // ⌥↑ steps the drawer's height from there, and the next Esc closes it.
+  const before = (await region.boundingBox())?.height ?? 0;
+  await page.keyboard.press('Alt+ArrowUp');
+  await expect.poll(async () => (await region.boundingBox())?.height ?? 0).toBeGreaterThan(before);
+  await page.keyboard.press('Escape');
+  await expect(region).toHaveCount(0);
+});
