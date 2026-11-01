@@ -1,18 +1,19 @@
 import './items-header.css';
 import { Link } from '@tanstack/react-router';
 import { NAV_SORTS, type NavSort } from '@tinyfold/workspace/domain';
-import { Ellipsis, FileText, FoldVertical, Plus, Shapes } from 'lucide-react';
+import { Ellipsis, FileText, Folder, FoldVertical, Plus, Shapes } from 'lucide-react';
 import { formatCount } from '../../lib/count';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { IconButton, Menu, MenuItem, MenuSection, MenuSeparator, MenuTrigger } from '../../ui';
 import { useApp } from '../AppProvider';
+import { useShellUi } from '../shell-ui';
 
 const sortLabels: Record<NavSort, string> = { recent: 'Recentes', title: 'A–Z', created: 'Criação' };
 
 /**
- * "Itens n" over the tree: the count opens the Índice; on hover or focus, "+" creates a document or a drawing
- * in the project (not in an archived one), and "⋯" orders the items and folds every folder.
+ * "Itens n" over the tree: the count opens the Índice; on hover or focus, "+" creates a document, a drawing
+ * or a folder in the project (not in an archived one), and "⋯" orders the items and folds every folder.
  */
 export function ItemsHeader({
   project,
@@ -30,6 +31,7 @@ export function ItemsHeader({
   onCollapseAll: () => void;
 }) {
   const app = useApp();
+  const ui = useShellUi();
   return (
     <div className="items-header">
       <span className="items-header__label">Itens</span>
@@ -42,13 +44,20 @@ export function ItemsHeader({
             <Menu
               aria-label={`Novo em ${project.name}`}
               placement="bottom start"
-              onAction={(key) => void (key === 'document' ? app.newDocument(project.id) : app.newCanvas(project.id))}
+              onAction={(key) => {
+                if (key === 'document') void app.newDocument(project.id);
+                else if (key === 'drawing') void app.newCanvas(project.id);
+                else ui.startFolder({ projectId: project.id });
+              }}
             >
               <MenuItem id="document" icon={<FileText size={16} />}>
                 Documento
               </MenuItem>
               <MenuItem id="drawing" icon={<Shapes size={16} />}>
                 Desenho
+              </MenuItem>
+              <MenuItem id="folder" icon={<Folder size={16} />}>
+                Pasta
               </MenuItem>
             </Menu>
           </MenuTrigger>

@@ -16,8 +16,8 @@ export function useExpandedFolders(projectId: string, folders: readonly NavFolde
     () => new Set((entry?.expanded ?? []).filter((id) => !known || known.has(id))),
     [entry, known],
   );
-  const write = (ids: Iterable<string>) =>
-    prefs.setProject(projectId, { expanded: [...new Set(ids)].filter((id) => !known || known.has(id)) });
+  const keep = (ids: Iterable<string>) => [...new Set(ids)].filter((id) => !known || known.has(id));
+  const write = (ids: Iterable<string>) => prefs.setProject(projectId, { expanded: keep(ids) });
 
   const arrival = open ? `${open.type}:${open.id}` : null;
   const handled = useRef<string | null | undefined>(undefined);
@@ -36,7 +36,8 @@ export function useExpandedFolders(projectId: string, folders: readonly NavFolde
     isExpanded: (id: string) => expanded.has(id),
     setExpanded: (ids: Iterable<string>) => write(ids),
     toggle: (id: string) => write(expanded.has(id) ? [...expanded].filter((open) => open !== id) : [...expanded, id]),
-    expand: (id: string) => write([...expanded, id]),
+    /** Opens a folder, even one the tree does not list yet, as a folder the server just created. */
+    expand: (id: string) => prefs.setProject(projectId, { expanded: [...new Set([...keep(expanded), id])] }),
     collapseAll: () => write([]),
   };
 }

@@ -22,6 +22,13 @@ export interface PageCommands {
   trash?: (() => void) | undefined;
 }
 
+/** A folder being named in the sidebar, before it exists: from "+", N, ⌘K or "Mover para pasta…". */
+export interface FolderDraft {
+  projectId: string;
+  /** After the folder is created, as moving an item into it; without it, a toast says it was created. */
+  onCreated?: ((folder: { id: string; name: string }) => void) | undefined;
+}
+
 interface ShellUi {
   layers: LayerStack;
   overlay: { open: boolean; search: boolean };
@@ -44,6 +51,10 @@ interface ShellUi {
   announcement: string;
   announce: (text: string) => void;
   page: { current: PageCommands };
+  /** The folder being named in the sidebar, which opens the sidebar when it is hidden. */
+  folderDraft: FolderDraft | null;
+  startFolder: (draft: FolderDraft) => void;
+  endFolder: () => void;
   /** Below 720 px, the place in the top bar where the page's actions go, so there is one 44 px bar. */
   topBarActions: HTMLElement | null;
   setTopBarActions: (element: HTMLElement | null) => void;
@@ -68,6 +79,7 @@ export function ShellUiProvider({ children }: { children: ReactNode }) {
   const [moveOpen, setMoveOpen] = useState(false);
   const [searchRequest, setSearchRequest] = useState(0);
   const [announcement, setAnnouncement] = useState('');
+  const [folderDraft, setFolderDraft] = useState<FolderDraft | null>(null);
   const page = useRef<PageCommands>({});
   const setOverlay = useCallback(
     (open: boolean, options: { search?: boolean } = {}) =>
@@ -101,6 +113,9 @@ export function ShellUiProvider({ children }: { children: ReactNode }) {
       announcement,
       announce,
       page,
+      folderDraft,
+      startFolder: setFolderDraft,
+      endFolder: () => setFolderDraft(null),
       topBarActions,
       setTopBarActions,
     }),
@@ -116,6 +131,7 @@ export function ShellUiProvider({ children }: { children: ReactNode }) {
       searchRequest,
       announcement,
       announce,
+      folderDraft,
       topBarActions,
     ],
   );

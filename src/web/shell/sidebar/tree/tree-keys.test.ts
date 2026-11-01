@@ -9,14 +9,13 @@ const press = (key: string, modifiers: Partial<TreeKey> = {}): TreeKey => ({
   metaKey: false,
   ...modifiers,
 });
-const calm = { first: false, chordPending: false };
+const calm = { first: false, chordPending: false, inFolder: false, editable: true };
 
 describe('treeKeyAction', () => {
   it('hands N, G, / and ? to the shortcuts, on any row', () => {
     for (const key of ['g', '/'])
       for (const row of ['item', 'folder'] as const) expect(treeKeyAction(press(key), row, calm)).toBe('forward');
     expect(treeKeyAction(press('n'), 'item', calm)).toBe('forward');
-    expect(treeKeyAction(press('n'), 'folder', calm)).toBe('forward');
     expect(treeKeyAction(press('?', { shiftKey: true }), 'item', calm)).toBe('forward');
   });
 
@@ -50,6 +49,29 @@ describe('treeKeyAction', () => {
   it('goes back up to the navigation from the first row', () => {
     expect(treeKeyAction(press('ArrowUp'), 'item', { ...calm, first: true })).toBe('leave-up');
     expect(treeKeyAction(press('ArrowUp'), 'item', calm)).toBeNull();
+  });
+});
+
+describe('folder keys', () => {
+  it('opens the Novo menu in the folder with N, on the folder or inside it', () => {
+    expect(treeKeyAction(press('n'), 'folder', calm)).toBe('new-here');
+    expect(treeKeyAction(press('n'), 'item', { ...calm, inFolder: true })).toBe('new-here');
+    expect(treeKeyAction(press('n'), 'item', calm)).toBe('forward');
+    expect(treeKeyAction(press('n'), 'folder', { ...calm, editable: false })).toBe('forward');
+  });
+
+  it('renames, reorders and opens the menu of a folder', () => {
+    expect(treeKeyAction(press('F2'), 'folder', calm)).toBe('rename');
+    expect(treeKeyAction(press('ArrowUp', { altKey: true }), 'folder', calm)).toBe('move-up');
+    expect(treeKeyAction(press('ArrowDown', { altKey: true }), 'folder', calm)).toBe('move-down');
+    expect(treeKeyAction(press('F10', { shiftKey: true }), 'folder', calm)).toBe('menu');
+    expect(treeKeyAction(press('ContextMenu'), 'folder', calm)).toBe('menu');
+  });
+
+  it('leaves those keys alone on items and in an archived project', () => {
+    expect(treeKeyAction(press('F2'), 'item', calm)).toBeNull();
+    expect(treeKeyAction(press('ArrowUp', { altKey: true }), 'item', calm)).toBeNull();
+    expect(treeKeyAction(press('F2'), 'folder', { ...calm, editable: false })).toBeNull();
   });
 });
 

@@ -41,6 +41,16 @@ export const shortcutGroups: ShortcutGroup[] = [
       { label: 'Recolher ou expandir a pasta; ir ao primeiro item ou à pasta', alternatives: [['←'], ['→']] },
       { label: 'Abrir o item; numa pasta, abrir ou fechar', alternatives: [['↵']] },
       { label: 'Ir ao item que começa com as letras digitadas', alternatives: [['a–z']] },
+      { label: 'Renomear a pasta', alternatives: [['F2']] },
+      {
+        label: 'Mover a pasta para cima ou para baixo',
+        alternatives: [
+          ['⌥', '↑'],
+          ['⌥', '↓'],
+        ],
+      },
+      { label: 'Menu da pasta', alternatives: [['⇧', 'F10']] },
+      { label: 'Novo na pasta', alternatives: [['N']] },
     ],
   },
   {

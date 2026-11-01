@@ -103,6 +103,74 @@
   padding-left: 44px;
 }
 
+/* A folder's "+" and "⋯", in place of its count on hover or focus. */
+.folder-tools {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+.folder-tools .btn-icon {
+  width: 20px;
+  height: 20px;
+}
+.tree-row--folder[data-hovered] .folder-tools,
+.tree-row--folder[data-focus-visible] .folder-tools,
+.folder-tools:focus-within,
+.folder-tools:has([aria-expanded="true"]) {
+  opacity: 1;
+  pointer-events: auto;
+}
+.tree-row--folder[data-hovered]:has(.folder-tools) :is(.tree-row__count, .tree-row__pending),
+.tree-row--folder[data-focus-visible]:has(.folder-tools) :is(.tree-row__count, .tree-row__pending),
+.tree-row--folder:has(.folder-tools :is(:focus-within, [aria-expanded="true"]))
+  :is(.tree-row__count, .tree-row__pending) {
+  opacity: 0;
+}
+
+/* Naming a folder, in its row: a 24 px field with the accent's border and halo, the error under it. */
+.tree-row:has(.tree-row__body[data-editing]) {
+  background: none;
+  cursor: default;
+}
+.tree-row__body[data-editing]:has(.folder-field__error) {
+  align-items: flex-start;
+}
+.folder-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: -2px 0;
+}
+.folder-field__input {
+  width: 100%;
+  height: 24px;
+  margin-left: -7px;
+  padding: 0 6px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--raised-1);
+  box-shadow: 0 0 0 3px var(--accent-25);
+  color: var(--text);
+  font: 500 13px / 20px var(--font-sans);
+  letter-spacing: var(--tracking-ui);
+}
+.folder-field__input:focus {
+  outline: none;
+}
+.folder-field__error {
+  margin-left: -6px;
+  font: var(--type-meta);
+  color: var(--late);
+  white-space: normal;
+}
+
 /* The guide of an open folder runs beside its children, at the centre of the folder's icon. */
 .tree-row[data-level="2"]::before {
   content: "";
@@ -205,8 +273,13 @@
 
 /* Touch screens have no hover: the controls that hover reveals stay visible. */
 @media (hover: none) {
-  .tree-row__unpin {
+  .tree-row__unpin,
+  .folder-tools {
     opacity: 1;
+    pointer-events: auto;
+  }
+  .tree-row--folder:has(.folder-tools) :is(.tree-row__count, .tree-row__pending) {
+    visibility: hidden;
   }
   .tree-row:has(.tree-row__unpin) .tree-row__pending {
     visibility: hidden;

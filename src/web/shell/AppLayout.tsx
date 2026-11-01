@@ -56,6 +56,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
     else if (mode === 'wide') prefs.setCollapsed(!prefs.collapsed);
     else ui.setOverlay(true);
   }
+  // A folder to name needs the sidebar: it expands from the rail, or opens over the page.
+  const draft = ui.folderDraft;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Each new draft asks once.
+  useEffect(() => {
+    if (!draft) return;
+    if (mode === 'wide' && prefs.collapsed) prefs.setCollapsed(false);
+    else if (rail || mode === 'narrow') setOverlay(true);
+  }, [draft]);
   useShellLayers();
   useShortcuts(
     useShortcutActions({ project, projects, switcherPlace, sidebarShown: !rail && mode !== 'narrow', toggleSidebar }),
