@@ -4,7 +4,12 @@ import { MAX_PINNED } from '../../domain/project.js';
 import { assertVersion } from '../helpers.js';
 import type { WorkspaceContext } from '../ports.js';
 import type { RestoreFolderInput } from '../schemas/folders.js';
-import { assertNameFree, assertRoomForFolder, renumberFolders, requireProjectForFolders } from './folder-rules.js';
+import {
+  assertFolderNameFree,
+  assertRoomForFolder,
+  renumberFolders,
+  requireProjectForFolders,
+} from './folder-rules.js';
 
 /**
  * Undoes deleteFolder with the lists it answered. The folder comes back at the position it had, or
@@ -32,7 +37,7 @@ export function restoreFolder(ctx: WorkspaceContext, input: RestoreFolderInput) 
     if (!deletedAt) throw new AppError('DOMAIN_RULE', 'Esta pasta não foi excluída.');
     await requireProjectForFolders(repo, folder.projectId);
     const folders = await repo.activeFolders(folder.projectId);
-    assertNameFree(folders, folder.name, folder.id, ' Renomeie-a antes de desfazer.');
+    assertFolderNameFree(folders, folder.name, folder.id, ' Renomeie-a antes de desfazer.');
     assertRoomForFolder(folders);
 
     const now = ctx.now();

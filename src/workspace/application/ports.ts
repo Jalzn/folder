@@ -151,12 +151,44 @@ export interface ColumnRepository {
   /** The active columns in board order. */
   activeColumns(): Promise<Column[]>;
   findColumn(id: string): Promise<Column | undefined>;
+  /** The live tasks of every project in each active column. */
+  columnTaskCounts(): Promise<Map<string, number>>;
+  insertColumn(column: Column): Promise<void>;
+  saveColumn(column: Column, expectedVersion: number): Promise<void>;
+  /** The order is not an edit: version and dates stay. */
+  setColumnPosition(id: string, position: number): Promise<void>;
+  /** Marks or unmarks the done column. Not an edit: version and dates stay. */
+  setColumnDone(id: string, isDone: boolean): Promise<void>;
+  /** Every task of the column, live and trashed, of every project, by project and board order. */
+  tasksOfColumn(columnId: string): Promise<TaskRecord[]>;
+  /** Sets the completion of every task in the column, live and trashed, without editing them. */
+  setColumnCompletion(columnId: string, completedAt: string | null): Promise<void>;
+  /** Sets one task's completion without editing it. */
+  setTaskCompletion(taskId: string, completedAt: string | null): Promise<void>;
+}
+
+/** A label as lists show it, with the live tasks that use it. */
+export interface LabelSummary {
+  id: string;
+  name: string;
+  color: Label['color'];
+  version: number;
+  taskCount: number;
 }
 
 /** Labels, the same for every project. */
 export interface LabelRepository {
   /** The labels with these IDs, active or deleted. */
   findLabels(ids: readonly string[]): Promise<Label[]>;
+  findLabel(id: string): Promise<Label | undefined>;
+  /** The active labels, in alphabetical order. */
+  activeLabels(): Promise<Label[]>;
+  /** The active labels with the live tasks that use each, in alphabetical order. */
+  labelSummaries(): Promise<LabelSummary[]>;
+  /** The live tasks linked to the label. */
+  liveTasksWithLabel(labelId: string): Promise<number>;
+  insertLabel(label: Label): Promise<void>;
+  saveLabel(label: Label, expectedVersion: number): Promise<void>;
 }
 
 export interface CanvasPreviewRecord {

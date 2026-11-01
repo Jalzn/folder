@@ -1,7 +1,8 @@
 import { AppError } from '@tinyfold/core/application';
-import { FOLDER_LIMITS, type Folder, folderName, folderNameKey } from '../../domain/folders.js';
+import { FOLDER_LIMITS, type Folder } from '../../domain/folders.js';
 import type { Project } from '../../domain/models.js';
 import { requireProject } from '../helpers.js';
+import { assertNameFree, readName } from '../name-rules.js';
 import type { FolderRepository, WorkspaceRepository } from '../ports.js';
 
 /** An active folder: a deleted one takes nothing new and cannot change. */
@@ -42,30 +43,15 @@ export async function requireProjectForFolders(repo: WorkspaceRepository, projec
   return project;
 }
 
-/**
- * A name as stored (folderName), from 1 to 100 characters, with something left to tell it apart and
- * no control character: line breaks and tabs are spaces by then, and the others, a NUL above all,
- * which SQLite counts as the end of the text, are refused.
- */
-export function readFolderName(raw: string): string {
-  const name = folderName(raw);
-  if (/\p{Cc}/u.test(name))
-    throw new AppError('VALIDATION', 'Use só letras, números, espaços e símbolos no nome da pasta.');
-  if (!name || !folderNameKey(name)) throw new AppError('VALIDATION', 'Dê um nome à pasta.');
-  if (Array.from(name).length > FOLDER_LIMITS.nameChars)
-    throw new AppError('VALIDATION', `Use até ${FOLDER_LIMITS.nameChars} caracteres no nome da pasta.`);
-  return name;
-}
+/** A folder's name as stored: see readName. */
+export const readFolderName = (raw: string): string => readName(raw, 'pasta', FOLDER_LIMITS.nameChars);
 
 /**
  * Refuses a name another active folder of the project already has, case and accents aside, naming
  * that folder. `except` is the folder being renamed, which may keep its own name in another case.
  */
-export function assertNameFree(folders: readonly Folder[], name: string, except?: string, suffix = ''): void {
-  const key = folderNameKey(name);
-  const taken = folders.find((folder) => folder.id !== except && folderNameKey(folder.name) === key);
-  if (taken) throw new AppError('DOMAIN_RULE', `Já existe uma pasta ${taken.name}.${suffix}`);
-}
+export const assertFolderNameFree = (folders: readonly Folder[], name: string, except?: string, suffix = ''): void =>
+  assertNameFree(folders, name, 'pasta', { ...(except ? { except } : {}), suffix });
 
 /** Refuses the folder after the last one a project may have. */
 export function assertRoomForFolder(folders: readonly Folder[]): void {

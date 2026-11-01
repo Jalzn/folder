@@ -2,7 +2,8 @@ import { type Database, tables } from '@tinyfold/core/infra';
 import type { Kysely } from 'kysely';
 import type { ColumnRepository } from '../../application/ports.js';
 import type { WorkspaceTables } from '../db.js';
-import { columnModel } from './mappers.js';
+import { columnModel, columnRow, taskModel } from './mappers.js';
+import { expectUpdated } from './versioned-update.js';
 
 /** The active columns' rows in board order: by position, IDs breaking ties. */
 export const activeColumnRows = (db: Kysely<WorkspaceTables>) =>
@@ -23,6 +24,59 @@ export function columnRepository(connection: Database): ColumnRepository {
     async findColumn(id) {
       const row = await db.selectFrom('workspace_columns').selectAll().where('id', '=', id).executeTakeFirst();
       return row && columnModel(row);
+    },
+    async columnTaskCounts() {
+      const rows = await db
+        .selectFrom('workspace_tasks')
+        .select((eb) => ['column_id', eb.fn.countAll<number>().as('count')])
+        .where('deleted_at', 'is', null)
+        .groupBy('column_id')
+        .execute();
+      return new Map(rows.map((row) => [row.column_id, row.count]));
+    },
+    async insertColumn(column) {
+      await db.insertInto('workspace_columns').values(columnRow(column)).execute();
+    },
+    async saveColumn(column, expectedVersion) {
+      const result = await db
+        .updateTable('workspace_columns')
+        .set(columnRow(column))
+        .where('id', '=', column.id)
+        .where('version', '=', expectedVersion)
+        .executeTakeFirstOrThrow();
+      expectUpdated(result.numUpdatedRows);
+    },
+    async setColumnPosition(id, position) {
+      await db.updateTable('workspace_columns').set({ position }).where('id', '=', id).execute();
+    },
+    async setColumnDone(id, isDone) {
+      await db
+        .updateTable('workspace_columns')
+        .set({ is_done: isDone ? 1 : 0 })
+        .where('id', '=', id)
+        .execute();
+    },
+    async tasksOfColumn(columnId) {
+      return (
+        await db
+          .selectFrom('workspace_tasks')
+          .selectAll()
+          .where('column_id', '=', columnId)
+          .orderBy('project_id')
+          .orderBy('position')
+          .orderBy('id')
+          .execute()
+      ).map(taskModel);
+    },
+    async setColumnCompletion(columnId, completedAt) {
+      await db
+        .updateTable('workspace_tasks')
+        .set({ completed_at: completedAt })
+        .where('column_id', '=', columnId)
+        .execute();
+    },
+    async setTaskCompletion(taskId, completedAt) {
+      await db.updateTable('workspace_tasks').set({ completed_at: completedAt }).where('id', '=', taskId).execute();
     },
   };
 }

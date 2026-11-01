@@ -1,7 +1,7 @@
 import type { WorkspaceContext } from '../ports.js';
 import type { CreateFolderInput } from '../schemas/folders.js';
 import {
-  assertNameFree,
+  assertFolderNameFree,
   assertRoomForFolder,
   readFolderName,
   renumberFolders,
@@ -14,7 +14,7 @@ export function createFolder(ctx: WorkspaceContext, input: CreateFolderInput) {
     const project = await requireProjectForFolders(repo, input.projectId);
     const name = readFolderName(input.name);
     const folders = await repo.activeFolders(project.id);
-    assertNameFree(folders, name);
+    assertFolderNameFree(folders, name);
     assertRoomForFolder(folders);
     const now = ctx.now();
     const folder = {

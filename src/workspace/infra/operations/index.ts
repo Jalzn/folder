@@ -3,8 +3,10 @@ import { workspaceContext } from '../context.js';
 import { navigationContext } from '../navigation-context.js';
 import { readingContext } from '../reading-context.js';
 import { canvasOperations } from './canvases.js';
+import { columnOperations } from './columns.js';
 import { documentOperations } from './documents.js';
 import { folderOperations } from './folders.js';
+import { labelOperations } from './labels.js';
 import { moveOperations } from './moves.js';
 import { navigationOperations } from './navigation.js';
 import { pinOperations } from './pins.js';
@@ -24,6 +26,8 @@ export function workspaceOperations(db: Database, clock = () => new Date()) {
     ...documentOperations(ctx),
     ...canvasOperations(ctx),
     ...taskOperations(ctx),
+    ...columnOperations(ctx),
+    ...labelOperations(ctx),
     ...trashOperations(ctx, navigation),
     ...pinOperations(ctx),
     ...moveOperations(ctx),
