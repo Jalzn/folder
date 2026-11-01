@@ -22,6 +22,7 @@ A lateral troca as seções Documentos e Desenhos pela árvore "Itens", feita co
 **Aceitos**
 
 - A lista `moved` de `restoreFolder` é a palavra do cliente: nada guarda de onde veio um item da raiz, então um item da raiz listado por engano entra na pasta, com o fixado enviado, desde que anterior à exclusão. O mesmo vale para o fixado de um item da lixeira. Guardar a origem pediria uma coluna e uma migração, para um cliente que é o próprio dono.
+- Um `INSERT OR REPLACE` em `workspace_folders`, que só SQL manual faz, contorna os gatilhos de pasta da 006, e `integrity_check` e `foreign_key_check` não percebem: a pasta pode mudar de projeto ou ser excluída com itens vivos. A 006 é imutável, e a migração 007 da [etapa 10](10-quadro-tarefa.md#mudanças-previstas-de-dados-e-contratos) acrescenta o gatilho `BEFORE INSERT` que recusa um `id` em uso.
 
 ## Referências e precedência
 
