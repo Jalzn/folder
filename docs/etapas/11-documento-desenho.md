@@ -70,7 +70,7 @@ A ordem é a de [interface/README.md](../interface/README.md): visual.md é mais
 
 ## Decisões técnicas
 
-A pergunta 2 do escopo inicial (a imagem do desenho) foi resolvida aqui, na linha 4. A pergunta 1 (incorporar itens de outro projeto) foi para [Perguntas para o usuário](#perguntas-para-o-usuário).
+A pergunta 2 do escopo inicial (a imagem do desenho) foi resolvida aqui, na linha 4. A pergunta 1 (incorporar itens de outro projeto) e o painel "Tarefas" o usuário respondeu, em [Decisões do usuário](#decisões-do-usuário).
 
 | # | Decisão | Motivo |
 | --- | --- | --- |
@@ -180,7 +180,7 @@ Cada resultado fica com no máximo 45.000 caracteres sem disparar `withTextCeili
     - "Salvando…";
     - na falha, ícone, "Não salvou" e o botão "Tentar de novo" (dica com ⌘S);
     - "Conflito", em `--conflict`.
-  - **"Tarefas · 2"**, conforme a [pergunta 2](#perguntas-para-o-usuário).
+  - **"Tarefas · 2"** ([decisão do usuário 2](#decisões-do-usuário)): botão fantasma com `ListTodo` e a contagem das abertas, que abre o popover descrito em "Painel Tarefas".
   - **O ⋯**, nesta ordem:
     1. Criar tarefa (⌘⌥T), com a nota "A partir do trecho selecionado" ou "Selecione um trecho para criar a partir dele";
     2. Exportar Markdown e Importar Markdown;
@@ -206,8 +206,8 @@ Escolher um deles abre o seletor (`EmbedPicker.tsx`), um popover ancorado no blo
 
 | Tipo | Itens |
 | --- | --- |
-| Tarefa | "Nova tarefa…" (abre a gaveta no modo novo, no projeto do documento, e o card entra no lugar quando a tarefa é criada); separador; "Incorporar tarefa existente": as tarefas vivas pela busca (`search` com `types: ['task']`), as recentes antes de digitar, com o projeto à direita conforme a pergunta 1 |
-| Desenho | "Novo desenho" (cria no projeto e na pasta do documento, incorpora e mostra o toast "Desenho criado e incorporado." com "Abrir"); separador; "Incorporar desenho existente", pela busca com `types: ['drawing']` |
+| Tarefa | "Nova tarefa…" (abre a gaveta no modo novo, no projeto do documento, e o card entra no lugar quando a tarefa é criada); separador; "Incorporar tarefa existente": as tarefas vivas dos projetos ativos pela busca (`search` com `types: ['task']`), as recentes antes de digitar, as do projeto do documento primeiro e as dos outros com a marca e o nome do projeto à direita ([decisão do usuário 1](#decisões-do-usuário)) |
+| Desenho | "Novo desenho" (cria no projeto e na pasta do documento, incorpora e mostra o toast "Desenho criado e incorporado." com "Abrir"); separador; "Incorporar desenho existente", pela busca com `types: ['drawing']`, com a mesma ordem e o mesmo projeto à direita |
 
 - **Lugar do bloco:** o bloco entra no lugar do parágrafo vazio do `/`, ou logo depois do bloco atual.
 - **Foco:** o foco vai ao incorporado novo, pela seleção de nó do editor. O Esc no seletor fecha e devolve o cursor ao bloco.
@@ -281,7 +281,12 @@ Escolher um deles abre o seletor (`EmbedPicker.tsx`), um popover ancorado no blo
 - **Ao criar:** o card entra logo depois do bloco de origem, e o toast diz "Tarefa criada. O card entrou abaixo do parágrafo.".
 - **Documento fechado:** "Tarefa criada em A fazer · Tinyfold.", sem o card.
 
-**Painel "Tarefas":** conforme a [pergunta 2](#perguntas-para-o-usuário).
+**Painel "Tarefas"** (`DocumentTasks.tsx`, [decisão do usuário 2](#decisões-do-usuário)):
+
+- **Abre por:** o botão "Tarefas · n" da barra. É um popover de 320 px ancorado no botão, no lugar da coluna lateral de hoje, então a página fica com uma coluna só.
+- **Conteúdo:** o mesmo de `LinkedTasksPanel`: "Neste documento", as tarefas abertas que nasceram ali (`LinkedTask`, que abre a gaveta) e as concluídas recolhidas sob "n concluídas". Vazio: "Nenhum passo em aberto. Selecione um trecho do texto e escolha “Criar tarefa”.".
+- **Teclado:** ↑ e ↓ percorrem a lista, ↵ abre a tarefa na gaveta e fecha o popover, e Esc fecha e devolve o foco ao botão. É o caminho do teclado até as tarefas que os marcadores mostram (decisão 9).
+- **Celular:** o botão entra na barra do topo com as outras ações, e o popover ocupa a largura da tela.
 
 ### Página do desenho
 
@@ -301,7 +306,7 @@ O fallback continua funcional:
 
 - **Incorporados:** ocupam a largura toda. Tocar no card abre a gaveta, que cobre a página (etapa 10); tocar na figura abre o desenho.
 - **Ações:** Restaurar e Remover ficam sempre visíveis.
-- **Marcador:** tem 18 px, abaixo do alvo de toque ideal, e fica como diferença aceita; o painel "Tarefas" ou o ⌘K levam às mesmas tarefas.
+- **Marcador:** tem 18 px, abaixo do alvo de toque ideal, e fica como diferença aceita; o popover "Tarefas" leva às mesmas tarefas.
 - **Barra:** abaixo de 720 px, as ações da barra entram no topo, como na etapa 08, e o rótulo da pasta não aparece (etapa 09, decisão 16).
 
 ## Teclado e Esc
@@ -370,7 +375,7 @@ src/web/editor/
   origin-markers.ts          o plugin de decoração e o widget do marcador
 src/web/pages/document/
   DocumentPage.tsx, DocumentEditor.tsx (composição), DocumentHeader.tsx, DocumentMenu.tsx,
-  DocumentBody.tsx (título, fio e editor), DocumentTasks.tsx (o painel, conforme a pergunta 2),
+  DocumentBody.tsx (título, fio e editor), DocumentTasks.tsx (o popover "Tarefas", no lugar de LinkedTasksPanel.tsx),
   use-document-embeds.ts (IDs do editor → resolver), use-embed-preview.ts, use-embed-actions.ts
   (restaurar, remover e desfazer), document-markdown.ts (exportação pelo domínio), document.css
 src/web/pages/drawing/        DrawingHeader.tsx, ExportMenu.tsx
@@ -439,10 +444,10 @@ src/web/vite.config.ts        /arquivos no proxy
 
 | Spec | Cenários |
 | --- | --- |
-| `embeds.spec.ts` (novo) | **Inserir:** `/tarefa` digitado; incorporar uma existente pelo filtro; "Nova tarefa…" pela gaveta com o card no lugar; `/desenho` com um existente e "Novo desenho".<br>**Card ao vivo:** coluna, prazo, etiquetas e checklist mudados na gaveta; "aberta abaixo"; outro projeto (conforme a pergunta 1).<br>**Teclado:** ↵ na seleção de nó abre; ⌫ remove e o ⌘Z do editor devolve.<br>**Indisponíveis:** na lixeira com Restaurar; excluído com Remover e Desfazer do toast; projeto arquivado sem ações.<br>**Figuras:** a numeração muda ao reordenar.<br>Os resultados são conferidos no servidor (`getDocument`, `getTask`) |
+| `embeds.spec.ts` (novo) | **Inserir:** `/tarefa` digitado; incorporar uma existente pelo filtro; "Nova tarefa…" pela gaveta com o card no lugar; `/desenho` com um existente e "Novo desenho".<br>**Card ao vivo:** coluna, prazo, etiquetas e checklist mudados na gaveta; "aberta abaixo"; uma tarefa de outro projeto oferecida no seletor depois das do documento e mostrada com a marca do projeto.<br>**Teclado:** ↵ na seleção de nó abre; ⌫ remove e o ⌘Z do editor devolve.<br>**Indisponíveis:** na lixeira com Restaurar; excluído com Remover e Desfazer do toast; projeto arquivado sem ações.<br>**Figuras:** a numeração muda ao reordenar.<br>Os resultados são conferidos no servidor (`getDocument`, `getTask`) |
 | `drawing-embed.spec.ts` (novo) | A imagem pela rota (resposta 200, depois 304); o filtro no escuro; prévia defasada (o desenho editado em outra página) regenerada ao abrir o documento; desenho vazio; clique do meio abre outra aba |
 | `origin-marker.spec.ts` (novo) | O marcador depois do trecho, com a dica e o nome; o sublinhado no hover; o clique abre a gaveta; a tarefa na lixeira tira o marcador; o trecho editado leva o marcador ao fim do bloco; criar de uma seleção com ⌘⌥T e "Incorporar no documento" põe o card abaixo; com o documento fechado, sem o card |
-| `document-page.spec.ts` (novo) | A barra ("Salvo · editado hoje", ⋯ na ordem); as faixas fixas ao rolar; o painel conforme a pergunta 2; exportar `.md` com os links (conteúdo do arquivo baixado) e importar de volta; `/tarefas/<id>` redireciona |
+| `document-page.spec.ts` (novo) | A barra ("Salvo · editado hoje", ⋯ na ordem); as faixas fixas ao rolar; o popover "Tarefas" com setas, ↵ que abre a gaveta e Esc que volta ao botão; exportar `.md` com os links (conteúdo do arquivo baixado) e importar de volta; `/tarefas/<id>` redireciona |
 | `drawing-page.spec.ts` (novo) | "Exportar ▾" baixa PNG e `.excalidraw`; a barra e o título |
 | `seed-sample.spec.ts` (novo, do backend) | Abrir cada documento e desenho do exemplo não envia `saveDocument` nem `saveCanvas`, e a versão continua 1 |
 | `mcp.spec.ts` | `read_document` com os links do que a interface incorporou e `read_task` com o ID de um deles |
@@ -545,7 +550,7 @@ Dois subagentes em worktrees próprias na pasta de rascunho da sessão (nunca em
 
 | Ordem | Entrega (commit) | Pode começar |
 | --- | --- | --- |
-| W1 | `refactor(web): restyle the document and drawing pages`. `PageFrame` com `bands`, `DocumentHeader`, `DocumentMenu` com "Criar tarefa" e ⌘⌥T, `DocumentBody`, "Salvo · editado hoje", o rodapé removido, `DrawingHeader` com "Exportar ▾", `/tarefas/$taskId`, e o painel "Tarefas" conforme a pergunta 2 | Junto com B1 |
+| W1 | `refactor(web): restyle the document and drawing pages`. `PageFrame` com `bands`, `DocumentHeader`, `DocumentMenu` com "Criar tarefa" e ⌘⌥T, `DocumentBody`, "Salvo · editado hoje", o rodapé removido, `DrawingHeader` com "Exportar ▾", `/tarefas/$taskId`, e o popover "Tarefas" no lugar da coluna lateral | Junto com B1 |
 | W2 | `feat(web): embed tasks and drawings in documents`. Os dois esquemas, as especificações dos blocos, o card, o indisponível, Restaurar, Remover e Desfazer, o menu `/` e o seletor, `embed-keys.ts`, o contexto dos incorporados e o resolver, e a figura com a imagem antiga ou o estado de carregamento | Depois do ponto 1 |
 | W3 | `feat(web): show current drawing previews in documents`. A imagem pela rota, o filtro do escuro, a regeneração da prévia defasada, os estados vazio e grande demais, e o proxy do Vite | Depois do ponto 2 |
 | W4 | `feat(web): mark task origins and embed new tasks from a selection`. `origin-markers.ts`, "Incorporar no documento" com `insertEmbedAfter`, e o ⌘K com "Incorporar tarefa…", "Incorporar desenho…" e "Criar tarefa da seleção" | Depois de W2 |
@@ -587,12 +592,11 @@ Dois subagentes em worktrees próprias na pasta de rascunho da sessão (nunca em
 | `src/workspace/README.md` | Regras dos incorporados, do resolver e do Markdown |
 | `etapas/README.md` e esta página | Estado, critérios marcados, Resultado e Desvios |
 
-## Perguntas para o usuário
+## Decisões do usuário
 
-1. **Incorporar itens de outro projeto.** O protótipo aprovado oferece, no seletor, as tarefas e os desenhos de todos os projetos ativos, com os do documento primeiro e o projeto indicado no card. O escopo inicial propunha só os do projeto do documento. Em qualquer opção, um item incorporado que depois muda de projeto continua aparecendo, com o projeto no card.
-   - **A — Todos os projetos ativos, com os do documento primeiro, como no protótipo (recomendado).** Um documento do Geral pode mostrar uma tarefa do Tinyfold; o card diz de onde ela é.
-   - **B — Só os do projeto do documento.** Cada documento fala só do próprio projeto; para ligar outro, é preciso mover o item antes.
-2. **O painel "Tarefas" do documento.** Hoje o botão "Tarefas · n" abre uma coluna lateral com as tarefas que nasceram ali, e as concluídas recolhidas. O protótipo não tem esse painel: os marcadores de origem e os cards fazem esse papel. O marcador, porém, não é alcançável pelo Tab (decisão 9).
-   - **A — Manter o botão "Tarefas · n" na barra, abrindo um popover com a mesma lista, em vez da coluna lateral (recomendado).** A página fica com uma coluna só, e o teclado continua chegando a todas as tarefas nascidas ali.
-   - **B — Tirar o painel, como no protótipo.** As tarefas nascidas ali ficam nos marcadores e nos cards; pelo teclado, só pela busca do ⌘K e pelo Quadro.
-   - **C — Manter a coluna lateral como hoje.** O documento ganha uma segunda coluna quando ela está aberta.
+Respostas de 2026-11-01, registradas em [decisões](../decisoes.md):
+
+1. **Incorporar itens de todos os projetos ativos:** o seletor oferece as tarefas e os desenhos de todos os projetos ativos, com os do projeto do documento primeiro, como no protótipo, e o card e a legenda dizem o projeto do item quando ele não é o do documento. Oferecer só os do projeto do documento, proposto no escopo inicial, foi descartado.
+2. **O painel "Tarefas" vira um popover:** o botão "Tarefas · n" fica na barra e abre um popover com a mesma lista, no lugar da coluna lateral, e a página fica com uma coluna só. Tirar o painel, como no protótipo, e manter a coluna lateral foram descartados.
+
+As escolhas que o plano fez sem perguntar, cada uma com a fonte citada, foram aceitas como estão: o rodapé com a dica e o botão "Criar tarefa da seleção" sai (decisão 14), "Incorporar no documento" vem marcado (decisão 15), o marcador de origem é só para ponteiro e toque (decisão 9), não há o diálogo "Comparar" (Escopo) e o ⌘⌥T cria tarefa da seleção (decisão 14). O risco da aba antiga, com `format_version` mantido em 1, foi aceito com a nota de operação (decisão 3 e Riscos).
