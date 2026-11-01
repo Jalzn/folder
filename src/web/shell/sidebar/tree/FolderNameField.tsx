@@ -2,6 +2,9 @@ import { folderName, folderNameKey } from '@tinyfold/workspace/domain';
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { takenText } from '../../folders/folder-text';
 
+/** Marks the field, whose keys the tree leaves to it. */
+export const FOLDER_NAME_FIELD = 'data-folder-name-field';
+
 /**
  * The name of a folder being created or renamed, in its row (docs/etapas/09-pastas.md, "Criar" and
  * "Renomear"). ↵ saves; Esc gives up; leaving saves a valid name. An empty name gives up, and a name another
@@ -81,6 +84,7 @@ export function FolderNameField({
       <input
         ref={input}
         className="folder-field__input"
+        {...{ [FOLDER_NAME_FIELD]: '' }}
         aria-label={label}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}

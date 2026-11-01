@@ -93,7 +93,7 @@ export function ItemsTree({
   const tabEntry = useTabEntry(() => rowByKey(currentKey ?? null));
 
   const archived = Boolean(project.archivedAt);
-  const onKeyDownCapture = useTreeKeyRouter({
+  const keys = useTreeKeyRouter({
     tree,
     rows,
     editing,
@@ -139,10 +139,12 @@ export function ItemsTree({
   });
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: The keys and the focus only pass through, to the tree inside.
     <div
       className="items-tree"
       data-variant={editing ? 'sidebar' : 'popover'}
-      onKeyDownCapture={onKeyDownCapture}
+      onKeyDownCapture={keys.onKeyDownCapture}
+      onKeyDown={keys.onKeyDown}
       onFocusCapture={tabEntry}
     >
       <Tree

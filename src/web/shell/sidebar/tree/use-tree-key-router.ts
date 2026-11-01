@@ -1,5 +1,6 @@
 import { type KeyboardEvent, type RefObject, useRef } from 'react';
 import { chordPending, forwardToShortcuts } from '../../keyboard/use-shortcuts';
+import { FOLDER_NAME_FIELD } from './FolderNameField';
 import { rowIn, rowOf } from './tree-dom';
 import { rowKind, TYPEAHEAD_MS, treeKeyAction, typesAhead } from './tree-keys';
 import type { ItemNode, TreeNode } from './tree-rows';
@@ -11,8 +12,8 @@ const allNodes = (rows: readonly TreeNode[]) =>
 /**
  * The tree's keys before React Aria's (tree-keys.ts says what each one does): the name field keeps its own,
  * shortcuts go to the app, F2, ⌥↑, ⌥↓, ⇧F10 and N to the folder actions, P and M to the item in focus, and →
- * on an open folder to its first child. A type-to-select search under way keeps its letters. For the tree's
- * container, as `onKeyDownCapture`.
+ * on an open folder to its first child. A type-to-select search under way keeps its letters, and none of them
+ * goes on past the tree.
  */
 export function useTreeKeyRouter({
   tree,
@@ -32,11 +33,24 @@ export function useTreeKeyRouter({
 }) {
   // When the type-to-select last took a letter, so the next letters go on its search.
   const typedAt = useRef(Number.NEGATIVE_INFINITY);
-  return (event: KeyboardEvent<HTMLElement>) => {
+  /**
+   * After React Aria: a letter left to the type-to-select ends here, whether it found a row or not, so it
+   * never reaches the page's shortcuts ("zp" would pin the open item, "an" open Novo). For the tree's
+   * container, as `onKeyDown`.
+   */
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!(event.target instanceof Element) || !event.currentTarget.contains(event.target)) return;
+    if (event.target.closest(`[${FOLDER_NAME_FIELD}]`)) return;
+    if (rowOf(event.target) && typesAhead(event)) event.stopPropagation();
+  };
+  const onKeyDownCapture = (event: KeyboardEvent<HTMLElement>) => {
+    // Only the tree's own elements: the layers it opens, as "Mover para pasta…", render elsewhere in the page
+    // but their keys still pass here through React, and keep them.
+    if (!(event.target instanceof Element) || !event.currentTarget.contains(event.target)) return;
     // A folder's name field owns its keys, composition included: only Enter and Esc go on to it past the
     // row, which would move the focus on an arrow, and the type-to-select, which would take a letter or a
     // space. Nothing here prevents the default, so the caret, the selection and the typing stay the field's.
-    if (event.target instanceof Element && event.target.closest('input, textarea')) {
+    if (event.target.closest(`[${FOLDER_NAME_FIELD}]`)) {
       if (event.key !== 'Enter' && event.key !== 'Escape') event.stopPropagation();
       return;
     }
@@ -74,4 +88,5 @@ export function useTreeKeyRouter({
       }
     } else if (action !== 'swallow') editing?.folders.keyAction(action, node, key);
   };
+  return { onKeyDownCapture, onKeyDown };
 }

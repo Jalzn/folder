@@ -138,3 +138,57 @@ test('the layers the tree opens have names: the move popover, the row’s Novo a
     ),
   ).toBe(0);
 });
+
+test('M on a row opens "Mover para pasta…", which ↓ and Enter drive, in the sidebar and in the rail’s Itens', async ({
+  page,
+}) => {
+  await sampleProject(page);
+  const toast = page.locator('.toast');
+  // The menu lists the root, then the folders in their order: Arquitetura (the newest) and Vazia.
+  await treeRow(page, 'Zebra').focus();
+  await page.keyboard.press('m');
+  await expect(page.getByRole('dialog', { name: 'Mover para pasta' })).toBeVisible();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(toast).toContainText('Movido para Arquitetura.');
+  await expect(treeRow(page, 'Zebra')).toHaveAttribute('aria-level', '2');
+
+  // The rail's popover, at 900 px: the same keys from one of its rows.
+  await page.setViewportSize({ width: 900, height: 900 });
+  await page.getByRole('button', { name: /^Itens/ }).click();
+  const popover = page.getByRole('dialog', { name: /^Itens de / });
+  // The popover gives its entry row the focus as it opens; then a row of choice.
+  await expect(popover.getByRole('row').first()).toBeFocused();
+  await popover.getByRole('row', { name: /^Visão, documento/ }).focus();
+  await page.keyboard.press('m');
+  await expect(page.getByRole('dialog', { name: 'Mover para pasta' })).toBeVisible();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(toast).toContainText('Movido para Vazia.');
+});
+
+test('letters that type-to-select finds nothing for stay in the tree: "zp" pins nothing, "an" opens nothing', async ({
+  page,
+}) => {
+  const { projectId } = await sampleProject(page);
+  const visao = treeRow(page, 'Visão');
+  await visao.click();
+  await expect(page.getByRole('textbox', { name: 'Título do documento' })).toHaveValue('Visão');
+  // "z" finds Zebra, "zp" nothing: the P must not pin the open item.
+  await treeRow(page, 'Arquitetura').focus();
+  await page.keyboard.press('z');
+  await page.keyboard.press('p');
+  await page.waitForTimeout(300);
+  await expect(visao).not.toHaveAttribute('aria-label', /fixado/);
+  await expect(live(page)).not.toHaveText('Fixado.');
+  // "a" finds Arquitetura, "an" nothing: the N must not open Novo.
+  await page.waitForTimeout(1100);
+  await page.keyboard.press('a');
+  await page.keyboard.press('n');
+  await page.waitForTimeout(300);
+  await expect(page.getByRole('menu', { name: /^Novo em / })).toHaveCount(0);
+  expect(page.url()).toContain(projectId);
+});
