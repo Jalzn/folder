@@ -13,13 +13,29 @@ async function startDocument(page: Page, title: string) {
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
 }
 
+/**
+ * Replaces the open source. The popup puts the editor's caret at the end of the source as it opens, and the
+ * editor settles its selection in a later frame; a fill that selected the old text before that would be
+ * collapsed to the end and append. So the fill waits for the caret to be in the source, and is done again if
+ * the editor still moved it.
+ */
 async function editFormula(page: Page, latex: string) {
   await expect(sourceInput(page)).toBeVisible();
+  await expect
+    .poll(() =>
+      sourceInput(page).evaluate((code) => {
+        const selection = document.getSelection();
+        return Boolean(selection?.anchorNode && code.contains(selection.anchorNode));
+      }),
+    )
+    .toBe(true);
   const saved = page.waitForResponse(
     (response) => answers(response, 'workspace/saveDocument') && response.status() === 200,
   );
-  await sourceInput(page).fill(latex);
-  await expect(sourceInput(page)).toHaveText(latex);
+  await expect(async () => {
+    await sourceInput(page).fill(latex);
+    await expect(sourceInput(page)).toHaveText(latex, { timeout: 1000 });
+  }).toPass();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
   await saved;
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();

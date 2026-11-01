@@ -224,15 +224,21 @@ test('the trash names an item’s folder, and restores it to the root once the f
   await expect(treeRow(page, 'Lembrete, documento')).toHaveAttribute('aria-level', '1');
 });
 
-test('an item’s pages show its folder: the header, N, the Índice, ⌘K and the Visão geral', async ({ page }) => {
-  const projectId = await freshProject(page, 'Páginas');
+/** A project with MCP holding Leitura (its id is given), and Solto at the root. */
+async function pagesProject(page: Page, name: string) {
+  const projectId = await freshProject(page, name);
   const project = (await page.getByRole('heading', { level: 1 }).textContent()) ?? '';
   const mcp = await rpcFolder(page, projectId, 'MCP');
   const { id } = await rpcDocument(page, projectId, 'Leitura', mcp);
   await rpcDocument(page, projectId, 'Solto');
+  // The sidebar reads what came by RPC.
+  await page.reload();
+  return { projectId, project, mcp, leitura: id };
+}
 
-  // The header's label opens "Mover para pasta…", with the current place checked.
-  await page.goto(`/projetos/${projectId}/documentos/${id}`);
+test('the header’s folder label opens "Mover para pasta…" with the current place checked', async ({ page }) => {
+  const { projectId, leitura } = await pagesProject(page, 'Rótulo');
+  await page.goto(`/projetos/${projectId}/documentos/${leitura}`);
   const label = page.getByRole('button', { name: 'Pasta MCP. Mover para pasta (M)' });
   await expect(label).toBeVisible();
   await label.click();
@@ -241,39 +247,50 @@ test('an item’s pages show its folder: the header, N, the Índice, ⌘K and th
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
   await expect(label).toBeFocused();
+});
 
-  // N on the page offers the folder first, and the new document goes there.
+test('N on the page of an item in a folder offers that folder first, and creates there', async ({ page }) => {
+  const { projectId, leitura } = await pagesProject(page, 'Novo na pasta');
+  await page.goto(`/projetos/${projectId}/documentos/${leitura}`);
   await page.getByRole('heading', { level: 1 }).focus();
   await page.keyboard.press('n');
   await expect(page.getByRole('menuitem').first()).toHaveText('Novo documento em MCP');
   await page.getByRole('menuitem', { name: 'Novo documento em MCP' }).click();
+  await expect(page).not.toHaveURL(new RegExp(leitura));
   await expect(page.getByRole('button', { name: 'Pasta MCP. Mover para pasta (M)' })).toBeVisible();
-  await expect(page).not.toHaveURL(new RegExp(id));
+});
 
-  // The Índice groups by folder, "Sem pasta" last; ungrouped, the Pasta column names each one.
+test('the Índice groups by folder, "Sem pasta" last, and ungrouped shows the Pasta column', async ({ page }) => {
+  const { projectId, project } = await pagesProject(page, 'Agrupado');
   await page.goto(`/projetos/${projectId}/indice`);
   const table = page.getByRole('grid', { name: `Índice de ${project}` });
-  await expect(table.locator('.index-table__group')).toHaveText(['MCP2', 'Sem pasta1']);
+  await expect(table.locator('.index-table__group')).toHaveText(['MCP1', 'Sem pasta1']);
   await expect(table.getByRole('columnheader', { name: 'Pasta' })).toHaveCount(0);
   await page.getByText('Agrupar por pasta').click();
   await expect(table.getByRole('columnheader', { name: 'Pasta' })).toBeVisible();
   await expect(table.getByRole('row', { name: /^Solto/ })).toContainText('Sem pasta');
+  // The choice stays on this device.
   await page.reload();
   await expect(page.getByRole('switch', { name: 'Agrupar por pasta' })).not.toBeChecked();
   await page.getByText('Agrupar por pasta').click();
+});
 
-  // The Pasta filter is in the address; a folder the project lacks is Todas.
+test('the Índice’s Pasta filter is in the address, and a folder the project lacks is Todas', async ({ page }) => {
+  const { projectId, project, mcp } = await pagesProject(page, 'Filtrado');
+  await page.goto(`/projetos/${projectId}/indice`);
   await page.getByRole('button', { name: 'Pasta: Todas' }).click();
   await page.getByRole('menuitemradio', { name: 'Sem pasta' }).click();
   await expect(page).toHaveURL(/\?pasta=raiz$/);
   await expect(page.getByText(`1 item em ${project} · Sem pasta.`)).toBeVisible();
   await page.goto(`/projetos/${projectId}/indice?pasta=${mcp}`);
-  await expect(page.getByText(`2 itens em ${project} · MCP.`)).toBeVisible();
+  await expect(page.getByText(`1 item em ${project} · MCP.`)).toBeVisible();
   await page.goto(`/projetos/${projectId}/indice?pasta=desconhecida`);
   await expect(page).toHaveURL(new RegExp(`/projetos/${projectId}/indice$`));
   await expect(page.getByRole('button', { name: 'Pasta: Todas' })).toBeVisible();
+});
 
-  // ⌘K: an item shows its path, and a folder opens in the sidebar with its first item focused.
+test('⌘K shows an item’s path, and a folder opens in the sidebar with its first item focused', async ({ page }) => {
+  const { project } = await pagesProject(page, 'Paleta');
   await pressCommand(page, 'k');
   const palette = page.getByRole('dialog', { name: 'Buscar e comandar' });
   await palette.getByRole('textbox', { name: 'Buscar ou comandar' }).fill('Leitura');
@@ -282,13 +299,15 @@ test('an item’s pages show its folder: the header, N, the Índice, ⌘K and th
   ).toHaveCount(1);
   await palette.getByRole('textbox', { name: 'Buscar ou comandar' }).fill('MCP');
   await palette
-    .getByRole('menuitem', { name: /^MCP · pasta · 2 itens/ })
+    .getByRole('menuitem', { name: /^MCP · pasta · 1 item/ })
     .filter({ hasText: project })
     .click();
   await expect(folderRow(page, 'MCP')).toHaveAttribute('aria-expanded', 'true');
   await expect(itemsTree(page).getByRole('row', { level: 2 }).first()).toBeFocused();
+});
 
-  // The Visão geral says the type and the folder of each recent item.
+test('the Visão geral says the type and the folder of each recent item', async ({ page }) => {
+  const { projectId } = await pagesProject(page, 'Recentes');
   await page.goto(`/projetos/${projectId}`);
   await expect(page.getByRole('main').getByText('Documento · MCP').first()).toBeVisible();
   expect(currentProjectId(page)).toBe(projectId);
