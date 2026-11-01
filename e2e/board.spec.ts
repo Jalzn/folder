@@ -174,12 +174,12 @@ test('cards move by the keyboard, are announced, and complete with ⌘↵ and De
   await expect(todo.getByRole('button', { name: 'Segunda', exact: true })).toBeFocused();
   await expect(live(page)).toHaveText('Movida para A fazer, 1 de 3');
 
-  // ⇧↓ and ⇧↑ within the column, a second press waiting for the first; the ends say so.
+  // ⇧↓ three times at once: each press waits for the one before, and the end joins the last move's words, so
+  // the move that happened is still said.
   await page.keyboard.press('Shift+ArrowDown');
   await page.keyboard.press('Shift+ArrowDown');
-  await expect(live(page)).toHaveText('Posição 3 de 3 em A fazer');
   await page.keyboard.press('Shift+ArrowDown');
-  await expect(live(page)).toHaveText('Já está no fim.');
+  await expect(live(page)).toHaveText('Posição 3 de 3 em A fazer. Já está no fim.');
   await page.keyboard.press('Shift+ArrowUp');
   await expect(live(page)).toHaveText('Posição 2 de 3 em A fazer');
   await expect(todo.locator('.task-card__title')).toHaveText(['Primeira', 'Segunda', 'Terceira']);

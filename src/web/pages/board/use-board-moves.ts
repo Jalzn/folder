@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { api, errorCode, requestId } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import { usesCommandKey } from '../../lib/platform';
@@ -14,6 +15,9 @@ export interface CardSpot {
   columnId: string;
   beforeTaskId: string | null;
 }
+
+/** How long after a move an edge's words join it: a burst of ⇧ and arrows. */
+const BURST_MS = 1500;
 
 type Outcome =
   | { kind: 'none' }
@@ -47,7 +51,16 @@ export function useBoardMoves(
     visible: (task: Task) => boolean;
   },
 ) {
-  const announce = useAnnounce();
+  const live = useAnnounce();
+  // The last move said, while a burst of keys may still be on its way: an edge said right after it joins it, so
+  // the move that happened is never overwritten ("Posição 3 de 3 em A fazer. Já está no fim.").
+  const lastMove = useRef<{ text: string; at: number } | null>(null);
+  function announce(text: string, move = false) {
+    const now = performance.now();
+    const recent = lastMove.current && now - lastMove.current.at < BURST_MS ? lastMove.current.text : null;
+    if (move) lastMove.current = { text, at: now };
+    live(!move && recent ? `${recent}. ${text}` : text);
+  }
 
   function sayWhere(id: string, within: boolean) {
     const board = readBoard(projectId, hooks.visible);
@@ -57,6 +70,7 @@ export function useBoardMoves(
       within
         ? positionText(place.index, place.total, place.column.name)
         : movedText(place.column.name, place.index, place.total),
+      true,
     );
     hooks.moved(id, place.column.id);
   }
