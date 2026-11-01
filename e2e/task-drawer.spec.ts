@@ -157,3 +157,22 @@ test('a project change from the drawer keeps the drawer open on the task, with t
   await expect(openTask(page)).toBeVisible();
   await expect(openTask(page).getByRole('button', { name: `Projeto: ${destination}` })).toBeFocused();
 });
+
+test('⌘↵ in the label picker or the calendar completes nothing', async ({ page }) => {
+  await login(page);
+  await createProject(page, `Atalho nos popovers ${Date.now()}`);
+  await newTask(page, 'Escolher etiqueta');
+  await openDrawer(page, 'Escolher etiqueta');
+  await openTask(page).getByRole('button', { name: 'Adicionar etiqueta', exact: true }).click();
+  await expect(page.getByRole('searchbox', { name: 'Buscar ou criar etiqueta' })).toBeFocused();
+  await pressCommand(page, 'Enter');
+  await page.keyboard.press('Escape');
+  await openTask(page)
+    .getByRole('button', { name: /^Prazo:/ })
+    .click();
+  await expect(page.getByRole('dialog', { name: 'Prazo' }).getByRole('grid')).toBeVisible();
+  await pressCommand(page, 'Enter');
+  await page.keyboard.press('Escape');
+  await expect(toast(page)).not.toContainText('Concluída');
+  await expect(openTask(page).getByRole('button', { name: 'Concluir', exact: true })).toBeVisible();
+});

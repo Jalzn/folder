@@ -96,7 +96,9 @@ export function TaskDrawer({
     const mod = usesCommandKey() ? event.metaKey : event.ctrlKey;
     if (event.key !== 'Enter' || !mod || event.altKey || event.shiftKey || event.nativeEvent.isComposing) return;
     const primary = commands.current.primary;
-    if (!primary || inCodeBlock(event.target)) return;
+    // The drawer's popovers, as the label picker and the calendar, render outside it: their keys stay theirs.
+    const inside = event.target instanceof Node && region.current?.contains(event.target);
+    if (!primary || !inside || inCodeBlock(event.target)) return;
     event.preventDefault();
     event.stopPropagation();
     primary();
