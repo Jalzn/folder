@@ -4,14 +4,19 @@
  * looks empty, a name with them looks like another, and tags can spell a hidden text for an agent.
  * Two kinds stay, only where they draw something:
  *
- * - tag characters inside a flag's tag sequence: the black flag, tags, then the cancel tag (the
- *   Scotland flag);
+ * - the tags of the three subdivision flags emoji draw (England, Scotland and Wales: the black flag,
+ *   the tags of "gbeng", "gbsct" or "gbwls", then the cancel tag). Any other tag text is hidden text,
+ *   even in a flag's shape, since one flag could carry any message and many short ones could split
+ *   it; its tags go and the black flag stays;
  * - the zero-width joiner between two emoji (the technologist, the family), and both joiners after a
  *   letter or mark of a script they shape (Persian, Devanagari, Sinhala), before another letter.
  */
 const INVISIBLE = /[\p{Cf}\u{115F}\u{1160}\u{3164}\u{FFA0}]/u;
 const TAG = /[\u{E0000}-\u{E007F}]/u;
 const TAG_SPEC = /[\u{E0020}-\u{E007E}]/u;
+/** The subdivision flags in the emoji set (RGI), by the letters their tags spell. */
+const SUBDIVISION_FLAGS = new Set(['gbeng', 'gbsct', 'gbwls']);
+const SUBDIVISION_LENGTH = 5;
 const BLACK_FLAG = '\u{1F3F4}';
 const CANCEL_TAG = '\u{E007F}';
 const ZWJ = '\u{200D}';
@@ -39,14 +44,19 @@ function shapesScript(points: readonly string[], index: number): boolean {
   return LETTER_OR_MARK.test(before) && !UNSHAPED.test(before) && LETTER_OR_MARK.test(points[index + 1] ?? '');
 }
 
-/** The positions of the tags that belong to a flag's tag sequence. */
+/** The ASCII a tag character stands for, or nothing for any other character. */
+const tagLetter = (point: string | undefined) =>
+  point !== undefined && TAG_SPEC.test(point) ? String.fromCodePoint((point.codePointAt(0) ?? 0) - 0xe0000) : '';
+
+/** The positions of the tags that make one of the three subdivision flags. */
 function flagTags(points: readonly string[]): Set<number> {
   const kept = new Set<number>();
   points.forEach((point, start) => {
     if (point !== BLACK_FLAG) return;
-    let end = start + 1;
-    while (TAG_SPEC.test(points[end] ?? '')) end += 1;
-    if (end > start + 1 && points[end] === CANCEL_TAG) for (let tag = start + 1; tag <= end; tag += 1) kept.add(tag);
+    const tags = points.slice(start + 1, start + 1 + SUBDIVISION_LENGTH);
+    const end = start + 1 + SUBDIVISION_LENGTH;
+    if (SUBDIVISION_FLAGS.has(tags.map(tagLetter).join('')) && points[end] === CANCEL_TAG)
+      for (let tag = start + 1; tag <= end; tag += 1) kept.add(tag);
   });
   return kept;
 }
@@ -66,7 +76,7 @@ function withoutHidden(text: string): string {
 }
 
 /**
- * The text without tag characters outside a flag's tag sequence, the hidden text an agent would read,
+ * The text without tag characters outside the three subdivision flags, the hidden text an agent reads,
  * and nothing else changed. For what the MCP returns: names and titles stored before visibleText, and
  * document content, may still hold them.
  */
