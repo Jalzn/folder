@@ -8,10 +8,7 @@ export type {
   DocumentSummary,
   Project,
   Task,
-  TaskStatus,
 } from '@tinyfold/workspace/domain';
-
-export { TASK_STATUSES, taskStatusLabels } from '@tinyfold/workspace/domain';
 
 /** What an item without a title is called wherever it shows. */
 export const UNTITLED = 'Sem título';

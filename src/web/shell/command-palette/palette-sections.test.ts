@@ -31,7 +31,7 @@ const results = [
     type: 'task',
     id: 't1',
     title: '',
-    status: 'doing',
+    column: { id: 'c2', name: 'Em andamento', isDone: false },
     projectId: 'p1',
     projectName: 'Tinyfold',
     projectArchived: false,
@@ -64,7 +64,11 @@ describe('palette sections', () => {
     expect(sections.map((section) => section.title)).toEqual(['Neste item', 'Editados recentemente', 'Comandos']);
     expect(sections[0]?.rows.map((row) => row.key)).toEqual(['here:export', 'here:pin', 'here:move', 'here:trash']);
     expect(sections[1]?.rows.map((row) => row.excerpt)).toEqual([undefined, undefined]);
-    expect(sections[1]?.rows[1]).toMatchObject({ label: 'Sem título', status: 'doing', key: 'item:task:t1' });
+    expect(sections[1]?.rows[1]).toMatchObject({
+      label: 'Sem título',
+      column: { name: 'Em andamento' },
+      key: 'item:task:t1',
+    });
   });
 
   it('with text, filters the item and the commands, lists matching projects and shows excerpts', () => {

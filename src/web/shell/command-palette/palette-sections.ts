@@ -75,7 +75,6 @@ export function paletteSections({
         archived: result.projectArchived,
         // A search shows where its words are; the recent items show none, as in the prototype.
         excerpt: typed && 'excerpt' in result ? result.excerpt : undefined,
-        status: 'status' in result ? result.status : undefined,
         column: 'column' in result ? result.column : undefined,
         project: { id: result.projectId, name: result.projectName },
         folder: 'folder' in result ? result.folder : undefined,

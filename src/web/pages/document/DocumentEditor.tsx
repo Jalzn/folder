@@ -71,7 +71,7 @@ export function DocumentEditor({ document }: { document: Document }) {
 
   const update = (patch: Partial<Snapshot>) => controller.change({ ...controller.getState().snapshot, ...patch });
   const linked = tasks.data?.tasks ?? [];
-  const openCount = linked.filter((task) => task.status !== 'done').length;
+  const openCount = linked.filter((task) => task.completedAt === null).length;
   const title = state.snapshot.title === UNTITLED ? '' : state.snapshot.title;
 
   return (

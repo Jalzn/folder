@@ -1,28 +1,28 @@
 import './linked-task.css';
 import { CheckCircle2, Circle } from 'lucide-react';
-import { api } from '../../lib/api';
-import { type Task, taskStatusLabels } from '../../lib/types';
+import { useColumns, useTasks } from '../../lib/queries';
+import type { Task } from '../../lib/types';
 import { useAction } from '../../lib/use-action';
-import { useRequest } from '../../lib/use-request';
+import { useTaskCompletion } from './use-task-completion';
 
-/** A task born in a document, in the document's panel: a check that completes or reopens it, and its title. */
+/**
+ * A task born in a document, in the document's panel: a check that completes or reopens it, with Desfazer, and
+ * its title with its column's name. A task is done while it is in the done column, which is when it has a
+ * completion date.
+ */
 export function LinkedTask({ task, onOpen }: { task: Task; onOpen: () => void }) {
   const action = useAction();
-  const request = useRequest();
-  const done = task.status === 'done';
-  async function toggle() {
-    const input = { id: task.id, expectedVersion: task.version, status: done ? ('todo' as const) : ('done' as const) };
-    await action.run(
-      () => api.workspace.updateTask({ ...input, requestId: request.for(input) }),
-      () => request.clear(),
-    );
-  }
+  const toggleDone = useTaskCompletion(action);
+  // Completing reads the project's board as last read, for its place and the undo's.
+  useTasks({ projectId: task.projectId });
+  const column = useColumns().data?.columns.find((each) => each.id === task.columnId);
+  const done = task.completedAt !== null;
   return (
     <div className="linked-task" data-done={done || undefined}>
       <button
         type="button"
         className="linked-task__check"
-        onClick={() => void toggle()}
+        onClick={() => void toggleDone(task.id, task.projectId)}
         disabled={action.busy}
         aria-label={done ? `Reabrir ${task.title}` : `Concluir ${task.title}`}
       >
@@ -30,7 +30,7 @@ export function LinkedTask({ task, onOpen }: { task: Task; onOpen: () => void })
       </button>
       <button type="button" className="linked-task__title" onClick={onOpen}>
         {task.title}
-        <span className="linked-task__status">{taskStatusLabels[task.status]}</span>
+        {column && <span className="linked-task__status">{column.name}</span>}
       </button>
     </div>
   );

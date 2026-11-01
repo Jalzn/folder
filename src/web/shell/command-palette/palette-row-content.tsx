@@ -1,4 +1,3 @@
-import { TASK_STATUSES, taskStatusLabels } from '@tinyfold/workspace/domain';
 import {
   ArrowLeft,
   ArrowRightLeft,
@@ -69,8 +68,6 @@ export function rowIcon(
       const at = columns.findIndex((column) => column.id === row.column?.id);
       return <ColumnRing index={Math.max(0, at)} count={columns.length} isDone={row.column.isDone} size={16} />;
     }
-    if (row.status)
-      return <ColumnRing index={TASK_STATUSES.indexOf(row.status)} count={TASK_STATUSES.length} size={16} />;
     return action.type === 'document' ? <FileText size={16} /> : <Shapes size={16} />;
   }
   if (action.kind === 'folder') return <Folder size={16} />;
@@ -87,7 +84,7 @@ export function rowRight(row: PaletteRowData, projects: readonly Project[]): Rea
   const project = projects.find((candidate) => candidate.id === row.project?.id);
   return (
     <>
-      {row.column ? <span>{row.column.name} ·</span> : row.status && <span>{taskStatusLabels[row.status]} ·</span>}
+      {row.column && <span>{row.column.name} ·</span>}
       <span className="palette-row__project">
         {project && <ProjectMark name={project.name} color={project.color} size={16} />}
         {placeLabel(row.project.name, row.folder)}

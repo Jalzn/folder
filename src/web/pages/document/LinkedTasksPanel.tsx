@@ -20,8 +20,9 @@ export function LinkedTasksPanel({
 }) {
   const drawer = useTaskDrawer();
   const [showDone, setShowDone] = useState(false);
-  const open = tasks.filter((task) => task.status !== 'done');
-  const done = tasks.filter((task) => task.status === 'done');
+  // A task is done exactly while it is in the done column, with its completion date.
+  const open = tasks.filter((task) => task.completedAt === null);
+  const done = tasks.filter((task) => task.completedAt !== null);
   const row = (task: Task) => <LinkedTask key={task.id} task={task} onOpen={() => drawer.openTask(task)} />;
   return (
     <aside id="linked-tasks-panel" className="linked-tasks" aria-labelledby="linked-tasks-title">

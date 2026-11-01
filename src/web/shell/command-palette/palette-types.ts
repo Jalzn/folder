@@ -1,4 +1,3 @@
-import type { TaskStatus } from '@tinyfold/workspace/domain';
 import type { SearchResult } from '../../lib/queries';
 import type { CommandId } from './commands';
 
@@ -29,9 +28,7 @@ export interface PaletteRowData {
   detail?: string | undefined;
   excerpt?: string | undefined;
   archived?: boolean;
-  /** A task's column, shown before its project. */
-  status?: TaskStatus | undefined;
-  /** A task's column by name, from the search, shown before its project. */
+  /** A task's column, from the search, shown before its project. */
   column?: { id: string; name: string; isDone: boolean } | undefined;
   /** The project an item belongs to, by id and name. */
   project?: { id: string; name: string } | undefined;
