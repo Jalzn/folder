@@ -1,10 +1,32 @@
 # Etapa 10 — Quadro e tarefa
 
-**Estado:** detalhada em 2026-11-01, a partir do escopo inicial de 2026-10-31. As seções "Resultado" e "Desvios do plano" entram ao concluir, como na [etapa 09](09-pastas.md).
+**Estado:** concluída localmente em 2026-11-01, nas entregas B1 a B6 (backend) e W1 a W7 (web). Seguiram-se três revisões adversariais (dados e migração; quadro e gaveta, com teclado, acessibilidade e arrastar; segurança e qualidade), rodadas de correção com reteste e a validação no Chrome real contra o protótipo, com o ensaio de atualização de um banco da etapa 09. As verificações executadas estão em [validação](../validacao.md#etapa-10-quadro-e-tarefa).
+
+As seções a partir de "Referências e precedência" são o plano aprovado, detalhado em 2026-11-01 a partir do escopo inicial de 2026-10-31. O que mudou na implementação está em [Resultado](#resultado) e [Desvios do plano](#desvios-do-plano); a descrição do que existe está em [arquitetura](../arquitetura.md#quadro-e-tarefas) e no [README do workspace](../../src/workspace/README.md).
+
+## Objetivo
+
+Dar às tarefas os campos e o quadro definidos no [produto](../produto.md):
+
+- colunas configuráveis únicas para todo o espaço, com uma coluna de conclusão;
+- descrição com o editor de documentos, prazo e etiquetas;
+- a gaveta inferior não modal no lugar do diálogo da tarefa;
+- o quadro e a página Concluídas no visual Sumário.
+
+A Visão geral, o seletor e a lateral ganham as atrasadas e "Concluídas · 14 dias". O MCP passa a ler colunas, prazos, etiquetas, checklist e a descrição em Markdown.
+
+## Resultado
+
+- **Colunas configuráveis.** A migração 007 reconstrói `workspace_tasks` com `column_id`, prazo, conclusão e descrição, e acrescenta colunas, etiquetas e ligações, com gatilhos que mantêm toda tarefa numa coluna ativa, exatamente uma coluna de conclusão e `completed_at` só nela. As colunas valem para todo o espaço: criar, renomear no lugar, reordenar, excluir com destino e trocar a de conclusão têm Desfazer por restauração versionada, pelo toast e por ⌘Z.
+- **Campos e texto da tarefa.** `updateTask` grava coluna, projeto, prazo e etiquetas com `version`; `saveTaskText` grava título e descrição juntos com `text_version`, então digitar nunca conflita com um campo mudado em outro aparelho. A descrição usa o editor e os limites do documento, deriva o checklist e entra na busca.
+- **Quadro Sumário:** cards com anel, título, prazo ou atraso, checklist e até duas etiquetas; uma parada de Tab, setas, ⇧ e setas, M, ⇧F10, N e ⌘↵, com anúncios e o foco por referência; arrastar com `board-drop.ts`; filtro de etiquetas (F) na aba; e a coluna de conclusão com 14 dias e o rodapé "Mais n concluídas antes de …", que leva a Concluídas.
+- **Gaveta da tarefa** no shell, que empurra a página e fica aberta durante a navegação: alça e altura no dispositivo, cabeçalho de 52 px, Coluna, Prazo com o calendário, Etiquetas com o seletor que cria, Projeto com Desfazer, Checklist e Origem, e a descrição com autosave, rascunho no aparelho e conflito explícito. ⌘↵ conclui ou reabre, e o Esc sai em camadas. Abaixo de 720 px, ela cobre a página.
+- **Datas no fuso do dono,** gravado na primeira carga e trocado no Perfil: hoje, atraso e a janela de 14 dias são os mesmos no card, na lateral, no seletor, na Visão geral e no MCP.
+- **Etiquetas** com nome único pela chave e sete cores, geridas no diálogo "Etiquetas" (⋯ do quadro, filtro e ⌘K) e excluídas na hora, com Desfazer que as devolve a todas as tarefas.
+- **Concluídas** por mês, 50 por vez, com Reabrir e Desfazer. A Visão geral traz as atrasadas, o Agora com coluna, prazo e etiquetas e "Concluídas · 14 dias"; a lateral, a faixa e o seletor contam as atrasadas; o ⌘K ganha "Nesta tarefa".
+- **MCP:** `list_tasks` com coluna, prazo, atraso, etiquetas e checklist e filtros pelos nomes; `read_task` em Markdown, com a descrição em páginas; a busca na descrição; tudo dentro de 45.000 caracteres.
 
 ## Desvios do plano
-
-Registrados durante a implementação; a seção se completa ao concluir.
 
 **Dados e contratos (backend)**
 
@@ -17,16 +39,46 @@ Registrados durante a implementação; a seção se completa ao concluir.
 - **Escritas de tarefa estritas.** Depois de B6, as chaves retiradas eram descartadas como em todo esquema, e a revisão de segurança mostrou o custo: um `updateTask` só com `status`, só com `title`, sem campo ou com uma chave desconhecida respondia 200 e subia versão e data sem mudar nada, e um `createTask` com `status: 'done'` caía em "A fazer". Numa aba antiga, concluir ou renomear parecia dar certo; a versão nova fazia o próximo campo da gaveta de outra aba dar conflito, e a data nova reordenava as recentes. Por isso `createTask`, `updateTask`, `moveTask` e `saveTaskText` recusam chaves que não conhecem (`VALIDATION`), e só elas: nos outros agregados, descartar continua a regra, porque nenhuma chave retirada deles muda o que a escrita faz. Um pedido gravado antes de B6 com `status` e repetido igual recebe `VALIDATION`; repetido sem o `status`, `REQUEST_REUSED`. E um `updateTask` que não muda campo nenhum, sem campo ou só com os valores que a tarefa tem, responde a tarefa como está, sem versão nem data novas, como `moveItem` para o lugar em que o item já está; a versão continua conferida.
 - **Uma coluna de conclusão, por gatilhos.** O índice único parcial de `is_done` deu lugar aos gatilhos da tabela de gatilhos da 007, porque a passagem do papel grava a nova coluna de conclusão antes de limpar a antiga.
 
-## Objetivo
+**Web**
 
-Dar às tarefas os campos e o quadro definidos no [produto](../produto.md):
+- **Arquivos.** A organização seguiu a tabela, com estas diferenças:
+  - `ColumnField` e `ProjectField` ficaram em `TaskProperties.tsx`, e a origem continua em `components/task/TaskSource.tsx`, com os textos da etapa 09; `TaskOrigin.tsx` não foi criado.
+  - `use-task-shortcuts.ts` não foi criado: o ⌘↵ e o ⌥↑/⌥↓ da gaveta ficam em `TaskDrawer.tsx`, com o comando do conteúdo em `drawer-commands.ts`, e o N do quadro entra por `PageCommands.newTaskColumn`.
+  - A gaveta ganhou `OpenTask.tsx` (a tarefa aberta, na lixeira ou num projeto arquivado), `TaskEditor.tsx`, `hold-focus.ts`, `use-drawer-height.ts` e `use-task-text-actions.ts`; o quadro, `board-columns.ts`, `use-board-focus.ts`, `use-flip.ts` e `use-trash-task.ts`.
+  - Na rodada de qualidade, `BoardColumns.tsx` (294 linhas) foi dividido em `use-board-commands.ts`, `BoardOverlays.tsx` e `board-context.tsx` (`9778894`). O registro de elementos, o teste de foco perdido e a criação de etiqueta ficaram num só lugar cada: `ui/element-refs.ts`, `focusIsLost` em `ui/focus.ts` e `use-create-label.ts` (`b69ab79`). `components/editor/` virou `components/item-page/`, para não se confundir com `src/web/editor/` (`893a7cd`).
+- **Sessão do texto.** O plano deixava o autosave de cada tarefa aberta vivo durante toda a aba. Na rodada de qualidade, `lib/session-pool.ts` passou a guardar a sessão só enquanto a gaveta mostra a tarefa ou enquanto o texto dela não está salvo (`893a7cd`). Solta sem estar salva, a sessão leva os próprios ouvintes: tenta de novo quando a rede volta, avisa antes de sair da página e envia ao esconder a aba; ela sai quando fica salva (`edf68fd`, achado R1 do reteste de segurança e qualidade).
+- **Uma parada de Tab.** "+ Coluna" saiu da ordem de Tab, como o "+" e o ⋯ das colunas. O teclado chega a ele por "Nova coluna", no ⋯ do quadro (`4649840`).
+- **Movimentos.** Todo caminho para a coluna de conclusão (arrastar, "Mover para", ⇧ e setas) é um Concluir, com o toast "Concluída: …" e Desfazer, e um movimento mais novo da tarefa tira o Desfazer do toast anterior (`3fe695d`). "Mover para" outra coluna só é anunciado, sem Desfazer, e a lixeira do card confirma antes, como a da gaveta: a tabela de [Desfazer](#desfazer) não tem movimentos nem a lixeira.
+- **Teclas da gaveta.** O Esc num campo da gaveta (título e descrição) devolve o foco à gaveta, e não à página (`e8842ee`). O ⌘↵ da gaveta só age nos elementos dela: no seletor de etiquetas e no calendário, ele faz o ↵ do popover, que cria a etiqueta digitada ou escolhe o dia (`23d33c2`). Uma rajada de ⇧↓ junta o movimento e o aviso de ponta num só anúncio (`930f58b`).
+- **Projeto trocado pela gaveta:** o editor fica na resposta de `getTask` até a lista do novo projeto ter a tarefa, com o foco no campo Projeto (`9dec8ec`).
+- **`?tarefa=`** só abre a gaveta no Quadro, o endereço que "Copiar link" dá; o plano previa qualquer página do projeto.
+- **Calendário:** o `Calendar` do React Aria recebe a data por `CalendarStateContext`, porque `@internationalized/date` não é dependência da web e acrescentá-lo mudaria o lockfile.
+- **Tarefa na lixeira com a gaveta aberta:** a faixa "Esta tarefa está na lixeira." oferece "Abrir lixeira", e não Restaurar. O rascunho baixado é um arquivo JSON.
+- **Etiquetas:** o diálogo trata o próprio ⌘Z, porque `acceptsUndo` recusa dentro de diálogos; ali, o ⌘Z desfaz o toast na tela.
+- **"← Quadro"** fica no começo da barra da página (`PageFrame`), que o celular não mostra.
+- **Descrição em 14/22:** o editor compartilhado deixava a descrição nos 15/24 do documento. Achado na validação, corrigido em `2b01510`, com a medida no E2E.
+- **Fuso:** o Perfil mostra a mensagem do servidor quando a troca é recusada, e uma sessão sem fuso, inclusive um deslocamento gravado antes, manda o do aparelho de novo (`1c4303a`).
+- **Achado da etapa 08:** um Esc que termina uma composição de IME fechava a lateral sobre a página, porque o overlay do React Aria só lê `isComposing` (`70368d6`).
+- **Não feitos:** a dica do Quadro na lateral ("5 abertas · 1 atrasada · G Q") e o calendário em tela cheia no celular.
 
-- colunas configuráveis únicas para todo o espaço, com uma coluna de conclusão;
-- descrição com o editor de documentos, prazo e etiquetas;
-- a gaveta inferior não modal no lugar do diálogo da tarefa;
-- o quadro e a página Concluídas no visual Sumário.
+**Aceitos**
 
-A Visão geral, o seletor e a lateral ganham as atrasadas e "Concluídas · 14 dias". O MCP passa a ler colunas, prazos, etiquetas, checklist e a descrição em Markdown.
+- **Dados:**
+  - o executor aplica toda migração com as chaves desligadas, então nenhuma cascata dispara dentro de uma migração, como descrito acima;
+  - as listas de `restoreColumn` e `setDoneColumn` são a palavra do cliente, como a de `restoreFolder`, salvo uma conclusão no futuro;
+  - uma exclusão de coluna ou uma troca de conclusão com mais de 1.000 tarefas afetadas sai sem Desfazer, como nas pastas;
+  - um pedido gravado antes de B6 com `status`, repetido igual, recebe `VALIDATION`.
+- **Quadro e gaveta:**
+  - a rolagem do quadro não fica guardada, nem a da página nem a das colunas, que rolam sozinhas (`PageFrame fill`);
+  - não há calendário em tela cheia no celular: o popover de 250 px cabe no Pixel 7;
+  - não há a dica do Quadro na lateral, que já mostra "1 atrasada";
+  - "Mover para" no card não tem Desfazer, salvo para a coluna de conclusão;
+  - a lixeira do card confirma antes;
+  - o diálogo de etiquetas trata o próprio ⌘Z;
+  - o teclado chega a "+ Coluna" por "Nova coluna", no ⋯ do quadro;
+  - o ⌘↵ nos popovers da gaveta faz o ↵ deles.
+- **As diferenças em relação ao protótipo** listadas na [validação](../validacao.md#etapa-10-quadro-e-tarefa).
+- **O fallback de celular** é funcional, não um design aprovado.
 
 ## Referências e precedência
 
@@ -1020,20 +1072,20 @@ DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm dev
 
 ## Critérios de pronto
 
-- [ ] `check`, `test:db`, `build` e `e2e` (desktop e Pixel 7) verdes depois de cada entrega.
-- [ ] O executor aplica uma migração com as chaves desligadas, confere `foreign_key_check` e religa as chaves, também em falha.
-- [ ] A migração 007 roda sobre bancos reais da etapa 09 (dumps e o ensaio de atualização) sem perder tarefas, origens, posições nem versões, e com os gatilhos recusando as violações. O `INSERT OR REPLACE` de pastas fica fechado.
-- [ ] Colunas criadas, renomeadas, reordenadas, excluídas com destino e com a conclusão trocada, com Desfazer pelo toast e por ⌘Z.
-- [ ] A descrição com autosave, rascunho recuperável, conflito explícito, checklist ao vivo e a gaveta aberta durante a navegação.
-- [ ] Prazo, atraso e janela de 14 dias no fuso do dono, iguais no card, nas contagens e no MCP.
-- [ ] Etiquetas com nome único pela chave, cor, filtro, o diálogo "Etiquetas" e a exclusão sem diálogo, com Desfazer.
-- [ ] Quadro, gaveta e Concluídas conforme visual.md e o protótipo, com o teclado da tabela, o Esc em camadas e o arrastar.
-- [ ] Visão geral, seletor e lateral com as atrasadas e "Concluídas · 14 dias".
-- [ ] MCP com coluna, prazo, atraso, etiquetas, checklist e conclusão; `read_task` com a descrição em páginas; busca na descrição; tudo dentro de 45.000 caracteres.
-- [ ] `TaskDialog`, `Kanban.tsx` e `TASK_STATUSES` substituídos, e os arquivos divididos conforme a tabela.
-- [ ] O exemplo com colunas, etiquetas, prazos e descrições já normalizadas: abrir uma tarefa não a salva.
-- [ ] Validação no Chrome real contra o protótipo registrada, com bancos temporários e as portas 3501 e 5301.
-- [ ] Documentação atualizada conforme a seção final.
+- [x] `check`, `test:db`, `build` e `e2e` (desktop e Pixel 7) verdes depois de cada entrega.
+- [x] O executor aplica uma migração com as chaves desligadas, confere `foreign_key_check` e religa as chaves, também em falha.
+- [x] A migração 007 roda sobre bancos reais da etapa 09 (dumps e o ensaio de atualização) sem perder tarefas, origens, posições nem versões, e com os gatilhos recusando as violações. O `INSERT OR REPLACE` de pastas fica fechado.
+- [x] Colunas criadas, renomeadas, reordenadas, excluídas com destino e com a conclusão trocada, com Desfazer pelo toast e por ⌘Z.
+- [x] A descrição com autosave, rascunho recuperável, conflito explícito, checklist ao vivo e a gaveta aberta durante a navegação.
+- [x] Prazo, atraso e janela de 14 dias no fuso do dono, iguais no card, nas contagens e no MCP.
+- [x] Etiquetas com nome único pela chave, cor, filtro, o diálogo "Etiquetas" e a exclusão sem diálogo, com Desfazer.
+- [x] Quadro, gaveta e Concluídas conforme visual.md e o protótipo, com o teclado da tabela, o Esc em camadas e o arrastar.
+- [x] Visão geral, seletor e lateral com as atrasadas e "Concluídas · 14 dias".
+- [x] MCP com coluna, prazo, atraso, etiquetas, checklist e conclusão; `read_task` com a descrição em páginas; busca na descrição; tudo dentro de 45.000 caracteres.
+- [x] `TaskDialog`, `Kanban.tsx` e `TASK_STATUSES` substituídos, e os arquivos divididos conforme a tabela.
+- [x] O exemplo com colunas, etiquetas, prazos e descrições já normalizadas: abrir uma tarefa não a salva.
+- [x] Validação no Chrome real contra o protótipo registrada, com bancos temporários e as portas 3501 e 5301.
+- [x] Documentação atualizada conforme a seção final.
 
 ## Divisão do trabalho
 

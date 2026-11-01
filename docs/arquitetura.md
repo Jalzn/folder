@@ -34,6 +34,8 @@ Kysely usa better-sqlite3 com um dialeto que inicia transações com `BEGIN IMME
 
 Migrações SQL numeradas são executadas atomicamente e registradas com checksum. Alterar uma migração já aplicada impede a subida. A execução usa scripts SQL nativos, preservando strings com ponto e vírgula.
 
+As migrações pendentes rodam numa só transação. Desde a etapa 10, o executor (`src/core/infra/migrate.ts`) desliga as chaves estrangeiras antes dela, já que o SQLite não muda essa opção dentro de uma transação, para que uma tabela referenciada possa ser reconstruída sem apagar em cascata as linhas que apontam para ela. Antes do `COMMIT`, `foreign_key_check` recusa toda violação que não existia no começo, com a tabela e o `rowid`; as anteriores, deixadas por SQL manual, vão para um aviso no log. As chaves voltam a ser ligadas também em falha. Em troca, nenhuma cascata dispara dentro de uma migração: uma migração que apague um pai precisa apagar os filhos. Um módulo registra as funções SQL que as migrações usam (`sqlFunctions`; o workspace, `workspace_search_text`, o `searchText` do domínio).
+
 A implantação prevê uma instância e um volume local ao processo. Não há réplica nem banco compartilhado por múltiplos hosts.
 
 ## Autenticação
@@ -53,7 +55,7 @@ A implantação prevê uma instância e um volume local ao processo. Não há r�
 
 | Tabela | Responsabilidade |
 | --- | --- |
-| `auth_owner` | Conta única, hash de senha e identidade da instalação |
+| `auth_owner` | Conta única, hash de senha, identidade da instalação e fuso do dono (`time_zone`, pelo nome canônico do Intl) |
 | `auth_sessions` | Hash do token, aparelho e validade |
 | `auth_access_tokens` | Nome, SHA-256 e prefixo do token pessoal, escopo `read`, criação e último uso |
 | `workspace_projects` | Nome, cor (`color`), posição no seletor (`position`, nula nos arquivados), versão, datas e arquivamento |
@@ -61,13 +63,16 @@ A implantação prevê uma instância e um volume local ao processo. Não há r�
 | `workspace_documents` | Projeto obrigatório, pasta (`folder_id`, nula na raiz), título, JSON, texto de busca, formato, versão, fixado (`pinned_at`) e exclusão lógica |
 | `workspace_canvases` | Projeto obrigatório, pasta (`folder_id`, nula na raiz), título, cena vetorial JSON, texto de busca, formato, versão, fixado (`pinned_at`) e exclusão lógica |
 | `workspace_canvas_previews` | Uma prévia PNG por desenho: versão e impressão digital da cena, largura, altura e bytes; apagada com o desenho |
-| `workspace_tasks` | Projeto obrigatório, título, estado, posição na coluna do projeto, versão e exclusão lógica |
+| `workspace_columns` | Colunas do quadro, as mesmas para todos os projetos: nome, chave do nome (única entre as ativas), posição, conclusão (`is_done`, exatamente uma ativa), versão, datas e exclusão lógica |
+| `workspace_tasks` | Projeto obrigatório, coluna (`column_id`), posição na coluna do projeto, prazo (`due_on`, data civil), conclusão (`completed_at`), título e descrição com versão própria (`text_version`), texto de busca e checklist derivados, versão e exclusão lógica |
+| `workspace_labels` | Etiquetas do espaço: nome, chave do nome (única entre as ativas), cor de uma paleta de sete, versão, datas e exclusão lógica |
+| `workspace_task_labels` | Ligações entre tarefas e etiquetas, guardadas quando a etiqueta é excluída |
 | `workspace_task_sources` | Uma origem por tarefa: documento (nulo depois de excluído de vez), título guardado do documento, bloco opcional e trecho capturado |
-| `workspace_state` | Revisão do quadro para validar movimentos concorrentes |
+| `workspace_state` | Revisão do quadro, que sobe com o que muda a ordem, para validar movimentos concorrentes |
 | `core_mutations` | ID do pedido, operação, fingerprint, resposta compacta e data |
 | `core_schema_migrations` | Migrações aplicadas e checksums |
 
-As relações têm chaves estrangeiras, e gatilhos recusam `project_id` nulo em documentos, desenhos e tarefas. Desde a migração `006_folders.sql`, gatilhos também garantem que um item vivo só fica numa pasta ativa do próprio projeto, que a pasta não muda de projeto e que não é excluída com itens vivos dentro; um item na lixeira guarda a pasta excluída como origem. A lixeira preserva documentos e vínculos; tarefas continuam disponíveis mesmo com a origem excluída, e excluir o documento de vez deixa na origem o título que ele tinha. Trechos removidos ou modificados apresentam estado de origem indisponível e o contexto capturado permanece.
+As relações têm chaves estrangeiras, e gatilhos recusam `project_id` nulo em documentos, desenhos e tarefas. Desde a migração `006_folders.sql`, gatilhos também garantem que um item vivo só fica numa pasta ativa do próprio projeto, que a pasta não muda de projeto e que não é excluída com itens vivos dentro; um item na lixeira guarda a pasta excluída como origem. Desde a migração `007_board.sql`, gatilhos garantem que toda tarefa, viva ou na lixeira, está numa coluna ativa, que há exatamente uma coluna de conclusão e que `completed_at` existe exatamente nela; também recusam um `id` já em uso em pastas, colunas e etiquetas, o que fecha o `INSERT OR REPLACE`. A lixeira preserva documentos e vínculos; tarefas continuam disponíveis mesmo com a origem excluída, e excluir o documento de vez deixa na origem o título que ele tinha. Trechos removidos ou modificados apresentam estado de origem indisponível e o contexto capturado permanece.
 
 ## Projetos, navegação e lixeira
 
@@ -84,9 +89,22 @@ Todo documento, desenho e tarefa pertence a um projeto ativo na criação. A mig
 
 ### Desfazer
 
-Excluir uma pasta, com ou sem os itens, e mover um item entre pastas ou projetos têm "Desfazer" no toast. A exclusão é lógica e a restauração é versionada: `restoreFolder` recebe as listas que `deleteFolder` respondeu, devolve a pasta à posição guardada e só traz de volta o que continua como a exclusão deixou, contando os outros em `skipped`. Desfazer um movimento é outro `moveItem`. Uma pasta com mais de 1.000 itens sai sem Desfazer.
+Excluir uma pasta, com ou sem os itens, e mover um item entre pastas ou projetos têm "Desfazer" no toast, assim como, desde a etapa 10, excluir uma coluna ou trocar a de conclusão, excluir uma etiqueta e concluir, reabrir ou mudar o projeto de uma tarefa. A exclusão é lógica e a restauração é versionada: `restoreFolder` recebe as listas que `deleteFolder` respondeu, devolve a pasta à posição guardada e só traz de volta o que continua como a exclusão deixou, contando os outros em `skipped`. Desfazer um movimento é outro `moveItem`. Uma pasta com mais de 1.000 itens, ou uma coluna excluída ou trocada com mais de 1.000 tarefas, sai sem Desfazer. As colunas e etiquetas seguem o mesmo padrão em `restoreColumn`, `setDoneColumn` (com a lista `restore`) e `restoreLabel`.
 
 No cliente, o ⌘Z desfaz a ação do toast na tela (`ToastProvider`, com a guarda `acceptsUndo`): só fora de campos editáveis, do editor, do Excalidraw e de menus e diálogos, e nunca a de um toast que já saiu. Cada Desfazer pertence à sua mudança (`lib/item-changes.ts`): uma mudança mais nova do mesmo item tira o Desfazer do toast anterior. As escritas passam uma de cada vez (`lib/write-queue.ts`), cada intenção guarda o seu ID de pedido, e uma resposta perdida é reenviada uma vez com o mesmo ID (`lib/lost-answer.ts`), que devolve a resposta guardada.
+
+## Quadro e tarefas
+
+As regras completas estão no [README do workspace](../src/workspace/README.md); o plano e os desvios, na [etapa 10](etapas/10-quadro-tarefa.md).
+
+- **Colunas:** um conjunto para todo o espaço, até 20 ativas, com nome único pela chave das pastas e sempre uma de conclusão e uma aberta. Excluir uma coluna leva todas as tarefas dela, vivas e na lixeira, de todos os projetos, ao destino escolhido. Trocar a de conclusão conclui as tarefas da nova e reabre as da antiga, sem mudar versão nem data de edição.
+- **Conclusão:** entrar na coluna de conclusão grava `completed_at`, e sair dela o apaga. Concluir põe a tarefa no topo da coluna de conclusão; Reabrir, no fim da primeira aberta.
+- **Campos e texto:** `updateTask` grava coluna, projeto, prazo e etiquetas (até 20) com `version`; `saveTaskText` grava título e descrição juntos com `text_version`, então digitar nunca conflita com um campo mudado em outro aparelho. A descrição usa o validador e os limites do documento, e o servidor deriva o checklist, o texto e a busca. As escritas de tarefa recusam chaves desconhecidas.
+- **Revisão do quadro:** sobe só com o que muda a ordem (criar, mover, mudar de coluna ou de projeto, lixeira e as escritas de coluna). Prazo, etiquetas e texto não a sobem. O Desfazer move sem revisão, conferindo o lugar pela vizinha.
+- **Datas civis no fuso do dono:** `auth_owner.time_zone` recebe o fuso do navegador na primeira carga e muda no Perfil; até lá, ou se o valor gravado for inválido, vale UTC. O servidor injeta `timeZone()` no workspace e nas ferramentas MCP. Uma tarefa está atrasada a partir do dia seguinte ao prazo, fora da coluna de conclusão, e a coluna de conclusão mostra as concluídas desde o início de hoje − 13 dias.
+- **Leituras:** `projectBoard` (as tarefas do quadro, com a janela de 14 dias, `today` e `olderDone`), `listCompletedTasks` (Concluídas, por cursor `c~<conclusão>~<id>`), `listColumns`, `listLabels` e `getTask` (com a descrição, também da lixeira). `listProjects`, `projectNavigation` e `projectOverview` contam as atrasadas, e a Visão geral traz o Agora e as concluídas recentes.
+- **Gaveta da tarefa:** fica no shell (`TaskDrawerProvider` em `shell/task-drawer-state.tsx` e `DrawerRegion.tsx`), fora das páginas, então ela e o editor da descrição sobrevivem à navegação. Abaixo de 720 px, cobre a página. O texto salva por uma sessão de autosave por tarefa (`components/task-drawer/task-session.ts`), num conjunto (`lib/session-pool.ts`) que a guarda enquanto a gaveta mostra a tarefa ou enquanto o texto não está salvo; solta sem estar salva, ela tenta de novo quando a rede volta e avisa antes de sair da página.
+- **Quadro na web:** um widget com uma parada de Tab (`pages/board/board-keys.ts`), em que as setas andam entre cards e colunas e ⇧ e setas movem; o arrastar é HTML nativo, com o alvo calculado por `board-drop.ts`. Os movimentos passam pela fila de escritas, e cada um tira o Desfazer do toast anterior da mesma tarefa.
 
 ## Salvamento e múltiplos dispositivos
 
@@ -111,7 +129,8 @@ A SPA usa TanStack Router com endereços em português, sempre dentro de um proj
 | Endereço | Tela |
 | --- | --- |
 | `/projetos/$id` | Visão geral |
-| `/projetos/$id/quadro` (`?tarefa=`) | Quadro, com o diálogo de uma tarefa |
+| `/projetos/$id/quadro` (`?tarefa=`) | Quadro; `?tarefa=` abre a tarefa na gaveta e sai do endereço |
+| `/projetos/$id/concluidas` | Concluídas do projeto, por mês |
 | `/projetos/$id/indice` (`?tipo=documentos\|desenhos`, `?pasta=<id>\|raiz`) | Índice de documentos e desenhos, agrupado por pasta |
 | `/projetos/$id/lixeira` | Lixeira do projeto |
 | `/projetos/$id/documentos/$docId` (`?bloco=`) e `/projetos/$id/desenhos/$canvasId` | Editores |
@@ -120,7 +139,7 @@ A SPA usa TanStack Router com endereços em português, sempre dentro de um proj
 
 `/` reabre o último lugar do último projeto, com a rolagem, guardado no dispositivo por instalação; o caminho guardado só é usado se for um endereço interno conhecido. Os endereços anteriores (`/documentos/$id`, `/desenhos/$id`, listas e `/login`) redirecionam, e um item aberto no endereço de outro projeto passa ao endereço certo. Uma codificação quebrada ou um endereço desconhecido mostram uma página em português dentro do shell.
 
-O shell (`src/web/shell/`) tem a lateral de 256 px a partir de 1.100 px, com a árvore Itens (o `Tree` do React Aria, `treegrid`), em que os atalhos N, P, M e G ganham do typeahead e um arrastar leva itens entre pastas e reordena pastas, a faixa de 52 px (⌘\\) e a lateral sobre a página entre 720 e 1.100 px, e abaixo de 720 px uma barra de 44 px que recebe as ações da página. Buscar filtra na lateral; o ⌘K busca em todos os projetos e lista as ações do item aberto e os comandos. Atalhos de uma tecla não valem em campos editáveis, durante uma composição de IME nem no Excalidraw, e o Esc fecha só a camada mais recente, sem navegar. Toasts mostram um por vez, o mais novo no lugar do anterior, em regiões vivas que um modal não esconde.
+O shell (`src/web/shell/`) tem a lateral de 256 px a partir de 1.100 px, com a árvore Itens (o `Tree` do React Aria, `treegrid`), em que os atalhos N, P, M e G ganham do typeahead e um arrastar leva itens entre pastas e reordena pastas, a faixa de 52 px (⌘\\) e a lateral sobre a página entre 720 e 1.100 px, e abaixo de 720 px uma barra de 44 px que recebe as ações da página. Buscar filtra na lateral; o ⌘K busca em todos os projetos e lista as ações do item aberto e os comandos. Atalhos de uma tecla não valem em campos editáveis, durante uma composição de IME nem no Excalidraw, e o Esc fecha só a camada mais recente, sem navegar. Toasts mostram um por vez, o mais novo no lugar do anterior, em regiões vivas que um modal não esconde. A gaveta da tarefa fica abaixo da página, na mesma coluna de trabalho, que ela empurra para cima; é uma camada do Esc e uma região do F6, e a tarefa aberta fica no estado do shell, não no endereço.
 
 ## Tema, tokens e fontes
 
@@ -140,7 +159,7 @@ Importar Markdown cria outro documento e preserva o documento aberto. Exportar u
 
 O intercâmbio de equações usa a árvore sintática Markdown para reconhecer delimitadores fora de código, links e HTML. As demais estruturas continuam sendo processadas pelo BlockNote. A exportação preserva a fonte LaTeX sem depender da renderização, inclusive quando inválida, e verifica se todas as fórmulas foram restituídas. Ver [equações](equacoes.md) para sintaxe e limites.
 
-Criar tarefa é uma ação explícita sobre a seleção. Um trecho de um único bloco usa sua âncora; uma seleção que atravessa blocos usa o documento como origem. Checklists continuam locais ao texto.
+O editor em blocos fica em `src/web/editor/` e é o mesmo para documentos e para a descrição das tarefas, que ganha só o tamanho próprio (14/22) e não tem "Criar tarefa". Criar tarefa é uma ação explícita sobre a seleção. Um trecho de um único bloco usa sua âncora; uma seleção que atravessa blocos usa o documento como origem. Checklists continuam locais ao texto.
 
 ## Canvas e limites
 
@@ -182,10 +201,11 @@ Respostas saem com `Cache-Control: no-store`, e os erros HTTP usam o formato OAu
 
 ### Leitura por agentes
 
-As ferramentas do workspace são objetos simples (`createWorkspaceTools(db, { logError })`), sem dependência do SDK. Casos de uso em `application/reading/` usam a porta `WorkspaceReader`, implementada em `infra/reader/`. Os limites ficam em `domain/reading-limits.ts`.
+As ferramentas do workspace são objetos simples (`createWorkspaceTools(db, { logError, clock, timeZone })`), sem dependência do SDK. Casos de uso em `application/reading/` usam a porta `WorkspaceReader`, implementada em `infra/reader/`. Os limites ficam em `domain/reading-limits.ts`.
 
 - **Busca:** exige todas as palavras da consulta, normalizadas sem caixa e acentos, e ordena por palavras no título e depois pela edição mais recente. O trecho de 240 caracteres vem de uma janela do texto em volta da primeira ocorrência, numa linha só, com os blocos do documento ou os textos do desenho separados por vírgula.
-- **Listas:** são paginadas por chave (`s~…`, `t~…`, `p~…`). O cursor do quadro fixa a revisão do quadro e é recusado depois de qualquer mudança nas tarefas.
+- **Listas:** são paginadas por chave (`s~…`, `t~…`, `p~…`). O cursor do quadro fixa a revisão do quadro e a posição da coluna, e é recusado depois de qualquer mudança na ordem.
+- **Tarefas:** `list_tasks` filtra pelos nomes das colunas e das etiquetas e traz, de cada tarefa, a coluna, o prazo, o atraso no fuso do dono, as etiquetas, o checklist e a conclusão; `read_task` responde em Markdown, como `read_document`, com a descrição em páginas de 36.000 caracteres; a busca acha tarefas também pela descrição.
 - **Documentos:** saem em Markdown do serializador puro do domínio (`documentToMarkdown`), em páginas de 36.000 caracteres com cursor `<impressão>:<deslocamento>`, presas ao texto paginado, e não à versão, para que mover ou renomear não as invalide; a primeira reserva 9.000 para cabeçalho e rodapé. Um bloco cortado pela página é fechado e reaberto.
 - **Desenhos:** saem como estrutura textual da cena atual (`outlineCanvasScene`) e a prévia PNG guardada.
 - **Projetos e origens:** `list_projects` traz cor, posição, `folderCount` e até 50 pastas por projeto, com a contagem de itens, sem `withoutProject`; a busca diz se o item está fixado e em que pasta está (`folder`), e aceita `folderId`; `read_document` e `read_drawing` trazem a linha da pasta no cabeçalho; uma origem de tarefa cujo documento foi excluído de vez vem com `documentId: null` e o título guardado.

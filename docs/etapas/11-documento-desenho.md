@@ -46,17 +46,12 @@ Levar ao documento as ligações do produto: tarefas e desenhos incorporados, vi
 
 ## Organização do código
 
-- **`src/web/pages/DocumentEditor.tsx`** (845 linhas) vira `pages/document/`:
-  - `DocumentPage.tsx`, `DocumentHeader.tsx`, `DocumentTitle.tsx` e `SaveStatus.tsx`; as faixas já são `SaveBanners`, em `components/editor/`, compartilhadas com o desenho desde a etapa 08;
-  - `DocumentMenu.tsx`, `SelectionTaskButton.tsx`, `use-document-autosave.ts` e `use-markdown-io.ts`.
+- **`pages/document/`** já está dividida desde a etapa 08: `DocumentPage.tsx`, `DocumentEditor.tsx` (206 linhas), `DocumentTitle.tsx`, `document-session.ts` (o autosave por documento), `use-document-files.ts` (Markdown) e `use-task-from-selection.ts`. A página nova acrescenta `DocumentHeader.tsx`, `SaveStatus.tsx` e `DocumentMenu.tsx`; as faixas já são `SaveBanners`, em `components/item-page/`, compartilhadas com o desenho desde a etapa 08.
 - **Editor:** `src/web/editor/` (criado na etapa 10, com `schema.ts`, `BlockEditor.tsx` e `use-block-editor.ts`) ganha `blocks/TaskEmbed.tsx`, `blocks/DrawingEmbed.tsx`, `blocks/UnavailableEmbed.tsx`, `origin-markers.ts` e `insert-menu.ts`. Os blocos incorporados entram só no esquema do documento: a descrição da tarefa usa o mesmo editor sem eles.
-- **`src/web/pages/CanvasEditor.tsx`** (737 linhas) vira `pages/drawing/`:
-  - `DrawingPage.tsx`, `DrawingHeader.tsx` e `ExcalidrawHost.tsx`;
-  - `use-canvas-autosave.ts`, `canvas-io.ts` (importar e exportar), `viewport.ts` e `RecoveryBanners.tsx`.
-  - A sessão por desenho atual (controlador de autosave, `CanvasPreviewUploader` e `onAdopted`) fica num `drawing-session.ts`, para a prévia continuar enviando depois de sair do editor.
+- **`pages/drawing/`** também: `DrawingPage.tsx`, `CanvasEditor.tsx` (191 linhas), `DrawingCanvas.tsx`, `canvas-session.ts` (o autosave e o envio da prévia, que continuam depois de sair do editor), `use-canvas-files.ts` (importar e exportar), `use-scene-changes.ts` e `use-viewport.ts`. A página nova acrescenta `DrawingHeader.tsx`.
   - `canvas-png.ts` e `canvas-preview.ts` continuam em `lib/`, desde a etapa 07.
 - **Workspace:** `application/embeds/resolve-embeds.ts`, mais as regras de incorporação no domínio.
-- **Estilos:** `src/web/styles/compat.css`, criado na etapa 08 para as páginas antigas, é removido quando o documento e o desenho passam ao visual novo.
+- **Estilos:** `compat.css` saiu já na etapa 08 (W7), quando nenhuma página lia mais as variáveis antigas; o documento e o desenho passam ao visual novo sobre os tokens.
 
 ## Dependências
 

@@ -1,6 +1,6 @@
 # Tinyfold — Identidade visual
 
-**Direção aprovada (2026-10-31):** Sumário. Limpa, moderna e tipográfica, no gênero de ferramentas como o Linear, com tema claro e escuro gerados pelo mesmo sistema. Implementada na [etapa 08](etapas/08-fundacao.md): tokens, temas, fontes, componentes base, lateral, seletor, ⌘K, Visão geral, Índice, Lixeira e Perfil. A [etapa 09](etapas/09-pastas.md) levou a lateral à grade de 256 px do protótipo, com texto em x=52, e trocou Documentos e Desenhos pela árvore Itens, com as pastas. O quadro, a gaveta da tarefa e as páginas de documento e desenho receberam só um restyle por tokens; o desenho completo deles chega com as etapas 10 e 11.
+**Direção aprovada (2026-10-31):** Sumário. Limpa, moderna e tipográfica, no gênero de ferramentas como o Linear, com tema claro e escuro gerados pelo mesmo sistema. Implementada na [etapa 08](etapas/08-fundacao.md): tokens, temas, fontes, componentes base, lateral, seletor, ⌘K, Visão geral, Índice, Lixeira e Perfil. A [etapa 09](etapas/09-pastas.md) levou a lateral à grade de 256 px do protótipo, com texto em x=52, e trocou Documentos e Desenhos pela árvore Itens, com as pastas. A [etapa 10](etapas/10-quadro-tarefa.md) implementou o quadro e a gaveta da tarefa nas medidas da visual.md e do protótipo: colunas com cabeçalho de 28 px, cards com raio 8 e título 13/18, a gaveta com cabeçalho de 52 px e a descrição em 14/22. As páginas de documento e desenho receberam só um restyle por tokens; o desenho completo delas chega com a etapa 11.
 
 [Protótipo Sumário](https://claude.ai/artifact/1DfmsQAVUE7Tek6pYCkcvW). A especificação completa está em [interface/visual.md](interface/visual.md); a organização das telas, em [interface](interface/README.md).
 
@@ -28,7 +28,7 @@ A tabela completa, com estados, faixas, etiquetas e marcas de projeto, está em 
 ## Tipografia e forma
 
 - **Tipografia:** Inter variável em tudo, com o corte display nos títulos. JetBrains Mono no código e no token.
-- **Escala principal:** títulos de página 30/36 em peso 600; interface 13/20; corpo do documento 15/24; datas, contagens e etiquetas 12/16 com algarismos tabulares.
+- **Escala principal:** títulos de página 30/36 em peso 600; interface 13/20; corpo do documento 15/24 e descrição da tarefa 14/22; datas, contagens e etiquetas 12/16 com algarismos tabulares.
 - **Pesos:** 450 no escuro e 400 no claro, ênfase 500, sem 700.
 - **Forma:**
   - Grade de 4 px.

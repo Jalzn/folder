@@ -2,7 +2,7 @@
 
 Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar, sempre dentro de um projeto. Interface Sumário, limpa e tipográfica, em tema claro e escuro, com dados em SQLite no servidor e autenticação por senha.
 
-**Estado:** implementado e validado localmente até a [etapa 09](docs/etapas/09-pastas.md). Hospedagem pública, domínio e destino externo dos backups ainda não estão configurados.
+**Estado:** implementado e validado localmente até a [etapa 10](docs/etapas/10-quadro-tarefa.md). Hospedagem pública, domínio e destino externo dos backups ainda não estão configurados.
 
 ## O que funciona
 
@@ -16,16 +16,22 @@ Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e ac
 - Equações LaTeX em linha e em bloco, com prévia e preservação da fonte no Markdown.
 - Salvamento automático, recuperação de rascunhos e resolução explícita de conflitos entre dispositivos.
 - Desenhos com Excalidraw: formas, setas, texto e traço livre; importação/exportação `.excalidraw` e exportação PNG.
-- Kanban do projeto; criar, editar, mover, ordenar e concluir tarefas.
+- Quadro do projeto com colunas configuráveis, as mesmas em todos os projetos: criar, renomear, reordenar, excluir com destino e escolher a coluna de conclusão, com Desfazer. Cards com prazo, atraso, etiquetas e progresso do checklist; mover arrastando, pelo teclado ou pelo menu; filtro por etiqueta.
+- Gaveta da tarefa, que empurra a página e fica aberta durante a navegação: coluna, prazo com calendário, etiquetas, projeto e a descrição com o editor dos documentos, salvamento automático e rascunho recuperável. ⌘↵ conclui ou reabre, com Desfazer.
+- Concluídas por mês, as atrasadas na Visão geral, no seletor e na lateral, e as datas no fuso do dono, que o Perfil troca.
 - Criar tarefa a partir de um trecho e voltar ao documento de origem.
 - Perfil com troca de senha, gerenciamento de sessões e tokens pessoais para o Claude Code.
-- Acesso do Claude Code por MCP somente leitura: lista projetos com as pastas, busca, lê documentos em Markdown, desenhos como imagem e estrutura, e tarefas. A lixeira fica de fora.
+- Acesso do Claude Code por MCP somente leitura: lista projetos com as pastas, busca, lê documentos em Markdown, desenhos como imagem e estrutura, e tarefas com coluna, prazo, etiquetas, checklist e a descrição. A lixeira fica de fora.
 
-| Visão geral | Pastas | Celular |
+| Quadro | Gaveta da tarefa | Celular |
 | --- | --- | --- |
-| ![Visão geral no tema claro](docs/screens/visao-geral-claro-1440.png) | ![Mover para pasta no tema escuro](docs/screens/pastas-mover-escuro-1440.png) | ![Lateral com pastas no celular](docs/screens/lateral-celular.png) |
+| ![Quadro no tema claro](docs/screens/quadro-claro-1440.png) | ![Gaveta da tarefa no tema escuro](docs/screens/gaveta-escuro-1440.png) | ![Quadro no celular](docs/screens/quadro-celular.png) |
 
-Mais capturas, nos dois temas e em três larguras, estão na validação das etapas [09](docs/validacao.md#etapa-09-pastas) e [08](docs/validacao.md#etapa-08-fundação-e-lateral).
+| Visão geral | Pastas | Concluídas |
+| --- | --- | --- |
+| ![Visão geral no tema claro](docs/screens/visao-geral-claro-1440.png) | ![Mover para pasta no tema escuro](docs/screens/pastas-mover-escuro-1440.png) | ![Concluídas no tema claro](docs/screens/concluidas-claro-1440.png) |
+
+Mais capturas, nos dois temas e em três larguras, estão na validação das etapas [10](docs/validacao.md#etapa-10-quadro-e-tarefa), [09](docs/validacao.md#etapa-09-pastas) e [08](docs/validacao.md#etapa-08-fundação-e-lateral).
 
 ## Executar
 

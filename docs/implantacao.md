@@ -8,7 +8,7 @@ Use `mise install` para as versões fixadas, seguido de `mise exec -- pnpm insta
 
 `mise exec -- pnpm seed:sample` preenche um banco com os dados de exemplo, para validação visual e capturas, nunca para uso real. Ele só grava na pasta temporária do sistema, num arquivo novo ou num banco vazio, por exemplo `DATABASE_PATH="$(mktemp -d)/tinyfold.sqlite"`, e confere o destino antes de migrar qualquer coisa. Recusa outro lugar, um link simbólico, qualquer `data/tinyfold.sqlite`, o banco de produção (`/data/tinyfold.sqlite`), `NODE_ENV=production` e um arquivo que já tenha tabelas. Rode-o com o `dev` parado e suba o `dev` com o mesmo `DATABASE_PATH`.
 
-`mise exec -- pnpm seed:sample --grande` grava a variante grande, com o Tinyfold em 55 itens e quatro pastas, como o comando "Simular projeto grande" do protótipo. Serve só para validar a escala da lateral, com as mesmas recusas.
+O exemplo traz o quadro do brief: as colunas A fazer, Em andamento, Revisão e Concluído, sete etiquetas, prazos contados do dia em que o seed roda e descrições com checklist. `mise exec -- pnpm seed:sample --grande` grava a variante grande, com o Tinyfold em 55 itens e quatro pastas, como o comando "Simular projeto grande" do protótipo, e 60 tarefas concluídas de 15 a 120 dias antes. Serve só para validar a escala da lateral, o rodapé da coluna de conclusão e as páginas de Concluídas, com as mesmas recusas.
 
 ## Produção
 
@@ -41,6 +41,20 @@ docker run --detach --name tinyfold --restart unless-stopped \
 
 O proxy HTTPS deve encaminhar para essa porta local. O volume de backups desse exemplo está no mesmo host; uma cópia externa continua necessária para proteger contra perda do servidor. `.env.production` não deve entrar no Git.
 
+## Atualizar para a etapa 10
+
+A versão da etapa 10 aplica na subida as migrações `007_board.sql` (workspace) e `003_owner_time_zone.sql` (auth). A 007 é a primeira que reconstrói uma tabela referenciada: `workspace_tasks` volta com a coluna (`column_id`) no lugar do estado, prazo, conclusão e descrição, e ganha as tabelas de colunas, etiquetas e ligações. O executor desliga as chaves estrangeiras antes da transação das migrações, porque o SQLite não muda essa opção dentro de uma, confere `foreign_key_check` antes do `COMMIT` e religa as chaves também em falha. Antes de subir:
+
+1. Criar um backup com `mise exec -- pnpm backup:create` e conferir que ele terminou com a verificação de integridade.
+2. Subir a versão nova. O banco real está na etapa 07, então a mesma subida aplica a 005, a 006 e a 007 em sequência, além da 003 do auth; o revisor de dados ensaiou exatamente esse caminho, com bancos criados pelo código da etapa 07 ([validação](validacao.md#etapa-10-quadro-e-tarefa)). As tarefas vão para A fazer, Em andamento e Concluído conforme o estado que tinham, com as mesmas posições, versões e datas; as concluídas recebem como data de conclusão a última edição. A revisão do quadro sobe 1, e um cursor `t~…` do MCP anterior é recusado.
+3. Abrir o aplicativo. A primeira carga grava o fuso do aparelho como o fuso do dono, que vale para hoje, o atraso e a janela de 14 dias da coluna de conclusão; até lá, vale UTC. O Perfil troca o fuso com "Usar o fuso deste aparelho". As tarefas concluídas há mais de 14 dias saem do quadro e ficam em Concluídas.
+
+As migrações pendentes rodam numa só transação: se uma falhar, o banco fica como estava, também sem a 005 e a 006. Casos conhecidos:
+
+- Uma violação de chave estrangeira anterior, deixada por SQL manual, não impede a atualização: o log a registra como aviso ("Foreign key violations from before the migrations, left as they were"), com a tabela e o `rowid`, para o reparo com `pragma foreign_key_check`. Uma violação nova recusa a migração inteira.
+- Uma aba aberta durante a atualização que mande o estado da tarefa, ou o título por `updateTask`, recebe um erro de validação; recarregar a aba resolve.
+- O `INSERT OR REPLACE` em `workspace_folders` deixa de contornar os gatilhos das pastas: um `id` em uso é recusado.
+
 ## Atualizar para a etapa 09
 
 A versão da etapa 09 aplica na subida a migração `006_folders.sql`, que só acrescenta: a tabela `workspace_folders`, a coluna `folder_id`, nula, em documentos e desenhos, os índices e os gatilhos das pastas. Nenhum conteúdo muda de lugar. Mesmo assim, antes de subir:
@@ -49,7 +63,7 @@ A versão da etapa 09 aplica na subida a migração `006_folders.sql`, que só a
 2. Subir a versão nova. Todo documento e desenho continua na raiz do seu projeto, com o fixado que tinha: o limite de 8 passa a valer por escopo (a raiz e cada pasta), e os fixados de antes cabem na raiz.
 3. Abrir o aplicativo. A lateral mostra a árvore Itens no lugar de Documentos e Desenhos; a ordenação guardada no dispositivo volta a Recentes uma vez, porque o formato das preferências mudou.
 
-A migração é atômica: se falhar, o banco fica como estava. Caso conhecido: um `INSERT OR REPLACE` em `workspace_folders`, que só SQL manual faz, contorna os gatilhos das pastas até a migração 007 da [etapa 10](etapas/10-quadro-tarefa.md#mudanças-previstas-de-dados-e-contratos). Não edite pastas com SQL manual.
+A migração é atômica: se falhar, o banco fica como estava. Caso conhecido: um `INSERT OR REPLACE` em `workspace_folders`, que só SQL manual faz, contorna os gatilhos das pastas até a migração 007 da [etapa 10](etapas/10-quadro-tarefa.md#migração-srcworkspaceinframigrations007_boardsql), que o fecha. Não edite pastas com SQL manual.
 
 ## Atualizar para a etapa 08
 

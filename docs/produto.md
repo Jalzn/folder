@@ -1,6 +1,6 @@
 # Tinyfold — Produto
 
-**Estado:** implementado localmente até a [etapa 09](etapas/09-pastas.md), que trouxe as pastas, depois da [etapa 08](etapas/08-fundacao.md), que pôs tudo dentro de um projeto, com a lateral e o visual Sumário. Ver [validação](validacao.md) para evidências e limites. A definição foi revisada em 2026-10-30 e 2026-10-31; itens marcados como **Planejado** ainda não foram implementados.
+**Estado:** implementado localmente até a [etapa 10](etapas/10-quadro-tarefa.md), que trouxe as colunas configuráveis, a gaveta da tarefa, a descrição, o prazo e as etiquetas, depois da [etapa 09](etapas/09-pastas.md), com as pastas, e da [etapa 08](etapas/08-fundacao.md), que pôs tudo dentro de um projeto, com a lateral e o visual Sumário. Ver [validação](validacao.md) para evidências e limites. A definição foi revisada em 2026-10-30 e 2026-10-31; itens marcados como **Planejado** ainda não foram implementados.
 
 Espaço pessoal e minimalista para conduzir projetos, de software ou não. Reúne escrita, desenho e tarefas, que antes ficavam espalhados entre Notion, Excalidraw e Trello, em um só lugar e sem o excesso dessas ferramentas. O aplicativo funciona no navegador e guarda os dados em um servidor acessível de vários dispositivos.
 
@@ -44,18 +44,15 @@ Implementada na etapa 08, conforme a [interface](interface/README.md):
 - O aplicativo sempre está dentro de um projeto e reabre no último projeto, no item e na posição onde você parou. Não há Início, caixa de entrada, quadro geral nem listas gerais de documentos e desenhos. Sem projeto ativo, uma tela própria oferece criar um projeto ou desarquivar um.
 - Lateral do projeto:
   - No topo, o seletor de projetos, com cor, ordem e os arquivados.
-  - Em seguida, Buscar, Visão geral, Quadro e as seções Documentos e Desenhos, com os fixados primeiro, até oito itens na ordem escolhida e "Ver todos".
+  - Em seguida, Buscar, Visão geral, Quadro, com as tarefas atrasadas, e a árvore Itens, com os fixados primeiro, até oito itens por nível e "Ver todos".
   - No pé, o menu Você, com Perfil, token e tema, e a Lixeira.
   - A lateral recolhe numa faixa estreita e, em telas menores, abre sobre a página.
-- Visão geral do projeto: as tarefas em andamento e os itens editados recentemente.
+- Visão geral do projeto: as tarefas atrasadas e em andamento, as concluídas nos últimos 14 dias e os itens editados recentemente.
+- A gaveta inferior não modal da tarefa empurra o conteúdo e continua aberta durante a navegação. O seletor de projetos mostra as atrasadas de cada um.
 - Índice do projeto com todos os documentos e desenhos, filtrável por tipo e por pasta, ordenável e agrupado por pasta.
 - ⌘K busca em todos os projetos e reúne as ações do item aberto e os comandos. Atalhos de teclado cobrem a navegação.
 - Esc fecha apenas a camada aberta mais recente e nunca navega.
 - ⌘Z desfaz a ação do toast na tela (excluir ou mover), fora de campos, editores e camadas abertas.
-
-**Planejado:**
-
-- As tarefas atrasadas no seletor e no quadro, a gaveta inferior não modal da tarefa, que empurra o conteúdo e continua aberta durante a navegação, e as tarefas concluídas nos últimos 14 dias na Visão geral (etapa 10).
 
 Criar e editar tarefa são estados contextuais da interface. No celular, os fluxos essenciais de escrita, consulta e movimentação de tarefas precisam funcionar com toque e tela estreita.
 
@@ -98,28 +95,23 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 ## Projetos e tarefas
 
 - Projeto: nome, cor e ordem no seletor, e agrupamento de documentos, desenhos e tarefas; arquivar preserva o conteúdo. Todo item pertence a um projeto; o que era avulso foi para o projeto Geral.
-- Fixados: até oito documentos e desenhos por projeto, no topo da lateral.
+- Fixados: até oito documentos e desenhos na raiz do projeto e até oito em cada pasta, no topo de cada um.
 - Mover um documento ou desenho de projeto, com desfazer; mover não conta como edição.
 - Lixeira por projeto, com restaurar, excluir de vez e esvaziar o que está na tela.
-- Tarefa: título obrigatório, projeto, estado e ordem no quadro. Origem documental opcional.
-- Estados iniciais fixos: A fazer, Em andamento e Concluído.
+- Tarefa: título obrigatório, projeto, coluna e ordem no quadro. Origem documental opcional.
+- Colunas: um único conjunto para todos os projetos, até 20. Criar, renomear, reordenar e excluir colunas, com Desfazer; excluir uma coluna com tarefas exige escolher o destino delas. As colunas iniciais são A fazer, Em andamento e Concluído.
+- Uma coluna é marcada como de conclusão; tarefas nela contam como concluídas, com a data em que entraram. A coluna de conclusão mostra os últimos 14 dias; as tarefas anteriores ficam na página Concluídas do projeto, por mês.
+- Descrição com o mesmo editor dos documentos, salvamento automático, rascunho recuperável e conflitos por versão. Incorporar itens e criar tarefa a partir de um trecho continuam exclusivos dos documentos.
+- Checklist: os blocos de checklist da descrição. O card mostra o progresso, como 2/5; não há lista separada.
+- Prazo: data opcional, sem hora, contada no fuso do dono (o do aparelho na primeira carga, trocado no Perfil). O card mostra o prazo e destaca a tarefa atrasada fora da coluna de conclusão. Sem data de início, lembretes ou notificações.
+- Etiquetas: compartilhadas por todo o espaço, com nome e cor de uma paleta de sete, até 20 por tarefa, geridas no diálogo "Etiquetas". Excluir uma etiqueta em uso sai na hora, com Desfazer. O quadro pode ser filtrado por etiqueta.
+- Card compacto: título, prazo, etiquetas e progresso do checklist. A tarefa abre na gaveta, que edita coluna, prazo, etiquetas, projeto, título e descrição.
 - Contexto da criação preenche o projeto e a coluna quando existirem.
-- Mover entre colunas e reordenar; oferecer alternativa ao arrastar por menu/teclado.
+- Mover entre colunas e reordenar arrastando, pelo teclado (⇧ e setas) ou pelo menu. Concluir e reabrir (⌘↵) têm Desfazer.
 - A mesma tarefa aparece no documento e no quadro, com estado consistente.
 - A origem guarda documento, identificador de bloco quando disponível e trecho de referência. Mudar o título da tarefa não altera a prosa original.
 - Apagar o trecho ou excluir o documento preserva a tarefa. A interface informa quando a origem está indisponível.
 - Mover uma tarefa ou documento de projeto não move o outro silenciosamente. O vínculo de origem continua válido.
-
-**Planejado:**
-
-- Descrição com o mesmo editor dos documentos, salvamento automático, rascunho recuperável e conflitos por versão. Incorporar itens e criar tarefa a partir de um trecho continuam exclusivos dos documentos.
-- Checklist: os blocos de checklist da descrição. O card mostra o progresso, como 2/5; não há lista separada.
-- Prazo: data opcional, sem hora. O card mostra o prazo e destaca a tarefa atrasada fora da coluna de conclusão. Sem data de início, lembretes ou notificações.
-- Etiquetas: compartilhadas por todo o espaço, com nome e cor de uma paleta curta. O quadro pode ser filtrado por etiqueta.
-- Colunas: um único conjunto para todos os projetos. Criar, renomear, reordenar e excluir colunas; excluir uma coluna com tarefas exige escolher o destino delas.
-- Uma coluna é marcada como de conclusão; tarefas nela contam como concluídas. As colunas iniciais são A fazer, Em andamento e Concluído.
-- A coluna de conclusão mostra os últimos 14 dias; as tarefas anteriores ficam na página Concluídas do projeto.
-- Card compacto: título, prazo, etiquetas e progresso do checklist.
 
 Colunas diferentes por projeto ficam fora do escopo, para manter o modelo simples.
 
@@ -130,13 +122,13 @@ Servidor MCP somente leitura para o Claude Code consultar o espaço, por exemplo
 - Listar projetos e buscar documentos, desenhos e tarefas por palavras.
 - Ler um documento em Markdown, com as tarefas que nasceram dele.
 - Ler um desenho como imagem PNG e como textos e estrutura da cena, com as ligações das setas.
-- Ler tarefas com estado, posição e trecho de origem.
+- Ler tarefas com coluna, posição, prazo, atraso, etiquetas, checklist e trecho de origem, filtrar por coluna e etiqueta, e ler a descrição em Markdown. A busca também acha tarefas pela descrição.
 - Ver as pastas de cada projeto, com a contagem, e a pasta de cada documento e desenho na busca e na leitura.
 - Itens na lixeira ficam de fora. O acesso usa um token pessoal somente leitura, criado e revogado no Perfil, que mostra o último uso de cada token.
 
 **Planejado:**
 
-- Colunas, prazos, etiquetas e descrição das tarefas (etapa 10) e itens incorporados como referências (etapa 11) entram nas saídas do MCP com essas etapas.
+- Itens incorporados como referências entram nas saídas do MCP com a etapa 11.
 - Criar ou alterar conteúdo pelo MCP fica para depois.
 
 ## Em aberto

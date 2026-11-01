@@ -2,6 +2,123 @@
 
 Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. Nenhuma publicação na nuvem foi realizada.
 
+## Etapa 10: quadro e tarefa
+
+A etapa foi implementada em 2026-11-01 por dois subagentes: backend (B1 a B6) e web (W1 a W7), em worktrees próprias até os pontos de integração e depois em `feat/quadro`. Três revisores adversariais examinaram, cada um, dados e migração, o quadro e a gaveta (teclado, acessibilidade e arrastar) e segurança e qualidade; os achados passaram por rodadas de correção, cada uma com reteste pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
+
+| Verificação | Resultado, em `2b01510` |
+| --- | --- |
+| `mise exec -- pnpm check` | Biome, tipos de todos os pacotes, E2E e scripts, dependency-cruiser sem violações em 795 módulos, 571 testes unitários em 89 arquivos, com tokens, contraste e paridade com `tokens.py` |
+| `mise exec -- pnpm test:db` | 247 testes em 34 arquivos, com SQLite temporário |
+| `mise exec -- pnpm build` | Bundle de produção aprovado |
+| `E2E_PORT=5171 mise exec -- pnpm e2e` | 147 aprovados e 65 pulados, em 106 testes por perfil (desktop e Pixel 7). Pulados: o que precisa do desktop (teclado, hover e arrastar do quadro e da árvore, faixa e larguras) no celular, e o que é só do celular no desktop |
+
+Os testes de unidade e de banco cobrem, além do que já existia:
+
+- **Executor e migração 007:** toda migração com as chaves desligadas, religadas também em falha; o `foreign_key_check` antes do `COMMIT`, que recusa só as violações novas e registra as antigas; a 007 sobre os dumps da etapa 09 (`seed:sample` e `--grande` de `1da6617`), sem perder tarefas, origens, posições, versões nem datas; e os gatilhos com SQL direto (`INSERT OR REPLACE`, `DELETE` da coluna de conclusão, `is_done` trocado por `UPDATE`, conclusão fora da coluna).
+- **Colunas e etiquetas:** criar, renomear, mover, excluir com destino e restaurar, e trocar a conclusão com as datas de volta, com cada caso de pulo; nomes únicos pela chave; os limites (20 colunas, 100 etiquetas, 20 por tarefa), inclusive `restoreLabel` numa tarefa que chegou a 20.
+- **Tarefas:** campos e texto gravados sem se sobrescrever, chaves desconhecidas recusadas, o `updateTask` sem mudança que não sobe a versão, `moveTask` sem revisão para o Desfazer, a revisão que só sobe com a ordem, e a descrição com o validador do documento e o checklist derivado.
+- **Datas:** o fuso pelo nome canônico, os deslocamentos recusados, o fuso inválido lido como UTC, a janela de 14 dias e o atraso no fuso do dono, e o cursor `c~` de Concluídas.
+- **MCP:** `list_tasks` com colunas e etiquetas pelos nomes, `read_task` em páginas, a busca na descrição e o teto de 45.000 caracteres com 20 colunas, 100 etiquetas e uma descrição de 200.000 caracteres.
+- **Web:** as teclas do quadro (`board-keys`), o alvo de soltar (`board-drop`), a montagem das colunas, os textos e anúncios do quadro, a ordem das tarefas, a altura da gaveta, o rascunho do texto, as datas da tarefa, os nomes e textos das etiquetas, os grupos de Concluídas e a sessão do texto (`session-pool`: uma por tarefa, que sai quando salva e, solta sem salvar, tenta de novo quando a rede volta e avisa antes de sair).
+- **`seed:sample` e backup:** cada descrição do exemplo sai do BlockNote real como o seed a grava, então abrir uma tarefa não a salva; um backup leva colunas, etiquetas, ligações, descrições, o fuso e os gatilhos.
+
+### Fluxos no Chrome
+
+Os E2E rodam no Google Chrome instalado, desktop (1440×1000) e emulação Pixel 7. As specs que usavam o diálogo da tarefa passaram à gaveta, digitando com teclas reais. Os da etapa:
+
+1. **Colunas:** nova coluna nomeada no lugar, movida e com o nome repetido recusado; excluir com destino e ⌘Z; trocar a conclusão e voltar com Desfazer; a de conclusão não se exclui. Os resultados com Desfazer são conferidos no servidor (`listColumns`, `projectBoard` e `getTask`).
+2. **Teclado do quadro:** setas entre cards e nomes de coluna, uma parada de Tab, ⇧ e setas com os anúncios (inclusive em rajada), M, ⇧F10, ↵ e ⌘↵ com Desfazer; todo caminho para a coluna de conclusão com Desfazer, e um movimento mais novo que o tira.
+3. **Arrastar:** entre cards, para outra coluna e para o fim dela; soltar fora do quadro não move nada.
+4. **Filtro e arquivamento:** o filtro fica com as tarefas que têm todas as etiquetas escolhidas; num projeto arquivado, o quadro só lê.
+5. **Gaveta:** prazo pelo calendário e etiquetas pelo seletor, só com teclas; o texto salvo que aparece no card, com a descrição em 14/22; o rascunho digitado sem rede que sobrevive à recarga; ⌘↵ num bloco de código, que fica com o editor; Esc na descrição, que volta à gaveta, com ⌥↑ depois; o projeto trocado com a gaveta e o foco no lugar; ⌘↵ no seletor e no calendário, que não conclui; e uma tarefa deixada sem rede, que se salva sozinha quando a rede volta, com a gaveta em outra tarefa.
+6. **Concluídas:** os grupos por mês e Reabrir com Desfazer.
+7. **Etiquetas:** criar, renomear, recolorir e excluir uma etiqueta em uso, com ⌘Z.
+8. **Fuso:** o Perfil com o fuso do dono e o do aparelho oferecido; uma tarefa que vence hoje não está atrasada.
+9. **Celular:** o quadro rola de lado, o ⋯ move o card e a gaveta cobre a página.
+10. **MCP:** `list_tasks` pelo nome da coluna e `read_task` em Markdown, do que a interface criou.
+
+### Validação no Chrome real contra o protótipo
+
+```sh
+TF_TMP="$(mktemp -d -t tinyfold-10)"
+export OWNER_PASSWORD='validacao-quadro-10' PORT=3501 WEB_PORT=5301 \
+  APP_ORIGIN=http://localhost:5301 COOKIE_SECURE=false BACKUP_DIR="$TF_TMP/backups"
+# 1. Atualização: um banco criado pelo código da etapa 09, numa worktree na pasta de rascunho
+git worktree add "$SCRATCH/tf-09" 1da6617
+(cd "$SCRATCH/tf-09" && mise exec -- pnpm install --frozen-lockfile \
+  && DATABASE_PATH="$TF_TMP/antigo.sqlite" mise exec -- pnpm seed:sample)
+DATABASE_PATH="$TF_TMP/antigo.sqlite" mise exec -- pnpm dev   # aplica a 007; conferido e parado
+# 2. Exemplo da etapa 10
+DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm seed:sample
+DATABASE_PATH="$TF_TMP/grande.sqlite" mise exec -- pnpm seed:sample --grande
+DATABASE_PATH="$TF_TMP/grande.sqlite" mise exec -- pnpm dev
+```
+
+**Ensaio de atualização.** O log confirmou `Banco: <TF_TMP>/antigo.sqlite` e `Tinyfold em http://127.0.0.1:3501`, e a subida aplicou a 007 e a 003 do auth sobre o banco da etapa 09:
+
+- as tarefas foram para A fazer, Em andamento e Concluído pelo estado que tinham, com as mesmas posições e versões, e a concluída recebeu `completed_at`;
+- `integrity_check` respondeu `ok`, e `foreign_key_check` não listou nada;
+- o quadro mostra a ordem de antes: em A fazer, "Expor documentos em Markdown pelo MCP", "Renderizar desenho incorporado no documento" e "Configurar backup externo"; em Em andamento, "Gerar token pessoal no Perfil" e "Colunas configuráveis no quadro"; em Concluído, "Corrigir foco ao fechar diálogo";
+- a busca "dialogo" acha "Corrigir foco ao fechar diálogo", em Concluído;
+- `list_tasks` com `columns: ['a fazer']`, pelo `/mcp` com um token criado no Perfil, responde com `columns` e a coluna de cada tarefa.
+
+No banco da etapa 09, a única concluída foi editada no dia do seed, então a conclusão dela (a última edição) cai na janela de 14 dias. O caminho das concluídas antigas foi visto no `--grande`: o rodapé "Mais 60 concluídas antes de 19 out →" e as páginas de Concluídas. O caminho real do usuário, da etapa 07 direto para a 10 (005, 006 e 007 numa subida), foi ensaiado pelo revisor de dados, com bancos criados pelo código da etapa 07, sem achado.
+
+**Lado a lado.** O protótipo foi servido como UTF-8 de `127.0.0.1:5299`, e o aplicativo usou o banco `--grande`. As duas telas foram abertas no Google Chrome instalado, pelo Playwright (`channel: 'chrome'`), nos dois temas, em 1440×900 e 1280×800: Quadro, gaveta, Concluídas e Visão geral. As medidas usaram `getBoundingClientRect` e `getComputedStyle` no mesmo Chrome.
+
+- **Quadro,** igual nas duas: colunas de 271 px em 1440 e 231 px em 1280, com raio 10; cabeçalho de 28 px com o nome em 500 13/20; card de 66 px de altura, padding 10 × 12 e raio 8; título 500 13/18; meta 12/16; chip de 20 px, padding 0 6 0 5 e raio 4. Os pesos sobem para 450 no escuro nas duas.
+- **Gaveta:** cabeçalho de 52 px com padding 0 16 0 32, título 600 20/28, linhas de propriedade com valor 13/20, Coluna, Prazo ("sex 06 nov 2026 · em 5 dias"), Etiquetas, Projeto e a barra do checklist "2 de 5". A descrição estava em 15/24, a do documento: corrigida para 14/22 em `2b01510`, com a medida no E2E.
+- **Concluídas e Visão geral:** os grupos por mês, as linhas com coluna, prazo, etiquetas e checklist, as atrasadas em `--late` e "Concluídas · 14 dias".
+- **Larguras:** em 1024 px, a lateral passa à faixa de 52 px, a gaveta tem 972 px com as propriedades em faixa, e a página não rola de lado. No Pixel 7, as colunas encaixam ao rolar (`scroll-snap-type: x`), a página não rola de lado e a gaveta cobre a página, com 412 × 795 px abaixo da barra de 44 px.
+- **Não validado à mão no Chrome:** a tabela de teclado e a ordem do Esc, cobertas pelos E2E e pelos roteiros do revisor do quadro; e o Esc no meio de um arrasto real, que o Playwright não produz (como na etapa 09, o E2E confere só que soltar fora do quadro não move nada).
+
+**Diferenças aceitas em relação ao protótipo:**
+
+- **Propriedades da gaveta:** viram a faixa acima da descrição abaixo de 1.200 px de largura da gaveta, pelo plano e pela crítica 17 do refino; o protótipo passa à faixa abaixo de 935 px. Com a lateral aberta, a gaveta tem 1.184 px em 1440 e 1.024 px em 1280, então o aplicativo mostra a faixa e o protótipo, as duas colunas.
+- **Altura da gaveta:** abre a 55% da área, como pede o plano; o protótipo abre a 45%, com as mesmas alturas de ⌥↑ e ⌥↓ (35%, 55% e 80%).
+- **Origem:** uma seção com o trecho e o link do documento; o protótipo a põe numa linha de propriedade, com o link ↗ e o trecho embaixo.
+- **"← Quadro"** fica no começo da barra da página, e o celular não o mostra; no protótipo, fica à direita.
+- **Etiquetas** em ordem alfabética (decisão 16): "backend, mcp", onde o protótipo mostra "mcp, backend".
+- **Concluídas:** o cabeçalho do mês diz "Outubro 2026 · 11"; o protótipo põe a contagem sem o separador.
+- **Descrição no escuro** em peso 450, como o resto do texto de interface; o protótipo a deixa em 400.
+- **Rodapé da coluna de conclusão:** o protótipo não tem concluídas antigas nos dados, e o rodapé foi conferido só contra o plano.
+
+| Tela | 1440, claro | 1440, escuro | 1280, claro | 1280, escuro | Pixel 7 |
+| --- | --- | --- | --- | --- | --- |
+| Quadro | [Captura](screens/quadro-claro-1440.png) | [Captura](screens/quadro-escuro-1440.png) | [Captura](screens/quadro-claro-1280.png) | [Captura](screens/quadro-escuro-1280.png) | [Captura](screens/quadro-celular.png) |
+| Arrastar um card | [Captura](screens/quadro-arrastar-claro-1440.png) | [Captura](screens/quadro-arrastar-escuro-1440.png) | [Captura](screens/quadro-arrastar-claro-1280.png) | [Captura](screens/quadro-arrastar-escuro-1280.png) | — |
+| Menu da coluna | [Captura](screens/quadro-coluna-menu-claro-1440.png) | [Captura](screens/quadro-coluna-menu-escuro-1440.png) | [Captura](screens/quadro-coluna-menu-claro-1280.png) | [Captura](screens/quadro-coluna-menu-escuro-1280.png) | — |
+| Excluir coluna | [Captura](screens/quadro-excluir-coluna-claro-1440.png) | [Captura](screens/quadro-excluir-coluna-escuro-1440.png) | [Captura](screens/quadro-excluir-coluna-claro-1280.png) | [Captura](screens/quadro-excluir-coluna-escuro-1280.png) | — |
+| Gaveta da tarefa | [Captura](screens/gaveta-claro-1440.png) | [Captura](screens/gaveta-escuro-1440.png) | [Captura](screens/gaveta-claro-1280.png) | [Captura](screens/gaveta-escuro-1280.png) | [Captura](screens/gaveta-celular.png) |
+| Calendário | [Captura](screens/calendario-claro-1440.png) | [Captura](screens/calendario-escuro-1440.png) | [Captura](screens/calendario-claro-1280.png) | [Captura](screens/calendario-escuro-1280.png) | — |
+| Seletor de etiquetas | [Captura](screens/etiquetas-seletor-claro-1440.png) | [Captura](screens/etiquetas-seletor-escuro-1440.png) | [Captura](screens/etiquetas-seletor-claro-1280.png) | [Captura](screens/etiquetas-seletor-escuro-1280.png) | — |
+| Etiquetas | [Captura](screens/etiquetas-claro-1440.png) | [Captura](screens/etiquetas-escuro-1440.png) | [Captura](screens/etiquetas-claro-1280.png) | [Captura](screens/etiquetas-escuro-1280.png) | — |
+| Concluídas | [Captura](screens/concluidas-claro-1440.png) | [Captura](screens/concluidas-escuro-1440.png) | [Captura](screens/concluidas-claro-1280.png) | [Captura](screens/concluidas-escuro-1280.png) | [Captura](screens/concluidas-celular.png) |
+| Visão geral com as atrasadas | [Captura](screens/visao-geral-claro-1440.png) | [Captura](screens/visao-geral-escuro-1440.png) | [Captura](screens/visao-geral-claro-1280.png) | [Captura](screens/visao-geral-escuro-1280.png) | [Captura](screens/visao-geral-celular.png) |
+| Seletor com as atrasadas | [Captura](screens/seletor-claro-1440.png) | [Captura](screens/seletor-escuro-1440.png) | [Captura](screens/seletor-claro-1280.png) | [Captura](screens/seletor-escuro-1280.png) | [Captura](screens/seletor-celular.png) |
+
+As capturas foram refeitas do banco `--grande` depois das correções. Ao fim, o `dev` e o servidor do protótipo foram parados, a worktree `tf-09` foi removida e `$TF_TMP` foi apagado.
+
+### Rodadas adversariais
+
+Corrigidos e retestados:
+
+- **Dados e migração** (`4a62675`, `000a413`, `b69d5ce`, `0a348ad`, `1692d8f`, `d0e1e4d`, `c9df9d6`, `8298299`, `a34fea2`, `97ecf1c`): uma violação antiga de chave estrangeira impedia a atualização, e passou a aviso; uma diretiva `foreign_keys off` mal posta fazia a reconstrução apagar em cascata as origens das tarefas, e o executor passou a aplicar toda migração com as chaves desligadas; `is_done` mudado por SQL, um `DELETE` ou um `INSERT OR REPLACE` deixavam o quadro sem coluna de conclusão; `restoreLabel` passava de 20 etiquetas; as listas de Desfazer aceitavam uma conclusão no futuro e gravavam datas noutra forma ISO; um fuso gravado inválido derrubava as leituras com hoje. O segundo reteste ensaiou o caminho real, da etapa 07 numa subida só, sem achado.
+- **Quadro e gaveta** (`e8842ee`, `9dec8ec`, `930f58b`, `4649840`, `3fe695d`, `8d29582`, `23d33c2`): o Esc na descrição mandava o foco à página; trocar o projeto pela gaveta deixava o foco no `body`; uma rajada de ⇧↓ perdia o anúncio do movimento; "+ Coluna" era uma segunda parada de Tab; um movimento não tirava o Desfazer do toast "Concluída"; arrastar ou "Mover para" a coluna de conclusão concluía sem toast; o celular não encaixava as colunas; e o ⌘↵ no seletor de etiquetas e no calendário concluía a tarefa. O reteste não achou regressão depois da divisão do quadro.
+- **Segurança e qualidade** (`e26030a`, `1c4303a`, `9778894`, `b69ab79`, `893a7cd`, `a75660e`, `a8d1d0f`, `edf68fd`): o fuso gravado como veio, com deslocamentos fixos e caches sem limite; `BoardColumns.tsx` com 294 linhas e dois efeitos sem dependências; ajudantes repetidos e uma criação de etiqueta fora da fila de escritas; a sessão do texto viva a aba inteira e o limite de 1 MiB repetido; duas pastas `editor`; e cenários de E2E longos, sem conferência no servidor. No reteste, as chaves retiradas aceitas em silêncio nas escritas de tarefa e a sessão solta sem os ouvintes de rede e de saída.
+
+### Aceitos
+
+Os itens aceitos estão na lista "Aceitos" de [Desvios do plano](etapas/10-quadro-tarefa.md#desvios-do-plano): os de dados (as migrações com as chaves desligadas, as listas de Desfazer como palavra do cliente, mais de 1.000 tarefas sem Desfazer, o pedido anterior a B6 com `status`), os do quadro e da gaveta e o fallback de celular, além das diferenças em relação ao protótipo listadas acima.
+
+### Pendências
+
+- A dica do Quadro na lateral e o calendário em tela cheia no celular, que esperam o design do celular.
+- Os desenhos do exemplo, salvos uma vez na primeira abertura (nota na [etapa 11](etapas/11-documento-desenho.md#mudanças-previstas-de-dados-e-contratos)).
+- O backup antes de subir a 007 no banco real, que está na etapa 07 ([operação](implantacao.md#atualizar-para-a-etapa-10)).
+- A versão de celular da interface ainda não foi desenhada; as pendências de hospedagem da etapa 07 continuam.
+
 ## Etapa 09: pastas
 
 A etapa foi implementada entre 2026-10-31 e 2026-11-01 por dois subagentes: backend (B1 a B5) e web (W1 a W7). Três revisores adversariais examinaram, cada um, dados e migração, a árvore (acessibilidade, teclado e arrastar) e segurança e qualidade; os achados passaram por rodadas de correção, cada uma com reteste pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
@@ -110,7 +227,7 @@ Os casos de dados estão descritos em [Desvios do plano](etapas/09-pastas.md#des
 
 ### Pendências
 
-- O gatilho `BEFORE INSERT` de `workspace_folders` (migração 007, [etapa 10](etapas/10-quadro-tarefa.md#mudanças-previstas-de-dados-e-contratos)).
+- O gatilho `BEFORE INSERT` de `workspace_folders` (migração 007, [etapa 10](etapas/10-quadro-tarefa.md#migração-srcworkspaceinframigrations007_boardsql)), feito na etapa 10.
 - Os desenhos do exemplo, salvos uma vez na primeira abertura porque o Excalidraw normaliza a cena do seed (nota na [etapa 11](etapas/11-documento-desenho.md#mudanças-previstas-de-dados-e-contratos)).
 - A versão de celular da interface ainda não foi desenhada; as pendências de hospedagem da etapa 07 continuam.
 
