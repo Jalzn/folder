@@ -16,9 +16,11 @@ export function TimeZoneSection() {
   const device = deviceTimeZone();
   async function adoptDevice() {
     setBusy(true);
-    const saved = await app.setTimeZone(device);
+    const refused = await app.setTimeZone(device);
     setBusy(false);
-    toast(saved ? `Fuso horário: ${device}.` : 'Não foi possível mudar o fuso horário.', saved ? 'success' : 'error');
+    // The server's words, as for a fixed offset: "Use o nome de um fuso horário, …".
+    if (refused) toast(refused, 'error');
+    else toast(`Fuso horário: ${device}.`);
   }
   return (
     <ProfileSection

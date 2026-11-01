@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { api, refreshWorkspace, reportSessionError } from '../lib/api';
+import { api, errorMessage, refreshWorkspace, reportSessionError } from '../lib/api';
 import { deviceTimeZone, useToday } from '../lib/civil-date';
 import type { Project } from '../lib/types';
 import { useAction } from '../lib/use-action';
@@ -17,8 +17,11 @@ interface AppContextValue {
    * done column count in it. UTC until set; the first load sets it to this device's.
    */
   timeZone: string;
-  /** "Usar o fuso deste aparelho" in the Perfil; resolves to false when the server refused it. */
-  setTimeZone: (timeZone: string) => Promise<boolean>;
+  /**
+   * "Usar o fuso deste aparelho" in the Perfil: resolves to null once stored, or to why it was not, as a fixed
+   * offset the server refuses.
+   */
+  setTimeZone: (timeZone: string) => Promise<string | null>;
   /** Creates a document in the project, or in one of its folders, and opens it. */
   newDocument: (projectId: string, folderId?: string) => Promise<void>;
   /** Creates a drawing in the project, or in one of its folders, and opens it. */
@@ -55,13 +58,14 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
       setZone(saved.timeZone);
       // The board's window and the late counts are the server's, in the zone just set.
       await refreshWorkspace();
-      return true;
+      return null;
     } catch (error) {
       reportSessionError(error);
-      return false;
+      return errorMessage(error);
     }
   }, []);
-  // The first load with no zone stored gives it this device's, once.
+  // The first load with no zone stored, or a stored offset the server now reads as none, gives it this device's
+  // once per load; a refusal leaves UTC, which the Perfil shows.
   const unset = !owner.timeZone;
   useEffect(() => {
     if (unset) void setTimeZone(deviceTimeZone());
