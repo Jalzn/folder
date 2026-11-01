@@ -42,6 +42,7 @@ Levar ao documento as ligações do produto: tarefas e desenhos incorporados, vi
 - **Exportação `.md`:** decidir se a exportação da web passa a usar `documentToMarkdown` do domínio, para que MCP e arquivo `.md` não divirjam. A base é o teste de ida e volta da etapa 07, `src/web/lib/markdown-roundtrip.test.ts`, que já declara as perdas conhecidas do parser do BlockNote.
 - **MCP:** a forma de link dos incorporados entra nas regras de `domain/markdown*.ts`, com teste de ida e volta. As páginas de 36.000 caracteres e o teto de 45.000 (`domain/reading-limits.ts`) continuam valendo com os incorporados.
 - **Origem:** o marcador usa as origens já guardadas (bloco e trecho), como decoração do ProseMirror, sem mudar o JSON do documento.
+- **Desenhos do exemplo (`seed:sample`):** abrir um desenho do exemplo pela primeira vez o salva uma vez (`saveCanvas`, versão 1 para 2, `updated_at` agora), porque o Excalidraw normaliza a cena que o seed gravou; reabrir não salva de novo. Assim, só por serem vistos, os desenhos do exemplo sobem para "hoje" em Editados recentemente e no Índice. O seed deve gravar as cenas já normalizadas. Visto na validação da [etapa 09](09-pastas.md), na "Planta do escritório"; sem correção ainda.
 
 ## Organização do código
 

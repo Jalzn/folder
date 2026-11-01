@@ -6,12 +6,12 @@ Validação local a partir de 29 de outubro de 2026. A primeira versão foi impl
 
 A etapa foi implementada entre 2026-10-31 e 2026-11-01 por dois subagentes: backend (B1 a B5) e web (W1 a W7). Três revisores adversariais examinaram, cada um, dados e migração, a árvore (acessibilidade, teclado e arrastar) e segurança e qualidade; os achados passaram por rodadas de correção, cada uma com reteste pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
 
-| Verificação | Resultado, em `e877664` |
+| Verificação | Resultado, em `461078f` |
 | --- | --- |
-| `mise exec -- pnpm check` | Biome, tipos de todos os pacotes, E2E e scripts, dependency-cruiser sem violações em 637 módulos, 477 testes unitários em 68 arquivos, com tokens, contraste e paridade com `tokens.py` |
+| `mise exec -- pnpm check` | Biome, tipos de todos os pacotes, E2E e scripts, dependency-cruiser sem violações em 640 módulos, 481 testes unitários em 69 arquivos, com tokens, contraste e paridade com `tokens.py` |
 | `mise exec -- pnpm test:db` | 181 testes em 27 arquivos, com SQLite temporário |
 | `mise exec -- pnpm build` | Bundle de produção aprovado |
-| `E2E_PORT=5171 mise exec -- pnpm e2e` | 124 aprovados e 44 pulados, em 84 testes por perfil (desktop e Pixel 7). Pulados: o que precisa do desktop (teclado, hover e arrastar da árvore, faixa e larguras) no celular, e o que é só do celular no desktop |
+| `E2E_PORT=5171 mise exec -- pnpm e2e` | 127 aprovados e 47 pulados, em 87 testes por perfil (desktop e Pixel 7). Pulados: o que precisa do desktop (teclado, hover e arrastar da árvore, faixa e larguras) no celular, e o que é só do celular no desktop |
 
 Os testes de unidade e de banco cobrem, além do que já existia:
 
@@ -35,6 +35,7 @@ Os E2E rodam no Google Chrome instalado, desktop (1440×1000) e emulação Pixel
 7. **Falhas e repetições:** cópia de um rascunho cuja pasta sumiu, Desfazer recusado pelo servidor, ⌘Z durante uma renomeação, resposta de exclusão perdida, Desfazer de uma mudança já superada, segundo movimento recusado durante outra escrita.
 8. **Celular:** a árvore sobre a página, o toque que abre uma pasta, as ferramentas visíveis e o ⋯ que move um item.
 9. **MCP:** a busca do Claude Code numa pasta do que a interface arquivou ali.
+10. **⌘K digitado de uma vez:** com a busca de itens respondendo 800 ms depois, "Nova pasta" e a busca de um item rodam o resultado na tela; até a resposta, os itens do texto anterior ficam esmaecidos e o Enter não roda nenhum deles; sem resultados, o Enter não faz nada; ↓ e Enter rodam a linha destacada.
 
 ### Validação no Chrome real contra o protótipo
 
@@ -58,7 +59,7 @@ O log confirmou `Banco: <TF_TMP>/tinyfold.sqlite` (e depois `grande.sqlite`) e `
 - **Larguras:** em 1024 px, a faixa e, com ⌘K "Nova pasta", a lateral sobre a página com o campo do nome em foco e "Nova pasta" selecionado; ↵ cria a pasta com o nome digitado e Esc não cria nada. No Pixel 7, a lateral sobre a página, o toque que abre e fecha uma pasta e o ⋯ visível sem hover, com Renomear, Mover para cima e para baixo, Excluir pasta e Excluir pasta e itens.
 - **Achados corrigidos em `e877664`:** uma pasta nova começada pelo teclado perdia o campo do nome e era criada como "Nova pasta"; o ✓ do lugar atual em "Mover para pasta…" estava cinza; o botão Itens da faixa não marcava o lugar atual, não dizia os itens não salvos no nome e tinha o ponto sem o anel.
 - **Não validado:** o Esc no meio de um arrasto real. No Playwright, o Esc chega à página como tecla e o arrasto emulado acaba sem `dragleave` nem `dragend`: a pasta fica marcada como alvo e abre depois de 800 ms, e às vezes o soltar seguinte ainda move o item. Num arrasto do sistema, o Chrome toma o Esc e manda os dois eventos, que limpam o alvo e o tempo de abrir (`onDropExit` e `onDragEnd`); nenhuma ferramenta disponível produz esse arrasto. O E2E confere só que nada se move.
-- **Observação:** digitado à velocidade de uma máquina logo depois de abrir o ⌘K, o destaque do primeiro resultado, que o React Aria atrasa, pode ficar num item da lista anterior, e o ↵ abre esse item ou não faz nada. A 60 ms por letra ou mais devagar, o ↵ rodou o comando em todas as tentativas. O comportamento é do ⌘K da etapa 08; o E2E novo digita no ritmo de uma pessoa.
+- **⌘K digitado logo ao abrir,** da etapa 08: quando a busca de itens respondia depois da digitação, o destaque ficava numa linha da lista anterior, já fora da tela, e o ↵ não fazia nada, ou abria essa linha enquanto ela ainda aparecia. Visto primeiro à velocidade de uma máquina; na revisão, também no ritmo de uma pessoa, em 2 de 7 tentativas. Corrigido em `461078f`: os itens de um texto anterior ficam esmaecidos e sem rodar até a resposta, o primeiro resultado do texto atual recebe o destaque quando as linhas mudam, e o ↵ só roda uma linha da lista na tela. O roteiro da revisão (⌘K na Lixeira e numa página de item, "indice" e "Nova pasta" digitados logo, ↵ depois de 1 a 1,5 s) rodou o comando certo em 28 de 28 tentativas.
 
 **Diferenças aceitas em relação ao protótipo:**
 
@@ -110,7 +111,7 @@ Os casos de dados estão descritos em [Desvios do plano](etapas/09-pastas.md#des
 ### Pendências
 
 - O gatilho `BEFORE INSERT` de `workspace_folders` (migração 007, [etapa 10](etapas/10-quadro-tarefa.md#mudanças-previstas-de-dados-e-contratos)).
-- O ⌘K digitado à velocidade de uma máquina logo depois de abrir (observação acima), do ⌘K da etapa 08.
+- Os desenhos do exemplo, salvos uma vez na primeira abertura porque o Excalidraw normaliza a cena do seed (nota na [etapa 11](etapas/11-documento-desenho.md#mudanças-previstas-de-dados-e-contratos)).
 - A versão de celular da interface ainda não foi desenhada; as pendências de hospedagem da etapa 07 continuam.
 
 ## Etapa 08: fundação e lateral
