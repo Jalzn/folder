@@ -12,6 +12,7 @@ import { documentSnapshot } from './document-session';
  */
 export function useDocumentEditor(controller: AutosaveController, document: Document, state: SaveState) {
   const editor = useBlockEditor({
+    schema: 'document',
     initial: state.snapshot.content,
     epoch: state.remoteEpoch,
     content: state.snapshot.content,

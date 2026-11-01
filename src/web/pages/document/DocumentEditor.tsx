@@ -12,6 +12,7 @@ import { FolderLabel, PageFrame, useApp, usePageCommands, useTaskDrawer } from '
 import { useTheme } from '../../shell/theme';
 import { Banner, IconButton, useToast } from '../../ui';
 import { DocumentBody } from './DocumentBody';
+import { DocumentEmbeds } from './DocumentEmbeds';
 import { DocumentHeader } from './DocumentHeader';
 import { documentController, documentItem } from './document-session';
 import { useBlockAnchor, useDocumentEditor } from './use-document-editor';
@@ -143,15 +144,26 @@ export function DocumentEditor({ document }: { document: Document }) {
           if (file) void files.importMarkdown(file);
         }}
       />
-      <DocumentBody
+      <DocumentEmbeds
         editor={editor}
-        title={title}
-        theme={theme.resolved}
-        onTitleChange={(value) => update({ title: value })}
-        onChange={() => update({ content: editor.document as unknown as DocumentContent })}
-        onSelectionChange={() => setSelection(selectedText(editor))}
-        onCreateTask={() => void taskFromSelection.create()}
-      />
+        documentId={document.id}
+        projectId={projectId}
+        folderId={document.folderId}
+        readOnly={archived}
+      >
+        {(slashItems) => (
+          <DocumentBody
+            editor={editor}
+            title={title}
+            theme={theme.resolved}
+            onTitleChange={(value) => update({ title: value })}
+            onChange={() => update({ content: editor.document as unknown as DocumentContent })}
+            onSelectionChange={() => setSelection(selectedText(editor))}
+            onCreateTask={() => void taskFromSelection.create()}
+            slashItems={slashItems}
+          />
+        )}
+      </DocumentEmbeds>
       <TrashItemDialog
         type="document"
         open={trashOpen}

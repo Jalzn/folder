@@ -6,7 +6,7 @@ import { type CanvasSnapshot, canvasDraftStorage, parseCanvasDraft, withCleanLin
 import { renderCanvasPng } from '../../lib/canvas-png';
 import { CanvasPreviewUploader } from '../../lib/canvas-preview';
 import { withDraftProject } from '../../lib/draft-project';
-import { canvasQuery, invalidateNavigation } from '../../lib/queries';
+import { canvasQuery, embedsKey, invalidateNavigation } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
 import { displayTitle } from '../../lib/types';
 
@@ -82,7 +82,11 @@ export function canvasSession(canvas: EditableCanvas, installationId: string): C
     previewVersion: canvas.previewVersion,
     // A light rendering with background, whatever the editor theme.
     render: (scene, maxSide) => renderCanvasPng(scene, { maxSide, darkMode: false }),
-    upload: (input) => api.workspace.saveCanvasPreview(input),
+    upload: async (input) => {
+      const ack = await api.workspace.saveCanvasPreview(input);
+      void queryClient.invalidateQueries({ queryKey: embedsKey });
+      return ack;
+    },
     ready: () => controller.getState().status === 'saved',
   });
   const controller: AutosaveController<CanvasSnapshot> = new AutosaveController<CanvasSnapshot>({
@@ -115,6 +119,8 @@ export function canvasSession(canvas: EditableCanvas, installationId: string): C
         };
       });
       void queryClient.invalidateQueries({ queryKey: ['workspace', 'canvases'] });
+      // A document that embeds the drawing shows its new title and, once the preview is up, the new image.
+      void queryClient.invalidateQueries({ queryKey: embedsKey });
       invalidateNavigation();
       previews.request(ack.version, sent.scene);
     },

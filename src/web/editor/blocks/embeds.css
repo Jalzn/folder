@@ -1,0 +1,216 @@
+/*
+ * Tasks and drawings embedded in a document (docs/interface/visual.md, "Documento: itens incorporados", and
+ * the prototype's `.ecard`, `.edraw` and `.emiss`): calm, read-only blocks 10 px apart from the text.
+ */
+.bn-block-content[data-content-type="taskEmbed"],
+.bn-block-content[data-content-type="drawingEmbed"] {
+  padding: 10px 0;
+}
+
+/* The task's card: level 1, line border, radius 8, padding 10/12; a button that opens the drawer. */
+.embed-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raised-1);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) var(--ease-out);
+}
+.embed-card:hover {
+  border-color: var(--line-strong);
+}
+.embed-card[data-open] {
+  border-color: var(--accent-35);
+  background: var(--selected);
+}
+.embed-card__line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.embed-card__title {
+  flex: 1;
+  min-width: 0;
+  font: 500 14px / 20px var(--font-sans);
+  letter-spacing: -0.006em;
+  overflow-wrap: anywhere;
+}
+.embed-card[data-done] .embed-card__title {
+  color: var(--text-2);
+}
+.embed-card__aside,
+.embed-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--type-meta);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.embed-card__line--meta {
+  gap: 12px;
+  padding-left: 22px;
+}
+.embed-card__line--meta > .card-meta {
+  flex: 1;
+  min-width: 0;
+}
+.embed-card__line--meta > [hidden] + .embed-card__status {
+  margin-left: auto;
+}
+
+/* The drawing's figure: a link to its page, the preview in a frame, and the caption under it. */
+.embed-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+.embed-figure__frame {
+  display: grid;
+  place-items: center;
+  max-height: 380px;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  transition: border-color var(--duration-hover) var(--ease-out);
+}
+.embed-figure:hover .embed-figure__frame {
+  border-color: var(--line-strong);
+}
+.embed-figure__frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 356px;
+  object-fit: contain;
+}
+.embed-figure__frame[data-empty] {
+  min-height: 120px;
+}
+.embed-figure__note {
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+.embed-figure__caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+.embed-figure__open {
+  color: var(--accent);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+.embed-figure:hover .embed-figure__open,
+.embed-figure:focus-visible .embed-figure__open {
+  opacity: 1;
+}
+
+/* An item in the trash or gone: a dashed box with what happened and its actions. */
+.embed-missing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 6px 6px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-2);
+  font: var(--type-ui);
+}
+.embed-missing > svg {
+  flex: none;
+  color: var(--icon);
+}
+.embed-missing__text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Before the resolver answers, a calm place of the embed's height. */
+.embed-loading {
+  min-height: 66px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.embed-loading--figure {
+  min-height: 160px;
+}
+
+/* An embed the arrows selected as a node: a 2 px accent ring, 2 px away, instead of BlockNote's tint. */
+.ProseMirror .bn-block-content[data-content-type="taskEmbed"] > *::after,
+.ProseMirror .bn-block-content[data-content-type="drawingEmbed"] > *::after {
+  content: none;
+}
+.ProseMirror-selectednode .embed-card,
+.ProseMirror-selectednode .embed-figure .embed-figure__frame,
+.ProseMirror-selectednode .embed-missing {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.embed-card:focus-visible,
+.embed-figure:focus-visible > .embed-figure__frame {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The picker of the `/` menu. */
+.embed-picker {
+  width: 360px;
+  padding: 0;
+}
+.embed-picker__filter {
+  padding: 6px 6px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.embed-picker__input {
+  width: 100%;
+  height: 28px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-ui);
+  outline: none;
+}
+.embed-picker__list {
+  max-height: 320px;
+  overflow: auto;
+  padding: 4px;
+}
+.embed-picker__project {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-3);
+  font: var(--type-meta);
+}
+
+@media (max-width: 719px) {
+  .embed-picker {
+    width: calc(100vw - 24px);
+    max-width: none;
+  }
+}

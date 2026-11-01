@@ -63,7 +63,7 @@ export function parseDraft(value: string | null): SavedDraft<Legacy<Snapshot>> |
       (data.snapshot.projectId !== null && typeof data.snapshot.projectId !== 'string')
     )
       return null;
-    data.snapshot.content = readDocumentContent(data.snapshot.content, RECOVERY_DOCUMENT_LIMITS);
+    data.snapshot.content = readDocumentContent(data.snapshot.content, RECOVERY_DOCUMENT_LIMITS, { embeds: true });
     if (data.recoveryData !== undefined && data.recoveryData !== null && typeof data.recoveryData !== 'string')
       return null;
     if (data.pending) {
@@ -79,7 +79,7 @@ export function parseDraft(value: string | null): SavedDraft<Legacy<Snapshot>> |
         data.pending = null;
       else {
         try {
-          data.pending.content = readDocumentContent(data.pending.content, RECOVERY_DOCUMENT_LIMITS);
+          data.pending.content = readDocumentContent(data.pending.content, RECOVERY_DOCUMENT_LIMITS, { embeds: true });
         } catch {
           data.pending = null;
         }

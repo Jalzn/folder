@@ -1,13 +1,13 @@
 import './card.css';
 import { isOverdue } from '@tinyfold/workspace/domain';
 import { useId, useSyncExternalStore } from 'react';
+import { TaskMeta } from '../../components/task/TaskMeta';
 import type { ColumnSummary } from '../../lib/queries';
 import { isPendingSave, pendingSaves, subscribePendingSaves } from '../../lib/save-registry';
 import { displayTitle, type Task } from '../../lib/types';
 import { ColumnRing } from '../../ui';
 import { useBoard } from './board-context';
 import { CardMenu } from './CardMenu';
-import { CardMeta } from './CardMeta';
 import { CARD_ATTRIBUTE } from './use-board-keyboard';
 
 /** A card's place on the board, for its ring and its menu. */
@@ -59,7 +59,15 @@ export function TaskCard({ task, place }: { task: Task; place: CardColumn }) {
         {title}
       </button>
       {unsaved && <span className="task-card__unsaved" aria-hidden="true" />}
-      <CardMeta id={metaId} task={task} late={late} labels={labels} unsaved={unsaved} />
+      <TaskMeta
+        id={metaId}
+        dueOn={task.dueOn}
+        checklist={task.checklist}
+        labels={task.labelIds.flatMap((labelId) => labels.get(labelId) ?? [])}
+        late={late}
+        shown={2}
+        unsaved={unsaved}
+      />
       {editable && (
         <CardMenu
           title={title}

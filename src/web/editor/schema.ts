@@ -9,29 +9,41 @@ import {
 import { pt } from '@blocknote/core/locales';
 import { createReactMathBlockSpec, locales as mathLocales } from '@blocknote/math-block';
 import { createInlineMathSpec } from '../components/InlineMath';
+import { createDrawingEmbedSpec, createTaskEmbedSpec } from './blocks/embed-specs';
 
-/** The blocks of a document and of a task's description: text, three heading levels, lists, quote, code and equations. */
-export const documentSchema = BlockNoteSchema.create({
-  blockSpecs: {
-    paragraph: defaultBlockSpecs.paragraph,
-    // BlockNote 0.56 declares an optional property even with toggle headings disabled.
-    heading: createHeadingBlockSpec({ levels: [1, 2, 3], allowToggleHeadings: false }) as unknown as BlockSpec<
-      'heading',
-      Omit<typeof defaultBlockSpecs.heading.config.propSchema, 'isToggleable'>,
-      'inline'
-    >,
-    bulletListItem: defaultBlockSpecs.bulletListItem,
-    numberedListItem: defaultBlockSpecs.numberedListItem,
-    checkListItem: defaultBlockSpecs.checkListItem,
-    quote: defaultBlockSpecs.quote,
-    codeBlock: defaultBlockSpecs.codeBlock,
-    mathBlock: createReactMathBlockSpec(),
-  },
-  inlineContentSpecs: {
-    ...defaultInlineContentSpecs,
-    math: createInlineMathSpec(),
-  },
+/** The blocks every editor takes: text, three heading levels, lists, quote, code and equations. */
+const baseBlockSpecs = () => ({
+  paragraph: defaultBlockSpecs.paragraph,
+  // BlockNote 0.56 declares an optional property even with toggle headings disabled.
+  heading: createHeadingBlockSpec({ levels: [1, 2, 3], allowToggleHeadings: false }) as unknown as BlockSpec<
+    'heading',
+    Omit<typeof defaultBlockSpecs.heading.config.propSchema, 'isToggleable'>,
+    'inline'
+  >,
+  bulletListItem: defaultBlockSpecs.bulletListItem,
+  numberedListItem: defaultBlockSpecs.numberedListItem,
+  checkListItem: defaultBlockSpecs.checkListItem,
+  quote: defaultBlockSpecs.quote,
+  codeBlock: defaultBlockSpecs.codeBlock,
+  mathBlock: createReactMathBlockSpec(),
 });
+
+const inlineContentSpecs = {
+  ...defaultInlineContentSpecs,
+  math: createInlineMathSpec(),
+};
+
+/** A task's description: the base blocks, without embeds (docs/etapas/11-documento-desenho.md, decision 2). */
+export const descriptionSchema = BlockNoteSchema.create({ blockSpecs: baseBlockSpecs(), inlineContentSpecs });
+
+/** A document: the base blocks and the embedded tasks and drawings. */
+export const documentSchema = BlockNoteSchema.create({
+  blockSpecs: { ...baseBlockSpecs(), taskEmbed: createTaskEmbedSpec(), drawingEmbed: createDrawingEmbedSpec() },
+  inlineContentSpecs,
+});
+
+/** Which of the two an editor takes. */
+export type EditorSchemaKind = 'document' | 'description';
 
 export type EditorBlocks = PartialBlock<typeof documentSchema.blockSchema, typeof documentSchema.inlineContentSchema>[];
 

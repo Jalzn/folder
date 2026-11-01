@@ -2,7 +2,7 @@ import { checklistProgress } from '@tinyfold/workspace/domain';
 import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
 import { AutosaveController, type SaveInput } from '../../lib/autosave';
 import { draftStorage } from '../../lib/draft-storage';
-import { type ProjectBoard, type TaskList, type TaskWithText, taskQuery } from '../../lib/queries';
+import { embedsKey, type ProjectBoard, type TaskList, type TaskWithText, taskQuery } from '../../lib/queries';
 import { registerSave } from '../../lib/save-registry';
 import { createSessionPool } from '../../lib/session-pool';
 import { refuseOverLimit } from '../../lib/text-limit';
@@ -87,6 +87,8 @@ export function taskController(task: TaskWithText, installationId: string) {
         onSaved: (ack, sent) => {
           showSaved(task, sent, ack.version);
           void queryClient.invalidateQueries({ queryKey: ['workspace', 'search'] });
+          // A document that embeds the task shows its new title.
+          void queryClient.invalidateQueries({ queryKey: embedsKey });
         },
         onAdopted: (snapshot, version) => showSaved(task, snapshot, version),
       }),

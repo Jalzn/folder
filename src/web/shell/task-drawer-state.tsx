@@ -18,6 +18,8 @@ export interface NewTaskOptions {
   title?: string;
   /** Runs once the new task's drawer leaves, created or not. */
   onClose?: () => void;
+  /** Runs once the task is created, as a document's "Nova tarefa…" puts its card in place. */
+  onCreated?: (task: { id: string; projectId: string }) => void;
 }
 
 /** What the drawer shows: a task, by its id and project, or a new task with its starting values. */

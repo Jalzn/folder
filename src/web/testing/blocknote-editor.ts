@@ -59,12 +59,12 @@ export function setupBlockNoteEditor() {
     parse: (source: string) => editor.tryParseMarkdownToBlocks(source) as unknown as DocumentContent,
     exportMarkdown: (blocks: DocumentContent) =>
       editor.blocksToMarkdownLossy(blocks as unknown as typeof editor.document),
-    /** Opens the blocks in a new editor, as reopening the document does; both sides must be valid content. */
+    /** Opens the blocks in a new editor, as reopening the document does; both sides must be a valid document. */
     reload(blocks: DocumentContent): DocumentContent {
-      readDocumentContent(blocks);
+      readDocumentContent(blocks, {}, { embeds: true });
       const reloaded = createEditor(blocks);
       const result = reloaded.document as unknown as DocumentContent;
-      readDocumentContent(result);
+      readDocumentContent(result, {}, { embeds: true });
       reloaded._tiptapEditor.destroy();
       return result;
     },

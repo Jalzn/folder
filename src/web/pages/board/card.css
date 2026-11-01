@@ -106,61 +106,10 @@
   opacity: 1;
 }
 
-.card-meta {
+/* The meta line, TaskMeta, under the title. */
+.task-card > .card-meta {
   grid-column: 2;
   grid-row: 2;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
-  font: var(--type-meta);
-  letter-spacing: var(--tracking-meta);
-  color: var(--text-3);
-}
-.card-meta__due {
-  font-variant-numeric: tabular-nums;
-}
-.card-meta__late {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--late);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.card-meta__progress {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.card-meta__track {
-  stroke: var(--line-strong);
-}
-.card-meta__value {
-  stroke: var(--accent);
-}
-.card-meta__progress[data-full] {
-  color: var(--ok);
-}
-.card-meta__progress[data-full] .card-meta__value {
-  stroke: var(--ok);
-}
-.card-meta__labels {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.card-meta__more {
-  display: inline-grid;
-  place-items: center;
-  height: 20px;
-  padding: 0 4px;
-  color: var(--text-3);
 }
 
 @media (hover: none) {

@@ -104,6 +104,7 @@ export function NewTaskForm({
       request.clear();
       await refreshWorkspace();
       drawer.showTask({ id: created.id, projectId: created.projectId, title: name });
+      content.onCreated?.({ id: created.id, projectId: created.projectId });
       toast(`Tarefa criada em ${column?.name ?? 'o quadro'} · ${project?.name ?? 'o projeto'}.`);
     } catch (failure) {
       reportSessionError(failure);

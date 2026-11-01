@@ -3,6 +3,16 @@ export { type CanvasListOptions, canvasQuery, useCanvas, useCanvases } from './c
 export { type ColumnSummary, cachedColumns, columnsQuery, useColumns } from './columns';
 export { type CompletedTask, completedKey, useCompletedTasks } from './completed';
 export { type DocumentListOptions, documentQuery, useDocument, useDocuments } from './documents';
+export {
+  type EmbeddedDrawing,
+  type EmbeddedItems,
+  type EmbeddedTask,
+  type EmbedProject,
+  embedsKey,
+  type LiveDrawing,
+  type LiveTask,
+  useEmbeds,
+} from './embeds';
 export { type FolderSummary, foldersQuery, useAllFolders, useFolders } from './folders';
 export { type LabelSummary, labelsQuery, useLabels } from './labels';
 export { invalidateNavigation, useProjectNavigation } from './navigation';

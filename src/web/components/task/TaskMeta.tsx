@@ -1,11 +1,8 @@
+import './task-meta.css';
+import type { LabelColor } from '@tinyfold/workspace/domain';
 import { Clock } from 'lucide-react';
-import { LabelChip } from '../../components/labels/LabelChip';
-import type { LabelSummary } from '../../lib/queries';
 import { shortDate } from '../../lib/task-dates';
-import type { Task } from '../../lib/types';
-
-/** Chips a card shows before "+n". */
-const SHOWN_LABELS = 2;
+import { LabelChip } from '../labels/LabelChip';
 
 /** The checklist's ring of 12 px: the share of checked items, in --ok once all are. */
 function ProgressRing({ done, total }: { done: number; total: number }) {
@@ -30,47 +27,52 @@ function ProgressRing({ done, total }: { done: number; total: number }) {
 }
 
 /**
- * A card's meta line in 12/16 (docs/interface/visual.md, "Quadro"), in order: the due date, late in --late
- * with the clock; the checklist's progress; and up to two labels, then "+n". It describes the card's title.
+ * A task's meta line in 12/16 (docs/interface/visual.md, "Quadro"), on a board's card and on a card embedded
+ * in a document, in order: the due date, late in --late with the clock; the checklist's progress; and up to
+ * `shown` labels, then "+n". It describes the card's title, by `id`.
  */
-export function CardMeta({
+export function TaskMeta({
   id,
-  task,
-  late,
+  dueOn,
+  checklist,
   labels,
+  late,
+  shown,
   unsaved = false,
 }: {
   id: string;
-  task: Task;
+  dueOn: string | null;
+  checklist: { done: number; total: number } | null;
+  labels: readonly { id: string; name: string; color: LabelColor }[];
   late: boolean;
-  labels: ReadonlyMap<string, LabelSummary>;
+  /** Chips shown before "+n": 2 on the board, 3 in a document. */
+  shown: number;
   unsaved?: boolean;
 }) {
-  const chips = task.labelIds.flatMap((labelId) => labels.get(labelId) ?? []);
-  const shown = chips.slice(0, SHOWN_LABELS);
-  const more = chips.slice(SHOWN_LABELS);
-  const progress = task.checklist;
+  const first = labels.slice(0, shown);
+  const more = labels.slice(shown);
+  const progress = checklist;
   // An empty line keeps the title's description pointing somewhere.
-  if (!task.dueOn && !progress && !chips.length)
+  if (!dueOn && !progress && !labels.length)
     return (
       <span id={id} hidden>
         {unsaved && 'Não salvo'}
       </span>
     );
   return (
-    <div id={id} className="card-meta">
+    <span id={id} className="card-meta">
       {unsaved && <span className="sr-only">Não salvo</span>}
-      {task.dueOn &&
+      {dueOn &&
         (late ? (
-          <span className="card-meta__late" title={`Atrasada desde ${shortDate(task.dueOn)}`}>
+          <span className="card-meta__late" title={`Atrasada desde ${shortDate(dueOn)}`}>
             <Clock size={12} aria-hidden="true" />
-            <span aria-hidden="true">{shortDate(task.dueOn)}</span>
-            <span className="sr-only">Atrasada desde {shortDate(task.dueOn)}</span>
+            <span aria-hidden="true">{shortDate(dueOn)}</span>
+            <span className="sr-only">Atrasada desde {shortDate(dueOn)}</span>
           </span>
         ) : (
           <span className="card-meta__due">
             <span className="sr-only">Prazo </span>
-            {shortDate(task.dueOn)}
+            {shortDate(dueOn)}
           </span>
         ))}
       {progress && (
@@ -84,9 +86,9 @@ export function CardMeta({
           </span>
         </span>
       )}
-      {chips.length > 0 && (
+      {labels.length > 0 && (
         <span className="card-meta__labels">
-          {shown.map((label) => (
+          {first.map((label) => (
             <LabelChip key={label.id} name={label.name} color={label.color} />
           ))}
           {more.length > 0 && (
@@ -99,6 +101,6 @@ export function CardMeta({
           )}
         </span>
       )}
-    </div>
+    </span>
   );
 }

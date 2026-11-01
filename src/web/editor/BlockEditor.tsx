@@ -5,6 +5,7 @@ import { BlockNoteView } from '@blocknote/mantine';
 import { getMathBlockTypeSelectItems, getMathSlashMenuItems } from '@blocknote/math-block';
 import {
   blockTypeSelectItems,
+  type DefaultReactSuggestionItem,
   FormattingToolbar,
   FormattingToolbarController,
   getDefaultReactSlashMenuItems,
@@ -14,6 +15,7 @@ import {
 } from '@blocknote/react';
 import { Plus } from 'lucide-react';
 import { cx } from '../lib/cx';
+import { selectedEmbed } from './blocks/embed-keys';
 
 function CreateTaskButton({ onPress }: { onPress: () => void }) {
   const components = useComponentsContext();
@@ -33,7 +35,8 @@ function CreateTaskButton({ onPress }: { onPress: () => void }) {
 /**
  * The block editor shared by documents and task descriptions, in the resolved theme: BlockNote with the
  * formatting toolbar and the slash menu, both with the equations. `onCreateTask` adds "Criar tarefa" to the
- * toolbar, which only a document offers.
+ * toolbar, and `slashItems` a group to the slash menu, as the document's "Incorporar"; only a document offers
+ * them.
  */
 export function BlockEditor({
   editor,
@@ -42,6 +45,7 @@ export function BlockEditor({
   onChange,
   onSelectionChange,
   onCreateTask,
+  slashItems,
   editable = true,
 }: {
   // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
@@ -51,6 +55,7 @@ export function BlockEditor({
   onChange: () => void;
   onSelectionChange?: () => void;
   onCreateTask?: () => void;
+  slashItems?: DefaultReactSuggestionItem[];
   /** False shows the blocks to read only, as an archived project's task. */
   editable?: boolean;
 }) {
@@ -66,18 +71,21 @@ export function BlockEditor({
         {...(onSelectionChange ? { onSelectionChange } : {})}
       >
         <FormattingToolbarController
-          formattingToolbar={() => (
-            <FormattingToolbar>
-              {getFormattingToolbarItems([...blockTypeSelectItems(editor), ...getMathBlockTypeSelectItems(editor)])}
-              {onCreateTask && <CreateTaskButton onPress={onCreateTask} />}
-            </FormattingToolbar>
-          )}
+          formattingToolbar={() =>
+            // An embed selected as a node has no text to format.
+            selectedEmbed(editor) ? null : (
+              <FormattingToolbar>
+                {getFormattingToolbarItems([...blockTypeSelectItems(editor), ...getMathBlockTypeSelectItems(editor)])}
+                {onCreateTask && <CreateTaskButton onPress={onCreateTask} />}
+              </FormattingToolbar>
+            )
+          }
         />
         <SuggestionMenuController
           triggerCharacter="/"
           getItems={async (query) =>
             filterSuggestionItems(
-              combineByGroup(getDefaultReactSlashMenuItems(editor), getMathSlashMenuItems(editor)),
+              combineByGroup(getDefaultReactSlashMenuItems(editor), getMathSlashMenuItems(editor), slashItems ?? []),
               query,
             )
           }

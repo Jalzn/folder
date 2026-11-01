@@ -32,6 +32,7 @@ export function TaskDescription({
 }) {
   const theme = useTheme();
   const editor = useBlockEditor({
+    schema: 'description',
     initial: state.snapshot.description,
     epoch: state.remoteEpoch,
     content: state.snapshot.description,

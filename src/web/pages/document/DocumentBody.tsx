@@ -1,4 +1,5 @@
 import type { BlockNoteEditor } from '@blocknote/core';
+import type { DefaultReactSuggestionItem } from '@blocknote/react';
 import { BlockEditor } from '../../editor/BlockEditor';
 import { displayTitle } from '../../lib/types';
 import { DocumentTitle } from './DocumentTitle';
@@ -15,6 +16,7 @@ export function DocumentBody({
   onChange,
   onSelectionChange,
   onCreateTask,
+  slashItems,
 }: {
   // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
   editor: BlockNoteEditor<any, any, any>;
@@ -24,6 +26,8 @@ export function DocumentBody({
   onChange: () => void;
   onSelectionChange: () => void;
   onCreateTask: () => void;
+  /** The `/` menu's "Incorporar" group, when the document takes embeds. */
+  slashItems: DefaultReactSuggestionItem[] | undefined;
 }) {
   function enterText() {
     const first = editor.document[0];
@@ -44,6 +48,7 @@ export function DocumentBody({
         onChange={onChange}
         onSelectionChange={onSelectionChange}
         onCreateTask={onCreateTask}
+        {...(slashItems ? { slashItems } : {})}
       />
     </article>
   );
