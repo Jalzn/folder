@@ -5,8 +5,10 @@ export { ButtonLink } from './ButtonLink';
 export { Dialog, DialogActions, type DialogProps } from './Dialog';
 export { EmptyState } from './EmptyState';
 export { ErrorNotice } from './ErrorNotice';
+export { createElementRefs, type ElementRefs, useElementRefs } from './element-refs';
 export { FilterMenu, type FilterOption } from './FilterMenu';
 export {
+  focusIsLost,
   focusPageTitle,
   focusWhenPresent,
   pageFocus,

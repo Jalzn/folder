@@ -74,6 +74,15 @@ export function focusWhenPresent(
 export const pageTitle = () => document.querySelector<HTMLElement>('main h1[tabindex="-1"]');
 
 /**
+ * Whether the focus is lost: nothing has it, or the element that had it went away. `also` lists elements a
+ * focus on counts as lost too, as the page's title, where a lost focus falls back, or a popover's trigger.
+ */
+export function focusIsLost({ also = [] }: { also?: readonly (Element | null | undefined)[] } = {}) {
+  const active = document.activeElement;
+  return !active || active === document.body || !active.isConnected || also.some((each) => each && each === active);
+}
+
+/**
  * Gives the focus back once nothing holds it, as when the row that had it went away or a dialog closed and
  * its trigger is gone: to `target` while it is on the page, otherwise to the page's title. A focus on `from`
  * counts as lost too: the trigger a popover gave it back to. Waits for open overlays, and gives up after
@@ -91,8 +100,7 @@ export function returnFocus(target: HTMLElement | null, { from }: { from?: Eleme
   };
   const cancel = whenPresent(
     () => {
-      const active = document.activeElement;
-      const lost = !active || active === document.body || !active.isConnected || (from != null && active === from);
+      const lost = focusIsLost({ also: [from] });
       const place = target?.isConnected ? target : pageTitle();
       return lost && place && !document.querySelector(holding) ? place : null;
     },

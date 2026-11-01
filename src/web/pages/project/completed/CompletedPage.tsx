@@ -15,12 +15,13 @@ import {
   PageHeader,
   returnFocus,
   Spinner,
+  useElementRefs,
   useToast,
   whenPresent,
 } from '../../../ui';
 import { CompletedGroups } from './CompletedGroups';
 import { completedItems, completedSummary, groupCompleted } from './completed-groups';
-import { useReopen, useTitleRefs } from './use-reopen';
+import { useReopen } from './use-reopen';
 
 /**
  * `/projetos/$projectId/concluidas`: every completed task of the project, grouped by the month it was completed
@@ -40,7 +41,7 @@ function CompletedContent({ project }: { project: Project }) {
   const drawer = useTaskDrawer();
   const content = useDrawerContent();
   const toast = useToast();
-  const titles = useTitleRefs();
+  const titles = useElementRefs<HTMLElement>();
   const list = useRef<HTMLDivElement>(null);
   const reopen = useReopen(project.id, titles, list);
 

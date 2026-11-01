@@ -1,36 +1,15 @@
-import { type RefObject, useState } from 'react';
+import type { RefObject } from 'react';
 import { useTaskCompletion } from '../../../components/task/use-task-completion';
 import { useColumns, useTasks } from '../../../lib/queries';
 import { useAction } from '../../../lib/use-action';
-import { pageTitle, returnFocus, whenPresent } from '../../../ui';
+import { type ElementRefs, focusIsLost, pageTitle, returnFocus, whenPresent } from '../../../ui';
 
-/**
- * The rows' titles by task ID, for the focus: by reference, never by a CSS selector. `ref(id)` is a React 19
- * callback ref, and the cleanup of an element that left keeps the newer one of the same ID.
- */
-export function useTitleRefs() {
-  const [elements] = useState(() => new Map<string, HTMLElement>());
-  return {
-    get: (id: string) => {
-      const element = elements.get(id);
-      return element?.isConnected ? element : undefined;
-    },
-    ref: (id: string) => (element: HTMLElement | null) => {
-      if (element) elements.set(id, element);
-      return () => {
-        if (element && elements.get(id) === element) elements.delete(id);
-      };
-    },
-  };
-}
-
-export type TitleRefs = ReturnType<typeof useTitleRefs>;
+/** The rows' titles by task ID, for the focus. */
+export type TitleRefs = ElementRefs<HTMLElement>;
 
 /** Nothing has the focus, or the page's title has it, or something in `container`. */
 function focusIsFree(container: HTMLElement | null) {
-  const active = document.activeElement;
-  if (!active || active === document.body || !active.isConnected || active === pageTitle()) return true;
-  return Boolean(container?.contains(active));
+  return focusIsLost({ also: [pageTitle()] }) || Boolean(container?.contains(document.activeElement));
 }
 
 /**

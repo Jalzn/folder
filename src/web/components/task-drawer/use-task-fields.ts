@@ -9,6 +9,7 @@ import { useRequest } from '../../lib/use-request';
 import { useTaskDrawer } from '../../shell/task-drawer-state';
 import { useUndoableChange } from '../../shell/use-undoable-change';
 import { useToast } from '../../ui';
+import { useCreateLabel } from '../labels/use-create-label';
 import { TASK_CHANGED } from '../task/task-change-text';
 import { useTaskCompletion } from '../task/use-task-completion';
 
@@ -27,6 +28,7 @@ export function useTaskFields(task: Task | undefined) {
   const drawer = useTaskDrawer();
   const completion = useTaskCompletion(action);
   const change = useUndoableChange(action);
+  const createLabel = useCreateLabel(action);
   const requests = { column: useRequest(), due: useRequest(), labels: useRequest(), trash: useRequest() };
   const latest = useRef(task);
   latest.current = task;
@@ -110,12 +112,9 @@ export function useTaskFields(task: Task | undefined) {
     setLabels: (labelIds: string[]) => update('labels', { labelIds }),
     /** Creates a label with the next color and puts it on the task. */
     addNewLabel: async (name: string) => {
-      const input = { requestId: requestId(), name };
-      const created = await action.run(() => onceMoreIfLost(() => api.workspace.createLabel(input)), undefined, {
-        queued: true,
-      });
+      const created = await createLabel(name);
       const current = latest.current;
-      if (created && current) await update('labels', { labelIds: [...current.labelIds, created.id] });
+      if (created && current) await update('labels', { labelIds: [...current.labelIds, created] });
     },
     setProject,
     /** Concluir, or Reabrir in the first open column, with Desfazer. */

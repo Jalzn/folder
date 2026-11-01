@@ -1,11 +1,10 @@
 import { type FocusEvent, type RefObject, useState } from 'react';
 import { cachedTasks } from '../../lib/queries';
-import { pageTitle, whenPresent } from '../../ui';
+import { type ElementRefs, focusIsLost, pageTitle, whenPresent } from '../../ui';
 import type { BoardFocus, BoardLayout } from './board-keys';
-import type { createRefs } from './board-refs';
 import { boardFocusOf } from './use-board-keyboard';
 
-type Refs = ReturnType<typeof createRefs<HTMLButtonElement>>;
+type Refs = ElementRefs<HTMLButtonElement>;
 
 /**
  * Runs at once when the element is there, as a card the arrows reach; otherwise once it shows, and only after
@@ -20,10 +19,7 @@ function soon<T>(find: () => T | null | undefined, found: (value: T) => void) {
 }
 
 /** Nothing has the focus, or only the page's title, where a lost focus falls back. */
-const lost = () => {
-  const active = document.activeElement;
-  return !active || active === document.body || !active.isConnected || active === pageTitle();
-};
+const lost = () => focusIsLost({ also: [pageTitle()] });
 
 /**
  * The board's focus (docs/etapas/10-quadro-tarefa.md, decision 10): one Tab stop, the card or column's name

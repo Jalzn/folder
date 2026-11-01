@@ -6,7 +6,16 @@ import { Button as AriaButton } from 'react-aria-components';
 import { usesCommandKey } from '../../lib/platform';
 import { type LabelSummary, useLabels } from '../../lib/queries/labels';
 import { useAction } from '../../lib/use-action';
-import { Dialog, ErrorNotice, Spinner, useToast, useUndoLatest, whenPresent } from '../../ui';
+import {
+  Dialog,
+  ErrorNotice,
+  focusIsLost,
+  Spinner,
+  useElementRefs,
+  useToast,
+  useUndoLatest,
+  whenPresent,
+} from '../../ui';
 import type { LabelCommand } from './LabelMenu';
 import { type LabelFieldExit, LabelNameField } from './LabelNameField';
 import { LabelRow, type RowStep } from './LabelRow';
@@ -27,29 +36,6 @@ export function LabelsDialog({ open, onClose }: { open: boolean; onClose: () => 
   );
 }
 
-/** Elements by label ID, for the focus (by reference, never by CSS selector); a callback ref keeps the latest. */
-function useElements<T extends HTMLElement>() {
-  const [elements] = useState(() => new Map<string, T>());
-  return {
-    get: (id: string) => {
-      const element = elements.get(id);
-      return element?.isConnected ? element : undefined;
-    },
-    ref: (id: string) => (element: T | null) => {
-      if (element) elements.set(id, element);
-      return () => {
-        if (element && elements.get(id) === element) elements.delete(id);
-      };
-    },
-  };
-}
-
-/** Nothing has the focus: the element that had it went away. */
-const focusLost = () => {
-  const active = document.activeElement;
-  return !active || active === document.body || !active.isConnected;
-};
-
 /** Whether a key press asks for the toast's undo: ⌘Z on Apple platforms, Ctrl+Z elsewhere. */
 const isUndoKey = (event: KeyboardEvent) =>
   event.key.toLowerCase() === 'z' &&
@@ -64,8 +50,8 @@ function LabelsList() {
   const actions = useLabelActions(action);
   const toast = useToast();
   const undoLatest = useUndoLatest();
-  const rows = useElements<HTMLLIElement>();
-  const names = useElements<HTMLButtonElement>();
+  const rows = useElementRefs<HTMLLIElement>();
+  const names = useElementRefs<HTMLButtonElement>();
   const body = useRef<HTMLDivElement>(null);
   const add = useRef<HTMLButtonElement>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -115,7 +101,7 @@ function LabelsList() {
         () => names.get(label.id),
         () => {
           const active = document.activeElement;
-          return focusLost() || (Boolean(body.current?.contains(active)) && !(active instanceof HTMLInputElement));
+          return focusIsLost() || (Boolean(body.current?.contains(active)) && !(active instanceof HTMLInputElement));
         },
       );
     const removed = await actions.remove(label, back);

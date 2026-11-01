@@ -3,12 +3,13 @@ import { Plus } from 'lucide-react';
 import { type RefObject, useEffect, useId, useRef, useState } from 'react';
 import { api, errorMessage, refreshWorkspace, reportSessionError } from '../../lib/api';
 import { doneAndFirstOpen } from '../../lib/board-order';
-import { onceMoreIfLost } from '../../lib/lost-answer';
 import { useColumns, useLabels, useProjects } from '../../lib/queries';
+import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { useOwnerToday } from '../../shell/AppProvider';
 import { type DrawerContent, useTaskDrawer } from '../../shell/task-drawer-state';
 import { AlertDialog, Button, useToast } from '../../ui';
+import { useCreateLabel } from '../labels/use-create-label';
 import { DueField } from './DueField';
 import type { DrawerCommands } from './drawer-commands';
 import { LabelsField } from './LabelsField';
@@ -33,6 +34,7 @@ export function NewTaskForm({
 }) {
   const drawer = useTaskDrawer();
   const toast = useToast();
+  const createLabel = useCreateLabel(useAction());
   const projects = useProjects(true).data ?? [];
   const request = useRequest();
   const errorId = useId();
@@ -111,20 +113,20 @@ export function NewTaskForm({
       setBusy(false);
     }
   }
+  // ⌘↵ creates: the drawer holds one stable command, which calls this render's create.
+  const latestCreate = useRef(create);
+  latestCreate.current = create;
   useEffect(() => {
-    commands.current.primary = () => void create();
-  });
+    const drawerCommands = commands.current;
+    drawerCommands.primary = () => void latestCreate.current();
+    return () => {
+      drawerCommands.primary = undefined;
+    };
+  }, [commands]);
   /** A label made from the picker goes on the new task at once; the task itself waits for Criar. */
-  async function createLabel(name: string) {
-    const input = { requestId: crypto.randomUUID(), name };
-    try {
-      const created = await onceMoreIfLost(() => api.workspace.createLabel(input));
-      await refreshWorkspace();
-      setLabels((current) => [...current, created.id]);
-    } catch (failure) {
-      reportSessionError(failure);
-      toast(errorMessage(failure), 'error');
-    }
+  async function addNewLabel(name: string) {
+    const created = await createLabel(name);
+    if (created) setLabels((current) => [...current, created]);
   }
 
   return (
@@ -215,7 +217,7 @@ export function NewTaskForm({
                   labels={labels}
                   editable
                   onChange={setLabels}
-                  onCreate={(name) => void createLabel(name)}
+                  onCreate={(name) => void addNewLabel(name)}
                 />
               ),
             },

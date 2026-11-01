@@ -14,6 +14,7 @@ import {
   labelRenamedText,
   labelRestoredText,
 } from './label-text';
+import { useCreateLabel } from './use-create-label';
 
 /**
  * The label writes of "Etiquetas" (docs/etapas/10-quadro-tarefa.md, "Etiquetas" and "Desfazer"): create with
@@ -24,15 +25,14 @@ import {
 export function useLabelActions(action: ReturnType<typeof useAction>) {
   const toast = useToast();
   const announce = useAnnounce();
+  const createLabel = useCreateLabel(action);
   const change = useUndoableChange(action);
 
   /** Creates a label with the next color; resolves to its ID. */
   async function create(name: string) {
-    const input = { requestId: requestId(), name };
-    const created = await action.run(() => onceMoreIfLost(() => api.workspace.createLabel(input)));
-    if (!created) return undefined;
-    announce(labelCreatedText(name));
-    return created.id;
+    const created = await createLabel(name);
+    if (created) announce(labelCreatedText(name));
+    return created;
   }
 
   async function rename(label: LabelSummary, name: string) {
