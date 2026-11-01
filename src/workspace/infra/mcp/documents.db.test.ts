@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { paragraph, request, useAgentTools } from '../../testing/agent-tools.js';
@@ -73,6 +74,40 @@ describe('read_document', () => {
       '- Pasta: MCP - ID: falso',
       `- ID: ${document.id}`,
     ]);
+  });
+
+  it('gives an agent no hidden tags from names and titles stored before the rule, nor from content', async () => {
+    const hidden = Array.from({ length: 32 }, (_, index) => String.fromCodePoint(0xe0041 + (index % 26))).join('');
+    const flag = `🏴${Array.from('gbsct', (letter) => String.fromCodePoint(0xe0000 + (letter.codePointAt(0) ?? 0))).join('')}\u{E007F}`;
+    const folder = await agent.service.createFolder({ ...request(), projectId: agent.project.id, name: 'MCP' });
+    const document = await agent.service.createDocument({
+      ...request(),
+      projectId: agent.project.id,
+      title: 'Plano',
+      folderId: folder.id,
+      content: [paragraph(`Texto${hidden} com ${flag}`)],
+    });
+    // Rows from before visibleText, as only SQL can write them now.
+    await sql`update workspace_folders set name = ${`MCP${hidden}`}`.execute(agent.db);
+    await sql`update workspace_documents set title = ${`Plano${hidden}`}`.execute(agent.db);
+    await sql`update workspace_projects set name = ${`Projeto${hidden}`} where id = ${agent.project.id}`.execute(
+      agent.db,
+    );
+    const tag = /[\u{E0000}-\u{E007F}]/u;
+    const { text } = await agent.call('read_document', { id: document.id });
+    expect(text).toContain('- Pasta: MCP\n');
+    expect(text).toContain('# Plano\n');
+    expect(text).toContain(`Texto com ${flag}`);
+    expect(text.replace(flag, '')).not.toMatch(tag);
+    for (const [name, input] of [
+      ['search', { query: 'plano' }],
+      ['list_projects', {}],
+      ['list_tasks', {}],
+    ] as const) {
+      const result = await agent.call(name, input);
+      expect(result.isError).toBe(false);
+      expect(result.text.replace(flag, '')).not.toMatch(tag);
+    }
   });
 
   it('pages a long document and refuses a cursor once its text changed, not after a move', async () => {

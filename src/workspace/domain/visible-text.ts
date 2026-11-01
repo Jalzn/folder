@@ -66,6 +66,18 @@ function withoutHidden(text: string): string {
 }
 
 /**
+ * The text without tag characters outside a flag's tag sequence, the hidden text an agent would read,
+ * and nothing else changed. For what the MCP returns: names and titles stored before visibleText, and
+ * document content, may still hold them.
+ */
+export function withoutStrayTags(text: string): string {
+  if (!TAG.test(text)) return text;
+  const points = Array.from(text);
+  const tags = flagTags(points);
+  return points.filter((point, index) => !TAG.test(point) || tags.has(index)).join('');
+}
+
+/**
  * A name or title as stored: without the characters that draw nothing (withoutHidden), nor spaces
  * at the ends. Empty when nothing visible is left, so that a name of only those or marks reads as none.
  */
