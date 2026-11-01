@@ -3,10 +3,9 @@ import { compareSearchKeys, searchKey, searchTypeRankOf } from '../../applicatio
 import type { SearchHit, SearchQuery, WorkspaceReader } from '../../application/reading/ports.js';
 import { excerptAround } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import { matchesAllTerms, searchText } from '../../domain/search-text.js';
 import type { WorkspaceTables } from '../db.js';
 import { taskStatuses } from '../task-statuses.js';
-import { excerptWindows } from './excerpt-windows.js';
+import { type ExcerptType, excerptWindows } from './excerpt-windows.js';
 import { folderColumns, folderReference } from './folders.js';
 import { searchableItems, type TextType, titleLengthInSearchText } from './searchable.js';
 import { projectColumns, projectReference } from './shared.js';
@@ -61,32 +60,41 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
     }));
   }
 
-  /** Task titles have no stored search column, so the normalized match runs here. A task matches by title. */
+  /**
+   * Tasks by their search_text, the title and the description normalized, ranked like documents: a
+   * term in the title counts as there. Each comes with its column.
+   */
   async function taskHits(query: SearchQuery, limit: number): Promise<RankedHit[]> {
+    const missingFromTitle = query.terms.map(
+      (term) => sql<number>`(instr(item.search_text, ${term}) not between 1 and ${titleLengthInSearchText})`,
+    );
+    const titleRank = missingFromTitle.length ? sql<number>`${sql.join(missingFromTitle, sql` + `)}` : sql<number>`0`;
     let select = db
       .selectFrom('workspace_tasks as item')
       .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
-      .select(['item.id', 'item.title', 'item.column_id', 'item.updated_at'])
+      .innerJoin('workspace_columns as col', 'col.id', 'item.column_id')
+      .select(['item.id', 'item.title', 'item.updated_at', titleRank.as('title_rank')])
+      .select(['col.id as column_id', 'col.name as column_name', 'col.is_done as column_is_done'])
       .select(projectColumns)
       .where('item.deleted_at', 'is', null)
-      .where(afterKey(query, searchTypeRankOf('task'), sql<number>`0`))
+      .where(afterKey(query, searchTypeRankOf('task'), titleRank))
+      .orderBy('title_rank')
       .orderBy('item.updated_at', 'desc')
-      .orderBy('item.id');
+      .orderBy('item.id')
+      .limit(limit);
     if (query.projectId) select = select.where('item.project_id', '=', query.projectId);
-    if (!query.terms.length) select = select.limit(limit);
+    for (const term of query.terms) select = select.where(sql<boolean>`instr(item.search_text, ${term}) > 0`);
     const { statusOf } = await taskStatuses(db);
-    return (await select.execute())
-      .filter((row) => matchesAllTerms(searchText(row.title), query.terms))
-      .slice(0, limit)
-      .map((row) => ({
-        type: 'task' as const,
-        id: row.id,
-        title: row.title,
-        status: statusOf(row.column_id),
-        ...projectReference(row),
-        updatedAt: row.updated_at,
-        titleRank: 0,
-      }));
+    return (await select.execute()).map((row) => ({
+      type: 'task' as const,
+      id: row.id,
+      title: row.title,
+      status: statusOf(row.column_id),
+      column: { id: row.column_id, name: row.column_name, isDone: row.column_is_done === 1 },
+      ...projectReference(row),
+      updatedAt: row.updated_at,
+      titleRank: row.title_rank,
+    }));
   }
 
   return {
@@ -100,14 +108,14 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
       ];
       ranked.sort((a, b) => compareSearchKeys(searchKey(a), searchKey(b)));
       const shown = ranked.slice(0, query.limit);
-      const idsOf = (type: TextType) => shown.filter((hit) => hit.type === type).map((hit) => hit.id);
+      const idsOf = (type: ExcerptType) => shown.filter((hit) => hit.type === type).map((hit) => hit.id);
       const windows = new Map([
         ...(await excerptWindows(db, 'document', idsOf('document'), query.terms)),
         ...(await excerptWindows(db, 'drawing', idsOf('drawing'), query.terms)),
+        ...(await excerptWindows(db, 'task', idsOf('task'), query.terms)),
       ]);
       const { excerptChars, excerptLeadChars } = READING_LIMITS.search;
       const items = shown.map((hit): SearchHit => {
-        if (hit.type === 'task') return hit;
         const window = windows.get(hit.id) ?? { text: '', cut: { before: false, after: false } };
         const excerpt = excerptAround(window.text, query.terms, excerptChars, excerptLeadChars, window.cut);
         return { ...hit, excerpt };

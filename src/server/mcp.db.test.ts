@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { createAccessTokens, createAuthService } from '@tinyfold/auth';
+import { todayIn } from '@tinyfold/core/domain';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { createWorkspaceService } from '@tinyfold/workspace';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -157,10 +158,13 @@ describe('MCP protocol', () => {
         .subarray(1, 4)
         .toString(),
     ).toBe('PNG');
-    expect(JSON.parse(textOf(await call('list_tasks')))).toMatchObject({ tasks: [{ id: task.id }] });
-    expect(JSON.parse(textOf(await call('read_task', { id: task.id })))).toMatchObject({
-      source: { documentId: document.id, blockAvailable: true },
+    expect(JSON.parse(textOf(await call('list_tasks', { columns: ['a fazer'] })))).toMatchObject({
+      columns: [{ name: 'A fazer' }, { name: 'Em andamento' }, { name: 'Concluído', isDone: true }],
+      tasks: [{ id: task.id, column: { name: 'A fazer', isDone: false }, dueOn: null, overdue: false, labels: [] }],
     });
+    const read = textOf(await call('read_task', { id: task.id }));
+    expect(read).toContain('\n- Coluna: A fazer\n');
+    expect(read).toContain(`\n- Origem: documento "MCP" (id ${document.id}), bloco b\n  - Trecho: "Gerar token"\n`);
     const missing = await call('read_task', { id: randomUUID() });
     expect(missing.isError).toBe(true);
     expect(textOf(missing)).toBe('Tarefa não encontrada ou na lixeira.');
@@ -170,6 +174,29 @@ describe('MCP protocol', () => {
     expect(textOf(await call('search', { limit: 99 }))).toContain('Grande demais');
     // Only the tool schemas speak Portuguese: Zod's process-wide locale is untouched.
     expect(z.number().safeParse('x').error?.issues[0]?.message).toContain('expected number');
+  });
+
+  it("reads overdue tasks in the owner's time zone", async () => {
+    const { db, auth, connect } = await fixture();
+    const workspace = createWorkspaceService(db);
+    const project = await workspace.createProject({ requestId: randomUUID(), name: 'Tinyfold' });
+    // Kiritimati is always a day or two ahead of Pago Pago: a task due today there is late in Kiritimati.
+    const dueOn = todayIn('Pacific/Pago_Pago', new Date());
+    const task = await workspace.createTask({ requestId: randomUUID(), title: 'Vence', projectId: project.id, dueOn });
+    const client = await connect();
+    const overdue = async () =>
+      (
+        JSON.parse(textOf(await client.callTool({ name: 'list_tasks', arguments: {} }))) as {
+          tasks: { overdue: boolean }[];
+        }
+      ).tasks[0]?.overdue;
+    await auth.setTimeZone('Pacific/Pago_Pago');
+    expect(await overdue()).toBe(false);
+    await auth.setTimeZone('Pacific/Kiritimati');
+    expect(await overdue()).toBe(true);
+    expect(textOf(await client.callTool({ name: 'read_task', arguments: { id: task.id } }))).toContain(
+      `\n- Prazo: atrasada desde ${dueOn} (hoje é ${todayIn('Pacific/Kiritimati', new Date())})\n`,
+    );
   });
 
   it('lists no project while the only one is archived, and lists it on request', async () => {

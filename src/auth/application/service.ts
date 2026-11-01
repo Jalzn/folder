@@ -1,8 +1,16 @@
 import { AppError, type Owner } from '@tinyfold/core/application';
+import { isTimeZone } from '@tinyfold/core/domain';
 import { deviceLabel, renewalIntervalMs, sessionLifetimeMs, validatePassword } from '../domain/index.js';
 import type { AuthDependencies, StoredOwner } from './ports.js';
 
-const profile = (owner: StoredOwner): Owner => ({ name: owner.name, installationId: owner.installationId });
+const profile = (owner: StoredOwner): Owner => ({
+  name: owner.name,
+  installationId: owner.installationId,
+  timeZone: owner.timeZone,
+});
+
+/** Where civil dates hold until the owner has a time zone. */
+export const DEFAULT_TIME_ZONE = 'UTC';
 
 export function authService(deps: AuthDependencies) {
   async function ensureOwner(input: { name: string; password?: string }) {
@@ -19,6 +27,7 @@ export function authService(deps: AuthDependencies) {
         installationId: deps.id(),
         passwordHash,
         passwordChangedAt: deps.now().toISOString(),
+        timeZone: null,
       };
       await repo.createOwner(owner);
       return profile(owner);
@@ -107,9 +116,27 @@ export function authService(deps: AuthDependencies) {
     });
   }
 
+  /**
+   * Sets the owner's time zone, one Intl knows. Safe to repeat as it is: it keeps no request record,
+   * like a preference.
+   */
+  async function setTimeZone(timeZone: string) {
+    if (!isTimeZone(timeZone)) throw new AppError('VALIDATION', 'Fuso horário desconhecido.');
+    await deps.transaction(async (repo) => {
+      if (!(await repo.owner())) throw new AppError('NOT_FOUND', 'A conta ainda não foi criada.');
+      await repo.setTimeZone(timeZone);
+    });
+    return { timeZone };
+  }
+
   return {
     ensureOwner,
     login,
+    setTimeZone,
+    /** The time zone civil dates hold in: the owner's, or UTC until it has one. */
+    async timeZone() {
+      return (await deps.read.owner())?.timeZone ?? DEFAULT_TIME_ZONE;
+    },
     authenticate,
     changePassword,
     resetPassword,

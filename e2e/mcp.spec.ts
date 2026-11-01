@@ -216,15 +216,10 @@ test('Claude Code reads what the interface created, never the trash, until the t
   expect(document).toContain('- [ ] Revisar a prévia do desenho');
   expect(document).toMatch(/```[a-z]*\nclaude mcp list\n```/);
 
-  const task = jsonOf<{ title: string; source: Record<string, unknown> }>(await mcp.call('read_task', { id: taskId }));
-  expect(task.title).toBe(`Tarefa ${marker}`);
-  expect(task.source).toMatchObject({
-    documentId,
-    documentTitle: `Plano ${marker}`,
-    excerpt: 'O acesso usa um token pessoal somente leitura.',
-    available: true,
-    blockAvailable: true,
-  });
+  const task = textOf(await mcp.call('read_task', { id: taskId }));
+  expect(task).toContain(`# Tarefa ${marker}\n`);
+  expect(task).toContain(`\n- Origem: documento "Plano ${marker}" (id ${documentId})`);
+  expect(task).toContain('\n  - Trecho: "O acesso usa um token pessoal somente leitura."\n');
 
   // Trash hides the document from every tool.
   await page.goto(documentUrl);

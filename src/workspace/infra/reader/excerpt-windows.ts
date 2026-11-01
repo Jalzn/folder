@@ -2,7 +2,15 @@ import { type Kysely, sql } from 'kysely';
 import type { TextCut } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import type { WorkspaceTables } from '../db.js';
-import { searchableItems, type TextType, titleLengthInSearchText } from './searchable.js';
+import { itemTable } from '../item-tables.js';
+import { titleLengthInSearchText } from './searchable.js';
+
+/** The item types whose text an excerpt comes from: a task's is its description. */
+export type ExcerptType = 'document' | 'drawing' | 'task';
+
+/** The stored text of `item` that excerpts come from. */
+const plainTextOf = (type: ExcerptType) =>
+  sql.ref<string>(type === 'task' ? 'item.description_plain_text' : 'item.plain_text');
 
 export interface TextWindow {
   text: string;
@@ -19,7 +27,7 @@ const normalizedText = sql<string>`substr(item.search_text, ${titleLengthInSearc
  * shrinks very unevenly, such as thousands of emoji before the match and none after, can move the
  * match out of the window; its excerpt then shows the window without it.
  */
-function windowStart(terms: readonly string[], margin: number) {
+function windowStart(terms: readonly string[], margin: number, plainText: ReturnType<typeof plainTextOf>) {
   if (!terms.length) return sql<number>`1`;
   const positions = sql.join(
     terms.map((term) => sql`select instr(${normalizedText}, ${term}) as position`),
@@ -27,7 +35,7 @@ function windowStart(terms: readonly string[], margin: number) {
   );
   const firstMatch = sql`(select min(position) from (${positions}) where position > 0)`;
   const normalizedLength = sql`length(item.search_text) - ${titleLengthInSearchText} - 1`;
-  const estimate = sql`${firstMatch} * length(item.plain_text) / max(1, ${normalizedLength})`;
+  const estimate = sql`${firstMatch} * length(${plainText}) / max(1, ${normalizedLength})`;
   return sql<number>`max(1, coalesce(${estimate}, 1) - ${margin})`;
 }
 
@@ -38,30 +46,31 @@ function windowStart(terms: readonly string[], margin: number) {
  */
 export async function excerptWindows(
   db: Kysely<WorkspaceTables>,
-  type: TextType,
+  type: ExcerptType,
   ids: readonly string[],
   terms: readonly string[],
 ): Promise<Map<string, TextWindow>> {
   if (!ids.length) return new Map();
   const { excerptChars, excerptWindowMargin } = READING_LIMITS.search;
   const length = 2 * excerptWindowMargin + excerptChars;
+  const plainText = plainTextOf(type);
   const rows = await db
     // Materialized, so the match is searched once per item and the texts are not copied.
     .with(
       (cte) => cte('located').materialized(),
       (query) =>
         query
-          .selectFrom(searchableItems(db, type))
+          .selectFrom(itemTable(db, type))
           .where('item.id', 'in', ids)
-          .select(['item.id', windowStart(terms, excerptWindowMargin).as('start')]),
+          .select(['item.id', windowStart(terms, excerptWindowMargin, plainText).as('start')]),
     )
-    .selectFrom(searchableItems(db, type))
+    .selectFrom(itemTable(db, type))
     .innerJoin('located', 'located.id', 'item.id')
     .select([
       'located.id',
       'located.start',
-      sql<number>`length(item.plain_text)`.as('text_length'),
-      sql<string>`substr(item.plain_text, located.start, ${length})`.as('text'),
+      sql<number>`length(${plainText})`.as('text_length'),
+      sql<string>`substr(${plainText}, located.start, ${length})`.as('text'),
     ])
     .execute();
   return new Map(

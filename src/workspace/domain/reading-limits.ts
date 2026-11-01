@@ -19,5 +19,7 @@ export const READING_LIMITS = {
    * budget: 36,000 of Markdown and 9,000 of header, separators and footer fill one result.
    */
   document: { pageChars: 36_000, headerChars: 9_000, originTasks: 50, originTaskTitleChars: 100 },
+  /** read_task pages the description as read_document pages a document. */
+  task: { pageChars: 36_000, headerChars: 9_000 },
   outline: { maxElements: 800, maxChars: 45_000, maxTextChars: 500 },
 } as const;

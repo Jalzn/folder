@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { COLUMN_LIMITS } from '../../domain/columns.js';
+import { LABEL_LIMITS } from '../../domain/labels.js';
 import { SEARCH_ITEM_TYPES } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import { TASK_STATUSES, taskStatusLabels } from '../../domain/task-status.js';
 
 /**
  * Inputs of the agent read tools. The descriptions reach the agent through the tool schemas, and so
@@ -14,9 +15,6 @@ const cursor = z.string(pt).max(100).describe('O nextCursor da página anterior.
 const query = z.string(pt).trim().min(1).max(300);
 const flag = () => z.boolean(pt);
 const pageSize = (max: number, fallback: number) => z.number(pt).int().min(1).max(max).default(fallback);
-const columnList = new Intl.ListFormat('pt-BR').format(
-  TASK_STATUSES.map((status) => `${status} (${taskStatusLabels[status]})`),
-);
 
 export const ListProjectsInput = z.object(
   {
@@ -68,12 +66,18 @@ export const ListTasksInput = z.object(
   {
     projectId: id.optional().describe('Limita a um projeto.'),
     documentId: id.optional().describe('Só as tarefas criadas a partir deste documento.'),
-    status: z
-      .array(z.enum(TASK_STATUSES, pt), pt)
+    columns: z
+      .array(z.string(pt).trim().min(1).max(COLUMN_LIMITS.nameChars), pt)
       .min(1)
-      .max(TASK_STATUSES.length)
+      .max(COLUMN_LIMITS.active)
       .optional()
-      .describe(`Colunas: ${columnList}.`),
+      .describe('Nomes de colunas, como aparecem no Tinyfold; vale qualquer uma delas.'),
+    labels: z
+      .array(z.string(pt).trim().min(1).max(LABEL_LIMITS.nameChars), pt)
+      .min(1)
+      .max(10)
+      .optional()
+      .describe('Nomes de etiquetas, como aparecem no Tinyfold; a tarefa precisa ter todas.'),
     query: query.optional().describe('Palavras que precisam aparecer no título, em qualquer ordem.'),
     limit: pageSize(READING_LIMITS.tasks.maxPageSize, READING_LIMITS.tasks.defaultPageSize),
     cursor: cursor.optional(),
@@ -81,7 +85,10 @@ export const ListTasksInput = z.object(
   pt,
 );
 
-export const ReadTaskInput = z.object({ id }, pt);
+export const ReadTaskInput = z.object(
+  { id, cursor: cursor.optional().describe('O cursor indicado no fim da página anterior.') },
+  pt,
+);
 
 export type ListProjectsInput = z.infer<typeof ListProjectsInput>;
 export type SearchInput = z.infer<typeof SearchInput>;

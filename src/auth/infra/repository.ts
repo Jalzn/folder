@@ -8,6 +8,7 @@ interface OwnerRow {
   installation_id: string;
   password_hash: string;
   password_changed_at: string;
+  time_zone: string | null;
 }
 interface SessionRow {
   id: string;
@@ -37,6 +38,8 @@ export function authRepository(db: Database): AuthRepository {
           installationId: row.installation_id,
           passwordHash: row.password_hash,
           passwordChangedAt: row.password_changed_at,
+          // Missing before migration 003, which tests of the earlier migrations still run without.
+          timeZone: row.time_zone ?? null,
         }
       );
     },
@@ -49,8 +52,12 @@ export function authRepository(db: Database): AuthRepository {
           installation_id: owner.installationId,
           password_hash: owner.passwordHash,
           password_changed_at: owner.passwordChangedAt,
+          ...(owner.timeZone === null ? {} : { time_zone: owner.timeZone }),
         })
         .execute();
+    },
+    async setTimeZone(timeZone) {
+      await store.updateTable('auth_owner').set({ time_zone: timeZone }).where('id', '=', 1).execute();
     },
     async updatePassword(hash, changedAt) {
       await store

@@ -321,7 +321,7 @@ describe('items need a project', () => {
     const archived = await service.updateProject({ ...request(), id: project.id, expectedVersion: 1, archived: true });
     expect(archived.archivedAt).not.toBeNull();
     expect(await service.listProjects()).toEqual([]);
-    expect(await service.listProjects({ includeArchived: true })).toEqual([archived]);
+    expect(await service.listProjects({ includeArchived: true })).toEqual([{ ...archived, overdueTasks: 0 }]);
     for (const create of [
       () => service.createDocument({ ...request(), projectId: project.id }),
       () => service.createCanvas({ ...request(), projectId: project.id }),

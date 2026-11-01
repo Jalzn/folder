@@ -1,8 +1,10 @@
 export { createTask } from './create-task.js';
 export { deleteTask } from './delete-task.js';
 export { getTask } from './get-task.js';
+export { listCompletedTasks } from './list-completed-tasks.js';
 export { listTasks } from './list-tasks.js';
 export { moveTask } from './move-task.js';
+export { projectBoard } from './project-board.js';
 export { restoreTask } from './restore-task.js';
 export { saveTaskText } from './save-task-text.js';
 export { updateTask } from './update-task.js';

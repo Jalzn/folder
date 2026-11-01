@@ -1,7 +1,8 @@
 import type { ReadingContext } from '../../application/reading/ports.js';
 import { readTask } from '../../application/reading/read-task.js';
 import { ReadTaskInput } from '../../application/reading/schemas.js';
-import { compactJson, statusFields, textResult } from './format.js';
+import { READING_LIMITS } from '../../domain/reading-limits.js';
+import { taskHeader, textResult } from './format.js';
 import { defineTool, readOnlyAnnotations } from './types.js';
 
 export const readTaskTool = (reading: ReadingContext) =>
@@ -9,33 +10,30 @@ export const readTaskTool = (reading: ReadingContext) =>
     name: 'read_task',
     title: 'Ler tarefa',
     description:
-      'Lê uma tarefa com a origem completa: o documento, o bloco e o trecho de onde ela nasceu. ' +
-      'available diz se o documento está disponível e blockAvailable se o trecho ainda está nele; ' +
-      'o trecho capturado vem mesmo quando a origem não existe mais.',
+      'Lê uma tarefa em Markdown: projeto, coluna, prazo, etiquetas, checklist, conclusão e a origem completa, ' +
+      'com o documento, o bloco e o trecho de onde ela nasceu, e depois a descrição. O trecho capturado vem ' +
+      'mesmo quando a origem não existe mais. Datas de prazo valem no fuso do dono do Tinyfold. Descrições ' +
+      'longas vêm em páginas; o fim de cada página diz como pedir a próxima.',
     inputSchema: ReadTaskInput,
     annotations: readOnlyAnnotations,
     async handler(input) {
-      const { status, source, ...task } = await readTask(reading, input);
-      return textResult(
-        compactJson({
-          id: task.id,
-          title: task.title,
-          ...statusFields(status),
-          projectId: task.projectId,
-          projectName: task.projectName,
-          projectArchived: task.projectArchived,
-          createdAt: task.createdAt,
-          updatedAt: task.updatedAt,
-          position: task.position,
-          source: source && {
-            documentId: source.documentId,
-            documentTitle: source.documentTitle,
-            blockId: source.blockId,
-            excerpt: source.excerpt,
-            available: source.available,
-            blockAvailable: source.blockAvailable,
-          },
-        }),
-      );
+      const { task, today, page, nextCursor } = await readTask(reading, input);
+      const parts: string[] = [];
+      // Only line breaks are trimmed: a page cut mid-line keeps the space at its end.
+      if (page.text.trim()) parts.push(page.text.replace(/\n+$/u, ''));
+      if (page.count > 1) {
+        const next = nextCursor && ` Continue com read_task ${JSON.stringify({ id: task.id, cursor: nextCursor })}.`;
+        parts.push(`---\nPágina ${page.number} de ${page.count}.${next ?? ''}`);
+      }
+      if (page.number === 1) {
+        // The header gets what the page and its footer leave of the result, up to its own budget.
+        const room = READING_LIMITS.toolTextChars - parts.join('\n\n').length - '\n\n---\n\n'.length;
+        const header = taskHeader(
+          { task, today, empty: !page.text.trim() },
+          Math.min(READING_LIMITS.task.headerChars, room),
+        );
+        parts.unshift(header, '---');
+      }
+      return textResult(parts.join('\n\n'));
     },
   });

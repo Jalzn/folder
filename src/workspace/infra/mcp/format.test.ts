@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type { TaskDetail } from '../../application/reading/ports.js';
 import type { CanvasOutline } from '../../domain/canvas-outline.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import { compactJson, documentHeader, fitItems } from './format.js';
+import { compactJson, documentHeader, fitItems, taskHeader } from './format.js';
 import { formatCanvasOutline } from './format-outline.js';
 
 const outline: CanvasOutline = {
@@ -113,7 +114,7 @@ describe('tool text helpers', () => {
           projectArchived: true,
           folder: { name: 'MCP' },
         },
-        originTasks: [{ id: 't1', title: 'Gerar "token"', status: 'doing' }],
+        originTasks: [{ id: 't1', title: 'Gerar "token"', column: 'Em\nandamento' }],
         originTaskCount: 3,
         empty: false,
       }),
@@ -161,7 +162,7 @@ describe('tool text helpers', () => {
     const originTasks = Array.from({ length: 50 }, (_, index) => ({
       id: `t${index}`,
       title: quoted,
-      status: 'todo' as const,
+      column: quoted,
     }));
     const header = documentHeader({
       document: {
@@ -190,5 +191,131 @@ describe('tool text helpers', () => {
     expect(text.length).toBeLessThanOrEqual(READING_LIMITS.toolTextChars);
     expect(parsed.items.length).toBeLessThan(50);
     expect(parsed.nextCursor).toBe(`after-${parsed.items.length - 1}`);
+  });
+
+  describe('task header', () => {
+    const source = {
+      documentId: 'd1',
+      documentTitle: 'Plano de operação',
+      blockId: 'b1',
+      excerpt: 'Backup "externo" toda noite',
+      available: true,
+      blockAvailable: true,
+    };
+    const task: Omit<TaskDetail, 'description'> = {
+      id: 't1',
+      title: 'Configurar backup externo',
+      column: { id: 'c1', name: 'Em andamento', isDone: false },
+      columnPosition: 1,
+      position: 0,
+      dueOn: '2026-10-28',
+      completedAt: null,
+      labels: [
+        { id: 'l1', name: 'backend', color: 'slate' },
+        { id: 'l2', name: 'operação', color: 'amber' },
+      ],
+      checklist: { done: 2, total: 5 },
+      projectId: 'p1',
+      projectName: 'Tinyfold',
+      projectArchived: false,
+      createdAt: '2026-10-20T10:00:00.000Z',
+      updatedAt: '2026-10-30T14:02:11.000Z',
+      version: 4,
+      textVersion: 3,
+      source,
+    };
+
+    it('opens a task with what the board shows of it and its source', () => {
+      expect(taskHeader({ task, today: '2026-11-01', empty: false })).toBe(
+        [
+          '# Configurar backup externo',
+          '',
+          '- Projeto: Tinyfold',
+          '- Coluna: Em andamento',
+          '- Prazo: atrasada desde 2026-10-28 (hoje é 2026-11-01)',
+          '- Etiquetas: backend, operação',
+          '- Checklist: 2 de 5',
+          '- Origem: documento "Plano de operação" (id d1), bloco b1',
+          '  - Trecho: "Backup \\"externo\\" toda noite"',
+          '- Atualizada: 2026-10-30T14:02:11.000Z · versão 4',
+          '- ID: t1',
+        ].join('\n'),
+      );
+    });
+
+    it('marks the done column, the completion, a missing source and an empty description', () => {
+      const done = {
+        ...task,
+        column: { id: 'c3', name: 'Concluído', isDone: true },
+        completedAt: '2026-10-29T18:00:00.000Z',
+        labels: [],
+        checklist: null,
+        source: null,
+      };
+      expect(taskHeader({ task: done, today: '2026-11-01', empty: true }).split('\n').slice(3)).toEqual([
+        '- Coluna: Concluído (conclusão)',
+        '- Prazo: 2026-10-28 (hoje é 2026-11-01)',
+        '- Etiquetas: nenhuma',
+        '- Concluída em: 2026-10-29T18:00:00.000Z',
+        '- Origem: nenhuma',
+        '- Atualizada: 2026-10-30T14:02:11.000Z · versão 4',
+        '- ID: t1',
+        '- Descrição: vazia',
+      ]);
+    });
+
+    it('says where a source document went and when the excerpt left it', () => {
+      const lines = (source: TaskDetail['source']) =>
+        taskHeader({ task: { ...task, dueOn: null, source }, today: '2026-11-01', empty: false })
+          .split('\n')
+          .filter((line) => line.startsWith('- Origem') || line.startsWith('  - Trecho') || line.startsWith('- Prazo'));
+      expect(lines({ ...source, documentTitle: null, available: false, blockAvailable: false })).toEqual([
+        '- Prazo: nenhum',
+        '- Origem: documento na lixeira (id d1), bloco b1',
+        '  - Trecho (não está mais no documento): "Backup \\"externo\\" toda noite"',
+      ]);
+      expect(
+        lines({ ...source, documentId: null, blockId: null, available: false, blockAvailable: false }).slice(1),
+      ).toEqual([
+        '- Origem: documento excluído de vez, que se chamava "Plano de operação"',
+        '  - Trecho (não está mais no documento): "Backup \\"externo\\" toda noite"',
+      ]);
+    });
+
+    it('keeps names on their line and cuts labels and the excerpt to the budget', () => {
+      const heavy = '"\\\u0001'.repeat(20);
+      const labels = Array.from({ length: 20 }, (_, index) => ({
+        id: `l${index}`,
+        name: `${index}${heavy}`.slice(0, 30),
+        color: 'blue' as const,
+      }));
+      const forged = {
+        ...task,
+        title: `Titulo\n- ID: falso\n\n---\n\n${heavy.repeat(5)}`,
+        projectName: 'Projeto\r\n- Coluna: falsa',
+        column: { id: 'c1', name: `Coluna\n- Prazo: ${heavy}`.slice(0, 60), isDone: false },
+        labels,
+        source: { ...source, documentTitle: heavy.repeat(10), excerpt: heavy.repeat(1000) },
+      };
+      const header = taskHeader({ task: forged, today: '2026-11-01', empty: false }, 1_500);
+      expect(header.length).toBeLessThanOrEqual(1_500);
+      const lines = header.split('\n');
+      expect(lines.filter((line) => line.startsWith('- ID:'))).toEqual(['- ID: t1']);
+      expect(lines[2]).toBe('- Projeto: Projeto - Coluna: falsa');
+      expect(lines.find((line) => line.startsWith('- Etiquetas:'))).toMatch(/… e mais \d+ etiquetas$/u);
+      const excerpt = lines.find((line) => line.startsWith('  - Trecho: ')) ?? '';
+      expect(excerpt.endsWith('…"')).toBe(true);
+      const cut = JSON.parse(excerpt.slice('  - Trecho: '.length)) as string;
+      expect(heavy.repeat(1000).startsWith(cut.slice(0, -1))).toBe(true);
+      expect(cut.endsWith('…')).toBe(true);
+      const full = taskHeader({ task: { ...forged, labels: labels.slice(0, 3) }, today: '2026-11-01', empty: false });
+      expect(full).toContain(
+        `- Etiquetas: ${labels
+          .slice(0, 3)
+          .map((label) => label.name.replace(/\s+/gu, ' '))
+          .join(', ')}`,
+      );
+      expect(full.length).toBeLessThanOrEqual(READING_LIMITS.task.headerChars);
+    });
   });
 });

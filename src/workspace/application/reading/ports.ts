@@ -1,7 +1,10 @@
 import type { CanvasScene } from '../../domain/canvas.js';
+import type { Column } from '../../domain/columns.js';
+import type { Label, LabelColor } from '../../domain/labels.js';
 import type { DocumentBlock, TaskSource, TaskStatus } from '../../domain/models.js';
 import type { BoardKey, ProjectKey, SearchItemType, SearchKey } from '../../domain/paging.js';
 import type { ProjectColor } from '../../domain/project.js';
+import type { Calendar } from '../calendar.js';
 
 /**
  * Queries of the agent read model. Nothing in the trash is ever returned: a trashed item reads as
@@ -20,6 +23,24 @@ export interface WorkspaceReader {
   boardRevision(): Promise<number>;
   /** A folder, active or deleted, for the reads it filters. */
   folder(id: string): Promise<(FolderReference & { projectId: string; deleted: boolean }) | undefined>;
+  /** The active columns in board order, which list_tasks filters by name. */
+  columns(): Promise<Column[]>;
+  /** The active labels in alphabetical order, which list_tasks filters by name. */
+  labels(): Promise<Label[]>;
+}
+
+/** A task's column as agents see it. */
+export interface TaskColumn {
+  id: string;
+  name: string;
+  isDone: boolean;
+}
+
+/** A task's active label as agents see it. */
+export interface TaskLabel {
+  id: string;
+  name: string;
+  color: LabelColor;
 }
 
 /** The folder a document or drawing is in. */
@@ -34,6 +55,8 @@ export interface FolderWithCount extends FolderReference {
 }
 
 export interface ReadingContext {
+  /** The owner's time zone and today in it. */
+  calendar(): Promise<Calendar>;
   read<T>(work: (reader: WorkspaceReader) => Promise<T>): Promise<T>;
 }
 
@@ -105,7 +128,13 @@ export type SearchHit = ProjectReference & {
         /** The folder it is in, or null at the project's root. */
         folder: FolderReference | null;
       }
-    | { type: 'task'; status: TaskStatus }
+    | {
+        type: 'task';
+        /** Until B6, for the interface of stage 09; agents get `column`. */
+        status: TaskStatus;
+        column: TaskColumn;
+        excerpt: string;
+      }
   );
 
 export interface DocumentForReading extends ProjectReference {
@@ -122,7 +151,8 @@ export interface DocumentForReading extends ProjectReference {
 export interface OriginTask {
   id: string;
   title: string;
-  status: TaskStatus;
+  /** The name of its column. */
+  column: string;
 }
 
 export interface CanvasForReading extends ProjectReference {
@@ -148,7 +178,10 @@ export interface StoredPreview {
 export interface TaskQuery {
   projectId: string | undefined;
   documentId: string | undefined;
-  statuses: readonly TaskStatus[] | undefined;
+  /** Only tasks in any of these columns. */
+  columnIds: readonly string[] | undefined;
+  /** Only tasks with all of these labels. */
+  labelIds: readonly string[] | undefined;
   /** Normalized words from searchTerms, all required in the title. */
   terms: readonly string[];
   limit: number;
@@ -169,15 +202,23 @@ export interface SourceDocument {
 export interface TaskListing extends ProjectReference {
   id: string;
   title: string;
-  status: TaskStatus;
+  column: TaskColumn;
   /** The position of the task's column among the active ones, which orders the board. */
   columnPosition: number;
   position: number;
+  dueOn: string | null;
+  completedAt: string | null;
+  /** The active labels, in alphabetical order. */
+  labels: TaskLabel[];
+  checklist: { done: number; total: number } | null;
   updatedAt: string;
   source: SourceDocument | null;
 }
 
 export interface TaskDetail extends Omit<TaskListing, 'source'> {
   createdAt: string;
+  version: number;
+  textVersion: number;
+  description: DocumentBlock[];
   source: (Omit<TaskSource, keyof SourceDocument> & SourceDocument) | null;
 }

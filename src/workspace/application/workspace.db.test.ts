@@ -249,7 +249,7 @@ describe('workspace persistence and adversarial cases', () => {
     const site = await service.createProject({ ...request(), name: 'Site pessoal' });
     const document = await service.createDocument({ ...request(), projectId: site.id });
     await service.updateProject({ ...request(), id: site.id, expectedVersion: 1, archived: true });
-    expect(await service.listProjects({})).toEqual([project]);
+    expect(await service.listProjects({})).toEqual([{ ...project, overdueTasks: 0 }]);
     expect(await service.listProjects({ includeArchived: true })).toHaveLength(2);
     expect(await service.listDocuments({ projectId: site.id })).toHaveLength(1);
     // Existing writing can continue, while new assignments require an active project.

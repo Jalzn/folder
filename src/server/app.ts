@@ -95,7 +95,7 @@ export function createApp({
   });
   mountMcp(app, {
     accessTokens: accessTokenService,
-    tools: createWorkspaceTools(db, { logError }),
+    tools: createWorkspaceTools(db, { logError, clock, timeZone: () => authService.timeZone() }),
     config,
     clock,
     logError,

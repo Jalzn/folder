@@ -94,6 +94,23 @@ function rankIn(text: string | undefined, count: number): number {
   return rank;
 }
 const projectCursorPattern = new RegExp(`^p~(${isoDate})~(${uuid})$`, 'u');
+const completedCursorPattern = new RegExp(`^c~(${isoDate})~(${uuid})$`, 'u');
+
+/** Completed tasks, the most recently completed first, IDs breaking ties. */
+export interface CompletedKey {
+  completedAt: string;
+  id: string;
+}
+
+export function completedCursor(key: CompletedKey): string {
+  return `c~${key.completedAt}~${key.id}`;
+}
+
+export function readCompletedCursor(cursor: string): CompletedKey {
+  const match = completedCursorPattern.exec(cursor);
+  if (!match) throw invalidCursor();
+  return { completedAt: match[1] as string, id: match[2] as string };
+}
 
 export function searchCursor(key: SearchKey): string {
   return `s~${key.titleRank}~${key.updatedAt}~${key.typeRank}~${key.id}`;

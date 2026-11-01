@@ -21,4 +21,6 @@ export class AppError extends Error {
 export interface Owner {
   name: string;
   installationId: string;
+  /** The IANA time zone civil dates hold in; null until the first load sets the browser's. */
+  timeZone: string | null;
 }

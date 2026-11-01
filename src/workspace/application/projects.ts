@@ -13,8 +13,16 @@ import type {
 /** The position after every active project in the selector. */
 const endOfSelector = (active: readonly Project[]) => Math.max(-1, ...active.map((project) => project.position)) + 1;
 
-export function listProjects(ctx: WorkspaceContext, input: ListProjectsInput) {
-  return ctx.read((repo) => repo.listProjects(input.includeArchived ?? false));
+/** The projects, each with its overdue tasks in the owner's time zone, which the selector shows. */
+export async function listProjects(ctx: WorkspaceContext, input: ListProjectsInput) {
+  const { today } = await ctx.calendar();
+  return ctx.read(async (repo) => {
+    const overdue = await repo.overdueCounts(today);
+    return (await repo.listProjects(input.includeArchived ?? false)).map((project) => ({
+      ...project,
+      overdueTasks: overdue.get(project.id) ?? 0,
+    }));
+  });
 }
 
 /** A new project joins the end of the selector, in the first colour no active project uses. */

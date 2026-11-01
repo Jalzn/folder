@@ -66,6 +66,14 @@ export const SaveTaskTextInput = z.object({
   title: textTitle,
   description: documentContent,
 });
+/** One project's board: its open tasks and those completed in the done window. */
+export const ProjectBoardInput = z.object({ projectId: id });
+/** One project's completed tasks, the most recent first, by pages. */
+export const ListCompletedTasksInput = z.object({
+  projectId: id,
+  cursor: z.string().max(200).optional(),
+  limit: z.number().int().min(1).max(100).default(50),
+});
 export const DeleteTaskInput = z.object(edit);
 export const RestoreTaskInput = z.object(edit);
 /**
@@ -90,6 +98,8 @@ export type GetTaskInput = z.infer<typeof GetTaskInput>;
 export type CreateTaskInput = z.infer<typeof CreateTaskInput>;
 export type UpdateTaskInput = z.infer<typeof UpdateTaskInput>;
 export type SaveTaskTextInput = z.infer<typeof SaveTaskTextInput>;
+export type ProjectBoardInput = z.infer<typeof ProjectBoardInput>;
+export type ListCompletedTasksInput = z.infer<typeof ListCompletedTasksInput>;
 export type DeleteTaskInput = z.infer<typeof DeleteTaskInput>;
 export type RestoreTaskInput = z.infer<typeof RestoreTaskInput>;
 export type MoveTaskInput = z.infer<typeof MoveTaskInput>;

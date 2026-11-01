@@ -4,7 +4,9 @@ import type { Folder } from '../domain/folders.js';
 import type { Label } from '../domain/labels.js';
 import type { Document, DocumentContent, DocumentSummary, Project, Task, TaskSource } from '../domain/models.js';
 import type { NavItemType } from '../domain/navigation.js';
+import type { CompletedKey } from '../domain/paging.js';
 import type { TaskDetail } from '../domain/tasks.js';
+import type { Calendar } from './calendar.js';
 
 /** A task as stored, live or trashed, with its description and without its labels or source. */
 export interface TaskRecord {
@@ -143,6 +145,15 @@ export interface TaskRepository {
   tasksInColumn(projectId: string, columnId: string): Promise<TaskRecord[]>;
   /** Moves a task within its column. The order is not an edit: version and dates stay. */
   setTaskPosition(id: string, position: number): Promise<void>;
+  /** One project's live tasks in the open columns, and those completed since `doneSince`, in board order. */
+  boardTasks(projectId: string, doneSince: string): Promise<Task[]>;
+  /** How many of one project's live tasks were completed before `doneSince`. */
+  olderDoneCount(projectId: string, doneSince: string): Promise<number>;
+  /** One project's live completed tasks after `after`, the most recently completed first. */
+  completedTasks(projectId: string, after: CompletedKey | undefined, limit: number): Promise<Task[]>;
+  completedCount(projectId: string): Promise<number>;
+  /** Live tasks due before `today` outside the done column, per project. */
+  overdueCounts(today: string): Promise<Map<string, number>>;
   /** The task's labels, deleted ones included, which keep their links. */
   taskLabelIds(taskId: string): Promise<string[]>;
   /** Replaces the task's links to active labels; links to deleted ones stay. */
@@ -267,6 +278,8 @@ export type WorkspaceRepository = ProjectRepository &
 
 export interface WorkspaceContext {
   now(): string;
+  /** The owner's time zone and today in it. */
+  calendar(): Promise<Calendar>;
   newId(): string;
   read<T>(work: (repository: WorkspaceRepository) => Promise<T>): Promise<T>;
   write<T>(

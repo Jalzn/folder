@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   boardCursor,
+  completedCursor,
   documentCursor,
   pageText,
   readBoardCursor,
+  readCompletedCursor,
   readDocumentCursor,
   readSearchCursor,
   searchCursor,
@@ -53,5 +55,15 @@ describe('cursors', () => {
     expect(readBoardCursor(`t~1~19~7~${id}`).key.columnRank).toBe(19);
     for (const cursor of [`s~0~2026-10-31T06:41:25.403Z~0~${id}`, `t~1~20~7~${id}`, `t~1~7~${id}`])
       expect(() => readBoardCursor(cursor)).toThrow('Cursor inválido');
+  });
+});
+
+describe('completed tasks cursor', () => {
+  it('keeps the completion and the ID, and refuses any other cursor', () => {
+    const key = { completedAt: '2026-10-31T06:41:25.403Z', id: '00000000-0000-4000-8000-000000000010' };
+    expect(completedCursor(key)).toBe(`c~2026-10-31T06:41:25.403Z~${key.id}`);
+    expect(readCompletedCursor(completedCursor(key))).toEqual(key);
+    for (const cursor of ['c~2026-10-31~x', `t~1~0~0~${key.id}`, ''])
+      expect(() => readCompletedCursor(cursor)).toThrow('Cursor inválido');
   });
 });

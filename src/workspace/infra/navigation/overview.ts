@@ -7,10 +7,11 @@ import type { NavItemType } from '../../domain/navigation.js';
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
 import type { WorkspaceTables } from '../db.js';
 import { itemTable } from '../item-tables.js';
+import { activeColumnRows } from '../repository/columns.js';
+import { columnModel } from '../repository/mappers.js';
 import { hydrateTasks } from '../repository/tasks.js';
-import { taskStatuses } from '../task-statuses.js';
 
-type OverviewReads = Pick<NavigationReader, 'tasksInColumn' | 'recentItems'>;
+type OverviewReads = Pick<NavigationReader, 'columns' | 'openTasks' | 'overdueCount' | 'doneTasks' | 'recentItems'>;
 
 const { excerptChars } = NAVIGATION_LIMITS.overview;
 /** Enough of a drawing's text for an excerpt, whatever the length of the rest. */
@@ -62,22 +63,48 @@ export function overviewReads(db: Kysely<WorkspaceTables>): OverviewReads {
   }
 
   return {
-    async tasksInColumn(projectId, status, limit) {
-      const columnIds = (await taskStatuses(db)).columnsWith([status]);
-      if (!columnIds.length) return [];
+    async columns() {
+      return (await activeColumnRows(db)).map(columnModel);
+    },
+
+    async openTasks(projectId) {
       const rows = await db
         .selectFrom('workspace_tasks as item')
         .innerJoin('workspace_columns as col', 'col.id', 'item.column_id')
         .selectAll('item')
         .where('item.project_id', '=', projectId)
-        .where('item.column_id', 'in', columnIds)
+        .where('col.is_done', '=', 0)
         .where('item.deleted_at', 'is', null)
         .orderBy('col.position')
         .orderBy('item.position')
         .orderBy('item.id')
-        .limit(limit)
         .execute();
       return hydrateTasks(db, rows);
+    },
+
+    async overdueCount(projectId, today) {
+      const row = await db
+        .selectFrom('workspace_tasks')
+        .select((eb) => eb.fn.countAll<number>().as('count'))
+        .where('project_id', '=', projectId)
+        .where('deleted_at', 'is', null)
+        .where('completed_at', 'is', null)
+        .where('due_on', '<', today)
+        .executeTakeFirstOrThrow();
+      return row.count;
+    },
+
+    async doneTasks(projectId, since, limit) {
+      const done = db
+        .selectFrom('workspace_tasks')
+        .where('project_id', '=', projectId)
+        .where('deleted_at', 'is', null)
+        .where('completed_at', '>=', since);
+      const [rows, count] = await Promise.all([
+        done.selectAll().orderBy('completed_at', 'desc').orderBy('id').limit(limit).execute(),
+        done.select((eb) => eb.fn.countAll<number>().as('total')).executeTakeFirstOrThrow(),
+      ]);
+      return { items: await hydrateTasks(db, rows), total: count.total };
     },
 
     async recentItems(projectId, limit) {

@@ -164,6 +164,68 @@ export function taskRepository(connection: Database): TaskRepository {
     async setTaskPosition(id, position) {
       await db.updateTable('workspace_tasks').set({ position }).where('id', '=', id).execute();
     },
+    async boardTasks(projectId, doneSince) {
+      const rows = await db
+        .selectFrom('workspace_tasks as item')
+        .innerJoin('workspace_columns as col', 'col.id', 'item.column_id')
+        .selectAll('item')
+        .where('item.project_id', '=', projectId)
+        .where('item.deleted_at', 'is', null)
+        .where((eb) => eb.or([eb('col.is_done', '=', 0), eb('item.completed_at', '>=', doneSince)]))
+        .orderBy('col.position')
+        .orderBy('item.position')
+        .orderBy('item.id')
+        .execute();
+      return hydrateTasks(db, rows);
+    },
+    async olderDoneCount(projectId, doneSince) {
+      const row = await db
+        .selectFrom('workspace_tasks')
+        .select((eb) => eb.fn.countAll<number>().as('count'))
+        .where('project_id', '=', projectId)
+        .where('deleted_at', 'is', null)
+        .where('completed_at', '<', doneSince)
+        .executeTakeFirstOrThrow();
+      return row.count;
+    },
+    async completedTasks(projectId, after, limit) {
+      let query = db
+        .selectFrom('workspace_tasks')
+        .selectAll()
+        .where('project_id', '=', projectId)
+        .where('deleted_at', 'is', null)
+        .where('completed_at', 'is not', null);
+      if (after)
+        query = query.where((eb) =>
+          eb.or([
+            eb('completed_at', '<', after.completedAt),
+            eb.and([eb('completed_at', '=', after.completedAt), eb('id', '>', after.id)]),
+          ]),
+        );
+      const rows = await query.orderBy('completed_at', 'desc').orderBy('id').limit(limit).execute();
+      return hydrateTasks(db, rows);
+    },
+    async completedCount(projectId) {
+      const row = await db
+        .selectFrom('workspace_tasks')
+        .select((eb) => eb.fn.countAll<number>().as('count'))
+        .where('project_id', '=', projectId)
+        .where('deleted_at', 'is', null)
+        .where('completed_at', 'is not', null)
+        .executeTakeFirstOrThrow();
+      return row.count;
+    },
+    async overdueCounts(today) {
+      const rows = await db
+        .selectFrom('workspace_tasks')
+        .select((eb) => ['project_id', eb.fn.countAll<number>().as('count')])
+        .where('deleted_at', 'is', null)
+        .where('due_on', '<', today)
+        .where('completed_at', 'is', null)
+        .groupBy('project_id')
+        .execute();
+      return new Map(rows.map((row) => [row.project_id, row.count]));
+    },
     async taskLabelIds(taskId) {
       const rows = await db
         .selectFrom('workspace_task_labels')

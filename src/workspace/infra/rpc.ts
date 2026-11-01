@@ -1,6 +1,7 @@
 import { authedProcedure, type Database } from '@tinyfold/core/infra';
 import { z } from 'zod';
 import { SaveCanvasPreviewInput } from '../application/schemas/canvases.js';
+import type { TimeZoneSource } from './calendar.js';
 import { type Operation, workspaceOperations } from './operations/index.js';
 
 /** An operation behind a session. oRPC validates the input against the same schema before it runs. */
@@ -10,8 +11,9 @@ const procedure = <Input extends z.ZodType, Output>(operation: Operation<Input, 
 type ProcedureOf<Op> =
   Op extends Operation<infer Input, infer Output> ? ReturnType<typeof procedure<Input, Output>> : never;
 
-export function createWorkspaceRouter(db: Database) {
-  const operations = workspaceOperations(db);
+/** The router, with the owner's time zone, which the server reads from auth, for civil dates. */
+export function createWorkspaceRouter(db: Database, { timeZone }: { timeZone?: TimeZoneSource } = {}) {
+  const operations = workspaceOperations(db, () => new Date(), timeZone);
   const procedures = Object.fromEntries(
     Object.entries(operations).map(([name, operation]: [string, Operation]) => [name, procedure(operation)]),
   ) as unknown as { [Name in keyof typeof operations]: ProcedureOf<(typeof operations)[Name]> };

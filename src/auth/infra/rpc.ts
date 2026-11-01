@@ -23,6 +23,10 @@ export function createAuthRouter(auth: AuthService, accessTokens: AccessTokenSer
       .input(z.object({ currentPassword: z.string().max(256), newPassword: z.string().min(12).max(256) }))
       .handler(({ input, context }) => auth.changePassword(context.session.sessionId, input)),
     listSessions: authedProcedure.handler(({ context }) => auth.listSessions(context.session.sessionId)),
+    /** The owner's time zone; repeatable, with no requestId. */
+    setTimeZone: authedProcedure
+      .input(z.object({ timeZone: z.string().min(1).max(64) }))
+      .handler(({ input }) => auth.setTimeZone(input.timeZone)),
     revokeSession: authedProcedure
       .input(z.object({ sessionId: z.uuid() }))
       .handler(({ input, context }) => auth.revokeSession(context.session.sessionId, input.sessionId)),

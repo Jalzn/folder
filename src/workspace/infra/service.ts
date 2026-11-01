@@ -1,5 +1,7 @@
 import type { Database } from '@tinyfold/core/infra';
 import type { z } from 'zod';
+import type { TimeZoneSource } from './calendar.js';
+import { utc } from './calendar.js';
 import { type Operation, workspaceOperations } from './operations/index.js';
 
 /** An operation called in-process; inputs whose fields are all optional may be left out. */
@@ -12,10 +14,11 @@ type ServiceCall<Op> =
 
 /**
  * The workspace operations for seed/QA scripts and persistence tests. Each call parses its input
- * first, as the RPC boundary does, and throws before any work when it is invalid.
+ * first, as the RPC boundary does, and throws before any work when it is invalid. Civil dates hold
+ * in UTC unless a time zone is given.
  */
-export function createWorkspaceService(db: Database, clock = () => new Date()) {
-  const operations = workspaceOperations(db, clock);
+export function createWorkspaceService(db: Database, clock = () => new Date(), timeZone: TimeZoneSource = utc) {
+  const operations = workspaceOperations(db, clock, timeZone);
   return Object.fromEntries(
     Object.entries(operations).map(([name, operation]: [string, Operation]) => [
       name,

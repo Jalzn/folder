@@ -16,6 +16,7 @@ export interface AuthRepository {
   owner(): Promise<StoredOwner | undefined>;
   createOwner(owner: StoredOwner): Promise<void>;
   updatePassword(hash: string, changedAt: string): Promise<void>;
+  setTimeZone(timeZone: string): Promise<void>;
   session(digest: string): Promise<StoredSession | undefined>;
   createSession(session: StoredSession): Promise<void>;
   renewSession(id: string, usedAt: string, expiresAt: string): Promise<void>;

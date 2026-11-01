@@ -1,5 +1,7 @@
+import type { Column } from '../../domain/columns.js';
 import type { Project, Task, TaskStatus } from '../../domain/models.js';
 import type { NavItem, NavItemType } from '../../domain/navigation.js';
+import type { Calendar } from '../calendar.js';
 import type { TrashItemType } from '../schemas/trash.js';
 
 /** Queries the interface uses to find its way around one project. Archived projects answer too. */
@@ -10,10 +12,16 @@ export interface NavigationReader {
   navItems(projectId: string, type: NavItemType): Promise<NavItem[]>;
   /** The project's active folders, in manual order. */
   folders(projectId: string): Promise<{ id: string; name: string; position: number; version: number }[]>;
-  /** The project's live tasks in each column. */
+  /** The project's live tasks in each column, by the stage 09 status each column reads as (until B6). */
   taskCounts(projectId: string): Promise<Record<TaskStatus, number>>;
-  /** The first `limit` live tasks of one column, in board order, with their sources. */
-  tasksInColumn(projectId: string, status: TaskStatus, limit: number): Promise<Task[]>;
+  /** The active columns in board order. */
+  columns(): Promise<Column[]>;
+  /** The project's live tasks outside the done column, in board order, with their sources. */
+  openTasks(projectId: string): Promise<Task[]>;
+  /** How many of the project's live tasks are due before `today` outside the done column. */
+  overdueCount(projectId: string, today: string): Promise<number>;
+  /** The project's live tasks completed since `since`, the most recent first: the first `limit` and how many. */
+  doneTasks(projectId: string, since: string, limit: number): Promise<{ items: Task[]; total: number }>;
   /** The live documents and drawings edited last, with an excerpt of their text. */
   recentItems(projectId: string, limit: number): Promise<RecentItem[]>;
   /** Items of every type in the project's trash. */
@@ -23,6 +31,8 @@ export interface NavigationReader {
 }
 
 export interface NavigationContext {
+  /** The owner's time zone and today in it. */
+  calendar(): Promise<Calendar>;
   read<T>(work: (reader: NavigationReader) => Promise<T>): Promise<T>;
 }
 

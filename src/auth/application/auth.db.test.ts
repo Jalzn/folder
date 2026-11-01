@@ -1,6 +1,7 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -118,5 +119,40 @@ describe('owner authentication', () => {
     expect(await auth.authenticate(session.token)).toBeDefined();
     expect(await tokens.authenticate(created.token)).toBeDefined();
     await expect(auth.login({ password }, { ip: 'test' })).resolves.toHaveProperty('token');
+  });
+
+  it('keeps the owner time zone, refusing one Intl does not know, and answers UTC until there is one', async () => {
+    const { auth } = await fixture();
+    expect(await auth.timeZone()).toBe('UTC');
+    expect(await auth.setTimeZone('America/Sao_Paulo')).toEqual({ timeZone: 'America/Sao_Paulo' });
+    expect(await auth.setTimeZone('America/Sao_Paulo')).toEqual({ timeZone: 'America/Sao_Paulo' });
+    await expect(auth.setTimeZone('Mars/Olympus')).rejects.toMatchObject({
+      code: 'VALIDATION',
+      message: 'Fuso horário desconhecido.',
+    });
+    expect(await auth.timeZone()).toBe('America/Sao_Paulo');
+    const { token } = await auth.login({ password }, { ip: 'test' });
+    expect((await auth.authenticate(token))?.owner).toMatchObject({ timeZone: 'America/Sao_Paulo' });
+  });
+
+  it('adds the time zone, null, to an owner created with migrations 001 and 002', async () => {
+    const folder = await mkdtemp(join(tmpdir(), 'tinyfold-auth-003-'));
+    const migrations = await mkdtemp(join(folder, 'migrations-'));
+    const db = createDatabase(join(folder, 'test.sqlite'));
+    resources.push({ db, folder });
+    for (const name of (await readdir(authModule.migrations)).filter((file) => Number(file.slice(0, 3)) <= 2))
+      await copyFile(new URL(name, authModule.migrations), join(migrations, name));
+    await migrate(db, [coreModule, { ...authModule, migrations: pathToFileURL(`${migrations}/`) }]);
+    await sql`insert into auth_owner (id, name, installation_id, password_hash, password_changed_at)
+      values (1, 'Pessoa', 'instalacao', 'hash', '2026-10-01T00:00:00.000Z')`.execute(db);
+    expect(await migrate(db, [coreModule, authModule])).toEqual([
+      { module: 'auth', version: 3, name: 'owner_time_zone' },
+    ]);
+    expect((await sql`select name, time_zone from auth_owner`.execute(db)).rows).toEqual([
+      { name: 'Pessoa', time_zone: null },
+    ]);
+    await expect(sql`update auth_owner set time_zone = ${'x'.repeat(65)}`.execute(db)).rejects.toThrow(
+      'CHECK constraint failed',
+    );
   });
 });

@@ -124,6 +124,7 @@ describe('personal access tokens', () => {
     const session = await auth.login({ password: 'tinyfold-test-password' }, { ip: 'test' });
     expect(await migrate(db, [coreModule, authModule])).toEqual([
       { module: 'auth', version: 2, name: 'access_tokens' },
+      { module: 'auth', version: 3, name: 'owner_time_zone' },
     ]);
     expect((await auth.authenticate(session.token))?.sessionId).toBe(session.sessionId);
     const tokens = createAccessTokens(db);

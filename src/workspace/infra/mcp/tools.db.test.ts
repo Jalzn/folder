@@ -150,13 +150,40 @@ describe('agent read tools', () => {
       projectId,
       content: [paragraph(heavy(3_000))],
     });
+    // 20 columns and 100 labels, the most there can be, named by SQL as heavy as they get. Each task has
+    // 20 of the labels, a due date, a checklist and a description whose only match is `descricaoalvo`.
+    for (let index = 3; index < 20; index += 1)
+      await agent.service.createColumn({ ...request(), name: `Coluna ${index}` });
+    const labelIds = [];
+    for (let index = 0; index < 100; index += 1)
+      labelIds.push((await agent.service.createLabel({ ...request(), name: `Etiqueta ${index}` })).id);
+    await sql`update workspace_columns set name = ${heavy(57)} || position`.execute(agent.db);
+    await sql`update workspace_labels set name = ${heavy(27)} || substr(name, 10)`.execute(agent.db);
+    const columns = (await agent.service.listColumns({})).columns;
+    const check = (checked: boolean) => ({
+      type: 'checkListItem',
+      props: { checked },
+      content: [{ type: 'text', text: heavy(200), styles: {} }],
+    });
     for (let index = 0; index < 150; index += 1)
       await agent.service.createTask({
         ...request(),
         title: `${heavy(290)} alvo ${index}`,
         projectId,
+        columnId: columns[index % columns.length]?.id,
+        dueOn: '2026-10-01',
+        labelIds: labelIds.slice(index % 80, (index % 80) + 20),
+        description: [check(true), check(false), paragraph(`${heavy(3_000)} descricaoalvo ${heavy(3_000)}`)],
         source: { documentId: index % 3 === 2 ? gone.id : document.id, excerpt: heavy(3_000) },
       });
+    const long = await agent.service.createTask({
+      ...request(),
+      title: heavy(300),
+      projectId,
+      labelIds: labelIds.slice(0, 20),
+      description: Array.from({ length: 100 }, () => paragraph(heavy(2_000))),
+      source: { documentId: document.id, excerpt: heavy(3_000) },
+    });
     const trashed = await agent.service.deleteDocument({ ...request(), id: gone.id, expectedVersion: gone.version });
     await agent.service.purgeDocument({ ...request(), id: gone.id, expectedVersion: trashed.version });
     const labels = Array.from({ length: 60 }, (_, index) =>
@@ -191,6 +218,24 @@ describe('agent read tools', () => {
     };
     expect(page.tasks.some((task) => task.source.documentId === null)).toBe(true);
     for (const task of page.tasks.slice(0, 3)) await record('read_task', { id: task.id });
+    let pages = 1;
+    for (
+      let cursor = /"cursor":"([0-9a-f]+:\d+)"/u.exec((await record('read_task', { id: long.id })).text)?.[1];
+      cursor;
+    ) {
+      const next = await record('read_task', { id: long.id, cursor });
+      cursor = /"cursor":"([0-9a-f]+:\d+)"/u.exec(next.text)?.[1];
+      pages += 1;
+    }
+    expect(pages).toBeGreaterThan(5);
+    const filtered = await record('list_tasks', {
+      columns: columns.map((column) => column.name),
+      labels: [`${heavy(27)}${40}`, `${heavy(27)}${50}`],
+      limit: 100,
+    });
+    expect((JSON.parse(filtered.text) as { tasks: unknown[] }).tasks.length).toBeGreaterThan(0);
+    const described = await record('search', { query: 'descricaoalvo', types: ['task'], limit: 50 });
+    expect(described.text).toContain('descricaoalvo');
     expect((await record('read_drawing', { id: drawing.id, image: false })).text).toContain('… omitidos:');
     await record('read_document', { id: document.id, cursor: '1:5' });
 

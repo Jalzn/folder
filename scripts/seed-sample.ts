@@ -1,22 +1,28 @@
 /**
  * Fills a temporary database with the sample data of docs/interface/brief.md, filed in the folders of
- * docs/interface/pastas.md §5, for visual checks and screenshots, never for production. Deadlines and
- * labels wait for stage 10, and the brief's items without a project live in Geral, as migration 005
- * left them. The scenes are built here, since the test helpers of the testing/ folders stay out of
- * runtime code.
+ * docs/interface/pastas.md §5, for visual checks and screenshots, never for production. The board has
+ * the brief's columns, labels, due dates and the prototype's descriptions, and the brief's items
+ * without a project live in Geral, as migration 005 left them. Due dates and completions count from
+ * the day the seed runs, in UTC, as the brief's count from October 30th. The scenes are built here,
+ * since the test helpers of the testing/ folders stay out of runtime code.
  *
- *   DATABASE_PATH=/tmp/tinyfold-09/tinyfold.sqlite pnpm seed:sample
- *   DATABASE_PATH=/tmp/tinyfold-09/grande.sqlite pnpm seed:sample --grande
+ *   DATABASE_PATH=/tmp/tinyfold-10/tinyfold.sqlite pnpm seed:sample
+ *   DATABASE_PATH=/tmp/tinyfold-10/grande.sqlite pnpm seed:sample --grande
  *
  * `--grande` takes Tinyfold to 55 items in four folders, like the prototype's "Simular projeto grande":
  * Produto 11, MCP 12, Arquitetura 18, Operação 8 and 5 loose at the root, besides the pinned vision.
+ * It also adds 60 tasks completed 15 to 120 days before, for the done column's footer and the pages of
+ * Concluídas.
  *
  * Writes only inside the system's temporary folders, to a new file or an empty database: before
  * migrating anything, it refuses any other target (see assertSeedTarget), the main database
  * (data/tinyfold.sqlite) and the production one (/data/tinyfold.sqlite) included.
  */
 import { randomUUID } from 'node:crypto';
-import { createDatabase, migrate } from '../src/core/infra/index.js';
+import { realpathSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { addDays, todayIn } from '../src/core/domain/index.js';
+import { createDatabase, type Database, migrate } from '../src/core/infra/index.js';
 import { readConfig } from '../src/server/config.js';
 import { modules } from '../src/server/modules.js';
 import type {
@@ -24,7 +30,7 @@ import type {
   CanvasScene,
   DocumentBlock,
   JsonValue,
-  TaskStatus,
+  LabelColor,
 } from '../src/workspace/domain/index.js';
 import { createWorkspaceService, type WorkspaceService } from '../src/workspace/index.js';
 import { assertSeedTarget, temporaryRoots } from './seed-target.js';
@@ -47,6 +53,102 @@ const paragraph = (value: string) => block('paragraph', value);
 const heading = (value: string, level = 2) => block('heading', value, { level });
 const bullet = (value: string) => block('bulletListItem', value);
 const check = (value: string, checked = false) => block('checkListItem', value, { checked });
+
+/** A block as BlockNote saves it, default props and children included, so opening it changes nothing. */
+const editorBlock = (type: 'paragraph' | 'checkListItem', value: string, props: Record<string, JsonValue> = {}) => ({
+  id: randomUUID(),
+  type,
+  props: { backgroundColor: 'default', textColor: 'default', textAlignment: 'left', ...props },
+  content: text(value),
+  children: [],
+});
+const line = (value: string) => editorBlock('paragraph', value);
+const item = (value: string, checked = false) => editorBlock('checkListItem', value, { checked });
+
+/** The brief's labels, in the prototype's colors. */
+const LABELS = [
+  ['mcp', 'blue'],
+  ['backend', 'slate'],
+  ['editor', 'purple'],
+  ['kanban', 'teal'],
+  ['operação', 'amber'],
+  ['fornecedores', 'coral'],
+  ['compras', 'lime'],
+] as const satisfies readonly (readonly [string, LabelColor])[];
+type LabelName = (typeof LABELS)[number][0];
+
+/** The board's columns by the brief's names; Revisão is created by the seed. */
+type ColumnName = 'A fazer' | 'Em andamento' | 'Revisão' | 'Concluído';
+
+/**
+ * The descriptions of the prototype's tasks, as the editor saves them: checklists of 2/5, 3/3 and
+ * 1/3. Tasks the prototype leaves without text keep an empty description.
+ */
+export const SAMPLE_DESCRIPTIONS = {
+  'Configurar backup externo': [line('Cópia diária do banco para fora do servidor, com restauração testada.')],
+  'Expor documentos em Markdown pelo MCP': [
+    line('Ler um documento em Markdown. Tarefas e desenhos incorporados aparecem como referências.'),
+  ],
+  'Renderizar desenho incorporado no documento': [
+    line('Mostrar a versão atual, somente leitura. Clicar abre o editor do desenho.'),
+  ],
+  'Gerar token pessoal no Perfil': [
+    line('Token somente leitura para o MCP. Guardar só o hash do valor.'),
+    item('Tabela de tokens com hash', true),
+    item('Gerar valor e mostrar uma vez', true),
+    item('Botão de copiar'),
+    item('Revogar token'),
+    item('Registrar último uso'),
+  ],
+  'Colunas configuráveis no quadro': [
+    line('Um único conjunto de colunas para todo o espaço.'),
+    item('Criar e renomear colunas', true),
+    item('Reordenar colunas', true),
+    item('Excluir com destino das tarefas', true),
+  ],
+  'Corrigir foco ao fechar diálogo': [line('O foco volta para o botão que abriu o diálogo.')],
+  'Pedir orçamento do marceneiro': [line('Estante e mesa sob medida.')],
+  'Escolher luminária': [
+    line('Luz para a mesa perto da janela.'),
+    item('Medir a altura da mesa', true),
+    item('Comparar modelos'),
+    item('Comprar'),
+  ],
+} satisfies Record<string, DocumentBlock[]>;
+
+/** The prototype's old completed tasks, which `--grande` adds twice over. */
+const OLD_DONE = [
+  'Configurar repositório',
+  'Escolher licença',
+  'Definir paleta inicial',
+  'Criar tela de login',
+  'Salvar documento no servidor',
+  'Lista de documentos',
+  'Editor de desenho embutido',
+  'Quadro com três colunas',
+  'Mover tarefa entre colunas',
+  'Criar tarefa no quadro',
+  'Busca por título',
+  'Exportar documento .md',
+  'Importar documento .md',
+  'Página do Perfil',
+  'Trocar senha',
+  'Encerrar sessões',
+  'Rascunho local do documento',
+  'Estado de salvamento no cabeçalho',
+  'Lixeira de documentos',
+  'Restaurar da lixeira',
+  'Arquivar projeto',
+  'Seletor de projetos',
+  'Atalhos com G',
+  'Linha de comando',
+  'Etiquetas nas tarefas',
+  'Prazo nas tarefas',
+  'Checklist na descrição',
+  'Desenho incorporado no documento',
+  'Tema escuro',
+  'Testes do editor',
+];
 
 /** Excalidraw elements with the properties its editor writes, so the editor opens them unchanged. */
 function sceneBuilder() {
@@ -236,15 +338,53 @@ async function loadBigProject(
     });
 }
 
-async function seed(workspace: WorkspaceService, { grande }: { grande: boolean }) {
+/** The sample's writes, and a service whose clock stops at `instant` for the completed tasks. */
+interface Writers {
+  workspace: WorkspaceService;
+  at(instant: string): WorkspaceService;
+  /** The day the seed runs, in UTC, which due dates and completions count from. */
+  today: string;
+}
+
+interface SampleTask {
+  column: ColumnName;
+  /** Days from the seed's day; negative ones are late. */
+  due?: number;
+  labels?: LabelName[];
+  /** Days before the seed's day the task was completed, at 15:00 UTC, in the done column. */
+  doneDaysAgo?: number;
+}
+
+async function seed({ workspace, at, today }: Writers, { grande }: { grande: boolean }) {
   const project = (name: string, color: 'violet' | 'ochre' | 'gray' | 'green') =>
     workspace.createProject({ ...request(), name, color });
   const document = (projectId: string, title: string, content: DocumentBlock[], folderId?: string) =>
     workspace.createDocument({ ...request(), projectId, folderId, title, content });
   const drawing = (projectId: string, title: string, scene: CanvasScene, folderId?: string) =>
     workspace.createCanvas({ ...request(), projectId, folderId, title, scene });
-  const task = (projectId: string, title: string, status: TaskStatus) =>
-    workspace.createTask({ ...request(), projectId, title, status });
+
+  await workspace.createColumn({ ...request(), name: 'Revisão' });
+  const columnIds = Object.fromEntries(
+    (await workspace.listColumns({})).columns.map((column) => [column.name, column.id]),
+  ) as Record<ColumnName, string>;
+  const labelIds = {} as Record<LabelName, string>;
+  for (const [name, color] of LABELS) labelIds[name] = (await workspace.createLabel({ ...request(), name, color })).id;
+  const completedOn = (daysAgo: number) => `${addDays(today, -daysAgo)}T15:00:00.000Z`;
+  const fields = (title: string, sample: SampleTask) => ({
+    ...request(),
+    title,
+    columnId: columnIds[sample.column],
+    ...(sample.due === undefined ? {} : { dueOn: addDays(today, sample.due) }),
+    labelIds: (sample.labels ?? []).map((name) => labelIds[name]),
+    ...(title in SAMPLE_DESCRIPTIONS
+      ? { description: SAMPLE_DESCRIPTIONS[title as keyof typeof SAMPLE_DESCRIPTIONS] }
+      : {}),
+  });
+  const task = (projectId: string, title: string, sample: SampleTask) =>
+    (sample.doneDaysAgo === undefined ? workspace : at(completedOn(sample.doneDaysAgo))).createTask({
+      ...fields(title, sample),
+      projectId,
+    });
 
   const tinyfold = await project('Tinyfold', 'violet');
   const reforma = await project('Reforma do escritório', 'ochre');
@@ -267,7 +407,7 @@ async function seed(workspace: WorkspaceService, { grande }: { grande: boolean }
     bullet('Organizar as fotos da viagem por cidade.'),
   ]);
   await drawing(geral.id, 'Rabisco de logo', flow(['Dobra', 'Folha', 'Marca'], 'Três ideias para o logo'));
-  await task(geral.id, 'Renovar domínio', 'todo');
+  await task(geral.id, 'Renovar domínio', { column: 'A fazer', due: 16 });
 
   await document(
     reforma.id,
@@ -292,13 +432,13 @@ async function seed(workspace: WorkspaceService, { grande }: { grande: boolean }
     'Planta do escritório',
     flow(['Porta', 'Mesa', 'Janela'], 'Planta baixa, sem escala'),
   );
-  for (const [title, status] of [
-    ['Pedir orçamento do marceneiro', 'todo'],
-    ['Escolher luminária', 'doing'],
-    ['Pintar parede', 'todo'],
-    ['Medir janela', 'done'],
-  ] as const)
-    await task(reforma.id, title, status);
+  for (const [title, sample] of [
+    ['Pedir orçamento do marceneiro', { column: 'A fazer', due: 4, labels: ['fornecedores'] }],
+    ['Pintar parede', { column: 'A fazer' }],
+    ['Escolher luminária', { column: 'Em andamento', labels: ['compras'] }],
+    ['Medir janela', { column: 'Concluído', doneDaysAgo: 4 }],
+  ] as const satisfies readonly (readonly [string, SampleTask])[])
+    await task(reforma.id, title, sample);
 
   const token = paragraph('Gerar token pessoal no Perfil, mostrado uma única vez, com o comando pronto para copiar.');
   const mcp = await document(
@@ -329,23 +469,32 @@ async function seed(workspace: WorkspaceService, { grande }: { grande: boolean }
     tinyfoldFolders.Arquitetura,
   );
   await drawing(tinyfold.id, 'Navegação com projeto no centro', flow(['Seletor', 'Projeto', 'Item']));
+  if (grande)
+    for (const [index, title] of [...OLD_DONE, ...OLD_DONE.map((name) => `${name} (revisão)`)].entries())
+      await task(tinyfold.id, title, {
+        column: 'Concluído',
+        labels: [(['editor', 'backend', 'kanban', 'mcp', 'operação'] as const)[index % 5] ?? 'editor'],
+        doneDaysAgo: 15 + Math.round((index * 105) / 59),
+      });
+  // In the prototype's board order: each task goes to the end of its column.
+  for (const [title, sample] of [
+    ['Configurar backup externo', { column: 'A fazer', due: -2, labels: ['operação'] }],
+    ['Expor documentos em Markdown pelo MCP', { column: 'A fazer', due: 13, labels: ['mcp'] }],
+    ['Renderizar desenho incorporado no documento', { column: 'A fazer', labels: ['editor'] }],
+  ] as const satisfies readonly (readonly [string, SampleTask])[])
+    await task(tinyfold.id, title, sample);
   await workspace.createTask({
-    ...request(),
-    title: 'Gerar token pessoal no Perfil',
-    status: 'doing',
+    ...fields('Gerar token pessoal no Perfil', { column: 'Em andamento', due: 5, labels: ['mcp', 'backend'] }),
     source: { documentId: mcp.id, blockId: token.id, excerpt: 'Gerar token pessoal no Perfil' },
   });
-  for (const [title, status] of [
-    ['Expor documentos em Markdown pelo MCP', 'todo'],
-    ['Renderizar desenho incorporado no documento', 'todo'],
-    // The brief's "Revisão" column arrives with configurable columns in stage 10.
-    ['Colunas configuráveis no quadro', 'doing'],
-    ['Configurar backup externo', 'todo'],
-    ['Corrigir foco ao fechar diálogo', 'done'],
-  ] as const)
-    await task(tinyfold.id, title, status);
+  await task(tinyfold.id, 'Colunas configuráveis no quadro', { column: 'Revisão', labels: ['kanban'] });
+  await task(tinyfold.id, 'Corrigir foco ao fechar diálogo', {
+    column: 'Concluído',
+    labels: ['editor'],
+    doneDaysAgo: 3,
+  });
   // The brief's document embeds a task that was deleted; here it waits in the trash.
-  const deleted = await task(tinyfold.id, 'Revisar textos do onboarding', 'todo');
+  const deleted = await task(tinyfold.id, 'Revisar textos do onboarding', { column: 'A fazer' });
   await workspace.deleteTask({ ...request(), id: deleted.id, expectedVersion: deleted.version });
   // Written last, so the overview names it as the last text edited.
   const vision = await document(tinyfold.id, 'Visão do produto', [
@@ -389,6 +538,14 @@ function readOptions(args: string[]) {
   return { grande: args.includes('--grande') };
 }
 
+/** Writes the sample to a migrated database; the seed's tests call it on their own. */
+export function seedSample(db: Database, options: { grande: boolean }) {
+  // The large project's 54 more writes would reach the current time within two days.
+  const workspace = createWorkspaceService(db, sampleClock(options.grande ? 7 : 2));
+  const at = (instant: string) => createWorkspaceService(db, () => new Date(instant));
+  return seed({ workspace, at, today: todayIn('UTC', new Date()) }, options);
+}
+
 async function main() {
   const options = readOptions(process.argv.slice(2));
   const { databasePath } = readConfig();
@@ -396,8 +553,7 @@ async function main() {
   const db = createDatabase(databasePath);
   try {
     await migrate(db, modules);
-    // The large project's 54 more writes would reach the current time within two days.
-    const projects = await seed(createWorkspaceService(db, sampleClock(options.grande ? 7 : 2)), options);
+    const projects = await seedSample(db, options);
     const names = projects.map((project) => project.name).join(', ');
     console.info(`Exemplo${options.grande ? ' grande' : ''} criado em ${databasePath}: ${names}.`);
   } finally {
@@ -405,9 +561,11 @@ async function main() {
   }
 }
 
-try {
-  await main();
-} catch (error) {
-  console.error(error instanceof Error ? error.message : 'Falha ao criar o exemplo.');
-  process.exitCode = 1;
-}
+// Run as a script, not when a test imports the sample. The module's URL has the real path.
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href)
+  try {
+    await main();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : 'Falha ao criar o exemplo.');
+    process.exitCode = 1;
+  }

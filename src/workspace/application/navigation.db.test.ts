@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
 import type { DocumentBlock, Project, TaskStatus } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
@@ -55,7 +56,7 @@ describe('navigation queries', () => {
       await service.createDocument({ ...request(), projectId: (await testProject(service, 'Outro')).id });
 
       const navigation = await service.projectNavigation({ projectId: project.id });
-      expect(Object.keys(navigation)).toEqual(['tree', 'openTasks', 'trashCount']);
+      expect(Object.keys(navigation)).toEqual(['tree', 'openTasks', 'overdueTasks', 'trashCount']);
       const { tree } = navigation;
       expect(tree.total).toBe(10);
       expect(titles(tree.pinned)).toEqual(['Zeta', 'Gama']);
@@ -156,7 +157,7 @@ describe('navigation queries', () => {
   });
 
   describe('projectOverview', () => {
-    it('shows the tasks in progress in board order and counts what is left out per column', async () => {
+    it('shows Agora: the tasks in progress in board order, and counts what is left out per column', async () => {
       for (let index = 0; index < 8; index += 1) await newTask(`Em curso ${index}`, 'doing');
       for (let index = 0; index < 3; index += 1) await newTask(`A fazer ${index}`, 'todo');
       await newTask('Concluída', 'done');
@@ -178,10 +179,82 @@ describe('navigation queries', () => {
         'Em curso 5',
       ]);
       expect(overview.now[0]).toMatchObject({ status: 'doing', projectId: project.id, source: null });
+      // Until B6 each column also reads as its stage 09 status.
       expect(overview.rest).toEqual([
-        { status: 'todo', count: 3 },
-        { status: 'doing', count: 3 },
+        { columnId: INITIAL_COLUMN_IDS.todo, count: 3, withoutDue: 3, only: null, status: 'todo' },
+        { columnId: INITIAL_COLUMN_IDS.doing, count: 3, withoutDue: 3, only: null, status: 'doing' },
       ]);
+      expect(overview).toMatchObject({
+        overdueTasks: 0,
+        doneTotal: 1,
+        done: [expect.objectContaining({ title: 'Concluída' })],
+      });
+    });
+
+    it("counts overdue tasks in the owner's time zone and puts them first in Agora, with the latest done", async () => {
+      // 01:00 UTC on Nov 1st: still Oct 31st in São Paulo.
+      const clock = { now: new Date('2026-11-01T01:00:00Z') };
+      let zone = 'UTC';
+      const zoned = createWorkspaceService(
+        db,
+        () => clock.now,
+        async () => zone,
+      );
+      const task = (title: string, columnId: string, dueOn: string | null = null, projectId = project.id) =>
+        zoned.createTask({ ...request(), projectId, title, columnId, dueOn });
+      const other = await testProject(zoned, 'Outro');
+      await task('Sem prazo', INITIAL_COLUMN_IDS.todo);
+      await task('Em quinze dias', INITIAL_COLUMN_IDS.todo, '2026-11-20');
+      await task('Em uma semana', INITIAL_COLUMN_IDS.todo, '2026-11-08');
+      await task('Venceu ontem em UTC', INITIAL_COLUMN_IDS.todo, '2026-10-31');
+      await task('Venceu semana passada', INITIAL_COLUMN_IDS.doing, '2026-10-24');
+      await task('Andando', INITIAL_COLUMN_IDS.doing);
+      await task('Vencida mas concluída', INITIAL_COLUMN_IDS.done, '2026-10-01');
+      await task('Atrasada no outro', INITIAL_COLUMN_IDS.todo, '2026-10-30', other.id);
+      for (let index = 0; index < 9; index += 1) {
+        clock.now = new Date(`2026-10-2${index}T12:00:00Z`);
+        await task(`Concluída ${index}`, INITIAL_COLUMN_IDS.done);
+      }
+      clock.now = new Date('2026-11-01T01:00:00Z');
+
+      const overview = await zoned.projectOverview({ projectId: project.id });
+      expect(overview).toMatchObject({ today: '2026-11-01', openTasks: 6, overdueTasks: 2, doneTotal: 10 });
+      expect(titles(overview.now)).toEqual([
+        'Venceu semana passada',
+        'Venceu ontem em UTC',
+        'Andando',
+        'Em uma semana',
+      ]);
+      expect(overview.rest).toEqual([
+        { columnId: INITIAL_COLUMN_IDS.todo, count: 2, withoutDue: 1, only: null, status: 'todo' },
+      ]);
+      // The last completed first, up to eight.
+      expect(titles(overview.done)).toEqual([
+        'Vencida mas concluída',
+        'Concluída 8',
+        'Concluída 7',
+        'Concluída 6',
+        'Concluída 5',
+        'Concluída 4',
+        'Concluída 3',
+        'Concluída 2',
+      ]);
+      expect(await zoned.projectNavigation({ projectId: project.id })).toMatchObject({ openTasks: 6, overdueTasks: 2 });
+      expect((await zoned.listProjects()).map((item) => [item.name, item.overdueTasks])).toEqual([
+        [project.name, 2],
+        ['Outro', 1],
+      ]);
+
+      zone = 'America/Sao_Paulo';
+      const inSaoPaulo = await zoned.projectOverview({ projectId: project.id });
+      expect(inSaoPaulo).toMatchObject({ today: '2026-10-31', overdueTasks: 1 });
+      expect(titles(inSaoPaulo.now)).toEqual([
+        'Venceu semana passada',
+        'Andando',
+        'Venceu ontem em UTC',
+        'Em uma semana',
+      ]);
+      expect(await zoned.projectNavigation({ projectId: project.id })).toMatchObject({ overdueTasks: 1 });
     });
 
     it('lists the documents and drawings edited last, with a one-line excerpt', async () => {
@@ -267,9 +340,13 @@ describe('navigation queries', () => {
 
     it('answers an empty project with nothing to show', async () => {
       expect(await service.projectOverview({ projectId: project.id })).toEqual({
+        today: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/u),
         openTasks: 0,
+        overdueTasks: 0,
         now: [],
         rest: [],
+        done: [],
+        doneTotal: 0,
         recent: [],
         lastEdited: null,
       });

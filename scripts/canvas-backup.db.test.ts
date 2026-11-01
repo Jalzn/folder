@@ -41,7 +41,7 @@ test('restores canvas scenes and project links independently from a live SQLite 
       expect(await migrate(restoredDb, modules)).toEqual([]);
       const copy = createWorkspaceService(restoredDb);
       expect(await copy.getCanvas({ id: ack.id })).toEqual(original);
-      expect(await copy.listProjects()).toEqual([project]);
+      expect(await copy.listProjects()).toEqual([{ ...project, overdueTasks: 0 }]);
       expect((await workspace.getCanvas({ id: ack.id })).title).toBe('Alterado depois da cópia');
     } finally {
       await restoredDb.destroy();

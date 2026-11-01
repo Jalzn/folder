@@ -1,4 +1,5 @@
 import type { Database } from '@tinyfold/core/infra';
+import type { TimeZoneSource } from '../calendar.js';
 import { readingContext } from '../reading-context.js';
 import { withToolErrors } from './errors.js';
 import { withoutHiddenText } from './hidden-text.js';
@@ -16,6 +17,9 @@ export type { AgentTool, AgentToolAnnotations, AgentToolContent, AgentToolResult
 export interface WorkspaceToolOptions {
   /** Receives unexpected failures; the agent only sees a generic message. */
   logError?: (error: unknown) => void;
+  /** The owner's time zone, which overdue tasks follow; UTC without one. */
+  timeZone?: TimeZoneSource;
+  clock?: () => Date;
 }
 
 /**
@@ -23,7 +27,7 @@ export interface WorkspaceToolOptions {
  * or carries characters that draw nothing where they are.
  */
 export function createWorkspaceTools(db: Database, options: WorkspaceToolOptions = {}): AgentTool[] {
-  const reading = readingContext(db);
+  const reading = readingContext(db, options.clock, options.timeZone);
   const logError = options.logError ?? console.error;
   const tools: AgentTool[] = [
     listProjectsTool(reading),

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '../../domain/columns.js';
 import { paragraph, request, useAgentTools } from '../../testing/agent-tools.js';
 import { drawingFixture } from '../../testing/canvas-scenes.js';
 
@@ -306,5 +307,40 @@ describe('search', () => {
     });
     expect(items.map((item) => item.id)).toEqual([canvas.id]);
     expect(items[0]?.excerpt).toContain('Zebulonserver');
+  });
+
+  it('finds tasks by words only in their description, with an excerpt and the column', async () => {
+    const task = await agent.service.createTask({
+      ...request(),
+      title: 'Configurar backup',
+      projectId: agent.project.id,
+      columnId: INITIAL_COLUMN_IDS.doing,
+      description: [paragraph('Copiar o banco para o armazenamento externo toda madrugada.')],
+    });
+    const titled = await agent.service.createTask({
+      ...request(),
+      title: 'Madrugada sem alertas',
+      projectId: agent.project.id,
+    });
+    const { items } = await agent.json<{ items: Record<string, unknown>[] }>('search', { query: 'madrugada' });
+    // The title match ranks first.
+    expect(items.map((item) => item.id)).toEqual([titled.id, task.id]);
+    expect(items[1]).toEqual({
+      type: 'task',
+      id: task.id,
+      title: 'Configurar backup',
+      column: { id: INITIAL_COLUMN_IDS.doing, name: 'Em andamento', isDone: false },
+      projectId: agent.project.id,
+      projectName: agent.project.name,
+      projectArchived: false,
+      updatedAt: expect.any(String),
+      excerpt: 'Copiar o banco para o armazenamento externo toda madrugada.',
+    });
+    expect(items[0]).toMatchObject({ excerpt: '' });
+    const { items: only } = await agent.json<{ items: { id: string }[] }>('search', {
+      query: 'ARMAZENAMENTO externo',
+      types: ['task'],
+    });
+    expect(only.map((item) => item.id)).toEqual([task.id]);
   });
 });

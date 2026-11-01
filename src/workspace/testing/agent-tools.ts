@@ -22,7 +22,8 @@ export const paragraph = (text: string, id?: string): DocumentBlock => ({
 /**
  * The agent read tools over a fresh temporary database for each test, with the workspace service
  * to arrange data and an active project for its items. Every write advances the clock by a second,
- * so recency order is explicit.
+ * so recency order is explicit. The clock starts at noon UTC on 2026-10-31, and the owner's time zone
+ * is UTC until a test sets another.
  */
 export function useAgentTools() {
   let directory = '';
@@ -30,18 +31,21 @@ export function useAgentTools() {
   let service: ReturnType<typeof createWorkspaceService>;
   let tools: ReturnType<typeof createWorkspaceTools>;
   let project: Project;
+  let now = new Date(0);
+  let timeZone = 'UTC';
   const logError = vi.fn();
 
   beforeEach(async () => {
     directory = await mkdtemp(join(tmpdir(), 'tinyfold-tools-'));
     db = createDatabase(join(directory, 'test.sqlite'));
     await migrate(db, [coreModule, workspaceModule]);
-    let now = new Date('2026-10-31T12:00:00Z');
+    now = new Date('2026-10-31T12:00:00Z');
+    timeZone = 'UTC';
     service = createWorkspaceService(db, () => {
       now = new Date(now.getTime() + 1000);
       return now;
     });
-    tools = createWorkspaceTools(db, { logError });
+    tools = createWorkspaceTools(db, { logError, clock: () => now, timeZone: async () => timeZone });
     project = await testProject(service);
     logError.mockClear();
   });
@@ -77,6 +81,14 @@ export function useAgentTools() {
       return project;
     },
     logError,
+    /** The owner's time zone the tools read dates in. */
+    setTimeZone(zone: string) {
+      timeZone = zone;
+    },
+    /** Moves the clock, which the next write advances by a second again. */
+    setNow(instant: string) {
+      now = new Date(instant);
+    },
     run,
     call,
     json: async <T = Record<string, unknown>>(name: string, input: Record<string, unknown> = {}) =>

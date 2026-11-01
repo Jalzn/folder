@@ -132,7 +132,7 @@ describe('projects: colour and selector order', () => {
       ['B', 2],
     ]);
     expect(await service.moveProject(move)).toEqual(moved);
-    expect(await service.listProjects()).toEqual(moved);
+    expect(await service.listProjects()).toEqual(moved.map((project) => ({ ...project, overdueTasks: 0 })));
     expect(moved.map((project) => project.version)).toEqual([1, 1, 1]);
     expect(moved.find((project) => project.id === a.id)?.updatedAt).toBe(a.updatedAt);
     expect((await service.moveProject({ ...request(), id: c.id, beforeProjectId: null })).map((p) => p.name)).toEqual([
