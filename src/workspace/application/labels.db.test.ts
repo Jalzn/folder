@@ -117,12 +117,45 @@ describe('labels', () => {
     expect(await service.restoreLabel({ ...request(), id: mcp.id, expectedVersion: 2 })).toEqual({
       id: mcp.id,
       version: 3,
+      skipped: 0,
     });
     expect(await labelIds()).toEqual([[mcp.id], [mcp.id]]);
     await expect(service.restoreLabel({ ...request(), id: mcp.id, expectedVersion: 3 })).rejects.toMatchObject({
       code: 'DOMAIN_RULE',
       message: 'Esta etiqueta não foi excluída.',
     });
+  });
+
+  it('leaves out of the restore the tasks that reached 20 labels meanwhile', async () => {
+    // The reviewer's sequence: a task with 20 labels loses one by its deletion, gets another, and
+    // the undo of the deletion would give it 21.
+    const ids = [];
+    for (let index = 0; index < 21; index += 1) ids.push((await create(`etiqueta ${index}`)).id);
+    const [first, ...others] = ids;
+    const fields = (labelIds: string[]) => ({ ...request(), projectId: project.id, labelIds });
+    const full = await service.createTask({ ...fields(ids.slice(0, 20)), title: 'Cheia' });
+    const roomy = await service.createTask({ ...fields([first ?? '']), title: 'Com espaço' });
+    const trashed = await service.createTask({ ...fields(ids.slice(0, 20)), title: 'Cheia na lixeira' });
+    await service.deleteLabel({ ...request(), id: first ?? '', expectedVersion: 1 });
+    await service.updateTask({ ...request(), id: full.id, expectedVersion: full.version, labelIds: others });
+    await service.updateTask({ ...request(), id: trashed.id, expectedVersion: trashed.version, labelIds: others });
+    await service.deleteTask({ ...request(), id: trashed.id, expectedVersion: trashed.version + 1 });
+
+    expect(await service.restoreLabel({ ...request(), id: first ?? '', expectedVersion: 2 })).toEqual({
+      id: first,
+      version: 3,
+      skipped: 2,
+    });
+    const labelsOf = async (id: string) => (await service.getTask({ id })).labelIds;
+    expect(await labelsOf(full.id)).toHaveLength(20);
+    expect(await labelsOf(full.id)).not.toContain(first);
+    expect(await labelsOf(trashed.id)).toHaveLength(20);
+    expect(await labelsOf(roomy.id)).toEqual([first]);
+    // Their links went, so deleting and restoring again cannot bring the label back to them.
+    expect(
+      (await sql`select count(*) as count from workspace_task_labels where label_id = ${first}`.execute(db)).rows,
+    ).toEqual([{ count: 1 }]);
+    await service.updateTask({ ...request(), id: full.id, expectedVersion: full.version + 1, dueOn: '2026-11-20' });
   });
 
   it('refuses to restore a label whose name another took', async () => {

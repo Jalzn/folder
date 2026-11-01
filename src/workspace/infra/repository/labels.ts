@@ -58,6 +58,25 @@ export function labelRepository(connection: Database): LabelRepository {
         .executeTakeFirstOrThrow();
       return row.count;
     },
+    async unlinkTasksAtLimit(labelId, limit) {
+      // The tasks linked to the label, live and trashed, that already have `limit` active labels.
+      const full = db
+        .selectFrom('workspace_task_labels as link')
+        .innerJoin('workspace_labels as label', 'label.id', 'link.label_id')
+        .select('link.task_id')
+        .where('label.deleted_at', 'is', null)
+        .where('link.task_id', 'in', (eb) =>
+          eb.selectFrom('workspace_task_labels').select('task_id').where('label_id', '=', labelId),
+        )
+        .groupBy('link.task_id')
+        .having((eb) => eb.fn.countAll(), '>=', limit);
+      const result = await db
+        .deleteFrom('workspace_task_labels')
+        .where('label_id', '=', labelId)
+        .where('task_id', 'in', full)
+        .executeTakeFirst();
+      return Number(result.numDeletedRows);
+    },
     async insertLabel(label) {
       await db.insertInto('workspace_labels').values(labelRow(label)).execute();
     },

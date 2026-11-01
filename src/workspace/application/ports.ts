@@ -202,6 +202,11 @@ export interface LabelRepository {
   labelSummaries(): Promise<LabelSummary[]>;
   /** The live tasks linked to the label. */
   liveTasksWithLabel(labelId: string): Promise<number>;
+  /**
+   * Drops the label's links to the tasks, live and trashed, that already have `limit` active labels,
+   * and says how many it dropped: restoring the label would put them past the limit.
+   */
+  unlinkTasksAtLimit(labelId: string, limit: number): Promise<number>;
   insertLabel(label: Label): Promise<void>;
   saveLabel(label: Label, expectedVersion: number): Promise<void>;
 }
