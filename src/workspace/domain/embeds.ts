@@ -20,8 +20,13 @@ export const EMBED_KINDS: Record<EmbedBlockType, EmbedKind> = { taskEmbed: 'task
 /** One resolver query per document, and the MCP's Markdown in a few pages (decision 2). */
 export const EMBED_LIMITS = { perDocument: 200 } as const;
 
-/** A UUID of the RFC 9562 layout, as the item IDs are: what the resolver's input accepts. */
-export const EMBED_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+/**
+ * A UUID of the RFC 9562 layout in lowercase, as the item IDs are stored: what embed blocks and the
+ * resolver's input accept. SQLite compares IDs as text, so an uppercase spelling would resolve as
+ * missing and count as a second item; refusing it keeps the validator a check that never rewrites
+ * a document, and the server only hands out lowercase IDs.
+ */
+export const EMBED_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
 export const isEmbedType = (type: string): type is EmbedBlockType => (EMBED_TYPES as readonly string[]).includes(type);
 

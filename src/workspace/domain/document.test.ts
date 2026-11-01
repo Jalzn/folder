@@ -269,6 +269,7 @@ describe('embeds in the document format', () => {
       task({ props: { canvasId: taskId } }),
       task({ props: { taskId: 'não é um id' } }),
       task({ props: { taskId: `${taskId} ` } }),
+      task({ props: { taskId: taskId.toUpperCase() } }),
       task({ props: { taskId: 42 } }),
       { type: 'drawingEmbed', props: { taskId } },
     ])

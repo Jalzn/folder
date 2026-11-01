@@ -211,6 +211,10 @@ describe('resolveEmbeds', () => {
     expect(() => resolve({ taskIds: ids })).toThrow('Um documento aceita até 200 itens incorporados.');
     expect(() => resolve({ canvasIds: ids })).toThrow('Um documento aceita até 200 itens incorporados.');
     expect(() => resolve({ taskIds: ['não é um id'] })).toThrow('Identificador de item inválido.');
+    // IDs are stored in lowercase, and SQLite compares them as text: another spelling is refused.
+    const upper = randomUUID().toUpperCase();
+    expect(() => resolve({ taskIds: [upper] })).toThrow('Identificador de item inválido.');
+    expect(() => resolve({ canvasIds: [upper] })).toThrow('Identificador de item inválido.');
     expect(() => service.resolveEmbeds({ taskIds: [] } as never)).toThrow();
   });
 

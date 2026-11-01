@@ -127,7 +127,7 @@ describe('GET /arquivos/desenhos/:id/previa.png', () => {
       expect(response.status).toBe(404);
       expect(await response.json()).toEqual({ message: 'A prévia do desenho não está disponível.' });
     }
-    for (const id of ['nao-e-um-id', '..%2F..%2Fetc%2Fpasswd']) {
+    for (const id of ['nao-e-um-id', '..%2F..%2Fetc%2Fpasswd', bare.id.toUpperCase()]) {
       const response = await preview(id);
       expect(response.status).toBe(400);
       expect(await response.json()).toEqual({ message: 'Identificador de desenho inválido.' });
