@@ -49,12 +49,8 @@ export function columnRepository(connection: Database): ColumnRepository {
     async setColumnPosition(id, position) {
       await db.updateTable('workspace_columns').set({ position }).where('id', '=', id).execute();
     },
-    async setColumnDone(id, isDone) {
-      await db
-        .updateTable('workspace_columns')
-        .set({ is_done: isDone ? 1 : 0 })
-        .where('id', '=', id)
-        .execute();
+    async makeDoneColumn(id, at) {
+      await db.updateTable('workspace_columns').set({ is_done: 1, updated_at: at }).where('id', '=', id).execute();
     },
     async tasksOfColumn(columnId) {
       return (
@@ -67,13 +63,6 @@ export function columnRepository(connection: Database): ColumnRepository {
           .orderBy('id')
           .execute()
       ).map(taskModel);
-    },
-    async setColumnCompletion(columnId, completedAt) {
-      await db
-        .updateTable('workspace_tasks')
-        .set({ completed_at: completedAt })
-        .where('column_id', '=', columnId)
-        .execute();
     },
     async setTaskCompletion(taskId, completedAt) {
       await db.updateTable('workspace_tasks').set({ completed_at: completedAt }).where('id', '=', taskId).execute();

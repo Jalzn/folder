@@ -78,7 +78,11 @@ test('restores the columns, labels, links, descriptions and time zone, with the 
       );
       expect(() => column.run(randomUUID(), 'Revisao', 'revisao', 0, now, now)).toThrow('UNIQUE constraint failed');
       expect(() => column.run(randomUUID(), 'Outra conclusão', 'outra conclusao', 1, now, now)).toThrow(
-        'UNIQUE constraint failed',
+        'workspace_columns can have only one done column',
+      );
+      const done = columns.columns.find((item) => item.isDone);
+      expect(() => raw.prepare('UPDATE workspace_columns SET is_done = 0 WHERE id = ?').run(done?.id)).toThrow(
+        'workspace_columns must keep a done column',
       );
       const label = raw.prepare(
         `INSERT INTO workspace_labels (id, name, name_key, color, version, created_at, updated_at)
@@ -87,7 +91,6 @@ test('restores the columns, labels, links, descriptions and time zone, with the 
       expect(() => label.run(randomUUID(), 'MCP', 'mcp', now, now)).toThrow('UNIQUE constraint failed');
       // The deleted label's name is free again.
       expect(() => label.run(randomUUID(), 'Kanban', 'kanban', now, now)).not.toThrow();
-      const done = columns.columns.find((item) => item.isDone);
       const open = board.tasks.find((task) => task.completedAt === null);
       expect(() =>
         raw.prepare('UPDATE workspace_tasks SET column_id = ? WHERE id = ?').run(done?.id, open?.id),

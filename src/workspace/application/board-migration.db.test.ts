@@ -302,7 +302,7 @@ describe('migration 007', () => {
       await sql`update workspace_columns set deleted_at = ${now} where id = ${empty}`.execute(db);
 
       await expect(column(randomUUID(), 'Outra conclusão', { isDone: true })).rejects.toThrow(
-        'UNIQUE constraint failed',
+        'workspace_columns can have only one done column',
       );
       const oldDone = randomUUID();
       await column(oldDone, 'Concluído antes', { isDone: true, deletedAt: now });
@@ -319,6 +319,74 @@ describe('migration 007', () => {
         sql`insert into workspace_labels (id, name, name_key, color, version, created_at, updated_at)
           values (${randomUUID()}, 'verde', 'verde', 'green', 1, ${now}, ${now})`.execute(db),
       ).rejects.toThrow('CHECK constraint failed');
+    });
+
+    it('a change of is_done that leaves no done column, a done column in the trash, and keeps completions in sync', async () => {
+      const doneColumns = async () =>
+        (await rows<{ id: string }>('select id from workspace_columns where is_done = 1 and deleted_at is null')).map(
+          (row) => row.id,
+        );
+      const wrongCompletions = async () =>
+        (
+          await rows<{ count: number }>(`select count(*) as count from workspace_tasks t
+            join workspace_columns c on c.id = t.column_id where c.is_done is not (t.completed_at is not null)`)
+        )[0]?.count;
+      const completed = async (columnId: string) =>
+        (
+          await rows<{ count: number }>(
+            `select count(*) as count from workspace_tasks where column_id = '${columnId}' and completed_at is not null`,
+          )
+        )[0]?.count;
+      const before = await completed(columnOf.done);
+      expect(before).toBeGreaterThan(0);
+
+      // The reviewer's attacks: clearing the done column, and swapping is_done in one statement. The
+      // swap is refused when its first row clears the done column, and is a handover otherwise.
+      const kept = 'workspace_columns must keep a done column: make another column the done one';
+      await expect(
+        sql`update workspace_columns set is_done = 0 where id = ${columnOf.done}`.execute(db),
+      ).rejects.toThrow(kept);
+      const swap = await sql`update workspace_columns set is_done = case when id = ${columnOf.doing} then 1 else 0 end
+          where id in (${columnOf.done}, ${columnOf.doing})`
+        .execute(db)
+        .then(
+          () => 'applied',
+          (error: Error) => error.message,
+        );
+      expect(['applied', kept]).toContain(swap);
+      expect([(await doneColumns()).length, await wrongCompletions()]).toEqual([1, 0]);
+      await sql`update workspace_columns set is_done = 1 where id = ${columnOf.done}`.execute(db);
+      expect([await doneColumns(), await wrongCompletions()]).toEqual([[columnOf.done], 0]);
+      const trashed = randomUUID();
+      await column(trashed, 'Na lixeira', { deletedAt: now });
+      await expect(sql`update workspace_columns set is_done = 1 where id = ${trashed}`.execute(db)).rejects.toThrow(
+        'workspace_columns: only an active column can be the done one',
+      );
+
+      // Making a column the done one hands the role over, with the completions of both columns.
+      const doing = await rows<{ id: string }>(`select id from workspace_tasks where column_id = '${columnOf.doing}'`);
+      expect(doing.length).toBeGreaterThan(0);
+      await sql`update workspace_columns set is_done = 1, updated_at = ${now} where id = ${columnOf.doing}`.execute(db);
+      expect([await doneColumns(), await wrongCompletions()]).toEqual([[columnOf.doing], 0]);
+      expect([await completed(columnOf.done), await completed(columnOf.doing)]).toEqual([0, doing.length]);
+      expect(
+        await rows(`select distinct completed_at from workspace_tasks where column_id = '${columnOf.doing}'`),
+      ).toEqual([{ completed_at: now }]);
+      // Without a new update date, the completions take the current time.
+      await sql`update workspace_columns set is_done = 1 where id = ${columnOf.done}`.execute(db);
+      expect([await doneColumns(), await wrongCompletions(), await completed(columnOf.done)]).toEqual([
+        [columnOf.done],
+        0,
+        before,
+      ]);
+      expect(
+        (
+          await rows<{ at: string }>(
+            `select min(completed_at) as at from workspace_tasks where column_id = '${columnOf.done}'`,
+          )
+        )[0]?.at,
+      ).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/u);
+      await consistent();
     });
 
     it('INSERT OR REPLACE of a folder, a column or a label something points at', async () => {

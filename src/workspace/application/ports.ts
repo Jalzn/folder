@@ -171,12 +171,13 @@ export interface ColumnRepository {
   saveColumn(column: Column, expectedVersion: number): Promise<void>;
   /** The order is not an edit: version and dates stay. */
   setColumnPosition(id: string, position: number): Promise<void>;
-  /** Marks or unmarks the done column. Not an edit: version and dates stay. */
-  setColumnDone(id: string, isDone: boolean): Promise<void>;
+  /**
+   * Makes the column the done one at `at`, its update date; the version stays. The migration's
+   * triggers hand the role over and set the completions of both columns' tasks.
+   */
+  makeDoneColumn(id: string, at: string): Promise<void>;
   /** Every task of the column, live and trashed, of every project, by project and board order. */
   tasksOfColumn(columnId: string): Promise<TaskRecord[]>;
-  /** Sets the completion of every task in the column, live and trashed, without editing them. */
-  setColumnCompletion(columnId: string, completedAt: string | null): Promise<void>;
   /** Sets one task's completion without editing it. */
   setTaskCompletion(taskId: string, completedAt: string | null): Promise<void>;
 }

@@ -17,7 +17,6 @@ CREATE TABLE workspace_columns (
   deleted_at TEXT
 );
 CREATE UNIQUE INDEX workspace_columns_active_name ON workspace_columns(name_key) WHERE deleted_at IS NULL;
-CREATE UNIQUE INDEX workspace_columns_one_done ON workspace_columns(is_done) WHERE is_done = 1 AND deleted_at IS NULL;
 CREATE INDEX workspace_columns_order ON workspace_columns(deleted_at, position);
 
 INSERT INTO workspace_columns (id, name, name_key, position, is_done, version, created_at, updated_at)
@@ -136,12 +135,44 @@ BEGIN
   SELECT RAISE(ABORT, 'workspace_columns cannot be deleted with tasks or as the done column');
 END;
 
--- One done column: the partial index refuses a second; this says so legibly.
+-- Exactly one active done column. Making a column the done one (is_done 0 -> 1, one row at a time)
+-- hands the role over: the old done column stops being it, its tasks lose their completion and the
+-- new one's are completed, at the column's new updated_at when the write sets one, as the
+-- application does, or at the current time. The done column stops being it only so. A unique index
+-- could not allow the handover, which writes the new done column before clearing the old one, so a
+-- second done column inserted or restored is refused by these triggers instead.
+CREATE TRIGGER workspace_columns_done_on_insert BEFORE INSERT ON workspace_columns
+WHEN NEW.is_done = 1 AND NEW.deleted_at IS NULL
+  AND EXISTS (SELECT 1 FROM workspace_columns WHERE is_done = 1 AND deleted_at IS NULL)
+BEGIN
+  SELECT RAISE(ABORT, 'workspace_columns can have only one done column');
+END;
 CREATE TRIGGER workspace_columns_done_on_restore BEFORE UPDATE OF deleted_at ON workspace_columns
 WHEN OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS NULL AND NEW.is_done = 1
   AND EXISTS (SELECT 1 FROM workspace_columns WHERE is_done = 1 AND deleted_at IS NULL AND id <> NEW.id)
 BEGIN
   SELECT RAISE(ABORT, 'workspace_columns can have only one done column');
+END;
+CREATE TRIGGER workspace_columns_done_only_active BEFORE UPDATE OF is_done ON workspace_columns
+WHEN OLD.is_done = 0 AND NEW.is_done = 1 AND NEW.deleted_at IS NOT NULL
+BEGIN
+  SELECT RAISE(ABORT, 'workspace_columns: only an active column can be the done one');
+END;
+CREATE TRIGGER workspace_columns_done_handover AFTER UPDATE OF is_done ON workspace_columns
+WHEN OLD.is_done = 0 AND NEW.is_done = 1
+BEGIN
+  UPDATE workspace_columns SET is_done = 0 WHERE is_done = 1 AND deleted_at IS NULL AND id <> NEW.id;
+  UPDATE workspace_tasks
+  SET completed_at = CASE WHEN NEW.updated_at IS NOT OLD.updated_at THEN NEW.updated_at
+    ELSE strftime('%Y-%m-%dT%H:%M:%fZ', 'now') END
+  WHERE column_id = NEW.id AND completed_at IS NULL;
+END;
+CREATE TRIGGER workspace_columns_done_kept AFTER UPDATE OF is_done ON workspace_columns
+WHEN OLD.is_done = 1 AND NEW.is_done = 0
+BEGIN
+  SELECT RAISE(ABORT, 'workspace_columns must keep a done column: make another column the done one')
+  WHERE NOT EXISTS (SELECT 1 FROM workspace_columns WHERE is_done = 1 AND deleted_at IS NULL);
+  UPDATE workspace_tasks SET completed_at = NULL WHERE column_id = NEW.id AND completed_at IS NOT NULL;
 END;
 
 -- INSERT OR REPLACE deletes and inserts a row again without the UPDATE triggers, and the keys are
