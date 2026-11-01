@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       // Same paths as in production: Claude Code uses /mcp, and /.well-known must answer its OAuth
       // discovery with the server's JSON 404 instead of the SPA's index.html.
-      proxy: { '/rpc': server, '/mcp': server, '/.well-known': server },
+      proxy: { '/rpc': server, '/mcp': server, '/.well-known': server, '/arquivos': server },
     },
     // Keep font URLs on this origin, as required by the server's font-src policy.
     build: { outDir: 'dist', assetsInlineLimit: 0 },

@@ -7,6 +7,7 @@ import { useDrawerContent } from '../../shell';
 import { useOwnerToday } from '../../shell/AppProvider';
 import { useDocumentEmbeds } from './use-document-embeds';
 import { useEmbedActions } from './use-embed-actions';
+import { useEmbedPreviews } from './use-embed-preview';
 
 /**
  * A document's embeds around its editor (docs/etapas/11-documento-desenho.md, "Interface"): the provider the
@@ -29,6 +30,7 @@ export function DocumentEmbeds({
   children: (slashItems: ReturnType<typeof embedSlashItems> | undefined) => ReactNode;
 }) {
   const states = useDocumentEmbeds(documentId, editor);
+  const previews = useEmbedPreviews(states.drawings);
   const { actions, insert, newTask, newDrawing } = useEmbedActions({ editor, documentId, projectId, folderId });
   const content = useDrawerContent();
   const today = useOwnerToday();
@@ -37,8 +39,8 @@ export function DocumentEmbeds({
   const anchor = useRef<HTMLElement | null>(null);
   const openTaskId = content?.mode === 'task' ? content.id : null;
   const value = useMemo<EmbedsValue>(
-    () => ({ ...states, documentProjectId: projectId, today, openTaskId, readOnly, actions }),
-    [states, projectId, today, openTaskId, readOnly, actions],
+    () => ({ ...states, previews, documentProjectId: projectId, today, openTaskId, readOnly, actions }),
+    [states, previews, projectId, today, openTaskId, readOnly, actions],
   );
   const slashItems = readOnly
     ? undefined

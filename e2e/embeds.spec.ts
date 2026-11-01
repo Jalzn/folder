@@ -16,11 +16,15 @@ const toast = (page: Page) => page.locator('.toast');
 /** The document's id, from its address. */
 const documentIdOf = (page: Page) => new URL(page.url()).pathname.split('/').at(-1) ?? '';
 
-/** The embeds the server holds for the open document, after its next save. */
+/** The embeds the server holds for the open document. */
 async function savedEmbeds(page: Page) {
   const document = await rpc<{ content: Block[] }>(page, 'workspace/getDocument', { id: documentIdOf(page) });
   return document.content.filter((block) => block.type === 'taskEmbed' || block.type === 'drawingEmbed');
 }
+
+/** Waits until the autosave has brought the server to `count` embeds. */
+const expectSavedEmbeds = (page: Page, count: number) =>
+  expect.poll(async () => (await savedEmbeds(page)).length, { timeout: 10_000 }).toBe(count);
 
 /** A task made over RPC in a project, as another tab would. */
 async function rpcTask(page: Page, projectId: string, title: string) {
@@ -42,42 +46,38 @@ async function writeDocument(page: Page, line: string) {
   await saved;
 }
 
-/** Waits for the save that carries the document's latest change. */
-const nextSave = (page: Page) =>
-  page.waitForResponse((response) => answers(response, 'workspace/saveDocument') && response.status() === 200);
-
 test('/tarefa embeds a task found by the picker, the document’s project first, and the card follows the drawer', async ({
   page,
 }) => {
   await login(page);
+  // A word of this run only, so the other tests' tasks stay out of the list.
+  const word = `contrato${Date.now().toString(36)}`;
   const elsewhere = await createProject(page, `Outro projeto ${Date.now()}`);
-  await rpcTask(page, elsewhere, 'Revisar contrato de fora');
+  await rpcTask(page, elsewhere, `Revisar ${word} de fora`);
   const here = await createProject(page, `Incorporar ${Date.now()}`);
-  await rpcTask(page, here, 'Revisar contrato daqui');
+  await rpcTask(page, here, `Revisar ${word} daqui`);
   await writeDocument(page, 'Plano da semana.');
 
   const picker = await slash(page, 'tarefa');
-  await page.keyboard.type('contrato');
+  await page.keyboard.type(word);
   // The document's project first; the other one after it, with its name on the right.
   const rows = picker.getByRole('menuitem');
-  await expect(rows.nth(1)).toContainText('Revisar contrato daqui');
-  await expect(rows.nth(2)).toContainText('Revisar contrato de fora');
+  await expect(rows.nth(1)).toContainText(`Revisar ${word} daqui`);
+  await expect(rows.nth(2)).toContainText(`Revisar ${word} de fora`);
   await expect(rows.nth(2)).toContainText('Outro projeto');
   for (let step = 0; step < 4 && (await rows.nth(1).getAttribute('data-focused')) === null; step += 1)
     await page.keyboard.press('ArrowDown');
   await expect(rows.nth(1)).toHaveAttribute('data-focused');
-  const saved = nextSave(page);
   await page.keyboard.press('Enter');
-  const card = embedCard(page, 'Revisar contrato daqui');
+  const card = embedCard(page, `Revisar ${word} daqui`);
   await expect(card).toBeVisible();
   await expect(card).toContainText('A fazer');
-  await saved;
-  const [embed] = await savedEmbeds(page);
-  expect(embed?.type).toBe('taskEmbed');
+  await expectSavedEmbeds(page, 1);
+  expect((await savedEmbeds(page))[0]?.type).toBe('taskEmbed');
 
   // The card opens the drawer and says so; a change there shows on the card at once.
   await card.click();
-  await expect(drawerOf(page, 'Revisar contrato daqui')).toBeVisible();
+  await expect(drawerOf(page, `Revisar ${word} daqui`)).toBeVisible();
   await expect(card).toContainText('aberta abaixo');
   await pressCommand(page, 'Enter');
   await expect(toast(page)).toContainText('Concluída');
@@ -108,13 +108,12 @@ test('the arrows select a card: ↵ opens it, ⌫ removes it and the editor’s 
   const here = await createProject(page, `Teclas do card ${Date.now()}`);
   await rpcTask(page, here, 'Ligar para o banco');
   await writeDocument(page, 'Antes do card.');
-  // The insertion is saved before the keys go on: the editor joins edits less than half a second apart in
-  // one undo step, and a person's ⌫ comes later than that.
-  const inserted = nextSave(page);
   await pickEmbed(page, await slash(page, 'tarefa'), 'banco', 'Ligar para o banco');
   const card = embedCard(page, 'Ligar para o banco');
   await expect(card).toBeVisible();
-  await inserted;
+  // The insertion is saved before the keys go on: the editor joins edits less than half a second apart in
+  // one undo step, and a person's ⌫ comes later than that.
+  await expectSavedEmbeds(page, 1);
 
   // From the text above, ↓ selects the card as a node, and ↵ opens it.
   await documentEditor(page).getByText('Antes do card.').click();
@@ -126,16 +125,12 @@ test('the arrows select a card: ↵ opens it, ⌫ removes it and the editor’s 
 
   await documentEditor(page).getByText('Antes do card.').click();
   await page.keyboard.press('ArrowDown');
-  const removed = nextSave(page);
   await page.keyboard.press('Backspace');
   await expect(card).toHaveCount(0);
-  await removed;
-  expect(await savedEmbeds(page)).toHaveLength(0);
-  const back = nextSave(page);
+  await expectSavedEmbeds(page, 0);
   await editorUndo(page);
   await expect(card).toBeVisible();
-  await back;
-  expect(await savedEmbeds(page)).toHaveLength(1);
+  await expectSavedEmbeds(page, 1);
 });
 
 test('an embedded task in the trash offers Restaurar; one deleted for good, Remover with Desfazer', async ({
@@ -172,17 +167,13 @@ test('an embedded task in the trash offers Restaurar; one deleted for good, Remo
   await expect(embedCard(page, 'Esboçar tela de boas-vindas')).toBeVisible();
   expect((await rpc<{ deletedAt: string | null }>(page, 'workspace/getTask', { id: trashed.id })).deletedAt).toBeNull();
 
-  const removed = nextSave(page);
   await missing.getByRole('button', { name: 'Remover', exact: true }).click();
   await expect(toast(page)).toContainText('Bloco removido do documento. O texto ao redor ficou como estava.');
   await expect(missing).toHaveCount(0);
-  await removed;
-  expect(await savedEmbeds(page)).toHaveLength(1);
-  const back = nextSave(page);
+  await expectSavedEmbeds(page, 1);
   await toast(page).getByRole('button', { name: 'Desfazer', exact: true }).click();
   await expect(missing).toContainText('Esta tarefa foi excluída.');
-  await back;
-  expect(await savedEmbeds(page)).toHaveLength(2);
+  await expectSavedEmbeds(page, 2);
 });
 
 test('/desenho embeds a drawing as a numbered figure, and "Novo desenho" makes one', async ({ page }) => {

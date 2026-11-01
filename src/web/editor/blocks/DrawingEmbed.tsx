@@ -42,6 +42,11 @@ export function DrawingEmbed({ canvasId, blockId }: { canvasId: string; blockId:
   if (view.kind === 'unavailable') return <UnavailableEmbed view={view} kind="drawing" blockId={blockId} />;
   const { drawing } = view;
   const src = previewSrc(drawing);
+  const work = embeds.previews.get(drawing.id);
+  // The old image stays while the new one is made; a drawing no preview size holds says to open it.
+  const updating =
+    work === 'updating' || Boolean(drawing.preview && !drawing.preview.current && work !== 'unavailable');
+  const unavailable = work === 'unavailable' || (!src && !updating);
   return (
     <Link
       to={paths.drawing(drawing.project.id, drawing.id)}
@@ -58,10 +63,13 @@ export function DrawingEmbed({ canvasId, blockId }: { canvasId: string; blockId:
       <span className="embed-figure__frame" data-empty={drawing.empty || undefined}>
         {drawing.empty ? (
           <span className="embed-figure__note">Desenho vazio</span>
-        ) : src ? (
-          <img src={src} alt="" width={drawing.preview?.width} height={drawing.preview?.height} />
-        ) : (
+        ) : unavailable ? (
           <span className="embed-figure__note">Imagem indisponível. Abra o desenho para ver.</span>
+        ) : (
+          <>
+            {src && <img src={src} alt="" width={drawing.preview?.width} height={drawing.preview?.height} />}
+            {updating && <span className="embed-figure__note">Atualizando a imagem…</span>}
+          </>
         )}
       </span>
       <span className="embed-figure__caption">

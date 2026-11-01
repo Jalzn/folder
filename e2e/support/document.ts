@@ -54,7 +54,8 @@ export async function slash(page: Page, word: 'tarefa' | 'desenho') {
  */
 export async function pickEmbed(page: Page, picker: Locator, filter: string, title: string) {
   await page.keyboard.type(filter);
-  const row = picker.getByRole('menuitem').filter({ hasText: title });
+  // The document's project comes first, so a same title elsewhere is further down.
+  const row = picker.getByRole('menuitem').filter({ hasText: title }).first();
   await expect(row).toBeVisible();
   for (let step = 0; step < 6 && (await row.getAttribute('data-focused')) === null; step += 1)
     await page.keyboard.press('ArrowDown');

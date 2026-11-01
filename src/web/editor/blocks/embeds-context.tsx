@@ -21,6 +21,8 @@ export interface EmbedsValue extends EmbedViewContext {
   tasks: ReadonlyMap<string, EmbeddedTask>;
   drawings: ReadonlyMap<string, EmbeddedDrawing>;
   figures: ReadonlyMap<string, number>;
+  /** Drawings whose preview the document is making again, or that no preview size can hold. */
+  previews: ReadonlyMap<string, 'updating' | 'unavailable'>;
   actions: EmbedActions;
 }
 
