@@ -135,9 +135,14 @@ export function ItemsTree({
     rows.flatMap((row) => (row.kind === 'folder' ? [row, ...row.children] : [row])).find((row) => row.key === key);
 
   function onKeyDownCapture(event: KeyboardEvent<HTMLDivElement>) {
+    // A folder's name field owns its keys, composition included: only Enter and Esc go on to it past the
+    // row, which would move the focus on an arrow, and the type-to-select, which would take a letter or a
+    // space. Nothing here prevents the default, so the caret, the selection and the typing stay the field's.
+    if (event.target instanceof Element && event.target.closest('input, textarea')) {
+      if (event.key !== 'Enter' && event.key !== 'Escape') event.stopPropagation();
+      return;
+    }
     if (event.nativeEvent.isComposing || event.keyCode === 229) return;
-    // A folder's name field keeps its keys.
-    if (event.target instanceof Element && event.target.closest('input, textarea')) return;
     const row = rowOf(event.target);
     const key = row?.dataset.key;
     const kind = key ? rowKind(key) : null;
