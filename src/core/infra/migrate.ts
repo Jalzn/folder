@@ -3,7 +3,6 @@ import { readdir, readFile } from 'node:fs/promises';
 import { sql } from 'kysely';
 import {
   type Database,
-  type DatabaseTransaction,
   executeMigrationScript,
   type ForeignKeyViolation,
   foreignKeyViolations,
@@ -25,62 +24,6 @@ export interface AppliedMigration {
   module: string;
   version: number;
   name: string;
-}
-
-/**
- * The line a migration that rebuilds a table other tables refer to carries in its leading comments.
- * Inside a transaction SQLite ignores `PRAGMA foreign_keys`, and dropping a referenced table with the
- * keys on would delete or refuse the rows that point at it. The line is part of the file, and of its
- * checksum.
- */
-export const FOREIGN_KEYS_OFF = '-- migrate: foreign_keys off';
-
-const directive = /^--\s*migrate:\s*foreign_keys\s+off$/iu;
-
-/**
- * Whether the directive is in the comment block that opens the file: any of its `--` lines, in any
- * case, after blank lines or other comments. A directive after the first statement does not count.
- */
-function needsForeignKeysOff(source: string): boolean {
-  for (const raw of source.split(/\r?\n/u)) {
-    const line = raw.trim();
-    if (directive.test(line)) return true;
-    if (line && !line.startsWith('--')) return false;
-  }
-  return false;
-}
-
-/** The tables a migration drops, read from its text without comments; names are compared lowercased. */
-function droppedTables(source: string): string[] {
-  const code = source.replace(/\/\*[\s\S]*?\*\//gu, ' ').replace(/--[^\n]*/gu, ' ');
-  const drops = code.matchAll(/\bdrop\s+table\s+(?:if\s+exists\s+)?(?:(?:main|temp)\s*\.\s*)?["`[]?([\w$]+)["`\]]?/giu);
-  return [...drops].flatMap((match) => (match[1] ? [match[1].toLowerCase()] : []));
-}
-
-/**
- * Refuses a migration without the directive that drops a table another table refers to: with the
- * keys on, the drop would delete the rows pointing at it by cascade, in silence. Tables the same
- * migration also drops do not count.
- */
-async function assertNoUnguardedRebuild(trx: DatabaseTransaction, file: MigrationFile): Promise<void> {
-  const dropped = new Set(droppedTables(file.source));
-  if (!dropped.size) return;
-  const references = await sql<{ child: string; parent: string }>`select m.name as child, f."table" as parent
-    from sqlite_master m, pragma_foreign_key_list(m.name) f
-    where m.type = 'table'`.execute(trx);
-  const blocking = references.rows.filter(
-    (row) =>
-      dropped.has(row.parent.toLowerCase()) &&
-      !dropped.has(row.child.toLowerCase()) &&
-      row.child.toLowerCase() !== row.parent.toLowerCase(),
-  );
-  if (blocking.length) {
-    const tables = [...new Set(blocking.map((row) => `${row.parent} (referenced by ${row.child})`))].join(', ');
-    throw new Error(
-      `Migration drops ${tables} with the foreign keys on: ${file.module}/${file.version}. ` +
-        `Put "${FOREIGN_KEYS_OFF}" in its leading comments.`,
-    );
-  }
 }
 
 const describeViolations = (violations: readonly ForeignKeyViolation[]) =>
@@ -114,25 +57,20 @@ export interface MigrateOptions {
   warn?: (message: string) => void;
 }
 
-/** The migrations already applied, read before the write lock so the runner knows how to start. */
-async function appliedVersions(db: Database): Promise<Set<string>> {
-  const table = await sql<{ name: string }>`select name from sqlite_master
-    where type = 'table' and name = 'core_schema_migrations'`.execute(db);
-  if (!table.rows.length) return new Set();
-  const rows = await sql<{ module: string; version: number }>`select module, version
-    from core_schema_migrations`.execute(db);
-  return new Set(rows.rows.map((row) => `${row.module}/${row.version}`));
-}
-
 /**
  * Applies every pending migration of the modules in one transaction (BEGIN IMMEDIATE), after
- * registering their SQL functions on the connection. When a pending migration starts with
- * FOREIGN_KEYS_OFF, the keys go off on the connection before the transaction, and `foreign_key_check`
- * before the commit must find no violation that was not there when the transaction began (any new
- * row aborts it, and nothing is applied). Older ones, left by manual SQL, do not block the upgrade:
- * they go to `warn`, with their table and rowid. The keys go back on afterwards, also on failure; if
- * they do not, the runner throws and the server does not start. A migration without the line runs
- * with the keys on, as always.
+ * registering their SQL functions on the connection, always with the foreign keys off: SQLite
+ * ignores `PRAGMA foreign_keys` inside a transaction, so they go off on the connection before it.
+ *
+ * With the keys on, rebuilding a table others refer to (the 12-step procedure: create, copy, drop,
+ * rename) would delete or refuse the rows that point at it when the old table is dropped, with no
+ * error. A per-file directive, or reading the SQL for DROP TABLE, can be misspelt or fooled, so no
+ * migration runs with them. The cost is that no cascade or reference check fires inside a migration
+ * either: before the commit, `foreign_key_check` must find no violation that was not there when the
+ * transaction began, so a migration that left an orphan, or counted on ON DELETE CASCADE to clean
+ * one up, is refused and nothing is applied. Violations from before, left by manual SQL, do not
+ * block the upgrade: they go to `warn`, with their table and rowid. The keys go back on afterwards,
+ * also on failure; if they do not, the runner throws and the server does not start.
  */
 export async function migrate(
   db: Database,
@@ -154,7 +92,6 @@ export async function migrate(
             name: match[2],
             source,
             checksum: createHash('sha256').update(source).digest('hex'),
-            foreignKeysOff: needsForeignKeysOff(source),
           };
         }),
       );
@@ -164,15 +101,11 @@ export async function migrate(
     }),
   );
   for (const { module } of available) if (module.sqlFunctions) registerSqlFunctions(db, module.sqlFunctions);
-  const done = await appliedVersions(db);
-  const keysOff = available.some(({ module, files }) =>
-    files.some((file) => file.foreignKeysOff && !done.has(`${module.id}/${file.version}`)),
-  );
-  if (keysOff) setForeignKeys(db, false);
+  setForeignKeys(db, false);
   try {
-    return await applyPending(db, available, keysOff, warn);
+    return await applyPending(db, available, warn);
   } finally {
-    if (keysOff) setForeignKeys(db, true);
+    setForeignKeys(db, true);
   }
 }
 
@@ -182,22 +115,19 @@ interface MigrationFile {
   name: string;
   source: string;
   checksum: string;
-  foreignKeysOff: boolean;
 }
 
 function applyPending(
   db: Database,
   available: readonly { module: ModuleDefinition; files: MigrationFile[] }[],
-  keysOff: boolean,
   warn: (message: string) => void,
 ): Promise<AppliedMigration[]> {
   return writeTransaction(db, async (trx) => {
-    const before = keysOff ? foreignKeyViolations(db) : [];
     await sql`CREATE TABLE IF NOT EXISTS core_schema_migrations (module TEXT NOT NULL, version INTEGER NOT NULL, name TEXT NOT NULL, checksum TEXT NOT NULL, applied_at TEXT NOT NULL, PRIMARY KEY (module, version))`.execute(
       trx,
     );
     const store = tables<{ core_schema_migrations: MigrationTable }>(trx);
-    const applied: AppliedMigration[] = [];
+    const pending: MigrationFile[] = [];
     for (const { module, files } of available) {
       const done = await store
         .selectFrom('core_schema_migrations')
@@ -209,35 +139,34 @@ function applyPending(
         if (!file || file.checksum !== row.checksum)
           throw new Error(`Applied migration changed or missing: ${module.id}/${row.version}`);
       }
-      for (const file of files.filter((candidate) => !done.some((row) => row.version === candidate.version))) {
-        // Another runner may have applied migrations since the keys were set; never run this one with them on.
-        if (file.foreignKeysOff && !keysOff)
-          throw new Error(`Migration needs foreign keys off: ${module.id}/${file.version}. Run the migrations again.`);
-        if (!file.foreignKeysOff) await assertNoUnguardedRebuild(trx, file);
-        executeMigrationScript(db, file.source);
-        await store
-          .insertInto('core_schema_migrations')
-          .values({
-            module: file.module,
-            version: file.version,
-            name: file.name,
-            checksum: file.checksum,
-            applied_at: new Date().toISOString(),
-          })
-          .execute();
-        applied.push({ module: file.module, version: file.version, name: file.name });
-      }
+      pending.push(...files.filter((candidate) => !done.some((row) => row.version === candidate.version)));
     }
-    if (keysOff) {
-      const violations = newViolations(before, foreignKeyViolations(db));
-      if (violations.length)
-        throw new Error(`Foreign key check failed after the migrations: ${describeViolations(violations)}.`);
-      if (before.length)
-        warn(
-          `Foreign key violations from before the migrations, left as they were (${before.length}): ` +
-            `${describeViolations(before)}. Run "pragma foreign_key_check" and repair them.`,
-        );
+    if (!pending.length) return [];
+    // The check reads every row that refers to another, so it runs only when there is something to apply.
+    const before = foreignKeyViolations(db);
+    const applied: AppliedMigration[] = [];
+    for (const file of pending) {
+      executeMigrationScript(db, file.source);
+      await store
+        .insertInto('core_schema_migrations')
+        .values({
+          module: file.module,
+          version: file.version,
+          name: file.name,
+          checksum: file.checksum,
+          applied_at: new Date().toISOString(),
+        })
+        .execute();
+      applied.push({ module: file.module, version: file.version, name: file.name });
     }
+    const violations = newViolations(before, foreignKeyViolations(db));
+    if (violations.length)
+      throw new Error(`Foreign key check failed after the migrations: ${describeViolations(violations)}.`);
+    if (before.length)
+      warn(
+        `Foreign key violations from before the migrations, left as they were (${before.length}): ` +
+          `${describeViolations(before)}. Run "pragma foreign_key_check" and repair them.`,
+      );
     return applied;
   });
 }

@@ -1,7 +1,6 @@
--- migrate: foreign_keys off
 -- Board columns, labels and task fields. workspace_tasks is rebuilt, and workspace_task_sources
--- refers to it, so this runs with the keys off (see the migration runner): with them on, dropping
--- the old table would delete every source by cascade. foreign_key_check runs before the commit.
+-- refers to it: the runner applies every migration with the keys off, since with them on dropping
+-- the old table would delete every source by cascade, and checks the keys before the commit.
 
 -- Columns are the same for every project. The three initial ones keep fixed IDs only so that this
 -- migration can place the old statuses; after it, no rule depends on them.

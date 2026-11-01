@@ -2,6 +2,18 @@
 
 **Estado:** detalhada em 2026-11-01, a partir do escopo inicial de 2026-10-31. As seções "Resultado" e "Desvios do plano" entram ao concluir, como na [etapa 09](09-pastas.md).
 
+## Desvios do plano
+
+Registrados durante a implementação; a seção se completa ao concluir.
+
+**Dados e contratos (backend)**
+
+- **Executor de migrações sem diretiva.** O plano desligava as chaves só para a migração que começasse com `-- migrate: foreign_keys off`. Na revisão de dados, uma diretiva mal posta fazia a reconstrução rodar com as chaves ligadas e apagar em cascata, em silêncio, todas as origens de tarefa. A leitura do SQL atrás de `DROP TABLE` não reconhecia nomes entre aspas ou colchetes, prefixos `main.` entre aspas, nem `--` e `/*` dentro de strings. Por isso o executor passou a aplicar **toda** migração com as chaves desligadas, fora da transação, e a diretiva e a leitura do texto saíram. A 007 não tem mais a linha.
+  - **O que se perde:** dentro de uma migração, nenhuma cascata dispara e nenhuma referência é conferida na escrita.
+  - **O que guarda:** o `foreign_key_check` antes do `COMMIT` recusa toda violação que não existia no começo da transação. Uma migração que apague um pai contando com o `ON DELETE CASCADE`, ou que grave uma referência inválida, deixa um órfão e é recusada inteira, com a tabela e o `rowid`. Ela precisa apagar os filhos ela mesma.
+  - **Violações antigas:** as anteriores, deixadas por SQL manual, não impedem a atualização e vão para um aviso.
+- **Uma coluna de conclusão, por gatilhos.** O índice único parcial de `is_done` deu lugar aos gatilhos da tabela de gatilhos da 007, porque a passagem do papel grava a nova coluna de conclusão antes de limpar a antiga.
+
 ## Objetivo
 
 Dar às tarefas os campos e o quadro definidos no [produto](../produto.md):

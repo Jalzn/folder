@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { sql } from 'kysely';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createDatabase, type Database } from './db.js';
-import { FOREIGN_KEYS_OFF, migrate } from './migrate.js';
+import { migrate } from './migrate.js';
 import { coreModule, defineModule, type ModuleDefinition } from './module.js';
 
 const resources: { db: Database; folder: string }[] = [];
@@ -41,10 +41,10 @@ insert into parent values ('p1', 'um'), ('p2', 'dois');
 insert into child values ('c1', 'p1'), ('c2', 'p2');`;
 
 /** Rebuilds `parent` as the SQLite 12-step procedure does, keeping `only` of its rows. */
-const rebuildParent = (only = "('p1', 'p2')") => `${FOREIGN_KEYS_OFF}
+const rebuildParent = (only = "('p1', 'p2')", drop = 'drop table parent;') => `
 create table parent_new (id text primary key, name text not null, note text not null default '');
 insert into parent_new (id, name) select id, name from parent where id in ${only};
-drop table parent;
+${drop}
 alter table parent_new rename to parent;`;
 
 describe('migration runner', () => {
@@ -82,7 +82,7 @@ describe('migration runner', () => {
     expect(await rows("select version from core_schema_migrations where module = 'example'")).toEqual([{ version: 1 }]);
     expect(await foreignKeys()).toBe(1);
     // A failing statement also gives the keys back.
-    await write('002_rebuild.sql', `${FOREIGN_KEYS_OFF}\ncreate table broken (;`);
+    await write('002_rebuild.sql', 'create table broken (;');
     await expect(migrate(db, [coreModule, module])).rejects.toThrow();
     expect(await foreignKeys()).toBe(1);
   });
@@ -117,52 +117,46 @@ describe('migration runner', () => {
     expect(await foreignKeys()).toBe(1);
   });
 
-  it('keeps the keys on during a migration without the line', async () => {
-    const { db, module, write, rows, foreignKeys } = await fixture();
-    await write('001_tables.sql', parentAndChild);
-    await write('002_orphan.sql', "insert into child values ('c3', 'missing');");
-    await expect(migrate(db, [coreModule, module])).rejects.toThrow('FOREIGN KEY constraint failed');
-    expect(await rows("select name from sqlite_master where name = 'child'")).toEqual([]);
-    expect(await foreignKeys()).toBe(1);
+  it('rebuilds with the keys off whatever way the table is named in DROP TABLE', async () => {
+    // The forms a scan of the text missed: quoted and bracketed names with their schema, single
+    // quotes, and comment markers inside a string before the drop.
+    for (const drop of [
+      'drop table "main"."parent";',
+      'drop table [main].[parent];',
+      "drop table 'parent';",
+      "select '--', '/*'; drop table parent;",
+      'DROP\nTABLE IF EXISTS main.parent;',
+    ]) {
+      const { db, module, write, rows, foreignKeys } = await fixture();
+      await write('001_tables.sql', parentAndChild);
+      await write('002_rebuild.sql', rebuildParent(undefined, drop));
+      expect(await migrate(db, [coreModule, module]), drop).toHaveLength(3);
+      expect(await rows('select id from child order by id'), drop).toEqual([{ id: 'c1' }, { id: 'c2' }]);
+      expect(await foreignKeys()).toBe(1);
+    }
   });
 
-  it('finds the line anywhere in the leading comments, in any case, but not after the first statement', async () => {
-    const { db, module, write, rows, foreignKeys } = await fixture();
-    await write('001_tables.sql', parentAndChild);
-    await write(
-      '002_rebuild.sql',
-      `\n-- 002: parent gains a note.\n\n${rebuildParent().replace(FOREIGN_KEYS_OFF, '--  MIGRATE: Foreign_Keys  OFF  ')}`,
-    );
-    expect(await migrate(db, [coreModule, module])).toHaveLength(3);
-    expect(await rows('select id from child order by id')).toEqual([{ id: 'c1' }, { id: 'c2' }]);
-    expect(await foreignKeys()).toBe(1);
-    await write(
-      '003_late.sql',
-      `create table later (id text);\n${FOREIGN_KEYS_OFF}\ninsert into child values ('c3', 'missing');`,
-    );
-    await expect(migrate(db, [coreModule, module])).rejects.toThrow('FOREIGN KEY constraint failed');
-    expect(await foreignKeys()).toBe(1);
-  });
-
-  it('refuses a migration that drops a referenced table without the line, before it deletes anything', async () => {
+  it('refuses a migration that counts on a cascade or leaves a reference unchecked, since none fires inside one', async () => {
     const { db, module, write, rows, foreignKeys } = await fixture();
     await write('001_tables.sql', parentAndChild);
     await migrate(db, [coreModule, module]);
-    // A misspelt line is no line: with the keys on, the drop would empty child by cascade.
-    await write('002_rebuild.sql', rebuildParent().replace(FOREIGN_KEYS_OFF, '-- migrate: foreign keys off'));
+    // With the keys on, deleting p2 would have deleted c2 by cascade; with them off, c2 is an orphan.
+    await write('002_prune.sql', "delete from parent where id = 'p2';");
     await expect(migrate(db, [coreModule, module])).rejects.toThrow(
-      'Migration drops parent (referenced by child) with the foreign keys on: example/2. ' +
-        `Put "${FOREIGN_KEYS_OFF}" in its leading comments.`,
+      'Foreign key check failed after the migrations: child row 2 -> parent.',
     );
-    expect(await rows('select id from child order by id')).toEqual([{ id: 'c1' }, { id: 'c2' }]);
-    expect(await rows("select version from core_schema_migrations where module = 'example'")).toEqual([{ version: 1 }]);
+    expect(await rows('select id from parent order by id')).toEqual([{ id: 'p1' }, { id: 'p2' }]);
     expect(await foreignKeys()).toBe(1);
-    // Dropping the child with its parent, or a table nothing refers to, needs no line.
-    await write(
-      '002_rebuild.sql',
-      `/* drop table parent; */ -- drop table parent;\ncreate table loose (id text);\ndrop table if exists "loose";\ndrop table child; drop table main.parent;`,
+    // The migration has to delete the children itself.
+    await write('002_prune.sql', "delete from child where parent_id = 'p2'; delete from parent where id = 'p2';");
+    expect(await migrate(db, [coreModule, module])).toEqual([{ module: 'example', version: 2, name: 'prune' }]);
+    // Nor is a reference checked when it is written: the check before the commit finds it.
+    await write('003_orphan.sql', "insert into child values ('c3', 'missing');");
+    await expect(migrate(db, [coreModule, module])).rejects.toThrow(
+      'Foreign key check failed after the migrations: child row 2 -> parent.',
     );
-    expect(await migrate(db, [coreModule, module])).toEqual([{ module: 'example', version: 2, name: 'rebuild' }]);
+    expect(await rows('select id from child order by id')).toEqual([{ id: 'c1' }]);
+    expect(await foreignKeys()).toBe(1);
   });
 
   it('registers the modules’ SQL functions before the first migration, and keeps them', async () => {

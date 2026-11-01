@@ -1,9 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { coreModule, createDatabase, type Database, defineModule, migrate } from '@tinyfold/core/infra';
+import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
@@ -196,39 +195,6 @@ describe('migration 007', () => {
     expect(await rows('pragma foreign_key_check')).toEqual(orphans);
     expect(await rows('pragma foreign_keys')).toEqual([{ foreign_keys: 1 }]);
     expect(await rows('select count(*) as count from workspace_task_sources')).toEqual([{ count: 1 }]);
-  });
-
-  /** The workspace module with 007's first line replaced, as a later rebuild could be written. */
-  async function workspaceWith007Starting(firstLine: string) {
-    const folder = join(directory, 'migrations');
-    await mkdir(folder);
-    const shipped = new URL('../infra/migrations/', import.meta.url);
-    for (const name of await readdir(shipped)) await copyFile(new URL(name, shipped), join(folder, name));
-    const source = await readFile(join(folder, '007_board.sql'), 'utf8');
-    await writeFile(join(folder, '007_board.sql'), source.replace(/^.*\n/u, `${firstLine}\n`));
-    return defineModule({
-      id: 'workspace',
-      migrations: pathToFileURL(`${folder}/`),
-      sqlFunctions: workspaceModule.sqlFunctions ?? {},
-    });
-  }
-
-  it('runs 007 with the keys off from a directive below a header comment, and fails loud without one', async () => {
-    await loadStage09Fixture(db, 'sample');
-    const sources = await rows('select * from workspace_task_sources');
-    expect(sources).toHaveLength(1);
-    // Misspelt, the directive is no directive: dropping workspace_tasks would empty the sources.
-    const misspelt = await workspaceWith007Starting('-- migrate: foreign keys off');
-    await expect(migrate(db, [coreModule, misspelt])).rejects.toThrow(
-      'Migration drops workspace_tasks (referenced by workspace_task_sources) with the foreign keys on: workspace/7.',
-    );
-    expect(await rows('select * from workspace_task_sources')).toEqual(sources);
-    expect(await rows("select name from sqlite_master where name = 'workspace_columns'")).toEqual([]);
-    await rm(join(directory, 'migrations'), { recursive: true });
-    const headed = await workspaceWith007Starting('-- 007: the board.\n\n-- MIGRATE: FOREIGN_KEYS OFF');
-    expect(await migrate(db, [coreModule, headed])).toEqual([{ module: 'workspace', version: 7, name: 'board' }]);
-    expect(await rows('select * from workspace_task_sources')).toEqual(sources);
-    await consistent();
   });
 
   describe('refuses through SQL', () => {
