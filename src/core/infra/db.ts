@@ -60,9 +60,46 @@ export async function backupDatabase(db: Database, destination: string): Promise
   await handle.backup(destination);
 }
 
-/** Used only by the migration runner while it holds this database's transaction connection. */
-export function executeMigrationScript(db: Database, source: string): void {
+function handleOf(db: Database): SQLite.Database {
   const handle = handles.get(db);
   if (!handle) throw new Error('Unknown database handle.');
-  handle.exec(source);
+  return handle;
+}
+
+/** Used only by the migration runner while it holds this database's transaction connection. */
+export function executeMigrationScript(db: Database, source: string): void {
+  handleOf(db).exec(source);
+}
+
+/**
+ * Turns foreign key enforcement on or off for the connection and confirms it took. SQLite ignores
+ * the pragma inside a transaction, so the migration runner calls this outside one.
+ */
+export function setForeignKeys(db: Database, on: boolean): void {
+  const handle = handleOf(db);
+  handle.pragma(`foreign_keys = ${on ? 'ON' : 'OFF'}`);
+  if (handle.pragma('foreign_keys', { simple: true }) !== (on ? 1 : 0))
+    throw new Error(`Foreign keys did not turn ${on ? 'on' : 'off'}.`);
+}
+
+/** A row that breaks a foreign key: the table and row, and the table it should refer to. */
+export interface ForeignKeyViolation {
+  table: string;
+  rowid: number | null;
+  parent: string;
+}
+
+/** Every row of the database that breaks a foreign key, whether enforcement is on or not. */
+export function foreignKeyViolations(db: Database): ForeignKeyViolation[] {
+  return (handleOf(db).pragma('foreign_key_check') as ForeignKeyViolation[]).map(({ table, rowid, parent }) => ({
+    table,
+    rowid,
+    parent,
+  }));
+}
+
+/** Registers deterministic SQL functions on the connection, for migrations and queries alike. */
+export function registerSqlFunctions(db: Database, functions: Record<string, (value: string) => string>): void {
+  const handle = handleOf(db);
+  for (const [name, fn] of Object.entries(functions)) handle.function(name, { deterministic: true }, fn);
 }
