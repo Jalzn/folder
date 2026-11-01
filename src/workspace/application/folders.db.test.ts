@@ -279,41 +279,59 @@ describe('folders', () => {
       expect(await itemRow(lost.id)).toMatchObject({ folder_id: mcp.id, pinned_at: '2026-10-21T00:00:00.000Z' });
     });
 
-    it('takes back from the trash only what the deletion trashed, and refuses a pin set after it', async () => {
+    it('takes back from the trash only what the deletion trashed, and drops a pin set after it', async () => {
+      const deletedAt = async (id: string) =>
+        (await sql<{ deleted_at: string }>`select deleted_at from workspace_folders where id = ${id}`.execute(db))
+          .rows[0]?.deleted_at ?? '';
+      const after = (instant: string) => new Date(Date.parse(instant) + 1).toISOString();
       const mcp = await testFolder(service, project.id, 'MCP');
       const [earlier, withFolder] = [await newDocument(mcp.id, 'Antes'), await newDocument(mcp.id, 'Junto')];
       // Trashed from the folder before the folder: same origin and version, another instant.
       const trashedEarlier = await service.deleteDocument({ ...request(), id: earlier.id, expectedVersion: 1 });
       const deleted = await service.deleteFolder({ ...request(), id: mcp.id, expectedVersion: 1, withItems: true });
       expect(deleted.trashed.map((item) => item.id)).toEqual([withFolder.id]);
-      const deletedAt = (
-        await sql<{ deleted_at: string }>`select deleted_at from workspace_folders where id = ${mcp.id}`.execute(db)
-      ).rows[0]?.deleted_at;
-      const later = new Date(Date.parse(deletedAt ?? '') + 1).toISOString();
-      const undo = { ...request(), id: mcp.id, expectedVersion: deleted.version, moved: [] };
-      const forged = { type: 'document' as const, id: earlier.id, version: trashedEarlier.version, pinnedAt: null };
+      const late = after(await deletedAt(mcp.id));
+      const forged = { type: 'document' as const, id: earlier.id, version: trashedEarlier.version, pinnedAt: late };
+      expect(
+        await service.restoreFolder({
+          ...request(),
+          id: mcp.id,
+          expectedVersion: deleted.version,
+          moved: [],
+          trashed: [{ type: 'document', id: withFolder.id, version: 2, pinnedAt: late }, forged],
+        }),
+      ).toMatchObject({ restored: 1, skipped: 1 });
+      // A pin later than the deletion is none the deletion answered: the item comes back without it.
+      expect(await itemRow(withFolder.id)).toMatchObject({ folder_id: mcp.id, deleted_at: null, pinned_at: null });
+      expect(await itemRow(earlier.id)).toMatchObject({ folder_id: mcp.id, deleted_at: expect.any(String) });
 
-      for (const trashed of [
-        [{ ...forged, pinnedAt: later }],
-        [{ type: 'document' as const, id: withFolder.id, version: 2, pinnedAt: later }],
-      ])
-        await expect(service.restoreFolder({ ...undo, trashed })).rejects.toMatchObject({
-          code: 'VALIDATION',
-          message: 'Esta lista não é a da exclusão da pasta.',
-        });
-      await expect(
-        service.restoreFolder({
-          ...undo,
-          moved: [{ type: 'document', id: withFolder.id, pinnedAt: later, keptPin: false }],
+      // The same for an item moved to the root; a pin at the deletion's own instant still comes back.
+      const arquitetura = await testFolder(service, project.id, 'Arquitetura');
+      const [tarde, naHora] = [
+        await newDocument(arquitetura.id, 'Tarde'),
+        await newDocument(arquitetura.id, 'Na hora'),
+      ];
+      const toRoot = await service.deleteFolder({
+        ...request(),
+        id: arquitetura.id,
+        expectedVersion: 1,
+        withItems: false,
+      });
+      const instant = await deletedAt(arquitetura.id);
+      expect(
+        await service.restoreFolder({
+          ...request(),
+          id: arquitetura.id,
+          expectedVersion: toRoot.version,
+          moved: [
+            { type: 'document', id: tarde.id, pinnedAt: after(instant), keptPin: false },
+            { type: 'document', id: naHora.id, pinnedAt: instant, keptPin: false },
+          ],
           trashed: [],
         }),
-      ).rejects.toMatchObject({ code: 'VALIDATION' });
-      expect(await service.restoreFolder({ ...undo, trashed: [...deleted.trashed, forged] })).toMatchObject({
-        restored: 1,
-        skipped: 1,
-      });
-      expect(await itemRow(withFolder.id)).toMatchObject({ folder_id: mcp.id, deleted_at: null });
-      expect(await itemRow(earlier.id)).toMatchObject({ folder_id: mcp.id, deleted_at: expect.any(String) });
+      ).toMatchObject({ restored: 2, skipped: 0 });
+      expect(await itemRow(tarde.id)).toMatchObject({ folder_id: arquitetura.id, pinned_at: null });
+      expect(await itemRow(naHora.id)).toMatchObject({ folder_id: arquitetura.id, pinned_at: instant });
     });
 
     it('trusts the moved list, which no stored origin can check: a root item listed by mistake goes in', async () => {
