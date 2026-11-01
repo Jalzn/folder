@@ -1,3 +1,5 @@
+import { isEmbedType } from './embeds.js';
+import { type EmbedResolver, embedLine } from './markdown-embeds.js';
 import { fenceFor } from './markdown-fence.js';
 import { inlineMarkdown } from './markdown-inline.js';
 import { displayMathLines } from './markdown-math.js';
@@ -6,10 +8,13 @@ import type { DocumentBlock, JsonValue } from './models.js';
 /**
  * Serializes the persisted BlockNote subset (see readDocumentContent) to CommonMark with GFM task
  * lists and strikethrough, plus `$` math, in a form the BlockNote parser reads back. Underline,
- * colors and alignment have no Markdown form and are dropped, as in the web export.
+ * colors and alignment have no Markdown form and are dropped. Task and drawing embeds become a line
+ * with a link each, through `embeds` (see EmbedResolver): the MCP and the exported file share this
+ * serializer and differ only in the links' destinations. Without a resolver, an embed reads as
+ * unavailable.
  */
-export function documentToMarkdown(blocks: readonly DocumentBlock[]): string {
-  const lines = renderBlocks(blocks);
+export function documentToMarkdown(blocks: readonly DocumentBlock[], options: { embeds?: EmbedResolver } = {}): string {
+  const lines = renderBlocks(blocks, options.embeds);
   return lines.length ? `${lines.join('\n')}\n` : '';
 }
 
@@ -31,7 +36,7 @@ function listStart(block: DocumentBlock): number | undefined {
   return start === undefined ? undefined : Math.min(Math.max(start, 0), MAX_LIST_NUMBER);
 }
 
-function renderBlocks(blocks: readonly DocumentBlock[]): string[] {
+function renderBlocks(blocks: readonly DocumentBlock[], embeds: EmbedResolver | undefined): string[] {
   const lines: string[] = [];
   let previousFamily: ListFamily | undefined;
   let nextNumber = 1;
@@ -47,7 +52,7 @@ function renderBlocks(blocks: readonly DocumentBlock[]): string[] {
       marker = `${Math.min(nextNumber, MAX_LIST_NUMBER)}. `;
       nextNumber += 1;
     }
-    const rendered = renderBlock(block, marker);
+    const rendered = renderBlock(block, marker, embeds);
     if (!rendered.length) continue;
     if (restarts) lines.push('', LIST_BREAK);
     // Items of one list stay tight; any other neighbor needs a blank line so it is not read as a continuation.
@@ -58,8 +63,9 @@ function renderBlocks(blocks: readonly DocumentBlock[]): string[] {
   return lines;
 }
 
-function renderBlock(block: DocumentBlock, numberMarker: string): string[] {
-  const children = block.children?.length ? renderBlocks(block.children) : [];
+function renderBlock(block: DocumentBlock, numberMarker: string, embeds: EmbedResolver | undefined): string[] {
+  if (isEmbedType(block.type)) return [embedLine(block, embeds)];
+  const children = block.children?.length ? renderBlocks(block.children, embeds) : [];
   switch (block.type) {
     case 'bulletListItem':
       return listItem('- ', block, children);

@@ -2,7 +2,7 @@ import { isCivilDate } from '@tinyfold/core/domain';
 import { z } from 'zod';
 import { TASK_LIMITS } from '../../domain/tasks.js';
 import { edit, id, request, version, visible } from './common.js';
-import { documentContent } from './documents.js';
+import { descriptionContent } from './documents.js';
 
 /** A new task needs a title. */
 const title = visible(z.string().min(1, 'Escreva um título.').max(TASK_LIMITS.titleChars));
@@ -34,7 +34,7 @@ export const CreateTaskInput = z
     columnId: id.optional(),
     dueOn: dueOn.nullable().optional(),
     labelIds: labelIds.optional(),
-    description: documentContent.optional(),
+    description: descriptionContent.optional(),
     source: z
       .object({
         documentId: id,
@@ -62,7 +62,7 @@ export const SaveTaskTextInput = z.strictObject({
   id,
   expectedTextVersion: version,
   title: textTitle,
-  description: documentContent,
+  description: descriptionContent,
 });
 /** One project's board: its open tasks and those completed in the done window. */
 export const ProjectBoardInput = z.object({ projectId: id });

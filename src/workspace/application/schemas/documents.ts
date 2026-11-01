@@ -1,18 +1,23 @@
 import { z } from 'zod';
-import { readDocumentContent } from '../../domain/document.js';
+import { type DocumentContentOptions, readDocumentContent } from '../../domain/document.js';
 import { edit, id, request, visible } from './common.js';
 
 /** Empty, or of only characters that draw nothing, it becomes "Sem título". */
 const title = visible(z.string().max(300));
 /** Content in the document block format, checked and limited by readDocumentContent. */
-export const documentContent = z.unknown().transform((value, ctx) => {
-  try {
-    return readDocumentContent(value);
-  } catch (error) {
-    ctx.addIssue({ code: 'custom', message: error instanceof Error ? error.message : 'Documento inválido.' });
-    return z.NEVER;
-  }
-});
+const blockContent = (options: DocumentContentOptions) =>
+  z.unknown().transform((value, ctx) => {
+    try {
+      return readDocumentContent(value, {}, options);
+    } catch (error) {
+      ctx.addIssue({ code: 'custom', message: error instanceof Error ? error.message : 'Documento inválido.' });
+      return z.NEVER;
+    }
+  });
+/** A document's content, which takes task and drawing embeds. */
+export const documentContent = blockContent({ embeds: true });
+/** A task's description: the document format without embeds. */
+export const descriptionContent = blockContent({});
 
 export const ListDocumentsInput = z.object({
   projectId: id.optional(),

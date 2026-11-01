@@ -1,3 +1,4 @@
+import { EMBED_ID, EMBED_LIMITS, EMBED_PROPS, type EmbedBlockType, isEmbedType } from './embeds.js';
 import type { DocumentBlock, JsonValue } from './models.js';
 
 export const MAX_DOCUMENT_BYTES = 1024 * 1024;
@@ -7,6 +8,10 @@ export const RECOVERY_DOCUMENT_LIMITS = { maxBytes: 5 * MAX_DOCUMENT_BYTES, maxB
 export interface DocumentContentLimits {
   maxBytes?: number;
   maxBlocks?: number;
+}
+export interface DocumentContentOptions {
+  /** Documents take task and drawing embeds; a task's description does not. */
+  embeds?: boolean;
 }
 const blockTypes = new Set([
   'paragraph',
@@ -130,14 +135,38 @@ function assertProps(type: string, props: unknown): void {
   }
 }
 
+/** An embed has only its item's ID: no other prop, no text and no blocks inside. */
+function assertEmbed(type: EmbedBlockType, block: Record<string, unknown>): void {
+  const key = EMBED_PROPS[type];
+  const props = block.props;
+  if (
+    !object(props) ||
+    Object.keys(props).length !== 1 ||
+    typeof props[key] !== 'string' ||
+    !EMBED_ID.test(props[key] as string)
+  )
+    invalid('As propriedades do item incorporado são inválidas.');
+  if (block.content !== undefined) invalid('Um item incorporado não tem texto.');
+  if (block.children !== undefined && (!Array.isArray(block.children) || block.children.length))
+    invalid('Um item incorporado não tem blocos internos.');
+}
+
 function boundedLimit(value: number | undefined, fallback: number, maximum: number): number {
   if (value === undefined) return fallback;
   if (!Number.isSafeInteger(value) || value < 1 || value > maximum) invalid('Limite de leitura inválido.');
   return value;
 }
 
-/** RPC uses the default limits. Only local draft recovery opts into the larger bounded limits. */
-export function readDocumentContent(value: unknown, limits: DocumentContentLimits = {}): DocumentBlock[] {
+/**
+ * RPC uses the default limits. Only local draft recovery opts into the larger bounded limits. A
+ * document passes `embeds: true` and takes up to EMBED_LIMITS.perDocument task and drawing embeds;
+ * without it, as for a task's description, an embed is refused.
+ */
+export function readDocumentContent(
+  value: unknown,
+  limits: DocumentContentLimits = {},
+  options: DocumentContentOptions = {},
+): DocumentBlock[] {
   const maxBytes = boundedLimit(limits.maxBytes, MAX_DOCUMENT_BYTES, RECOVERY_DOCUMENT_LIMITS.maxBytes);
   const maxBlocks = boundedLimit(limits.maxBlocks, MAX_DOCUMENT_BLOCKS, RECOVERY_DOCUMENT_LIMITS.maxBlocks);
   assertJson(value);
@@ -149,19 +178,28 @@ export function readDocumentContent(value: unknown, limits: DocumentContentLimit
   }
   const ids = new Set<string>();
   let count = 0;
+  let embeds = 0;
   const walk = (blocks: unknown[], depth: number): void => {
     if (depth > 20) invalid('O documento contém muitos níveis de blocos.');
     for (const block of blocks) {
       count += 1;
       if (count > maxBlocks) invalid(`O documento ultrapassa o limite de ${maxBlocks.toLocaleString('pt-BR')} blocos.`);
-      if (!object(block) || typeof block.type !== 'string' || !blockTypes.has(block.type)) {
-        invalid('Este tipo de bloco ainda não é suportado.');
-      }
+      if (!object(block) || typeof block.type !== 'string') invalid('Este tipo de bloco ainda não é suportado.');
+      const embed = isEmbedType(block.type);
+      if (embed && !options.embeds) invalid('A descrição não aceita itens incorporados.');
+      if (!embed && !blockTypes.has(block.type)) invalid('Este tipo de bloco ainda não é suportado.');
       if (block.id !== undefined) {
         if (typeof block.id !== 'string' || !block.id.length || block.id.length > 128)
           invalid('O identificador do bloco é inválido.');
         if (ids.has(block.id)) invalid('O documento contém identificadores de blocos repetidos.');
         ids.add(block.id);
+      }
+      if (isEmbedType(block.type)) {
+        assertEmbed(block.type, block);
+        embeds += 1;
+        if (embeds > EMBED_LIMITS.perDocument)
+          invalid(`Um documento aceita até ${EMBED_LIMITS.perDocument} itens incorporados.`);
+        continue;
       }
       if (block.props !== undefined) assertProps(block.type, block.props);
       if (block.content !== undefined) {
@@ -191,8 +229,10 @@ function inlineText(content: JsonValue | undefined): string {
     .join('');
 }
 
+/** A document's text, a line per block, children included; embeds have none and add no line. */
 export function documentPlainText(blocks: readonly DocumentBlock[]): string {
   return blocks
+    .filter((block) => !isEmbedType(block.type))
     .flatMap((block) => [
       inlineText(block.content),
       ...(block.children?.length ? [documentPlainText(block.children)] : []),

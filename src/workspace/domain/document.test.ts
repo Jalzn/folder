@@ -8,7 +8,9 @@ import {
   readDocumentContent,
   withBlockIds,
 } from './document.js';
+import { EMBED_LIMITS } from './embeds.js';
 import type { DocumentBlock } from './models.js';
+import { excerptPresent } from './task-source.js';
 
 const text = (value: string) => [{ type: 'text', text: value, styles: {} }];
 const block = (type: string, value: string, children?: DocumentBlock[]): DocumentBlock => ({
@@ -236,5 +238,72 @@ describe('document format', () => {
     },
   ])('rejects malformed properties and styles before storage: %j', (block) => {
     expect(() => readDocumentContent([block])).toThrow();
+  });
+});
+
+describe('embeds in the document format', () => {
+  const taskId = '7d1b6c1e-1f3e-4a8b-9c2d-0a1b2c3d4e5f';
+  const canvasId = '9f3d8e3a-3b5a-4cad-9e4f-2c3d4e5f6071';
+  const embeds = { embeds: true };
+  const task = (extra: Record<string, unknown> = {}) => ({
+    type: 'taskEmbed',
+    props: { taskId },
+    children: [],
+    ...extra,
+  });
+  const drawing = { type: 'drawingEmbed', props: { canvasId } };
+
+  it('takes task and drawing embeds only with the option, which a description does not pass', () => {
+    const content = [block('paragraph', 'Antes'), { id: 'e1', ...task() }, { id: 'e2', ...drawing }];
+    expect(readDocumentContent(content, {}, embeds)).toEqual(content);
+    for (const embed of [task(), drawing])
+      expect(() => readDocumentContent([embed])).toThrow('A descrição não aceita itens incorporados.');
+  });
+
+  it('keeps an embed to its one ID prop, with no text and no blocks inside', () => {
+    const props = 'As propriedades do item incorporado são inválidas.';
+    for (const bad of [
+      { type: 'taskEmbed', children: [] },
+      task({ props: {} }),
+      task({ props: { taskId, textColor: 'red' } }),
+      task({ props: { canvasId: taskId } }),
+      task({ props: { taskId: 'não é um id' } }),
+      task({ props: { taskId: `${taskId} ` } }),
+      task({ props: { taskId: 42 } }),
+      { type: 'drawingEmbed', props: { taskId } },
+    ])
+      expect(() => readDocumentContent([bad], {}, embeds)).toThrow(props);
+    expect(() => readDocumentContent([task({ content: text('x') })], {}, embeds)).toThrow(
+      'Um item incorporado não tem texto.',
+    );
+    expect(() => readDocumentContent([task({ content: [] })], {}, embeds)).toThrow(
+      'Um item incorporado não tem texto.',
+    );
+    expect(() => readDocumentContent([task({ children: [block('paragraph', 'x')] })], {}, embeds)).toThrow(
+      'Um item incorporado não tem blocos internos.',
+    );
+    expect(() => readDocumentContent([task({ id: 'same' }), task({ id: 'same' })], {}, embeds)).toThrow('repetidos');
+  });
+
+  it('takes 200 embeds, nested ones counted, and refuses the 201st', () => {
+    const many = Array.from({ length: EMBED_LIMITS.perDocument - 1 }, () => task());
+    expect(readDocumentContent([...many, block('paragraph', 'x', [task()])], {}, embeds)).toHaveLength(200);
+    expect(() => readDocumentContent([...many, task(), block('paragraph', 'x', [task()])], {}, embeds)).toThrow(
+      'Um documento aceita até 200 itens incorporados.',
+    );
+  });
+
+  it('leaves embeds out of the text, the lead and the excerpt check', () => {
+    const content = [
+      { id: 'e1', ...task() },
+      block('paragraph', 'Gerar token'),
+      { id: 'e2', ...drawing },
+      block('paragraph', 'pessoal'),
+    ] as DocumentBlock[];
+    expect(documentPlainText(content)).toBe('Gerar token\npessoal');
+    expect(documentLead(content)).toBe('Gerar token');
+    const document = { content, plainText: documentPlainText(content) };
+    expect(excerptPresent(document, null, 'token pessoal')).toBe(true);
+    expect(excerptPresent(document, 'e1', taskId)).toBe(false);
   });
 });

@@ -46,6 +46,12 @@ Projetos, documentos, desenhos, tarefas e seus vínculos no mesmo módulo. A int
 - Editar título ou coluna da tarefa não muda o documento. Excluir documento ou remover trecho preserva a tarefa e o texto capturado.
 - A origem expõe `available` para o documento e `blockAvailable` para o trecho. Quando o trecho não existe mais, o retorno pode levar ao documento com aviso. A origem guarda o título do documento: se ele for excluído de vez, `documentId` fica nulo e `documentTitle` mostra o título guardado.
 
+## Incorporados
+
+- Um documento incorpora tarefas e desenhos por blocos do seu JSON (`taskEmbed { taskId }` e `drawingEmbed { canvasId }`, `domain/embeds.ts`), resolvidos a cada leitura, sem chave estrangeira nem índice reverso: lixeira, exclusão definitiva e mudança de projeto ou pasta aparecem na próxima resolução. `readDocumentContent(conteúdo, limites, { embeds: true })`, que só o documento passa (`documentContent`; a descrição usa `descriptionContent`), aceita os dois blocos com só a sua propriedade, um UUID, sem `content` e com `children` vazio, até 200 por documento ("Um documento aceita até 200 itens incorporados."). Sem a opção, recusa com "A descrição não aceita itens incorporados.".
+- O texto do documento, o lead e `excerptPresent` ignoram os incorporados, então a busca e o trecho não mudam. `embedIds` lista os IDs uma vez cada, na ordem de leitura; `figureNumbers` numera os desenhos por bloco, contando também os indisponíveis; `excerptEnd` dá o fim de um trecho no texto de um bloco, com os espaços colapsados como em `excerptPresent`.
+- `documentToMarkdown(blocos, { embeds })` escreve cada incorporado numa linha com um link, `[Tarefa: <título> (<coluna>)](<destino>)` ou `[Desenho: <título>](<destino>)`, com o rótulo sem caracteres escondidos, numa linha e escapado como texto de link. O destino vem do `EmbedResolver` (`tinyfold:task/<id>` no MCP, o endereço do item num arquivo). Um item na lixeira, excluído ou inexistente, e todo incorporado sem resolvedor, vira `[Item indisponível]`.
+
 ## Quadro e datas
 
 - As datas civis valem no fuso do dono (`auth_owner.time_zone`, gravado pelo nome canônico do Intl, sem deslocamentos fixos; UTC enquanto vazio ou inválido). O servidor injeta `timeZone()` no serviço, no router e nas ferramentas (`createWorkspaceService(db, clock, timeZone)`), e cada leitura pede `calendar()` ao contexto: o fuso e o dia de hoje nele, lidos de novo a cada chamada. Prazo é data civil; uma tarefa está atrasada a partir do dia seguinte ao prazo, fora da coluna de conclusão (`isOverdue`).

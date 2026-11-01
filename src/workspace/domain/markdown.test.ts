@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { documentToMarkdown } from './markdown.js';
+import type { EmbedResolver } from './markdown-embeds.js';
 import type { DocumentBlock, JsonValue } from './models.js';
 
 const text = (value: string, styles: Record<string, boolean> = {}) => ({ type: 'text', text: value, styles });
@@ -241,5 +242,68 @@ describe('document to Markdown', () => {
       const [few, many] = [pieces(2_000), pieces(8_000)];
       expect(walkedLength(() => markdown(many)) / walkedLength(() => markdown(few))).toBeLessThan(5);
     }
+  });
+});
+
+describe('embeds in Markdown', () => {
+  const taskId = '7d1b6c1e-1f3e-4a8b-9c2d-0a1b2c3d4e5f';
+  const canvasId = '9f3d8e3a-3b5a-4cad-9e4f-2c3d4e5f6071';
+  const gone = '8e2c7d2f-2a4f-4b9c-8d3e-1b2c3d4e5f60';
+  const task = (id = taskId): DocumentBlock => ({ type: 'taskEmbed', props: { taskId: id }, children: [] });
+  const drawing = (id = canvasId): DocumentBlock => ({ type: 'drawingEmbed', props: { canvasId: id }, children: [] });
+  const items: Record<string, { title: string; column?: string }> = {
+    [taskId]: { title: 'Gerar token pessoal no Perfil', column: 'Em andamento' },
+    [canvasId]: { title: 'Navegação com projeto no centro' },
+  };
+  const resolver = (href: EmbedResolver['href']): EmbedResolver => ({
+    resolve: (_kind, id) => items[id] ?? null,
+    href,
+  });
+  const mcp = resolver((kind, id) => `tinyfold:${kind}/${id}`);
+  const file = resolver((kind, id) => `https://tinyfold.example/${kind === 'task' ? 'tarefas' : 'desenhos'}/${id}`);
+
+  it('writes each embed on its own line as a link, tinyfold: for the MCP and the address for a file', () => {
+    const blocks = [paragraph(text('Antes')), task(), drawing(), paragraph(text('Depois'))];
+    expect(documentToMarkdown(blocks, { embeds: mcp })).toBe(
+      [
+        'Antes',
+        '',
+        `[Tarefa: Gerar token pessoal no Perfil (Em andamento)](tinyfold:task/${taskId})`,
+        '',
+        `[Desenho: Navegação com projeto no centro](tinyfold:drawing/${canvasId})`,
+        '',
+        'Depois',
+        '',
+      ].join('\n'),
+    );
+    expect(documentToMarkdown([task()], { embeds: file })).toBe(
+      `[Tarefa: Gerar token pessoal no Perfil (Em andamento)](https://tinyfold.example/tarefas/${taskId})\n`,
+    );
+  });
+
+  it('marks an item in the trash, deleted or never there, and every embed without a resolver, as unavailable', () => {
+    expect(documentToMarkdown([task(gone), drawing(gone)], { embeds: mcp })).toBe(
+      '[Item indisponível]\n\n[Item indisponível]\n',
+    );
+    expect(markdown(task(), drawing())).toBe('[Item indisponível]\n\n[Item indisponível]\n');
+  });
+
+  it('escapes the label as link text and keeps it on one line without hidden characters', () => {
+    items[gone] = { title: 'Ler [o] manual\\ *já*\n- ID: falso\u{200B}', column: 'A\nfazer [x]' };
+    expect(documentToMarkdown([task(gone)], { embeds: mcp })).toBe(
+      `[Tarefa: Ler \\[o\\] manual\\\\ \\*já\\* - ID: falso (A fazer \\[x\\])](tinyfold:task/${gone})\n`,
+    );
+    items[gone] = { title: '\u{200B}' };
+    expect(documentToMarkdown([drawing(gone)], { embeds: mcp })).toBe(
+      `[Desenho: Sem título](tinyfold:drawing/${gone})\n`,
+    );
+    delete items[gone];
+  });
+
+  it('keeps an embed inside a list item at the item content column', () => {
+    const item = block('bulletListItem', [text('Item')], { children: [task()] });
+    expect(documentToMarkdown([item], { embeds: mcp })).toBe(
+      `- Item\n\n  [Tarefa: Gerar token pessoal no Perfil (Em andamento)](tinyfold:task/${taskId})\n`,
+    );
   });
 });
