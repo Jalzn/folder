@@ -212,7 +212,8 @@ export function ItemsTree({
           aria-label={moreLabel(node, folder?.folder.name ?? null)}
           className="tree-row tree-row--more"
           onAction={() => {
-            void navigate({ href: paths.index(project.id) });
+            // The rest of that level: the Índice filtered by the folder, or by the root.
+            void navigate({ href: paths.index(project.id, { pasta: node.folderId ?? 'raiz' }) });
           }}
         >
           <TreeItemContent>

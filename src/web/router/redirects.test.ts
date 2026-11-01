@@ -55,6 +55,12 @@ describe('legacy addresses', () => {
     expect(listRedirectPath('documents', null)).toBe('/projetos');
   });
 
+  it("writes the Índice's filters into its address", () => {
+    expect(paths.index('p')).toBe('/projetos/p/indice');
+    expect(paths.index('p', { pasta: 'raiz' })).toBe('/projetos/p/indice?pasta=raiz');
+    expect(paths.index('p', { tipo: 'desenhos', pasta: 'f1' })).toBe('/projetos/p/indice?tipo=desenhos&pasta=f1');
+  });
+
   it('moves an old item address under its project, keeping the block', () => {
     expect(itemRedirectPath({ kind: 'document', id: 'd1', block: 'b7' }, 'p')).toBe(
       '/projetos/p/documentos/d1?bloco=b7',
@@ -67,7 +73,7 @@ describe('legacy addresses', () => {
 describe('project paths', () => {
   it('reads the project and the item of an address', () => {
     expect(parseProjectPath(paths.overview('p'))).toEqual({ projectId: 'p', item: null });
-    expect(parseProjectPath(paths.index('p', 'desenhos'))).toEqual({ projectId: 'p', item: null });
+    expect(parseProjectPath(paths.index('p', { tipo: 'desenhos' }))).toEqual({ projectId: 'p', item: null });
     expect(parseProjectPath(paths.document('p', 'd', 'b'))).toEqual({
       projectId: 'p',
       item: { type: 'document', id: 'd' },

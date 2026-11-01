@@ -29,6 +29,12 @@ export interface FolderDraft {
   onCreated?: ((folder: { id: string; name: string }) => void) | undefined;
 }
 
+/** A folder to show in the sidebar, from ⌘K's Pastas: it opens there and its first item takes the focus. */
+export interface FolderReveal {
+  projectId: string;
+  folderId: string;
+}
+
 interface ShellUi {
   layers: LayerStack;
   overlay: { open: boolean; search: boolean };
@@ -56,6 +62,9 @@ interface ShellUi {
   folderDraft: FolderDraft | null;
   startFolder: (draft: FolderDraft) => void;
   endFolder: () => void;
+  /** The folder the sidebar shows next, which opens the sidebar when it is hidden; cleared once shown. */
+  folderReveal: FolderReveal | null;
+  revealFolder: (reveal: FolderReveal | null) => void;
   /** Below 720 px, the place in the top bar where the page's actions go, so there is one 44 px bar. */
   topBarActions: HTMLElement | null;
   setTopBarActions: (element: HTMLElement | null) => void;
@@ -81,6 +90,7 @@ export function ShellUiProvider({ children }: { children: ReactNode }) {
   const [searchRequest, setSearchRequest] = useState(0);
   const [announcement, setAnnouncement] = useState('');
   const [folderDraft, setFolderDraft] = useState<FolderDraft | null>(null);
+  const [folderReveal, revealFolder] = useState<FolderReveal | null>(null);
   const page = useRef<PageCommands>({});
   const setOverlay = useCallback(
     (open: boolean, options: { search?: boolean } = {}) =>
@@ -117,6 +127,8 @@ export function ShellUiProvider({ children }: { children: ReactNode }) {
       folderDraft,
       startFolder: setFolderDraft,
       endFolder: () => setFolderDraft(null),
+      folderReveal,
+      revealFolder,
       topBarActions,
       setTopBarActions,
     }),
@@ -133,6 +145,7 @@ export function ShellUiProvider({ children }: { children: ReactNode }) {
       announcement,
       announce,
       folderDraft,
+      folderReveal,
       topBarActions,
     ],
   );

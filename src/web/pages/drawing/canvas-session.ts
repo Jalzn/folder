@@ -35,8 +35,14 @@ export const canvasItem = (id: string): ItemAdapter<CanvasSnapshot, EditableCanv
   queryKey: canvasQuery(id).queryKey,
   read: () => api.workspace.getCanvas({ id }),
   snapshot: canvasSnapshot,
-  createCopy: (snapshot, projectId, title, requestId) =>
-    api.workspace.createCanvas({ title, scene: snapshot.scene, projectId, requestId }),
+  createCopy: (snapshot, { projectId, folderId }, title, requestId) =>
+    api.workspace.createCanvas({
+      title,
+      scene: snapshot.scene,
+      projectId,
+      ...(folderId ? { folderId } : {}),
+      requestId,
+    }),
   remove: (input) => api.workspace.deleteCanvas(input),
 });
 

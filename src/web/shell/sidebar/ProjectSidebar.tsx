@@ -13,9 +13,9 @@ import { SidebarFooter } from './SidebarFooter';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarNav } from './SidebarNav';
 import { SidebarSearch } from './SidebarSearch';
+import { useFolderReveal } from './use-folder-reveal';
 import { useNavigationData } from './use-navigation-data';
 import { useRovingFocus } from './use-roving-focus';
-import { useSidebarPrefs } from './use-sidebar-prefs';
 
 /**
  * The project's sidebar, variant A (docs/interface/sidebar.md): the switcher, Buscar, Visão geral and Quadro
@@ -40,7 +40,6 @@ export function ProjectSidebar({
   const ui = useShellUi();
   const navigate = useNavigate();
   const navigation = useNavigationData(project);
-  const prefs = useSidebarPrefs();
   const roving = useRovingFocus<HTMLElement>();
   const treeRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
@@ -62,19 +61,8 @@ export function ProjectSidebar({
     if (focusSearch) searchInput.current?.focus();
   }, [focusSearch]);
 
-  // A folder from the filter: it opens in the tree, the filter clears, and its first child takes the focus.
-  function openFolder(folderId: string) {
-    if (!project) return;
-    const expanded = prefs.project(project.id)?.expanded ?? [];
-    prefs.setProject(project.id, { expanded: [...new Set([...expanded, folderId])] });
-    setQuery('');
-    requestAnimationFrame(() => {
-      const folder = treeRef.current?.querySelector<HTMLElement>(`[data-key="folder:${CSS.escape(folderId)}"]`);
-      const next = folder?.nextElementSibling;
-      const child = next instanceof HTMLElement && next.getAttribute('aria-level') === '2' ? next : folder;
-      child?.focus();
-    });
-  }
+  // A folder from the filter or from ⌘K: it opens in the tree, and its first child takes the focus.
+  const openFolder = useFolderReveal(project?.id ?? null, treeRef, () => setQuery(''));
 
   function openFirst() {
     const first = itemResults(search.data?.items)[0];

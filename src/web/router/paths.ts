@@ -4,6 +4,14 @@ import type { ItemType } from '../lib/types';
 
 /** The `tipo` filter of the Índice. */
 export type IndexType = 'documentos' | 'desenhos';
+/** The `pasta` filter of the Índice: a folder's id, or "raiz" for the items at the project's root. */
+export type IndexFolder = 'raiz' | (string & {});
+
+/** The Índice's filters, as its address keeps them. */
+export interface IndexSearch {
+  tipo?: IndexType;
+  pasta?: IndexFolder;
+}
 
 const encode = encodeURIComponent;
 
@@ -14,7 +22,10 @@ export const paths = {
   profile: '/perfil',
   overview: (projectId: string) => `/projetos/${encode(projectId)}`,
   board: (projectId: string) => `/projetos/${encode(projectId)}/quadro`,
-  index: (projectId: string, type?: IndexType) => `/projetos/${encode(projectId)}/indice${type ? `?tipo=${type}` : ''}`,
+  index: (projectId: string, { tipo, pasta }: IndexSearch = {}) => {
+    const search = new URLSearchParams({ ...(tipo ? { tipo } : {}), ...(pasta ? { pasta } : {}) }).toString();
+    return `/projetos/${encode(projectId)}/indice${search ? `?${search}` : ''}`;
+  },
   trash: (projectId: string) => `/projetos/${encode(projectId)}/lixeira`,
   document: (projectId: string, documentId: string, block?: string) =>
     `/projetos/${encode(projectId)}/documentos/${encode(documentId)}${block ? `?bloco=${encode(block)}` : ''}`,

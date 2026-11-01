@@ -1,13 +1,14 @@
 import type { BlockNoteEditor } from '@blocknote/core';
 import { useNavigate } from '@tanstack/react-router';
-import { api, errorMessage, refreshWorkspace } from '../../lib/api';
+import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { downloadFile, fileNameFrom } from '../../lib/download';
 import { exportMarkdownWithMath, importMarkdownWithMath } from '../../lib/markdown';
+import { documentQuery } from '../../lib/queries';
 import { type DocumentContent, displayTitle } from '../../lib/types';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
-import { redirectedCopyText, useCopyDestination } from '../../shell';
+import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
 import { useToast } from '../../ui';
 import type { EditorBlocks } from './document-schema';
 
@@ -15,7 +16,8 @@ const MAX_IMPORT_BYTES = 1_048_576;
 
 /**
  * The document's files: export to Markdown, import a Markdown file as a new document, and download a draft
- * that could not open. An import goes to the document's project, or elsewhere while that one is archived.
+ * that could not open. An import goes to the document's project and folder, or to the root of another project
+ * while that one is archived.
  */
 export function useDocumentFiles(
   // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
@@ -60,10 +62,13 @@ export function useDocumentFiles(
         await file.text(),
         async (source) => (await editor.tryParseMarkdownToBlocks(source)) as unknown as DocumentContent,
       );
-      // Import into a fresh document: the open draft remains untouched.
+      // Import into a fresh document, in this one's folder (decision 15): the open draft remains untouched.
+      const open = queryClient.getQueryData<{ folderId: string | null }>(documentQuery(documentId).queryKey);
+      const folderId = copyFolder({ projectId: own, folderId: open?.folderId ?? null }, destination);
       const input = {
         title: file.name.replace(/\.(md|markdown|txt)$/i, '').slice(0, 300),
         projectId: destination.project.id,
+        ...(folderId ? { folderId } : {}),
         content: blocks as unknown as DocumentContent,
       };
       const imported = await api.workspace.createDocument({ ...input, requestId: importRequest.for(input) });

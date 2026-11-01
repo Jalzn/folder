@@ -1,45 +1,13 @@
-import { searchText, type TaskStatus } from '@tinyfold/workspace/domain';
+import { searchText } from '@tinyfold/workspace/domain';
 import { queryWords } from '../../lib/highlight';
 import type { SearchResult } from '../../lib/queries';
 import { displayTitle, type Project } from '../../lib/types';
 import { activeProjects } from '../project/project-order';
-import { type Command, type CommandId, filterCommands } from './commands';
+import { type Command, filterCommands } from './commands';
+import { folderRows, type PaletteFolder } from './palette-folders';
+import type { HereAction, PaletteSection } from './palette-types';
 
-/** What choosing a row does; the palette runs it after it closes. */
-export type PaletteAction =
-  | { kind: 'here'; id: string }
-  | { kind: 'item'; type: SearchResult['type']; id: string; projectId: string }
-  | { kind: 'project'; id: string; unarchive: boolean }
-  | { kind: 'command'; id: CommandId };
-
-/** An action of the open item under "Neste item": its files, Fixar, Mover para projeto…, the trash. */
-export interface HereAction {
-  id: string;
-  label: string;
-  shortcut?: readonly string[] | undefined;
-}
-
-export interface PaletteRowData {
-  /** One key per row, `<section>:<id>`, which the menu reports on a choice. */
-  key: string;
-  label: string;
-  action: PaletteAction;
-  shortcut?: readonly string[] | undefined;
-  /** A note at the end of the row, such as "atual". */
-  detail?: string | undefined;
-  excerpt?: string | undefined;
-  archived?: boolean;
-  /** A task's column, shown before its project. */
-  status?: TaskStatus | undefined;
-  /** The project an item belongs to, by id and name. */
-  project?: { id: string; name: string } | undefined;
-}
-
-export interface PaletteSection {
-  id: 'here' | 'items' | 'projects' | 'commands';
-  title: string;
-  rows: PaletteRowData[];
-}
+export type { HereAction, PaletteAction, PaletteRowData, PaletteSection } from './palette-types';
 
 export interface PaletteInput {
   query: string;
@@ -47,6 +15,8 @@ export interface PaletteInput {
   here: readonly HereAction[];
   results: readonly SearchResult[];
   projects: readonly Project[];
+  /** Every project's active folders, for the Pastas group. */
+  folders: readonly PaletteFolder[];
   /** availableCommands for the screen behind the palette. */
   commands: readonly Command[];
 }
@@ -54,10 +24,11 @@ export interface PaletteInput {
 /**
  * The palette's sections from what the screen and the search give (docs/etapas/08-fundacao.md, "Buscar e
  * ⌘K"): Neste item, then Itens (the eight edited last, without an excerpt, before any text), then Projetos
- * (with text, or the archived ones to unarchive when none is active), then Comandos. Empty sections are left
- * out; the query filters everything but the search's own results.
+ * (with text, or the archived ones to unarchive when none is active), then Pastas (with text,
+ * palette-folders.ts), then Comandos. Empty sections are left out; the query filters everything but the
+ * search's own results.
  */
-export function paletteSections({ query, here, results, projects, commands }: PaletteInput): PaletteSection[] {
+export function paletteSections({ query, here, results, projects, folders, commands }: PaletteInput): PaletteSection[] {
   const typed = query.trim() !== '';
   const words = queryWords(query);
   const matches = (text: string) => words.every((word) => searchText(text).includes(word));
@@ -88,6 +59,7 @@ export function paletteSections({ query, here, results, projects, commands }: Pa
         excerpt: typed && 'excerpt' in result ? result.excerpt : undefined,
         status: 'status' in result ? result.status : undefined,
         project: { id: result.projectId, name: result.projectName },
+        folder: 'folder' in result ? result.folder : undefined,
       })),
     },
     {
@@ -103,6 +75,7 @@ export function paletteSections({ query, here, results, projects, commands }: Pa
         };
       }),
     },
+    { id: 'folders', title: 'Pastas', rows: folderRows(query, folders, projects) },
     {
       id: 'commands',
       title: 'Comandos',

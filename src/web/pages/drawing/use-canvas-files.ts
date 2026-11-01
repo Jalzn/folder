@@ -1,20 +1,21 @@
 import { useNavigate } from '@tanstack/react-router';
 import { MAX_CANVAS_BYTES } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
-import { api, errorMessage, refreshWorkspace, reportSessionError } from '../../lib/api';
+import { api, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { type CanvasSnapshot, canvasFile, canvasFileName, readCanvasImport } from '../../lib/canvas-autosave';
 import { renderCanvasPng } from '../../lib/canvas-png';
 import { downloadFile } from '../../lib/download';
+import { canvasQuery } from '../../lib/queries';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
-import { redirectedCopyText, useCopyDestination } from '../../shell';
+import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
 import { useToast } from '../../ui';
 
 /**
  * The drawing's files: the editable .excalidraw export, the PNG in the theme on screen, an import as a new
- * drawing, and the download of a draft that could not open. An import goes to the drawing's project, or
- * elsewhere while that one is archived.
+ * drawing, and the download of a draft that could not open. An import goes to the drawing's project and
+ * folder, or to the root of another project while that one is archived.
  */
 export function useCanvasFiles(controller: AutosaveController<CanvasSnapshot>, canvasId: string, darkMode: boolean) {
   const toast = useToast();
@@ -67,9 +68,13 @@ export function useCanvasFiles(controller: AutosaveController<CanvasSnapshot>, c
         toast('Crie ou desarquive um projeto antes de importar.', 'error');
         return;
       }
+      // In this drawing's folder when it stays in its project (decision 15).
+      const open = queryClient.getQueryData<{ folderId: string | null }>(canvasQuery(canvasId).queryKey);
+      const folderId = copyFolder({ projectId: own, folderId: open?.folderId ?? null }, destination);
       const input = {
         title: file.name.replace(/\.excalidraw$/i, '').slice(0, 300),
         projectId: destination.project.id,
+        ...(folderId ? { folderId } : {}),
         scene,
       };
       const imported = await api.workspace.createCanvas({ ...input, requestId: importRequest.for(input) });

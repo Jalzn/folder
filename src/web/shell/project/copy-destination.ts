@@ -26,3 +26,13 @@ export function copyDestination(projects: Project[], ownProjectId: string, nav: 
 export function redirectedCopyText(destination: string, archived: string | undefined, done = 'Cópia criada') {
   return archived ? `${done} em ${destination}, porque ${archived} está arquivado.` : `${done} em ${destination}.`;
 }
+
+/**
+ * The folder a copy or an import made on an item's page goes into (decision 15): the item's own, when it
+ * stays in the item's project; the root (none) when it goes to another project.
+ */
+export function copyFolder(item: { projectId: string; folderId: string | null }, destination: CopyDestination) {
+  return !destination.redirected && destination.project.id === item.projectId
+    ? (item.folderId ?? undefined)
+    : undefined;
+}

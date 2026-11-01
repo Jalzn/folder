@@ -2,15 +2,18 @@ import type { TrashItem } from '../../../lib/queries';
 import { itemTypeLabels } from '../../../lib/types';
 import { Button } from '../../../ui';
 import type { TrashGroup } from './trash-groups';
+import { originText } from './trash-text';
 import { trashTitle } from './use-trash-actions';
 
 function TrashRow({
   item,
+  projectName,
   busy,
   onRestore,
   onPurge,
 }: {
   item: TrashItem;
+  projectName: string;
   busy: boolean;
   onRestore: () => void;
   onPurge: () => void;
@@ -22,6 +25,10 @@ function TrashRow({
         <span className="trash-row__title">{title}</span>
         <span className="trash-row__type">{itemTypeLabels[item.type]}</span>
       </span>
+      {/* Origem: the project, and the folder of a document or drawing, deleted since or not. */}
+      <span className="trash-row__origin" title="Origem">
+        {originText(projectName, item.folder)}
+      </span>
       <Button size="sm" isDisabled={busy} onPress={onRestore} aria-label={`Restaurar ${title}`}>
         Restaurar
       </Button>
@@ -32,14 +39,16 @@ function TrashRow({
   );
 }
 
-/** The trash by deletion day, each group a labelled list of rows with Restaurar and Excluir de vez. */
+/** The trash by deletion day, each group a labelled list of rows with Origem, Restaurar and Excluir de vez. */
 export function TrashGroups({
   groups,
+  projectName,
   busy,
   onRestore,
   onPurge,
 }: {
   groups: TrashGroup<TrashItem>[];
+  projectName: string;
   busy: boolean;
   onRestore: (item: TrashItem) => void;
   onPurge: (item: TrashItem) => void;
@@ -62,6 +71,7 @@ export function TrashGroups({
             <TrashRow
               key={`${item.type}:${item.id}`}
               item={item}
+              projectName={projectName}
               busy={busy}
               onRestore={() => onRestore(item)}
               onPurge={() => onPurge(item)}

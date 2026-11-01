@@ -1,9 +1,10 @@
 export { useApp } from './AppProvider';
 export { AppRoot } from './AppRoot';
+export { FolderLabel } from './folders/FolderLabel';
 export type { Owner } from './LoginScreen';
 export { PageFrame, PageStatus } from './PageFrame';
 export { usePageCommands } from './page-commands';
-export { type CopyDestination, redirectedCopyText } from './project/copy-destination';
+export { type CopyDestination, copyFolder, redirectedCopyText } from './project/copy-destination';
 export { ItemMenu, type ItemMenuAction } from './project/ItemMenu';
 export { NewItemMenu } from './project/NewItemMenu';
 export { ProjectMenu } from './project/ProjectMenu';

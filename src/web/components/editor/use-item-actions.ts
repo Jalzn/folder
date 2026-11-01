@@ -6,7 +6,7 @@ import { displayTitle, type ItemType } from '../../lib/types';
 import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
-import { redirectedCopyText, useCopyDestination } from '../../shell';
+import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
 import { useToast } from '../../ui';
 import { itemWords } from './item-words';
 
@@ -22,14 +22,21 @@ export interface ItemAdapter<Snapshot extends { title: string; projectId: string
   /** The item as the server has it. */
   read: () => Promise<Item>;
   snapshot: (item: Item) => Snapshot;
-  /** Creates a copy of `snapshot` with `title` in `projectId`, under `requestId`. */
-  createCopy: (snapshot: Snapshot, projectId: string, title: string, requestId: string) => Promise<{ id: string }>;
+  /** Creates a copy of `snapshot` with `title` in `projectId` (in `folderId`, or at its root), under `requestId`. */
+  createCopy: (
+    snapshot: Snapshot,
+    place: { projectId: string; folderId: string | undefined },
+    title: string,
+    requestId: string,
+  ) => Promise<{ id: string }>;
   remove: (input: { id: string; expectedVersion: number; requestId: string }) => Promise<unknown>;
 }
 
 interface PendingCopy<Snapshot> {
   snapshot: Snapshot;
   projectId: string;
+  /** The item's folder when the copy stays in its project (decision 15). */
+  folderId: string | undefined;
   projectName: string;
   /** The item's own project is archived or gone: the toast says where the copy went. */
   redirected: boolean;
@@ -75,9 +82,11 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
     const snapshot = structuredClone(controller.getState().snapshot);
     const { destination, projects } = await findDestination(snapshot.projectId);
     if (!destination) return null;
+    const open = queryClient.getQueryData<{ folderId: string | null }>(item.queryKey);
     pendingCopy.current = {
       snapshot,
       projectId: destination.project.id,
+      folderId: copyFolder({ projectId: snapshot.projectId, folderId: open?.folderId ?? null }, destination),
       projectName: destination.project.name,
       redirected: destination.redirected,
       archivedName: projects.find((project) => project.id === snapshot.projectId)?.name,
@@ -97,7 +106,8 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
       }
       const copied = pending.snapshot;
       const title = `${displayTitle(copied.title)} — cópia`.slice(0, 300);
-      const copy = await item.createCopy(copied, pending.projectId, title, pending.requestId);
+      const place = { projectId: pending.projectId, folderId: pending.folderId };
+      const copy = await item.createCopy(copied, place, title, pending.requestId);
       pendingCopy.current = null;
       // A newer local edit made during copying must remain recoverable on the original.
       const unchanged = () => JSON.stringify(copied) === JSON.stringify(controller.getState().snapshot);

@@ -7,6 +7,7 @@ const context: CommandContext = {
   theme: 'dark',
   sidebarCollapsed: false,
   canSave: false,
+  hasFolders: false,
 };
 const ids = (value: CommandContext) => availableCommands(value).map((command) => command.id);
 
@@ -15,6 +16,7 @@ describe('palette commands', () => {
     expect(ids(context)).toEqual([
       'new-document',
       'new-drawing',
+      'new-folder',
       'new-task',
       'switch-project',
       'overview',
@@ -51,8 +53,22 @@ describe('palette commands', () => {
   it('creates nothing in an archived project, and saves only on a page that can', () => {
     const archived = ids({ ...context, project: { name: 'Antigo', archived: true } });
     expect(archived).not.toContain('new-document');
+    expect(archived).not.toContain('new-folder');
     expect(archived).toContain('trash');
     expect(ids({ ...context, canSave: true })).toContain('save');
+  });
+
+  it('closes every folder only in a project that has folders, after the pages', () => {
+    expect(ids(context)).not.toContain('collapse-folders');
+    const withFolders = ids({ ...context, hasFolders: true });
+    expect(withFolders.slice(withFolders.indexOf('trash'), withFolders.indexOf('trash') + 2)).toEqual([
+      'trash',
+      'collapse-folders',
+    ]);
+    expect(filterCommands(availableCommands({ ...context, hasFolders: true }), 'pasta').map((c) => c.id)).toEqual([
+      'new-folder',
+      'collapse-folders',
+    ]);
   });
 
   it('marks the current theme and names the sidebar command by its state', () => {

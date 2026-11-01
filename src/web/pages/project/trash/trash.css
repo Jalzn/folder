@@ -9,7 +9,7 @@
 }
 .trash-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 180px) auto auto;
   gap: 8px;
   align-items: center;
   min-height: var(--height-list-row);
@@ -29,4 +29,22 @@
   font: var(--type-meta);
   letter-spacing: var(--tracking-meta);
   color: var(--text-3);
+}
+
+.trash-row__origin {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--type-meta);
+  letter-spacing: var(--tracking-meta);
+  color: var(--text-3);
+}
+/* On a phone the buttons keep their room, and the title its; the origin goes. */
+@media (max-width: 559.98px) {
+  .trash-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+  .trash-row__origin {
+    display: none;
+  }
 }

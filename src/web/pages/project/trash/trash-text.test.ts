@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { emptiedText, emptyButtonLabel, emptyTrashBody, emptyTrashTitle, shownOfTotal } from './trash-text';
+import {
+  emptiedText,
+  emptyButtonLabel,
+  emptyTrashBody,
+  emptyTrashTitle,
+  originText,
+  restoredText,
+  shownOfTotal,
+} from './trash-text';
 
 describe('trash copy', () => {
   it('empties the whole trash only when the page shows all of it', () => {
@@ -35,5 +43,19 @@ describe('trash copy', () => {
 
   it('says when a long trash shows only the most recent items', () => {
     expect(shownOfTotal(1000, 1200)).toBe('Mostrando os 1.000 mais recentes de 1.200.');
+  });
+});
+
+describe('folders in the trash', () => {
+  it('names where an item came from', () => {
+    expect(originText('Tinyfold', { name: 'MCP' })).toBe('Tinyfold › MCP');
+    expect(originText('Tinyfold', null)).toBe('Tinyfold');
+  });
+
+  it('says where a restored item went, and when its folder is gone', () => {
+    expect(restoredText('Notas', { name: 'MCP' }, false)).toBe('“Notas” restaurado em MCP.');
+    expect(restoredText('Notas', null, false)).toBe('“Notas” restaurado.');
+    expect(restoredText('Notas', { name: 'MCP' }, true)).toBe('A pasta “MCP” foi excluída; o item voltou para a raiz.');
+    expect(restoredText('Notas', null, true)).toBe('“Notas” restaurado.');
   });
 });

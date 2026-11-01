@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from '../../lib/types';
 import { emptyNavState, type NavState } from '../../router/last-location';
-import { copyDestination, redirectedCopyText } from './copy-destination';
+import { copyDestination, copyFolder, redirectedCopyText } from './copy-destination';
 
 const project = (id: string, position: number, archived = false) =>
   ({
@@ -46,5 +46,15 @@ describe('redirectedCopyText', () => {
     expect(redirectedCopyText('Geral', 'Site pessoal', 'Importado')).toBe(
       'Importado em Geral, porque Site pessoal está arquivado.',
     );
+  });
+});
+
+describe('copyFolder', () => {
+  const [a, b] = projects as [Project, Project];
+  it("keeps a copy in the item's folder in its own project, and at the root anywhere else", () => {
+    expect(copyFolder({ projectId: 'a', folderId: 'f1' }, { project: a, redirected: false })).toBe('f1');
+    expect(copyFolder({ projectId: 'a', folderId: null }, { project: a, redirected: false })).toBeUndefined();
+    expect(copyFolder({ projectId: 'old', folderId: 'f1' }, { project: b, redirected: true })).toBeUndefined();
+    expect(copyFolder({ projectId: 'a', folderId: 'f1' }, { project: b, redirected: false })).toBeUndefined();
   });
 });

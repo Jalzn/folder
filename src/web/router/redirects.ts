@@ -45,7 +45,7 @@ export function listRedirectPath(target: 'documents' | 'drawings' | 'board' | 't
   if (!projectId) return paths.noProject;
   if (target === 'board') return paths.board(projectId);
   if (target === 'trash') return paths.trash(projectId);
-  return paths.index(projectId, listTargets[target]);
+  return paths.index(projectId, { tipo: listTargets[target] });
 }
 
 /** Where an old item address goes, once the item's project is known. */

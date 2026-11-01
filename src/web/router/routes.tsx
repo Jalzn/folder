@@ -9,7 +9,7 @@ import { TrashPage } from '../pages/project/trash';
 import { AppRoot, PageStatus } from '../shell';
 import { Spinner } from '../ui';
 import { LegacyRedirect } from './LegacyRedirect';
-import type { IndexType } from './paths';
+import type { IndexSearch } from './paths';
 import { StartRedirect } from './StartRedirect';
 
 const text = (value: unknown) => (typeof value === 'string' && value ? value : undefined);
@@ -54,8 +54,14 @@ const indexRoute = createRoute({
   getParentRoute: () => projectRoute,
   path: 'indice',
   component: IndexPage,
-  validateSearch: (search): { tipo?: IndexType } =>
-    search.tipo === 'documentos' || search.tipo === 'desenhos' ? { tipo: search.tipo } : {},
+  validateSearch: (search): IndexSearch => {
+    const pasta = text(search.pasta);
+    return {
+      ...(search.tipo === 'documentos' || search.tipo === 'desenhos' ? { tipo: search.tipo } : {}),
+      // Any folder's id here; the page lets go of one the project no longer has.
+      ...(pasta && pasta.length <= 64 ? { pasta } : {}),
+    };
+  },
 });
 const trashRoute = createRoute({ getParentRoute: () => projectRoute, path: 'lixeira', component: TrashPage });
 const documentRoute = createRoute({

@@ -5,14 +5,20 @@ import {
   indexRows,
   indexSummary,
   nextIndexSort,
-  parseIndexSort,
+  parseIndexView,
   sortIndexRows,
 } from './index-rows';
 
-const listed = (id: string, title: string, updatedAt: string) => ({ id, title, plainText: `${title}…`, updatedAt });
+const listed = (id: string, title: string, updatedAt: string, folderId: string | null = null) => ({
+  id,
+  title,
+  plainText: `${title}…`,
+  updatedAt,
+  folderId,
+});
 const documents = [
   listed('d1', 'Visão do produto', '2026-10-31T10:00:00Z'),
-  listed('d2', 'Árvore', '2026-10-20T10:00:00Z'),
+  listed('d2', 'Árvore', '2026-10-20T10:00:00Z', 'f1'),
 ];
 const drawings = [listed('c1', 'Fluxo', '2026-10-25T10:00:00Z'), listed('c2', '', '2026-10-31T12:00:00Z')];
 const keys = (rows: IndexRow[]) => rows.map((row) => row.key);
@@ -22,7 +28,12 @@ describe('indexRows', () => {
     expect(keys(indexRows(documents, drawings))).toEqual(['document:d1', 'document:d2', 'drawing:c1', 'drawing:c2']);
     expect(keys(indexRows(documents, drawings, 'documentos'))).toEqual(['document:d1', 'document:d2']);
     expect(keys(indexRows(documents, drawings, 'desenhos'))).toEqual(['drawing:c1', 'drawing:c2']);
-    expect(indexRows(documents, [])[0]).toMatchObject({ type: 'document', excerpt: 'Visão do produto…' });
+    expect(indexRows(documents, [])[0]).toMatchObject({
+      type: 'document',
+      excerpt: 'Visão do produto…',
+      folderId: null,
+    });
+    expect(indexRows(documents, [])[1]?.folderId).toBe('f1');
   });
 
   it('cuts the excerpt as the Visão geral does: one line, its pieces joined, an ellipsis when it goes on', () => {
@@ -85,15 +96,24 @@ describe('nextIndexSort', () => {
   });
 });
 
-describe('parseIndexSort', () => {
-  it('reads a stored order and falls back on anything else', () => {
-    expect(parseIndexSort('{"column":"title","direction":"descending"}')).toEqual({
-      column: 'title',
-      direction: 'descending',
+describe('parseIndexView', () => {
+  it('reads a stored order, the one stage 08 kept too, and falls back on anything else', () => {
+    expect(parseIndexView('{"column":"title","direction":"descending"}')).toEqual({
+      sort: { column: 'title', direction: 'descending' },
+      grouped: true,
     });
-    expect(parseIndexSort(null)).toEqual(defaultIndexSort);
-    expect(parseIndexSort('{"column":"links","direction":"up"}')).toEqual(defaultIndexSort);
-    expect(parseIndexSort('{')).toEqual(defaultIndexSort);
+    expect(parseIndexView(null)).toEqual({ sort: defaultIndexSort, grouped: true });
+    expect(parseIndexView('{"column":"links","direction":"up"}').sort).toEqual(defaultIndexSort);
+    expect(parseIndexView('{')).toEqual({ sort: defaultIndexSort, grouped: true });
+  });
+
+  it('groups by folder unless it was turned off', () => {
+    expect(parseIndexView('{"column":"title","direction":"ascending","grouped":false}')).toEqual({
+      sort: { column: 'title', direction: 'ascending' },
+      grouped: false,
+    });
+    expect(parseIndexView('{"grouped":"no"}').grouped).toBe(true);
+    expect(parseIndexView('null').grouped).toBe(true);
   });
 });
 
@@ -104,5 +124,12 @@ describe('indexSummary', () => {
       '1 documento em Tinyfold. Clique no cabeçalho de uma coluna para ordenar.',
     );
     expect(indexSummary(0, 'Tinyfold', 'desenhos')).toBe('Nenhum desenho em Tinyfold.');
+  });
+
+  it('names the folder of the filter after the project', () => {
+    expect(indexSummary(12, 'Tinyfold', undefined, 'MCP')).toBe(
+      '12 itens em Tinyfold · MCP. Clique no cabeçalho de uma coluna para ordenar.',
+    );
+    expect(indexSummary(0, 'Tinyfold', 'documentos', 'Sem pasta')).toBe('Nenhum documento em Tinyfold · Sem pasta.');
   });
 });

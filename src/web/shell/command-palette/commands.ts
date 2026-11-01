@@ -5,12 +5,14 @@ import type { ThemeChoice } from '../theme';
 export type CommandId =
   | 'new-document'
   | 'new-drawing'
+  | 'new-folder'
   | 'new-task'
   | 'switch-project'
   | 'overview'
   | 'board'
   | 'index'
   | 'trash'
+  | 'collapse-folders'
   | 'theme-system'
   | 'theme-light'
   | 'theme-dark'
@@ -39,6 +41,8 @@ export interface CommandContext {
   sidebarCollapsed: boolean;
   /** The page can save now: a document or a drawing. */
   canSave: boolean;
+  /** The current project has folders, which "Recolher todas as pastas" closes in its sidebar. */
+  hasFolders: boolean;
 }
 
 const themeCommands: { id: CommandId; choice: ThemeChoice; label: string }[] = [
@@ -67,6 +71,7 @@ export function availableCommands(context: CommandContext): Command[] {
       ? [
           { id: 'new-document', label: 'Novo documento', keywords: `criar escrever texto ${project.name}` },
           { id: 'new-drawing', label: 'Novo desenho', keywords: `criar desenhar diagrama ${project.name}` },
+          { id: 'new-folder', label: 'Nova pasta', keywords: `criar pasta organizar ${project.name}` },
           { id: 'new-task', label: 'Nova tarefa', keywords: `criar passo quadro ${project.name}` },
         ]
       : [];
@@ -76,6 +81,9 @@ export function availableCommands(context: CommandContext): Command[] {
         { id: 'board', label: 'Quadro', keywords: `kanban tarefas ${project.name}`, shortcut: ['G', 'Q'] },
         { id: 'index', label: 'Índice', keywords: `lista documentos desenhos ${project.name}` },
         { id: 'trash', label: 'Lixeira', keywords: `excluidos restaurar ${project.name}`, shortcut: ['G', 'L'] },
+        ...(context.hasFolders
+          ? [{ id: 'collapse-folders' as const, label: 'Recolher todas as pastas', keywords: 'pastas fechar itens' }]
+          : []),
       ]
     : [];
   const themes: Command[] = themeCommands.map(({ id, choice, label }) => ({

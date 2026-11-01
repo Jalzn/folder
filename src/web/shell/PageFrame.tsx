@@ -25,17 +25,19 @@ function sameAction(place: Element | null, focus: ActionFocus) {
 
 /**
  * A page in the shell: a 44 px bar with the page's actions on the right (the save state and ⋯ of an
- * editor, Novo, Esvaziar lixeira), over the page's own scroll area; below 720 px the actions go to the top
- * bar instead. The scroll area carries
+ * editor, Novo, Esvaziar lixeira) and `lead` on the left (an item's folder), over the page's own scroll
+ * area; below 720 px the actions go to the top bar instead, and `lead` is left out. The scroll area carries
  * `data-scroll-key`, so the last location keeps its position. The page's focusable `h1` goes in `children`.
  * `fill` gives the body the whole height without scrolling, for the drawing editor.
  */
 export function PageFrame({
   actions,
+  lead,
   fill = false,
   children,
 }: {
   actions?: ReactNode;
+  lead?: ReactNode;
   fill?: boolean;
   children: ReactNode;
 }) {
@@ -84,6 +86,7 @@ export function PageFrame({
         createPortal(tracked, topBarActions)
       ) : (
         <div ref={bar} className="page-frame__bar">
+          {lead}
           {tracked}
         </div>
       )}

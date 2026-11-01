@@ -84,6 +84,7 @@ function TrashContent({
         ) : (
           <TrashGroups
             groups={groupTrash(shown)}
+            projectName={project.name}
             busy={actions.busy}
             onRestore={(item) => void actions.restore(item)}
             onPurge={(item) => void actions.askPurge(item)}

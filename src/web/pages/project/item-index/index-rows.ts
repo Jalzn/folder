@@ -21,6 +21,8 @@ export interface IndexRow {
   title: string;
   excerpt: string;
   updatedAt: string;
+  /** The folder it is in, or null at the project's root. */
+  folderId: string | null;
 }
 
 interface Listed {
@@ -28,6 +30,7 @@ interface Listed {
   title: string;
   plainText: string;
   updatedAt: string;
+  folderId: string | null;
 }
 
 /** A summary's text stops at its first 280 characters: an excerpt of a text that long goes on after it. */
@@ -46,6 +49,7 @@ export function indexRows(documents: readonly Listed[], drawings: readonly Liste
     title: item.title,
     excerpt: excerptOf(item.plainText),
     updatedAt: item.updatedAt,
+    folderId: item.folderId,
   });
   return [
     ...(tipo === 'desenhos' ? [] : documents.map(row('document'))),
@@ -77,20 +81,27 @@ export function nextIndexSort(current: IndexSort, column: IndexColumn): IndexSor
   return { column, direction: column === 'title' ? 'ascending' : 'descending' };
 }
 
-/** Reads the stored order tolerantly: anything invalid is the default. */
-export function parseIndexSort(raw: string | null): IndexSort {
+/** How the Índice shows on this device: its order, and whether it groups by folder (on at first). */
+export interface IndexView {
+  sort: IndexSort;
+  grouped: boolean;
+}
+
+/** Reads the stored view tolerantly, the order alone of stage 08 too: anything invalid is the default. */
+export function parseIndexView(raw: string | null): IndexView {
+  let value: (Partial<IndexSort> & { grouped?: unknown }) | null = null;
   try {
-    const value = raw ? (JSON.parse(raw) as Partial<IndexSort>) : null;
-    if (
-      value &&
-      (value.column === 'title' || value.column === 'type' || value.column === 'updatedAt') &&
-      (value.direction === 'ascending' || value.direction === 'descending')
-    )
-      return { column: value.column, direction: value.direction };
+    value = raw ? JSON.parse(raw) : null;
   } catch {
     // A broken value starts over.
   }
-  return defaultIndexSort;
+  const sort =
+    value &&
+    (value.column === 'title' || value.column === 'type' || value.column === 'updatedAt') &&
+    (value.direction === 'ascending' || value.direction === 'descending')
+      ? { column: value.column, direction: value.direction }
+      : defaultIndexSort;
+  return { sort, grouped: value?.grouped !== false };
 }
 
 const nouns: Record<IndexType | 'all', [string, string, string]> = {
@@ -99,9 +110,13 @@ const nouns: Record<IndexType | 'all', [string, string, string]> = {
   desenhos: ['Nenhum desenho', 'desenho', 'desenhos'],
 };
 
-/** "12 itens em Tinyfold. Clique no cabeçalho de uma coluna para ordenar." */
-export function indexSummary(count: number, projectName: string, tipo?: IndexType) {
+/**
+ * "12 itens em Tinyfold. Clique no cabeçalho de uma coluna para ordenar.", with the folder of the filter
+ * after the project: "12 itens em Tinyfold · MCP."
+ */
+export function indexSummary(count: number, projectName: string, tipo?: IndexType, folderName?: string) {
   const [none, one, many] = nouns[tipo ?? 'all'];
-  if (!count) return `${none} em ${projectName}.`;
-  return `${countOf(count, one, many)} em ${projectName}. Clique no cabeçalho de uma coluna para ordenar.`;
+  const place = folderName ? `${projectName} · ${folderName}` : projectName;
+  if (!count) return `${none} em ${place}.`;
+  return `${countOf(count, one, many)} em ${place}. Clique no cabeçalho de uma coluna para ordenar.`;
 }

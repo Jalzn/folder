@@ -4,7 +4,9 @@ import {
   ArrowRightLeft,
   Circle,
   FileText,
+  Folder,
   FolderPlus,
+  FoldVertical,
   Keyboard,
   KeyRound,
   LayoutDashboard,
@@ -23,17 +25,20 @@ import type { ReactElement, ReactNode } from 'react';
 import type { Project } from '../../lib/types';
 import { ColumnRing, ProjectMark } from '../../ui';
 import type { CommandId } from './commands';
+import { itemPath } from './palette-folders';
 import type { PaletteRowData } from './palette-sections';
 
 const commandIcons: Record<CommandId, ReactElement> = {
   'new-document': <FileText size={16} />,
   'new-drawing': <Shapes size={16} />,
+  'new-folder': <FolderPlus size={16} />,
   'new-task': <Circle size={16} />,
   'switch-project': <ArrowRightLeft size={16} />,
   overview: <LayoutDashboard size={16} />,
   board: <SquareKanban size={16} />,
   index: <Table2 size={16} />,
   trash: <Trash2 size={16} />,
+  'collapse-folders': <FoldVertical size={16} />,
   'theme-system': <Monitor size={16} />,
   'theme-light': <Sun size={16} />,
   'theme-dark': <Moon size={16} />,
@@ -58,6 +63,7 @@ export function rowIcon(
       return <ColumnRing index={TASK_STATUSES.indexOf(row.status)} count={TASK_STATUSES.length} size={16} />;
     return action.type === 'document' ? <FileText size={16} /> : <Shapes size={16} />;
   }
+  if (action.kind === 'folder') return <Folder size={16} />;
   if (action.kind === 'project') {
     const project = projects.find((candidate) => candidate.id === action.id);
     return project && <ProjectMark name={project.name} color={project.color} />;
@@ -65,7 +71,7 @@ export function rowIcon(
   return action.id === 'new-project' ? <Plus size={16} /> : commandIcons[action.id];
 }
 
-/** What goes on a row's right: an item's column and project, or a command's note. */
+/** What goes on a row's right: an item's column and place ("Tinyfold › MCP"), a folder's project, or a command's note. */
 export function rowRight(row: PaletteRowData, projects: readonly Project[]): ReactNode {
   if (!row.project) return row.detail;
   const project = projects.find((candidate) => candidate.id === row.project?.id);
@@ -74,7 +80,7 @@ export function rowRight(row: PaletteRowData, projects: readonly Project[]): Rea
       {row.status && <span>{taskStatusLabels[row.status]} ·</span>}
       <span className="palette-row__project">
         {project && <ProjectMark name={project.name} color={project.color} size={16} />}
-        {row.project.name}
+        {itemPath(row.project.name, row.folder)}
       </span>
     </>
   );

@@ -1,12 +1,25 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { ChevronDown, ChevronUp, FileText, Shapes } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, Folder, Shapes } from 'lucide-react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import { Cell, Column, Row, Table, TableBody, TableHeader } from 'react-aria-components';
+import { formatCount } from '../../../lib/count';
 import { cx } from '../../../lib/cx';
 import { shortDate } from '../../../lib/dates';
 import { displayTitle, type ItemType, itemTypeLabels } from '../../../lib/types';
 import { paths } from '../../../router/paths';
+import { folderNameOf, type IndexFolderEntry, type IndexGroup } from './index-groups';
 import type { IndexColumn, IndexRow, IndexSort } from './index-rows';
+
+/** A line of the table's body: a group's heading, or an item. */
+type Line = { kind: 'group'; key: string; group: IndexGroup } | { kind: 'item'; key: string; row: IndexRow };
+
+const linesOf = (rows: IndexRow[], groups: IndexGroup[] | null): Line[] =>
+  groups
+    ? groups.flatMap((group) => [
+        { kind: 'group' as const, key: group.key, group },
+        ...group.rows.map((row) => ({ kind: 'item' as const, key: row.key, row })),
+      ])
+    : rows.map((row) => ({ kind: 'item' as const, key: row.key, row }));
 
 const icons: Record<ItemType, typeof FileText> = { document: FileText, drawing: Shapes };
 
@@ -47,21 +60,30 @@ function SortableColumn({ id, end, children }: { id: IndexColumn; end?: boolean;
 /**
  * The Índice's table: Título (the type's icon and a link), Tipo, Trecho in one line and Editado. A header
  * sorts by its column, announced with `aria-sort`. A row opens its item with Enter or a click anywhere.
+ * Grouped by folder, a heading row with the folder's name and count starts each group (`groups`); without
+ * groups, a Pasta column after Tipo names each item's folder (docs/etapas/09-pastas.md, user decision 2).
  */
 export function IndexTable({
   label,
   projectId,
   rows,
+  groups,
+  folders,
   sort,
   onSort,
 }: {
   label: string;
   projectId: string;
   rows: IndexRow[];
+  /** The rows by folder, or null for one list with the Pasta column. */
+  groups: IndexGroup[] | null;
+  folders: readonly IndexFolderEntry[];
   sort: IndexSort;
   onSort: (column: IndexColumn) => void;
 }) {
   const navigate = useNavigate();
+  const grouped = groups !== null;
+  const columns = grouped ? 4 : 5;
   return (
     <div className="index-table-scroll" onKeyDownCapture={letShortcutsWin}>
       <Table
@@ -73,6 +95,11 @@ export function IndexTable({
         <TableHeader className="index-table__header">
           <SortableColumn id="title">Título</SortableColumn>
           <SortableColumn id="type">Tipo</SortableColumn>
+          {!grouped && (
+            <Column id="folder" className="index-table__column index-table__column--folder">
+              Pasta
+            </Column>
+          )}
           <Column id="excerpt" className="index-table__column index-table__column--excerpt">
             Trecho
           </Column>
@@ -80,13 +107,31 @@ export function IndexTable({
             Editado
           </SortableColumn>
         </TableHeader>
-        <TableBody items={rows} renderEmptyState={() => <p className="index-table__empty">Nada aqui.</p>}>
-          {(row) => {
+        <TableBody
+          items={linesOf(rows, groups)}
+          dependencies={[grouped, folders]}
+          renderEmptyState={() => <p className="index-table__empty">Nada aqui.</p>}
+        >
+          {(line) => {
+            if (line.kind === 'group') {
+              const { group } = line;
+              const GroupIcon = group.folder ? Folder : FileText;
+              return (
+                <Row id={line.key} className="index-table__group" textValue={`${group.label}, ${group.rows.length}`}>
+                  <Cell colSpan={columns} className="index-table__group-cell">
+                    <GroupIcon size={14} aria-hidden="true" />
+                    <span className="index-table__group-name">{group.label}</span>
+                    <span className="index-table__group-count">{formatCount(group.rows.length)}</span>
+                  </Cell>
+                </Row>
+              );
+            }
+            const { row } = line;
             const href = paths.item(projectId, row.type, row.id);
             const Icon = icons[row.type];
             return (
               <Row
-                id={row.key}
+                id={line.key}
                 className="index-table__row"
                 textValue={displayTitle(row.title)}
                 onAction={() => void navigate({ href })}
@@ -98,6 +143,9 @@ export function IndexTable({
                   </Link>
                 </Cell>
                 <Cell className="index-table__cell index-table__type">{itemTypeLabels[row.type]}</Cell>
+                {!grouped && (
+                  <Cell className="index-table__cell index-table__folder">{folderNameOf(row, folders)}</Cell>
+                )}
                 <Cell className="index-table__cell index-table__excerpt">{row.excerpt}</Cell>
                 <Cell className="index-table__cell index-table__date">
                   <time dateTime={row.updatedAt}>{shortDate(row.updatedAt)}</time>

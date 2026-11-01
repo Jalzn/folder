@@ -2,7 +2,6 @@ import './command-palette.css';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { Menu as AriaMenu, Autocomplete, Dialog, Input, Modal, ModalOverlay, TextField } from 'react-aria-components';
-import { useSearch } from '../../lib/queries';
 import { Kbd, MenuSection } from '../../ui';
 import { type SwitcherPlace, useShellUi } from '../shell-ui';
 import { availableCommands } from './commands';
@@ -12,6 +11,7 @@ import { paletteSections } from './palette-sections';
 import { useHereActions } from './use-here-actions';
 import { usePaletteActions } from './use-palette-actions';
 import { usePaletteContext } from './use-palette-context';
+import { usePaletteData } from './use-palette-data';
 
 interface PaletteProps {
   switcherPlace: SwitcherPlace;
@@ -20,7 +20,8 @@ interface PaletteProps {
 
 /**
  * ⌘K: search and commands (docs/etapas/08-fundacao.md, "Buscar e ⌘K"). Neste item acts on the open page;
- * Itens searches every project, the eight edited last without text; Projetos and Comandos filter here.
+ * Itens searches every project, the eight edited last without text; Projetos, Pastas and Comandos filter
+ * here.
  */
 export function CommandPalette(props: PaletteProps) {
   const ui = useShellUi();
@@ -46,14 +47,15 @@ function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & {
   const ui = useShellUi();
   const { context, project, projects, item, pinned } = usePaletteContext();
   const [query, setQuery] = useState(initial);
-  const results = useSearch({ query, limit: query.trim() ? 12 : 8 });
+  const { results, folders } = usePaletteData(query);
   const here = useHereActions({ item, project, pinned });
   const run = usePaletteActions({ here, project, projects, switcherPlace, toggleSidebar });
   const sections = paletteSections({
     query,
     here,
-    results: results.data?.items ?? [],
+    results,
     projects,
+    folders,
     commands: availableCommands(context),
   });
   const rows = new Map(sections.flatMap((section) => section.rows.map((row) => [row.key, row] as const)));
@@ -84,6 +86,7 @@ function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & {
                 id={row.key}
                 icon={rowIcon(row, here, projects)}
                 label={row.label}
+                note={row.note}
                 query={query}
                 archived={row.archived ?? false}
                 excerpt={row.excerpt}

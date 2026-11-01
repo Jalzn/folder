@@ -2,7 +2,7 @@ import { ItemRow } from '../../../components/item-list/ItemRow';
 import type { ProjectOverview } from '../../../lib/queries';
 import { paths } from '../../../router/paths';
 
-/** Editados recentemente: the five documents or drawings edited last, with type, excerpt and date. */
+/** Editados recentemente: the five documents or drawings edited last, with type, folder, excerpt and date. */
 export function RecentSection({ projectId, recent }: { projectId: string; recent: ProjectOverview['recent'] }) {
   return (
     <section className="project-section" aria-labelledby="overview-recent">
@@ -16,6 +16,7 @@ export function RecentSection({ projectId, recent }: { projectId: string; recent
               key={`${item.type}:${item.id}`}
               type={item.type}
               title={item.title}
+              folder={item.folder?.name}
               excerpt={item.excerpt}
               updatedAt={item.updatedAt}
               href={paths.item(projectId, item.type, item.id)}

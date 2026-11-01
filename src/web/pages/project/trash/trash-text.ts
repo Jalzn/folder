@@ -42,3 +42,17 @@ export function emptiedText({ purged, skipped }: { purged: number; skipped: numb
 /** Above a long trash: "Mostrando os 1.000 mais recentes de 1.200." */
 export const shownOfTotal = (shown: number, total: number) =>
   `Mostrando os ${formatCount(shown)} mais recentes de ${formatCount(total)}.`;
+
+/** Where an item came from: "Tinyfold › MCP", even for a folder deleted since, or the project alone. */
+export const originText = (projectName: string, folder: { name: string } | null) =>
+  folder ? `${projectName} › ${folder.name}` : projectName;
+
+/**
+ * After a restore: "“X” restaurado em MCP." back in its folder, or "“X” restaurado." at the root. When its
+ * folder was deleted meanwhile, it went to the root instead: "A pasta “MCP” foi excluída; o item voltou para
+ * a raiz."
+ */
+export function restoredText(title: string, folder: { name: string } | null, folderGone: boolean) {
+  if (folderGone && folder) return `A pasta “${folder.name}” foi excluída; o item voltou para a raiz.`;
+  return folder && !folderGone ? `“${title}” restaurado em ${folder.name}.` : `“${title}” restaurado.`;
+}

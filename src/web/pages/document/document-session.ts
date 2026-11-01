@@ -20,8 +20,14 @@ export const documentItem = (id: string): ItemAdapter<Snapshot, Document> => ({
   queryKey: documentQuery(id).queryKey,
   read: () => api.workspace.getDocument({ id }),
   snapshot: documentSnapshot,
-  createCopy: (snapshot, projectId, title, requestId) =>
-    api.workspace.createDocument({ title, content: snapshot.content, projectId, requestId }),
+  createCopy: (snapshot, { projectId, folderId }, title, requestId) =>
+    api.workspace.createDocument({
+      title,
+      content: snapshot.content,
+      projectId,
+      ...(folderId ? { folderId } : {}),
+      requestId,
+    }),
   remove: (input) => api.workspace.deleteDocument(input),
 });
 

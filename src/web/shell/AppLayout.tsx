@@ -1,11 +1,13 @@
 import './layout.css';
 import { useLocation } from '@tanstack/react-router';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, type RefObject, useEffect, useMemo, useRef } from 'react';
 import { Dialog as AriaDialog, Modal, ModalOverlay } from 'react-aria-components';
+import { useFolders } from '../lib/queries';
 import { useLastLocation } from '../router/use-last-location';
 import { useRouteFocus } from '../router/use-route-focus';
 import { useApp } from './AppProvider';
 import { CommandPalette } from './command-palette/CommandPalette';
+import { FOLDER_LABEL } from './folders/FolderLabel';
 import { MoveMenus } from './folders/MoveMenus';
 import { ShortcutsDialog } from './keyboard/ShortcutsDialog';
 import { useShellLayers } from './keyboard/use-shell-layers';
@@ -56,19 +58,30 @@ export function AppLayout({ children }: { children: ReactNode }) {
     else if (mode === 'wide') prefs.setCollapsed(!prefs.collapsed);
     else ui.setOverlay(true);
   }
-  // A folder to name needs the sidebar: it expands from the rail, or opens over the page.
-  const draft = ui.folderDraft;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Each new draft asks once.
+  // A folder to name or to show needs the sidebar: it expands from the rail, or opens over the page.
+  const wantsSidebar = ui.folderDraft ?? ui.folderReveal;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Each new request asks once.
   useEffect(() => {
-    if (!draft) return;
+    if (!wantsSidebar) return;
     if (mode === 'wide' && prefs.collapsed) prefs.setCollapsed(false);
     else if (rail || mode === 'narrow') setOverlay(true);
-  }, [draft]);
+  }, [wantsSidebar]);
   useShellLayers();
   useShortcuts(
     useShortcutActions({ project, projects, switcherPlace, sidebarShown: !rail && mode !== 'narrow', toggleSidebar }),
   );
   const openItem = useOpenItem();
+  // N on an item's page offers its folder first, and M opens at the header's folder label when it shows.
+  const folders = useFolders(project?.id ?? null).data;
+  const itemFolder = folders?.find((folder) => folder.id === openItem?.folderId);
+  const moveAnchor = useMemo<RefObject<HTMLElement | null>>(
+    () => ({
+      get current() {
+        return document.querySelector<HTMLElement>(`main [${FOLDER_LABEL}]`) ?? anchor.current;
+      },
+    }),
+    [],
+  );
 
   return (
     <div className="app-layout" data-mode={mode} data-rail={rail || undefined}>
@@ -124,7 +137,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <CommandPalette switcherPlace={switcherPlace} toggleSidebar={toggleSidebar} />
       <ShortcutsDialog open={ui.shortcutsOpen} onClose={() => ui.setShortcutsOpen(false)} />
       {project && ui.newItemOpen && (
-        <NewItemPopover project={project} triggerRef={anchor} isOpen onOpenChange={ui.setNewItemOpen} />
+        <NewItemPopover
+          project={project}
+          folder={itemFolder && { id: itemFolder.id, name: itemFolder.name }}
+          triggerRef={anchor}
+          isOpen
+          onOpenChange={ui.setNewItemOpen}
+        />
       )}
       {project && openItem && ui.moveOpen && (
         <MoveMenus
@@ -136,7 +155,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             folderId: openItem.folderId,
             pinned: openItem.pinnedAt !== null,
           }}
-          triggerRef={anchor}
+          triggerRef={moveAnchor}
           start={ui.moveOpen}
           onClose={() => ui.setMoveOpen(false)}
         />

@@ -7,7 +7,7 @@ import { useAction } from '../../../lib/use-action';
 import { useRequest } from '../../../lib/use-request';
 import { focusPageTitle, useToast } from '../../../ui';
 import { emptyTrash, hasOriginatedTasks, itemAddress, purgeItem, restoreItem } from './trash-api';
-import { emptiedText } from './trash-text';
+import { emptiedText, restoredText } from './trash-text';
 
 export const trashTitle = (item: TrashItem) => displayTitle(item.title);
 
@@ -49,9 +49,9 @@ export function useTrashActions(project: Project) {
   async function restore(item: TrashItem) {
     await action.run(
       () => restoreItem(item, restoreRequest.for),
-      () => {
+      ({ folderGone }) => {
         restoreRequest.clear();
-        toast(`“${trashTitle(item)}” restaurado.`, {
+        toast(restoredText(trashTitle(item), item.folder, folderGone), {
           action: { label: 'Abrir', onAction: () => void navigate({ href: itemAddress(project.id, item) }) },
         });
       },

@@ -15,7 +15,7 @@ import { registerOpenEditor } from '../../lib/save-registry';
 import { displayTitle, UNTITLED } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
-import { ItemMenu, type ItemMenuAction, PageFrame, useApp, usePageCommands } from '../../shell';
+import { FolderLabel, ItemMenu, type ItemMenuAction, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
 import { canvasItem, canvasSession, canvasSnapshot, type EditableCanvas } from './canvas-session';
 import { DrawingCanvas } from './DrawingCanvas';
@@ -104,6 +104,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   return (
     <PageFrame
       fill
+      lead={<FolderLabel projectId={projectId} folderId={canvas.folderId} />}
       actions={
         <>
           <SaveState status={state.status} />

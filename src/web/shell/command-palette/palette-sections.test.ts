@@ -12,6 +12,7 @@ const context: CommandContext = {
   theme: 'dark',
   sidebarCollapsed: false,
   canSave: true,
+  hasFolders: false,
 };
 const results = [
   {
@@ -24,6 +25,7 @@ const results = [
     updatedAt: 'now',
     pinned: false,
     excerpt: 'Um espaço pessoal…',
+    folder: { id: 'f1', name: 'MCP' },
   },
   {
     type: 'task',
@@ -43,7 +45,18 @@ const here = [
   { id: 'trash', label: 'Mover para a lixeira' },
 ];
 const projects = [project('p1', 'Tinyfold'), project('p2', 'Reforma do escritório'), project('p3', 'Site', true)];
-const input = (query: string) => ({ query, here, results, projects, commands: availableCommands(context) });
+const folders = [
+  { id: 'f1', projectId: 'p1', name: 'MCP', items: 1 },
+  { id: 'f2', projectId: 'p2', name: 'Reforma da sala', items: 4 },
+];
+const input = (query: string) => ({
+  query,
+  here,
+  results,
+  projects,
+  folders,
+  commands: availableCommands(context),
+});
 
 describe('palette sections', () => {
   it('opens with the item, the items edited last without excerpts, and the commands', () => {
@@ -56,7 +69,7 @@ describe('palette sections', () => {
 
   it('with text, filters the item and the commands, lists matching projects and shows excerpts', () => {
     const sections = paletteSections(input('reforma'));
-    expect(sections.map((section) => section.id)).toEqual(['items', 'projects']);
+    expect(sections.map((section) => section.id)).toEqual(['items', 'projects', 'folders']);
     expect(sections[0]?.title).toBe('Itens');
     expect(sections[0]?.rows[0]?.excerpt).toBe('Um espaço pessoal…');
     expect(sections[1]?.rows).toEqual([
@@ -65,9 +78,27 @@ describe('palette sections', () => {
     expect(paletteSections(input('lixeira'))[0]?.rows.map((row) => row.key)).toEqual(['here:trash']);
   });
 
+  it("puts each item's folder after its project, and the matching folders after Projetos", () => {
+    const [items] = paletteSections(input('reforma'));
+    expect(items?.rows[0]?.folder).toEqual({ id: 'f1', name: 'MCP' });
+    expect(items?.rows[1]?.folder).toBeUndefined();
+    const sections = paletteSections(input('reforma'));
+    expect(sections[2]).toMatchObject({
+      title: 'Pastas',
+      rows: [{ key: 'folder:f2', label: 'Reforma da sala', action: { kind: 'folder', id: 'f2', projectId: 'p2' } }],
+    });
+  });
+
   it('without an active project, offers to unarchive the archived ones', () => {
     const archived = [project('p3', 'Site', true)];
-    const sections = paletteSections({ query: '', here: [], results: [], projects: archived, commands: [] });
+    const sections = paletteSections({
+      query: '',
+      here: [],
+      results: [],
+      projects: archived,
+      folders,
+      commands: [],
+    });
     expect(sections).toEqual([
       {
         id: 'projects',

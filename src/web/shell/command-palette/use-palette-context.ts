@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation } from '@tanstack/react-router';
+import { useFolders } from '../../lib/queries';
 import { parseProjectPath } from '../../router/paths';
 import { activeProjects } from '../project/project-order';
 import { useCurrentProject } from '../project/use-current-project';
@@ -15,6 +16,7 @@ export function usePaletteContext() {
   const theme = useTheme();
   const prefs = useSidebarPrefs();
   const queryClient = useQueryClient();
+  const folders = useFolders(project?.id ?? null);
   const pathname = useLocation({ select: (location) => location.pathname });
   const item = parseProjectPath(pathname)?.item ?? null;
   const pinned = item
@@ -32,6 +34,7 @@ export function usePaletteContext() {
     theme: theme.choice,
     sidebarCollapsed: prefs.collapsed,
     canSave: Boolean(ui.page.current.saveNow),
+    hasFolders: (folders.data?.length ?? 0) > 0,
   };
   return { context, project, projects, item, pinned };
 }

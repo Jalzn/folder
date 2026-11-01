@@ -8,11 +8,15 @@ const edit = (item: TrashItem, requestFor: RequestFor) => {
   return { ...input, requestId: requestFor({ type: item.type, ...input }) };
 };
 
-/** Puts an item back in its project, at the version the trash showed. */
+/**
+ * Puts an item back in its project, at the version the trash showed. A document or drawing goes back to its
+ * folder; `folderGone` says the folder was deleted meanwhile and the item went to the root.
+ */
 export async function restoreItem(item: TrashItem, requestFor: RequestFor) {
-  if (item.type === 'document') await api.workspace.restoreDocument(edit(item, requestFor));
-  else if (item.type === 'drawing') await api.workspace.restoreCanvas(edit(item, requestFor));
-  else await api.workspace.restoreTask(edit(item, requestFor));
+  if (item.type === 'document') return api.workspace.restoreDocument(edit(item, requestFor));
+  if (item.type === 'drawing') return api.workspace.restoreCanvas(edit(item, requestFor));
+  await api.workspace.restoreTask(edit(item, requestFor));
+  return { folderGone: false };
 }
 
 /** Deletes an item for good. It must still be in the trash, at the version the trash showed. */

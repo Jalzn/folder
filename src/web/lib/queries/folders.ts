@@ -13,4 +13,14 @@ export function useFolders(projectId: string | null) {
   return useQuery({ ...foldersQuery(projectId ?? ''), enabled: projectId !== null });
 }
 
+/** Every project's active folders, for ⌘K's Pastas. */
+export function useAllFolders(enabled = true) {
+  return useQuery({
+    queryKey: ['workspace', 'folders', 'all'] as const,
+    queryFn: () => api.workspace.listFolders({}),
+    select: (data) => data.folders,
+    enabled,
+  });
+}
+
 export type FolderSummary = Awaited<ReturnType<typeof api.workspace.listFolders>>['folders'][number];

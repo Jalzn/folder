@@ -113,6 +113,9 @@
   color: var(--text);
 }
 .palette-row__right,
+.palette-row__note {
+  color: var(--text-3);
+}
 .palette-row__project {
   display: inline-flex;
   align-items: center;
