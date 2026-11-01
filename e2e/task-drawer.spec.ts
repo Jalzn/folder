@@ -139,3 +139,21 @@ test('Esc in the description leaves it for the drawer, whose keys keep working',
   await page.keyboard.press('Escape');
   await expect(region).toHaveCount(0);
 });
+
+test('a project change from the drawer keeps the drawer open on the task, with the focus', async ({ page }) => {
+  await login(page);
+  const destination = `Destino ${Date.now()}`;
+  await createProject(page, destination);
+  await createProject(page, `Origem ${Date.now()}`);
+  await newTask(page, 'Trocar de projeto');
+  await openDrawer(page, 'Trocar de projeto');
+  const field = openTask(page).getByRole('button', { name: /^Projeto:/ });
+  await field.focus();
+  await page.keyboard.press('Enter');
+  const menu = page.getByRole('menu', { name: 'Projeto' });
+  await menu.getByRole('menuitemradio', { name: destination }).focus();
+  await page.keyboard.press('Enter');
+  await expect(toast(page)).toContainText(`A tarefa foi para ${destination}.`);
+  await expect(openTask(page)).toBeVisible();
+  await expect(openTask(page).getByRole('button', { name: `Projeto: ${destination}` })).toBeFocused();
+});

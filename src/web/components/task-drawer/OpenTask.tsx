@@ -25,8 +25,11 @@ export function OpenTask({
 }) {
   const drawer = useTaskDrawer();
   const tasks = useTasks({ projectId: content.projectId });
-  const task = tasks.data?.tasks.find((each) => each.id === content.id);
   const detail = useTask(content.id);
+  // A task that just moved to another project is in its text's answer before the new project's list has it:
+  // the editor stays, with its focus, until the list catches up.
+  const moved = detail.data && !detail.data.deletedAt && detail.data.projectId === content.projectId;
+  const task = tasks.data?.tasks.find((each) => each.id === content.id) ?? (moved ? detail.data : undefined);
   const columns = useColumns().data?.columns;
   const project = useProject(content.projectId);
   const editable = Boolean(project && !project.archivedAt);
