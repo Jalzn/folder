@@ -1,6 +1,7 @@
+import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer } from './support/board.js';
-import { createTaskFromSelection, openDocumentTasks } from './support/document.js';
+import { createTaskFromSelection, openDocumentTasks, pickEmbed, slash } from './support/document.js';
 import { newDocument } from './support/items.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject, currentProjectId } from './support/navigation.js';
@@ -155,4 +156,43 @@ test('a task’s permanent link opens it on its project’s board', async ({ pag
 
   await page.goto('/tarefas/00000000-0000-4000-8000-00000000dead');
   await expect(page.getByRole('heading', { name: 'Esta tarefa não existe mais' })).toBeVisible();
+});
+
+test('Exportar Markdown writes an embedded task as a link to the app, and the import brings it back as one', async ({
+  page,
+}) => {
+  await login(page);
+  const projectId = await createProject(page, `Markdown com incorporados ${Date.now()}`);
+  const task = await rpc<{ id: string }>(page, 'workspace/createTask', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: 'Revisar o orçamento',
+  });
+  await writeDocument(page, 'Exportar com incorporados', ['Plano.']);
+  const saved = page.waitForResponse(
+    (response) => answers(response, 'workspace/saveDocument') && response.status() === 200,
+  );
+  await pickEmbed(page, await slash(page, 'tarefa'), 'orçamento', 'Revisar o orçamento');
+  await saved;
+
+  await page.getByRole('button', { name: 'Opções do documento', exact: true }).click();
+  const downloaded = page.waitForEvent('download');
+  await page.getByRole('menuitem', { name: /^Exportar Markdown/ }).click();
+  const file = await downloaded;
+  const markdown = await readFile((await file.path()) as string, 'utf8');
+  const origin = new URL(page.url()).origin;
+  expect(markdown).toBe(
+    `# Exportar com incorporados\n\nPlano.\n\n[Tarefa: Revisar o orçamento (A fazer)](${origin}/tarefas/${task.id})\n`,
+  );
+
+  // Read back, the link stays a link, in a new document.
+  await page.getByLabel('Importar arquivo Markdown').setInputFiles({
+    name: 'exportado.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from(markdown),
+  });
+  await expect(page.getByRole('textbox', { name: 'Título do documento' })).toHaveValue('exportado');
+  const link = editor(page).getByRole('link', { name: 'Tarefa: Revisar o orçamento (A fazer)' });
+  await expect(link).toHaveAttribute('href', `${origin}/tarefas/${task.id}`);
+  await expect(editor(page).locator('.embed-card')).toHaveCount(0);
 });

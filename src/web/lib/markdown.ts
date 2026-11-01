@@ -1,12 +1,4 @@
-import {
-  type DocumentBlock,
-  type DocumentContent,
-  displayMathLines,
-  inlineMath,
-  type JsonValue,
-  MATH_SEPARATOR,
-  needsMathSeparator,
-} from '@tinyfold/workspace/domain';
+import type { DocumentBlock, DocumentContent, JsonValue } from '@tinyfold/workspace/domain';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { mathFromMarkdown } from 'mdast-util-math';
 import { math } from 'micromark-extension-math';
@@ -291,87 +283,5 @@ export async function importMarkdownWithMath(
     });
   const result = restoreBlocks(parsed);
   if (restored.size !== equations.length || JSON.stringify(result).includes(prefix)) failedImport();
-  return result;
-}
-
-function failedExport(): never {
-  throw new Error('Não foi possível preservar todas as equações na exportação. Seu documento continua salvo.');
-}
-
-function plainSource(content: JsonValue | undefined): string {
-  if (content === undefined) return '';
-  if (typeof content === 'string') return content;
-  if (!Array.isArray(content)) return failedExport();
-  return content
-    .map((item) => {
-      if (!record(item) || item.type !== 'text' || typeof item.text !== 'string') return failedExport();
-      return item.text;
-    })
-    .join('');
-}
-
-/** Export raw LaTeX directly: KaTeX's external HTML omits formulas whose syntax is incomplete. */
-export async function exportMarkdownWithMath(
-  blocks: DocumentContent,
-  exportMarkdown: (content: DocumentContent) => string | Promise<string>,
-): Promise<string> {
-  const prefix = tokenPrefix(JSON.stringify(blocks));
-  const equations = new Map<string, { kind: 'block' | 'inline'; source: string }>();
-  const mask = (kind: 'block' | 'inline', source: string): JsonValue => {
-    const token = `${prefix}${equations.size}END`;
-    equations.set(token, { kind, source });
-    return { type: 'text', text: token, styles: {} };
-  };
-  const maskInline = (content: JsonValue | undefined): JsonValue | undefined => {
-    if (!Array.isArray(content)) return content;
-    return content.map((item) => {
-      if (!record(item) || item.type !== 'math') return item;
-      if (typeof item.content !== 'string') return failedExport();
-      return mask('inline', item.content);
-    });
-  };
-  const maskBlocks = (content: DocumentContent): DocumentContent =>
-    content.map((block) => {
-      const children = block.children ? maskBlocks(block.children) : undefined;
-      if (block.type === 'mathBlock') {
-        return {
-          ...block,
-          type: 'paragraph',
-          props: {},
-          content: [mask('block', plainSource(block.content))],
-          ...(children ? { children } : {}),
-        };
-      }
-      const inline = maskInline(block.content);
-      return { ...block, ...(inline !== undefined ? { content: inline } : {}), ...(children ? { children } : {}) };
-    });
-  const masked = maskBlocks(blocks);
-  const markdown = await exportMarkdown(masked);
-  if (equations.size === 0) return markdown;
-  const restored = new Set<string>();
-  const tokens = new RegExp(`${prefix}\\d+END`, 'gu');
-  let result = '';
-  let offset = 0;
-  for (const match of markdown.matchAll(tokens)) {
-    const equation = equations.get(match[0]);
-    if (!equation || restored.has(match[0])) return failedExport();
-    restored.add(match[0]);
-    result += markdown.slice(offset, match.index);
-    offset = match.index + match[0].length;
-    if (equation.kind === 'block') {
-      const lineStart = markdown.lastIndexOf('\n', match.index - 1) + 1;
-      const container = continuationPrefix(markdown.slice(lineStart, match.index));
-      if (!/^[\s>]*$/u.test(container)) return failedExport();
-      result += displayMathLines(equation.source).join(`\n${container}`);
-    } else {
-      // The fences and separators are the server serializer's, so both exports read back the same way.
-      const formula = inlineMath(equation.source);
-      if (needsMathSeparator(result, formula)) result += MATH_SEPARATOR;
-      result += formula;
-      if (needsMathSeparator(formula, markdown.charAt(offset))) result += MATH_SEPARATOR;
-    }
-  }
-  result += markdown.slice(offset);
-  if (restored.size !== equations.size || result.includes(prefix)) return failedExport();
   return result;
 }

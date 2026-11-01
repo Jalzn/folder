@@ -1,7 +1,13 @@
-import { type DocumentContent, documentPlainText, type JsonValue } from '@tinyfold/workspace/domain';
+import {
+  type DocumentBlock,
+  type DocumentContent,
+  documentPlainText,
+  documentToMarkdown,
+  type JsonValue,
+} from '@tinyfold/workspace/domain';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setupBlockNoteEditor } from '../testing/blocknote-editor';
-import { exportMarkdownWithMath, importMarkdownWithMath } from './markdown';
+import { importMarkdownWithMath } from './markdown';
 
 const blockNote = setupBlockNoteEditor();
 const parse = blockNote.parse;
@@ -12,9 +18,9 @@ async function imported(markdown: string) {
 }
 
 describe('Markdown export preserves raw equations', () => {
-  const exportBlocks = blockNote.exportMarkdown;
+  /** The `.md` a document exports, by the domain's serializer, read back by the import. */
   async function roundTrip(blocks: DocumentContent) {
-    const markdown = await exportMarkdownWithMath(blocks, exportBlocks);
+    const markdown = documentToMarkdown(blocks as DocumentBlock[]);
     const restored = await imported(markdown);
     return { markdown, restored };
   }
@@ -87,15 +93,8 @@ describe('Markdown export preserves raw equations', () => {
       },
     ];
     const before = JSON.stringify(blocks);
-    let masked: DocumentContent = [];
-    const markdown = await exportMarkdownWithMath(blocks, (content) => {
-      masked = content;
-      return exportBlocks(content);
-    });
-    expect(masked[0]?.id).toBe('parent');
-    expect(masked[0]?.children?.[0]?.id).toBe('formula');
+    const { restored } = await roundTrip(blocks);
     expect(JSON.stringify(blocks)).toBe(before);
-    const restored = await imported(markdown);
     expect(formulas(restored, 'math')).toEqual(['x']);
     expect(formulas(restored, 'mathBlock')).toEqual(['a\nb', '\\frac{']);
     expect((restored[0]?.content as JsonValue[] | undefined)?.[0]).toEqual({
@@ -127,18 +126,6 @@ describe('Markdown export preserves raw equations', () => {
     expect(documentPlainText([restored[0] as NonNullable<(typeof restored)[0]>])).toBe('$code$\n$$code$$');
     expect(formulas(restored, 'math')).toEqual(['x']);
   });
-
-  it.each(['drop', 'duplicate'] as const)(
-    'fails instead of publishing Markdown if export would %s a source',
-    async (fault) => {
-      await expect(
-        exportMarkdownWithMath([{ type: 'mathBlock', props: {}, content: 'x' }], (blocks) => {
-          const text = documentPlainText(blocks);
-          return fault === 'drop' ? '' : `${text}\n\n${text}`;
-        }),
-      ).rejects.toThrow('Não foi possível preservar todas as equações');
-    },
-  );
 });
 function formulas(value: unknown, type: 'mathBlock' | 'math'): string[] {
   if (Array.isArray(value)) return value.flatMap((entry) => formulas(entry, type));

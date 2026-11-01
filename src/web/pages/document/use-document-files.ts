@@ -1,22 +1,23 @@
 import type { BlockNoteEditor } from '@blocknote/core';
 import { useNavigate } from '@tanstack/react-router';
-import type { EditorBlocks } from '../../editor/schema';
+import type { DocumentBlock } from '@tinyfold/workspace/domain';
 import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { downloadFile, fileNameFrom } from '../../lib/download';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
-import { exportMarkdownWithMath, importMarkdownWithMath } from '../../lib/markdown';
+import { importMarkdownWithMath } from '../../lib/markdown';
 import { documentQuery } from '../../lib/queries';
 import { type DocumentContent, displayTitle } from '../../lib/types';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
 import { useToast } from '../../ui';
+import { documentMarkdown } from './document-markdown';
 
 const MAX_IMPORT_BYTES = 1_048_576;
 
 /**
- * The document's files: export to Markdown, import a Markdown file as a new document, and download a draft
+ * The document's files: export to Markdown, by the domain's serializer with the embeds as links, import a Markdown file as a new document, and download a draft
  * that could not open. An import goes to the document's project and folder, or to the root of another project
  * while that one is archived.
  */
@@ -33,12 +34,15 @@ export function useDocumentFiles(
 
   async function exportMarkdown() {
     try {
-      const markdown = await exportMarkdownWithMath(editor.document as unknown as DocumentContent, (blocks) =>
-        editor.blocksToMarkdownLossy(blocks as unknown as EditorBlocks),
-      );
       const title = controller.getState().snapshot.title;
+      const markdown = await documentMarkdown(
+        displayTitle(title),
+        editor.document as unknown as DocumentBlock[],
+        window.location.origin,
+        (ids) => api.workspace.resolveEmbeds(ids),
+      );
       downloadFile(
-        new Blob([`# ${displayTitle(title)}\n\n${markdown}`], { type: 'text/markdown;charset=utf-8' }),
+        new Blob([markdown], { type: 'text/markdown;charset=utf-8' }),
         fileNameFrom(title, 'documento', 'md'),
       );
       toast('Documento exportado em Markdown.');
