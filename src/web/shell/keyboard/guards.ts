@@ -58,8 +58,22 @@ export function acceptsPlainKey(press: KeyPress, target: KeyTarget) {
 export const acceptsPalette = (target: KeyTarget) => !target.inDrawing;
 
 /**
- * ⌘Z undoes the toast's action only outside text fields, the document editor, the drawing editor and open
- * menus or dialogs, where the native undo stays (docs/etapas/09-pastas.md, decision 11).
+ * What an undo or redo key does: ⌘Z and ⇧⌘Z, and Ctrl+Y off Apple platforms (`null` for any other key).
+ *
+ * - `native`: in a text field, the document or description editor, or the drawing editor, each keeps its
+ *   own undo (docs/etapas/09-pastas.md, decision 11).
+ * - `toast`: anywhere else, outside menus and dialogs, ⌘Z undoes the action of the toast on screen.
+ * - `nothing`: every other case.
+ *
+ * Outside the fields and editors, the key never reaches the browser. Its own undo would reach the last field
+ * edited, even after it lost the focus, and undo the text there behind the page's back. ⌘ and Ctrl both
+ * count, because the browser undoes with the key of the system it runs on, which a page can't always tell.
  */
-export const acceptsUndo = (press: KeyPress, target: KeyTarget) =>
-  !press.shiftKey && !press.altKey && !target.editable && !target.inDrawing && !target.inOverlay;
+export function undoKeyAction(press: KeyPress, target: KeyTarget, apple: boolean) {
+  if (press.altKey || !(press.metaKey || press.ctrlKey)) return null;
+  const key = press.key.toLowerCase();
+  const redo = (key === 'z' && press.shiftKey) || (key === 'y' && !apple && press.ctrlKey && !press.shiftKey);
+  if (key !== 'z' && !redo) return null;
+  if (target.editable || target.inDrawing) return 'native';
+  return !redo && !target.inOverlay && commandKey(press, apple) ? 'toast' : 'nothing';
+}

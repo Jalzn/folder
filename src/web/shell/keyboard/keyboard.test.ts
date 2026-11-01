@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHORD_TIMEOUT_MS, createChords } from './chords';
-import { acceptsPalette, acceptsPlainKey, acceptsUndo, commandKey, isComposing, type KeyPress } from './guards';
+import { acceptsPalette, acceptsPlainKey, commandKey, isComposing, type KeyPress, undoKeyAction } from './guards';
 import { createLayerStack, escapeAction } from './layers';
 
 const press = (key: string, modifiers: Partial<KeyPress> = {}): KeyPress => ({
@@ -16,13 +16,28 @@ const outside = { editable: false, inDrawing: false };
 describe('guards', () => {
   it('lets ⌘Z undo a toast only outside fields, editors and overlays', () => {
     const z = press('z', { metaKey: true });
-    expect(acceptsUndo(z, outside)).toBe(true);
-    expect(acceptsUndo(z, { editable: true, inDrawing: false })).toBe(false);
-    expect(acceptsUndo(z, { editable: false, inDrawing: true })).toBe(false);
-    expect(acceptsUndo(z, { editable: false, inDrawing: false, inOverlay: true })).toBe(false);
-    // ⌘⇧Z redoes, and ⌥ changes the key on some layouts.
-    expect(acceptsUndo(press('z', { metaKey: true, shiftKey: true }), outside)).toBe(false);
-    expect(acceptsUndo(press('z', { metaKey: true, altKey: true }), outside)).toBe(false);
+    expect(undoKeyAction(z, outside, true)).toBe('toast');
+    expect(undoKeyAction(press('z', { ctrlKey: true }), outside, false)).toBe('toast');
+    expect(undoKeyAction(z, { editable: true, inDrawing: false }, true)).toBe('native');
+    expect(undoKeyAction(z, { editable: false, inDrawing: true }, true)).toBe('native');
+    expect(undoKeyAction(z, { editable: false, inDrawing: false, inOverlay: true }, true)).toBe('nothing');
+    // ⌥ changes the key on some layouts; other keys are not undo keys.
+    expect(undoKeyAction(press('z', { metaKey: true, altKey: true }), outside, true)).toBeNull();
+    expect(undoKeyAction(press('z'), outside, true)).toBeNull();
+    expect(undoKeyAction(press('k', { metaKey: true }), outside, true)).toBeNull();
+  });
+
+  it('keeps every undo and redo key from the browser outside fields and editors', () => {
+    // The browser undoes with the key of its system, which may not be the app's command key.
+    expect(undoKeyAction(press('z', { ctrlKey: true }), outside, true)).toBe('nothing');
+    expect(undoKeyAction(press('z', { metaKey: true }), outside, false)).toBe('nothing');
+    // Redo: ⇧⌘Z everywhere, and Ctrl+Y off Apple platforms, where ⌘Y is not redo.
+    const redo = press('Z', { metaKey: true, shiftKey: true });
+    expect(undoKeyAction(redo, outside, true)).toBe('nothing');
+    expect(undoKeyAction(redo, { editable: true, inDrawing: false }, true)).toBe('native');
+    expect(undoKeyAction(press('y', { ctrlKey: true }), outside, false)).toBe('nothing');
+    expect(undoKeyAction(press('y', { ctrlKey: true }), { editable: false, inDrawing: true }, false)).toBe('native');
+    expect(undoKeyAction(press('y', { metaKey: true }), outside, true)).toBeNull();
   });
 
   it('lets single keys work only outside fields and the drawing editor, without modifiers', () => {

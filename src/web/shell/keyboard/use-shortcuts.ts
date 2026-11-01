@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { usesCommandKey } from '../../lib/platform';
 import { useShellActions } from '../shell-ui';
 import { createChords } from './chords';
-import { acceptsPalette, acceptsPlainKey, acceptsUndo, commandKey, describeTarget, isComposing } from './guards';
+import { acceptsPalette, acceptsPlainKey, commandKey, describeTarget, isComposing, undoKeyAction } from './guards';
 import { escapeAction } from './layers';
 import type { useShortcutActions } from './use-shortcut-actions';
 
@@ -37,8 +37,8 @@ function leaveField(field: EventTarget | null) {
 /**
  * The single keyboard listener of the app (docs/etapas/08-fundacao.md, "Teclado e Esc"). ⌘K and ⌘\ work
  * anywhere, ⌘K not inside the drawing editor; ⌘Z undoes the toast on screen outside fields, editors and
- * overlays; single keys and G chords only outside fields, the drawing editor and open menus; Esc closes the
- * most recent layer and nothing else.
+ * overlays, and never reaches the browser's own undo outside fields and editors; single keys and G chords
+ * only outside fields, the drawing editor and open menus; Esc closes the most recent layer and nothing else.
  */
 export function useShortcuts(actions: Actions) {
   const { layers } = useShellActions();
@@ -71,6 +71,15 @@ export function useShortcuts(actions: Actions) {
           });
         return;
       }
+      // Outside fields and editors, the browser's own undo and redo never run: ⌘Z undoes the toast or nothing.
+      const undo = undoKeyAction(event, target, usesCommandKey());
+      if (undo) {
+        if (undo === 'native') return;
+        const handled = event.defaultPrevented;
+        event.preventDefault();
+        if (undo === 'toast' && !handled) run.undo();
+        return;
+      }
       if (commandKey(event, usesCommandKey()) && !event.altKey) {
         const key = event.key.toLowerCase();
         if (key === 'k' && acceptsPalette(target)) {
@@ -84,8 +93,6 @@ export function useShortcuts(actions: Actions) {
           event.preventDefault();
           run.back();
         }
-        // Without a toast offering an undo, ⌘Z stays with the page.
-        else if (key === 'z' && acceptsUndo(event, target) && run.undo()) event.preventDefault();
         return;
       }
       if (event.key === 'F6') {
