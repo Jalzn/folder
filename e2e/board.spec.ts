@@ -158,6 +158,13 @@ test('cards move by the keyboard, are announced, and complete with ⌘↵ and De
   await expect(cardTitle(page, 'Segunda')).toBeFocused();
   await expect(cardTitle(page, 'Segunda')).toHaveAttribute('tabindex', '0');
   await expect(cardTitle(page, 'Primeira')).toHaveAttribute('tabindex', '-1');
+  // The board is one Tab stop: Tab leaves it, past "+ Coluna".
+  await page.keyboard.press('Tab');
+  expect(await page.evaluate(() => document.querySelector('.board-columns')?.contains(document.activeElement))).toBe(
+    false,
+  );
+  await expect(page.getByRole('button', { name: 'Nova coluna', exact: true })).not.toBeFocused();
+  await cardTitle(page, 'Segunda').focus();
   await page.keyboard.press('ArrowUp');
   await page.keyboard.press('ArrowUp');
   await expect(columnName(page, 'A fazer')).toBeFocused();
