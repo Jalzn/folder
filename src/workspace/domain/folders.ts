@@ -1,4 +1,4 @@
-import { visibleText, withoutInvisible } from './visible-text.js';
+import { joinsEmoji, visibleText } from './visible-text.js';
 
 /** Bounds of folders: the name, the active folders of a project, and the items a restore takes back. */
 export const FOLDER_LIMITS = {
@@ -32,13 +32,40 @@ export function folderName(raw: string): string {
   return visibleText(raw).replace(/\s+/gu, ' ');
 }
 
-/** Compatibility forms (full width, ligatures) as their plain letters, without marks nor invisibles. */
-const fold = (text: string) => withoutInvisible(text.normalize('NFKD'));
+/** Letters whose accents a key drops, as Portuguese reads "Ações" and "Acoes" as one name. */
+const ACCENTED_SCRIPT = /[\p{sc=Latin}\p{sc=Greek}\p{sc=Cyrillic}]/u;
+const LETTER = /\p{L}/u;
+const MARK = /\p{M}/u;
+/** The text and emoji presentation selectors: one heart either way. */
+const PRESENTATION = /[\u{FE0E}\u{FE0F}]/u;
+const JOINER = /[\u{200C}\u{200D}]/u;
 
 /**
- * What makes two names the same folder: case, accents, compatibility forms and characters that draw
- * nothing aside, so "Ａｃｏｅｓ" and "Aç\u200Bões" are "Ações". Folded again after lowercasing, which
- * can bring marks back ("İ").
+ * Compatibility forms (full width, ligatures) as their plain letters (NFKD), without the marks of
+ * Latin, Greek and Cyrillic letters, the presentation selectors, nor joiners other than an emoji's.
+ * Marks of other scripts stay, since in Hindi and Thai they are letters and tones ("काम" is not
+ * "कम"), and so do emoji sequences (the family is not three people, the Scotland flag not England's).
+ */
+function fold(text: string): string {
+  const points = Array.from(text.normalize('NFKD'));
+  let base = '';
+  return points
+    .filter((point, index) => {
+      if (PRESENTATION.test(point)) return false;
+      if (JOINER.test(point)) return point === '\u{200D}' && joinsEmoji(points, index);
+      if (!MARK.test(point)) {
+        base = point;
+        return true;
+      }
+      return !(LETTER.test(base) && ACCENTED_SCRIPT.test(base));
+    })
+    .join('');
+}
+
+/**
+ * What makes two names the same folder: case, Latin, Greek and Cyrillic accents, compatibility forms
+ * and characters that draw nothing aside, so "Ａｃｏｅｓ" and "Aç\u{200B}ões" are "Ações". Folded again
+ * after lowercasing, which can bring marks back ("İ").
  */
 export function folderNameKey(name: string): string {
   return fold(fold(folderName(name)).toLocaleLowerCase('pt-BR'))

@@ -33,6 +33,42 @@ describe('folders', () => {
     expect(folderNameKey('\u{200B}')).toBe('');
   });
 
+  it('tells apart names that look different: marks of other scripts, emoji sequences, flags', () => {
+    const tags = (text: string) =>
+      Array.from(text, (letter) => String.fromCodePoint(0xe0000 + (letter.codePointAt(0) ?? 0))).join('');
+    for (const [one, other] of [
+      ['क\u{093E}म', 'कम'],
+      ['ม\u{0E49}า', 'มา'],
+      ['👨\u{200D}👩\u{200D}👧', '👨👩👧'],
+      ['🏳\u{FE0F}\u{200D}🌈', '🏳🌈'],
+      [`🏴${tags('gbsct')}\u{E007F}`, `🏴${tags('gbeng')}\u{E007F}`],
+      ['1\u{FE0F}\u{20E3}', '1'],
+      ['👍\u{1F3FB}', '👍\u{1F3FF}'],
+      ['Pr\u{043E}jeto', 'Projeto'],
+    ] as [string, string][])
+      expect(folderNameKey(one)).not.toBe(folderNameKey(other));
+  });
+
+  it('keys as one what reads as one: Latin accents, compatibility forms, presentation and Persian joiners', () => {
+    for (const [one, other] of [
+      ['má', 'ma'],
+      ['1\u{00BA} ano', '1o ano'],
+      ['x\u{00B2}', 'x2'],
+      ['Fase \u{2163}', 'Fase IV'],
+      ['\u{D55C}', '\u{1112}\u{1161}\u{11AB}'],
+      ['❤\u{FE0F}', '❤'],
+      ['می\u{200C}خواهم', 'میخواهم'],
+      ['ά', 'α'],
+    ] as [string, string][])
+      expect(folderNameKey(one)).toBe(folderNameKey(other));
+  });
+
+  it('stores and keys "MCP" with hidden tags as plain "MCP"', () => {
+    const hidden = Array.from({ length: 32 }, (_, index) => String.fromCodePoint(0xe0041 + (index % 26))).join('');
+    expect(folderName(`MCP${hidden}`)).toBe('MCP');
+    expect(folderNameKey(`MCP${hidden}`)).toBe('mcp');
+  });
+
   it('orders a folder before another, at the end, and refuses unknown or identical ids', () => {
     const ids = ['a', 'b', 'c', 'd'];
     expect(folderOrder(ids, 'd', 'a')).toEqual(['d', 'a', 'b', 'c']);
