@@ -1,10 +1,9 @@
 import './move-folder.css';
-import { searchText } from '@tinyfold/workspace/domain';
 import { ArrowRightLeft, Check, Folder, FolderPlus, Layers } from 'lucide-react';
 import type { JSX, RefObject } from 'react';
 import { Menu as AriaMenu, SearchField as AriaSearchField, Autocomplete, Input } from 'react-aria-components';
 import { formatCount } from '../../lib/count';
-import { queryWords } from '../../lib/highlight';
+import { matchesAllWords } from '../../lib/highlight';
 import { useFolders } from '../../lib/queries';
 import { MenuItem, MenuSeparator, PopoverSurface } from '../../ui';
 import { useShellActions } from '../shell-ui';
@@ -16,7 +15,7 @@ const OTHER_PROJECT = 'other-project';
 
 /** Every word of the filter, accents and case aside; "Nova pasta…" and "Outro projeto…" always show. */
 const matches = (text: string, input: string, key: string | number) =>
-  key === NEW_FOLDER || key === OTHER_PROJECT || queryWords(input).every((word) => searchText(text).includes(word));
+  key === NEW_FOLDER || key === OTHER_PROJECT || matchesAllWords(text, input);
 
 /**
  * "Mover para pasta…" (docs/interface/pastas.md §2): a filter over "Raiz do projeto" and the folders in their

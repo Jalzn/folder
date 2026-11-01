@@ -1,5 +1,4 @@
-import { searchText } from '@tinyfold/workspace/domain';
-import { queryWords } from '../../lib/highlight';
+import { matchesAllWords } from '../../lib/highlight';
 import type { ThemeChoice } from '../theme';
 
 export type CommandId =
@@ -117,10 +116,5 @@ export function availableCommands(context: CommandContext): Command[] {
 
 /** The commands whose label or keywords hold every word of the query, ignoring case and accents. */
 export function filterCommands(commands: Command[], query: string): Command[] {
-  const words = queryWords(query);
-  if (!words.length) return commands;
-  return commands.filter((command) => {
-    const text = searchText(`${command.label} ${command.keywords}`);
-    return words.every((word) => text.includes(word));
-  });
+  return commands.filter((command) => matchesAllWords(`${command.label} ${command.keywords}`, query));
 }

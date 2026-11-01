@@ -1,9 +1,9 @@
 import { Link } from '@tanstack/react-router';
-import { type NavFolder, searchText } from '@tinyfold/workspace/domain';
+import type { NavFolder } from '@tinyfold/workspace/domain';
 import { FileText, Folder, Search, Shapes } from 'lucide-react';
 import { errorMessage } from '../../lib/api';
 import { formatCount } from '../../lib/count';
-import { queryWords } from '../../lib/highlight';
+import { matchesAllWords, queryWords } from '../../lib/highlight';
 import type { SearchResult } from '../../lib/queries';
 import { displayTitle, type ItemType } from '../../lib/types';
 import { paths } from '../../router/paths';
@@ -19,9 +19,8 @@ export const itemResults = (results: readonly SearchResult[] | undefined) =>
 
 /** The folders whose name has every word of the filter, in their order. */
 export function matchingFolders(folders: readonly NavFolder[], query: string) {
-  const words = queryWords(query);
-  if (!words.length) return [];
-  return folders.filter((folder) => words.every((word) => searchText(folder.name).includes(word)));
+  if (!queryWords(query).length) return [];
+  return folders.filter((folder) => matchesAllWords(folder.name, query));
 }
 
 /**

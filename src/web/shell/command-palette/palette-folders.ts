@@ -1,6 +1,5 @@
-import { searchText } from '@tinyfold/workspace/domain';
 import { countOf } from '../../lib/count';
-import { queryWords } from '../../lib/highlight';
+import { matchesAllWords, queryWords } from '../../lib/highlight';
 import type { Project } from '../../lib/types';
 import type { PaletteRowData } from './palette-types';
 
@@ -15,10 +14,6 @@ export interface PaletteFolder {
   items: number;
 }
 
-/** Where an item is: "Tinyfold › MCP", or the project alone at its root. */
-export const itemPath = (projectName: string, folder: { name: string } | null | undefined) =>
-  folder ? `${projectName} › ${folder.name}` : projectName;
-
 /**
  * The Pastas group (docs/etapas/09-pastas.md, "Onde as pastas aparecem"): only with typed text, the first
  * six folders whose name holds every word, "MCP · pasta · 12 itens" with the project on the right. A folder
@@ -29,11 +24,10 @@ export function folderRows(
   folders: readonly PaletteFolder[],
   projects: readonly Project[],
 ): PaletteRowData[] {
-  const words = queryWords(query);
-  if (!words.length) return [];
+  if (!queryWords(query).length) return [];
   const byId = new Map(projects.map((project) => [project.id, project]));
   return folders
-    .filter((folder) => byId.has(folder.projectId) && words.every((word) => searchText(folder.name).includes(word)))
+    .filter((folder) => byId.has(folder.projectId) && matchesAllWords(folder.name, query))
     .slice(0, PALETTE_FOLDERS)
     .map((folder) => {
       const project = byId.get(folder.projectId);

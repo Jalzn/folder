@@ -43,10 +43,6 @@ export function emptiedText({ purged, skipped }: { purged: number; skipped: numb
 export const shownOfTotal = (shown: number, total: number) =>
   `Mostrando os ${formatCount(shown)} mais recentes de ${formatCount(total)}.`;
 
-/** Where an item came from: "Tinyfold › MCP", even for a folder deleted since, or the project alone. */
-export const originText = (projectName: string, folder: { name: string } | null) =>
-  folder ? `${projectName} › ${folder.name}` : projectName;
-
 /**
  * After a restore: "“X” restaurado em MCP." back in its folder, or "“X” restaurado." at the root. When its
  * folder was deleted meanwhile, it went to the root instead: "A pasta “MCP” foi excluída; o item voltou para

@@ -22,10 +22,10 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
+import { placeLabel } from '../../lib/place-label';
 import type { Project } from '../../lib/types';
 import { ColumnRing, ProjectMark } from '../../ui';
 import type { CommandId } from './commands';
-import { itemPath } from './palette-folders';
 import type { PaletteRowData } from './palette-sections';
 
 const commandIcons: Record<CommandId, ReactElement> = {
@@ -80,7 +80,7 @@ export function rowRight(row: PaletteRowData, projects: readonly Project[]): Rea
       {row.status && <span>{taskStatusLabels[row.status]} ·</span>}
       <span className="palette-row__project">
         {project && <ProjectMark name={project.name} color={project.color} size={16} />}
-        {itemPath(row.project.name, row.folder)}
+        {placeLabel(row.project.name, row.folder)}
       </span>
     </>
   );

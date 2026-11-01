@@ -19,6 +19,15 @@ export function queryWords(query: string) {
 }
 
 /**
+ * Whether a text holds every word of a query, ignoring case and accents as the search does: the filters of
+ * the sidebar, "Mover para pasta…" and ⌘K. An empty query matches everything.
+ */
+export function matchesAllWords(text: string, query: string) {
+  const folded = searchText(text);
+  return queryWords(query).every((word) => folded.includes(word));
+}
+
+/**
  * Splits a title or excerpt into parts, marking every occurrence of the query's words, ignoring case and
  * accents as the search does, so a result can show its terms in bold.
  */

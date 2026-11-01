@@ -1,26 +1,25 @@
 import './sidebar.css';
-import { useNavigate } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { useSearch } from '../../lib/queries';
+import { useRef } from 'react';
 import type { Project } from '../../lib/types';
-import { paths } from '../../router/paths';
 import { Kbd } from '../../ui';
-import { useShellUi } from '../shell-ui';
+import { useShellActions } from '../shell-ui';
 import { ItemsSection } from './ItemsSection';
-import { itemResults, SearchResults } from './SearchResults';
+import { SearchResults } from './SearchResults';
 import { SidebarFooter } from './SidebarFooter';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarNav } from './SidebarNav';
 import { SidebarSearch } from './SidebarSearch';
+import { entryRow } from './tree/tree-dom';
 import { useFolderReveal } from './use-folder-reveal';
 import { useNavigationData } from './use-navigation-data';
 import { useRovingFocus } from './use-roving-focus';
+import { useSidebarSearch } from './use-sidebar-search';
 
 /**
  * The project's sidebar, variant A (docs/interface/sidebar.md): the switcher, Buscar, Visão geral and Quadro
- * fixed at the top, Documentos and Desenhos scrolling, or the search results in their place, and Você and
- * the trash fixed at the bottom. Without an active project, the switcher, Buscar (⌘K) and Você remain.
+ * fixed at the top, the Itens tree scrolling, or the search results in its place, and Você and the trash
+ * fixed at the bottom. Without an active project, the switcher, Buscar (⌘K) and Você remain.
  */
 export function ProjectSidebar({
   project,
@@ -37,37 +36,13 @@ export function ProjectSidebar({
   /** Opened by `/` or the rail's Buscar: the field takes focus. */
   focusSearch?: boolean;
 }) {
-  const ui = useShellUi();
-  const navigate = useNavigate();
+  const ui = useShellActions();
   const navigation = useNavigationData(project);
   const roving = useRovingFocus<HTMLElement>();
   const treeRef = useRef<HTMLDivElement>(null);
-  const [query, setQuery] = useState('');
-  const searchInput = useRef<HTMLInputElement>(null);
-  const handledRequest = useRef(ui.searchRequest);
-  const searching = Boolean(project && query.trim());
-  const search = useSearch(
-    { query, ...(project ? { projectId: project.id } : {}), types: ['document', 'drawing'], limit: 20 },
-    searching,
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Another project starts with an empty search.
-  useEffect(() => setQuery(''), [project?.id]);
-  useEffect(() => {
-    if (ui.searchRequest === handledRequest.current) return;
-    handledRequest.current = ui.searchRequest;
-    searchInput.current?.focus();
-  }, [ui.searchRequest]);
-  useEffect(() => {
-    if (focusSearch) searchInput.current?.focus();
-  }, [focusSearch]);
-
+  const { query, setQuery, input, searching, search, openFirst } = useSidebarSearch(project, focusSearch);
   // A folder from the filter or from ⌘K: it opens in the tree, and its first child takes the focus.
   const openFolder = useFolderReveal(project?.id ?? null, treeRef, () => setQuery(''));
-
-  function openFirst() {
-    const first = itemResults(search.data?.items)[0];
-    if (project && first) void navigate({ href: paths.item(project.id, first.type, first.id) });
-  }
   return (
     <div className="sidebar" data-region="sidebar">
       <SidebarHeader project={project} place={place} collapseLabel={collapseLabel} onCollapse={onCollapse} />
@@ -79,10 +54,8 @@ export function ProjectSidebar({
           onKeyDown={(event) => {
             // ↓ on the last row of the navigation goes on into the tree, at its current row.
             const rows = [...(roving.ref.current?.querySelectorAll<HTMLElement>('[data-roving]') ?? [])];
-            if (event.key === 'ArrowDown' && rows.at(-1) === event.target && treeRef.current) {
-              const row =
-                treeRef.current.querySelector<HTMLElement>('[role="row"][tabindex="0"]') ??
-                treeRef.current.querySelector<HTMLElement>('[role="row"]');
+            if (event.key === 'ArrowDown' && rows.at(-1) === event.target) {
+              const row = entryRow(treeRef.current);
               if (row) {
                 event.preventDefault();
                 row.focus();
@@ -98,7 +71,7 @@ export function ProjectSidebar({
               query={query}
               onQueryChange={setQuery}
               onOpenFirst={openFirst}
-              inputRef={searchInput}
+              inputRef={input}
             />
             <SidebarNav project={project} openTasks={navigation?.openTasks} />
           </div>

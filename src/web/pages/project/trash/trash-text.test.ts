@@ -4,7 +4,6 @@ import {
   emptyButtonLabel,
   emptyTrashBody,
   emptyTrashTitle,
-  originText,
   restoredText,
   shownOfTotal,
 } from './trash-text';
@@ -47,11 +46,6 @@ describe('trash copy', () => {
 });
 
 describe('folders in the trash', () => {
-  it('names where an item came from', () => {
-    expect(originText('Tinyfold', { name: 'MCP' })).toBe('Tinyfold › MCP');
-    expect(originText('Tinyfold', null)).toBe('Tinyfold');
-  });
-
   it('says where a restored item went, and when its folder is gone', () => {
     expect(restoredText('Notas', { name: 'MCP' }, false)).toBe('“Notas” restaurado em MCP.');
     expect(restoredText('Notas', null, false)).toBe('“Notas” restaurado.');

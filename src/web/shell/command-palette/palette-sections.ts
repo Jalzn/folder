@@ -1,5 +1,4 @@
-import { searchText } from '@tinyfold/workspace/domain';
-import { queryWords } from '../../lib/highlight';
+import { matchesAllWords } from '../../lib/highlight';
 import type { SearchResult } from '../../lib/queries';
 import { displayTitle, type Project } from '../../lib/types';
 import { activeProjects } from '../project/project-order';
@@ -30,8 +29,7 @@ export interface PaletteInput {
  */
 export function paletteSections({ query, here, results, projects, folders, commands }: PaletteInput): PaletteSection[] {
   const typed = query.trim() !== '';
-  const words = queryWords(query);
-  const matches = (text: string) => words.every((word) => searchText(text).includes(word));
+  const matches = (text: string) => matchesAllWords(text, query);
   const noActive = activeProjects([...projects]).length === 0;
 
   const sections: PaletteSection[] = [

@@ -1,8 +1,8 @@
+import { placeLabel } from '../../../lib/place-label';
 import type { TrashItem } from '../../../lib/queries';
 import { itemTypeLabels } from '../../../lib/types';
 import { Button } from '../../../ui';
 import type { TrashGroup } from './trash-groups';
-import { originText } from './trash-text';
 import { trashTitle } from './use-trash-actions';
 
 function TrashRow({
@@ -27,7 +27,7 @@ function TrashRow({
       </span>
       {/* Origem: the project, and the folder of a document or drawing, deleted since or not. */}
       <span className="trash-row__origin" title="Origem">
-        {originText(projectName, item.folder)}
+        {placeLabel(projectName, item.folder)}
       </span>
       <Button size="sm" isDisabled={busy} onPress={onRestore} aria-label={`Restaurar ${title}`}>
         Restaurar

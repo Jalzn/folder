@@ -2,9 +2,6 @@ import { api, queryClient } from '../../lib/api';
 import { canvasQuery, documentQuery } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
 
-/** What moving an item to a folder or to the project's root answers. */
-export type FolderMove = Awaited<ReturnType<typeof api.workspace.moveItem>>;
-
 /**
  * Files a document or drawing in a folder of its project, or at its root (`folderId` null). It carries no
  * content and is no edit, so no version is asked for and an open editor goes on saving; the open item's

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from '../../lib/types';
-import { folderRows, itemPath, PALETTE_FOLDERS } from './palette-folders';
+import { folderRows, PALETTE_FOLDERS } from './palette-folders';
 
 const project = (id: string, name: string, archived = false) =>
   ({ id, name, color: 'gray', position: 0, archivedAt: archived ? '2026-10-01T00:00:00Z' : null }) as Project;
@@ -12,14 +12,6 @@ const folders = [
   folder('f3', 'p2', 'Ações do MCP', 0),
   folder('f4', 'gone', 'MCP perdido', 3),
 ];
-
-describe('itemPath', () => {
-  it('joins the project and the folder, or names the project alone at its root', () => {
-    expect(itemPath('Tinyfold', { name: 'MCP' })).toBe('Tinyfold › MCP');
-    expect(itemPath('Tinyfold', null)).toBe('Tinyfold');
-    expect(itemPath('Tinyfold', undefined)).toBe('Tinyfold');
-  });
-});
 
 describe('folderRows', () => {
   it('shows nothing before a word is typed', () => {
