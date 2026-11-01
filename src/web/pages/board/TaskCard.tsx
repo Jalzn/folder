@@ -1,13 +1,13 @@
 import './card.css';
+import { isOverdue } from '@tinyfold/workspace/domain';
 import { useId, useSyncExternalStore } from 'react';
-import type { ColumnSummary, LabelSummary } from '../../lib/queries';
+import type { ColumnSummary } from '../../lib/queries';
 import { isPendingSave, pendingSaves, subscribePendingSaves } from '../../lib/save-registry';
 import { displayTitle, type Task } from '../../lib/types';
 import { ColumnRing } from '../../ui';
+import { useBoard } from './board-context';
 import { CardMenu } from './CardMenu';
 import { CardMeta } from './CardMeta';
-import type { MoveChoice } from './MoveTaskMenu';
-import type { CardDrag } from './use-board-dnd';
 import { CARD_ATTRIBUTE } from './use-board-keyboard';
 
 /** A card's place on the board, for its ring and its menu. */
@@ -24,45 +24,11 @@ export interface CardColumn {
  * The ring only shows the column (decision 18): Concluir is in the ⋯ and on ⌘↵. A 6 px dot in --late marks
  * text not saved yet. An archived project's card only opens.
  */
-export function TaskCard({
-  task,
-  place,
-  labels,
-  late,
-  open,
-  active,
-  editable,
-  dragging,
-  drag,
-  menuOpen,
-  cardRef,
-  titleRef,
-  onMenuOpenChange,
-  onOpen,
-  onMove,
-  onToggleDone,
-  onTrash,
-}: {
-  task: Task;
-  place: CardColumn;
-  labels: ReadonlyMap<string, LabelSummary>;
-  late: boolean;
-  /** It is the task open in the drawer. */
-  open: boolean;
-  /** Its title is the board's Tab stop. */
-  active: boolean;
-  editable: boolean;
-  dragging: boolean;
-  drag: CardDrag;
-  menuOpen: boolean;
-  cardRef: (element: HTMLLIElement | null) => () => void;
-  titleRef: (element: HTMLButtonElement | null) => () => void;
-  onMenuOpenChange: (open: boolean) => void;
-  onOpen: () => void;
-  onMove: (choice: MoveChoice) => void;
-  onToggleDone: () => void;
-  onTrash: () => void;
-}) {
+export function TaskCard({ task, place }: { task: Task; place: CardColumn }) {
+  const { editable, labels, today, isStop, refs, dnd, board } = useBoard();
+  const { menu, setMenu } = board;
+  const late = isOverdue(task.dueOn, today, place.column.isDone);
+  const open = board.openId === task.id;
   const metaId = useId();
   // Text typed in the drawer that the server has not confirmed yet, in this tab.
   const unsaved = isPendingSave(useSyncExternalStore(subscribePendingSaves, pendingSaves), 'task', task.id);
@@ -70,25 +36,25 @@ export function TaskCard({
   const title = displayTitle(task.title);
   return (
     <li
-      ref={cardRef}
+      ref={refs.cards.ref(task.id)}
       className="task-card"
       data-done={column.isDone || undefined}
       data-open={open || undefined}
-      data-dragging={dragging || undefined}
-      {...drag}
+      data-dragging={dnd.dragged === task.id || undefined}
+      {...dnd.card(task.id)}
     >
       <span className="task-card__ring">
         <ColumnRing index={place.index} count={place.count} isDone={column.isDone} />
       </span>
       <button
-        ref={titleRef}
+        ref={refs.titles.ref(task.id)}
         type="button"
         className="task-card__title"
-        tabIndex={active ? 0 : -1}
+        tabIndex={isStop('card', task.id) ? 0 : -1}
         aria-describedby={metaId}
         aria-current={open || undefined}
         {...{ [CARD_ATTRIBUTE]: task.id }}
-        onClick={onOpen}
+        onClick={() => board.openTask(task)}
       >
         {title}
       </button>
@@ -100,12 +66,12 @@ export function TaskCard({
           columns={place.columns}
           columnId={task.columnId}
           done={column.isDone}
-          open={menuOpen}
-          onOpenChange={onMenuOpenChange}
-          onOpen={onOpen}
-          onMove={onMove}
-          onToggleDone={onToggleDone}
-          onTrash={onTrash}
+          open={menu?.kind === 'card' && menu.id === task.id}
+          onOpenChange={(next) => setMenu(next ? { kind: 'card', id: task.id } : null)}
+          onOpen={() => board.openTask(task)}
+          onMove={(choice) => board.moveCard(task.id, choice)}
+          onToggleDone={() => board.toggleDone(task.id)}
+          onTrash={() => board.setTrashing(task)}
         />
       )}
     </li>

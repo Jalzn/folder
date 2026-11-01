@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react';
 import { formatCount } from '../../lib/count';
 import type { ColumnSummary } from '../../lib/queries';
 import { ColumnRing, IconButton } from '../../ui';
+import { useBoard } from './board-context';
 import { columnLabel } from './board-text';
 import { type ColumnCommand, ColumnMenu } from './ColumnMenu';
 import { ColumnNameField } from './ColumnNameField';
@@ -17,17 +18,6 @@ export function ColumnHeader({
   index,
   count,
   total,
-  editable,
-  active,
-  renaming,
-  taken,
-  menuOpen,
-  nameRef,
-  onMenuOpenChange,
-  onCommand,
-  onAdd,
-  onRename,
-  onRenamed,
 }: {
   column: ColumnSummary;
   index: number;
@@ -35,29 +25,27 @@ export function ColumnHeader({
   count: number;
   /** How many columns the board has. */
   total: number;
-  editable: boolean;
-  active: boolean;
-  renaming: boolean;
-  taken: readonly string[];
-  menuOpen: boolean;
-  nameRef: (element: HTMLButtonElement | null) => () => void;
-  onMenuOpenChange: (open: boolean) => void;
-  onCommand: (command: ColumnCommand) => void;
-  onAdd: () => void;
-  onRename: (name: string) => Promise<boolean>;
-  onRenamed: () => void;
 }) {
+  const { editable, isStop, refs, board } = useBoard();
+  const { menu, setMenu } = board;
+  const taken = board.columns.filter((other) => other.id !== column.id).map((other) => other.name);
+  const onCommand = (command: ColumnCommand) => board.columnCommand(column, command);
   return (
     <header className="board-column__head">
       <ColumnRing index={index} count={total} isDone={column.isDone} />
-      {renaming ? (
-        <ColumnNameField initial={column.name} taken={taken} onSubmit={onRename} onDone={onRenamed} />
+      {board.renaming === column.id ? (
+        <ColumnNameField
+          initial={column.name}
+          taken={taken}
+          onSubmit={(name) => board.renameColumn(column, name)}
+          onDone={() => board.renamed(column.id)}
+        />
       ) : (
         <button
-          ref={nameRef}
+          ref={refs.names.ref(column.id)}
           type="button"
           className="board-column__name"
-          tabIndex={active ? 0 : -1}
+          tabIndex={isStop('column', column.id) ? 0 : -1}
           aria-label={columnLabel(column.name, count, column.isDone, editable)}
           {...{ [COLUMN_ATTRIBUTE]: column.id }}
           onClick={editable ? () => onCommand('rename') : undefined}
@@ -75,7 +63,7 @@ export function ColumnHeader({
           size="sm"
           className="board-column__more"
           excludeFromTabOrder
-          onPress={onAdd}
+          onPress={() => board.newTask(column.id)}
         >
           <Plus size={14} />
         </IconButton>
@@ -86,8 +74,8 @@ export function ColumnHeader({
           isDone={column.isDone}
           first={index === 0}
           last={index === total - 1}
-          open={menuOpen}
-          onOpenChange={onMenuOpenChange}
+          open={menu?.kind === 'column' && menu.id === column.id}
+          onOpenChange={(open) => setMenu(open ? { kind: 'column', id: column.id } : null)}
           onCommand={onCommand}
         />
       )}
