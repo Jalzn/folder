@@ -28,3 +28,17 @@ export async function renumberColumns(repo: ColumnRepository, ordered: readonly 
   for (const [position, column] of ordered.entries())
     if (column.position !== position) await repo.setColumnPosition(column.id, position);
 }
+
+/** How far ahead of the server's clock an undo's completion may be: more is no completion it gave. */
+const COMPLETION_MARGIN_MS = 60_000;
+
+/**
+ * Refuses an undo list with a completion in the future. The lists are the client's word, as with
+ * folders, but every completion in them came from an earlier answer of this server, so one more than
+ * a minute ahead of its clock is forged or corrupt, and the whole request is refused.
+ */
+export function assertPastCompletions(completions: readonly (string | null)[], now: string): void {
+  const latest = Date.parse(now) + COMPLETION_MARGIN_MS;
+  if (completions.some((completedAt) => completedAt !== null && Date.parse(completedAt) > latest))
+    throw new AppError('VALIDATION', 'A data de conclusão não pode estar no futuro.');
+}

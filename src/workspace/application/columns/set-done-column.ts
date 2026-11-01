@@ -2,7 +2,7 @@ import { AppError } from '@tinyfold/core/application';
 import { COLUMN_LIMITS } from '../../domain/columns.js';
 import type { WorkspaceContext } from '../ports.js';
 import type { SetDoneColumnInput } from '../schemas/columns.js';
-import { requireActiveColumn } from './column-rules.js';
+import { assertPastCompletions, requireActiveColumn } from './column-rules.js';
 
 /**
  * Makes an active column the done one, in one transaction. The migration's triggers hand the role
@@ -15,6 +15,10 @@ import { requireActiveColumn } from './column-rules.js';
  */
 export function setDoneColumn(ctx: WorkspaceContext, input: SetDoneColumnInput) {
   return ctx.write('workspace.setDoneColumn', input, async (repo) => {
+    assertPastCompletions(
+      (input.restore ?? []).map((listed) => listed.completedAt),
+      ctx.now(),
+    );
     const column = await requireActiveColumn(repo, input.id);
     if (column.isDone) throw new AppError('DOMAIN_RULE', 'Esta coluna já é a de conclusão.');
     const previous = (await repo.activeColumns()).find((item) => item.isDone);

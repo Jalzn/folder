@@ -3,7 +3,7 @@ import { restoredPosition } from '../../domain/order.js';
 import { assertVersion } from '../helpers.js';
 import type { WorkspaceContext } from '../ports.js';
 import type { RestoreColumnInput } from '../schemas/columns.js';
-import { assertColumnNameFree, assertRoomForColumn, renumberColumns } from './column-rules.js';
+import { assertColumnNameFree, assertPastCompletions, assertRoomForColumn, renumberColumns } from './column-rules.js';
 
 /**
  * Undoes deleteColumn with the list it answered. The column comes back at the position it had, or
@@ -11,10 +11,15 @@ import { assertColumnNameFree, assertRoomForColumn, renumberColumns } from './co
  * still in the destination: any move or trash since raised its version) comes back to the column at
  * its place before, with a new version and its completion before, which was none: only an open
  * column can be deleted. Every other task is skipped and counted. Nothing records which tasks the
- * deletion moved, so the list is the client's word, as with folders.
+ * deletion moved, so the list is the client's word, as with folders, save a completion in the
+ * future, which is refused (assertPastCompletions).
  */
 export function restoreColumn(ctx: WorkspaceContext, input: RestoreColumnInput) {
   return ctx.write('workspace.restoreColumn', input, async (repo) => {
+    assertPastCompletions(
+      input.moved.map((listed) => listed.completedAt),
+      ctx.now(),
+    );
     const column = await repo.findColumn(input.id);
     if (!column) throw new AppError('NOT_FOUND', 'A coluna não está disponível.');
     assertVersion(column.version, input.expectedVersion);

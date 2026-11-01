@@ -328,6 +328,37 @@ describe('columns', () => {
         code: 'NOT_FOUND',
       });
     });
+
+    it('refuses an undo list with a completion in the future, in setDoneColumn and restoreColumn', async () => {
+      const review = (await create('Revisão')).id;
+      const finished = await task('Pronta', done);
+      await service.setDoneColumn({ ...request(), id: review });
+      const future = { code: 'VALIDATION', message: 'A data de conclusão não pode estar no futuro.' };
+      // The service's clock is a little past 2026-11-01T12:00:00Z.
+      await expect(
+        service.setDoneColumn({
+          ...request(),
+          id: done,
+          restore: [{ id: finished.id, completedAt: '2999-01-01T00:00:00.000Z' }],
+        }),
+      ).rejects.toMatchObject(future);
+      expect((await columns()).find(([name]) => name === 'Revisão')?.[2]).toBe(true);
+      // A completion within a minute of the clock is no forgery.
+      await service.setDoneColumn({
+        ...request(),
+        id: done,
+        restore: [{ id: finished.id, completedAt: '2026-11-01T12:00:50.000Z' }],
+      });
+      expect(await taskRow(finished.id)).toMatchObject({ completed_at: '2026-11-01T12:00:50.000Z' });
+
+      const moved = await task('Revisar', review);
+      const deleted = await service.deleteColumn({ ...request(), id: review, expectedVersion: 1, destinationId: todo });
+      const forged = deleted.moved.map((item) => ({ ...item, completedAt: '2026-11-01T13:00:00.000Z' }));
+      await expect(
+        service.restoreColumn({ ...request(), id: review, expectedVersion: deleted.version, moved: forged }),
+      ).rejects.toMatchObject(future);
+      expect(await taskRow(moved.id)).toMatchObject({ column_id: todo });
+    });
   });
 
   it('answers a repeated request with what it answered first', async () => {
