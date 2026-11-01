@@ -61,7 +61,7 @@ Levar ao documento as ligações do produto: tarefas e desenhos incorporados, vi
 
 - Etapa 10: card com coluna, prazo, etiquetas e checklist; gaveta; editor compartilhado.
 - Etapa 07: prévia PNG.
-- Etapa 09, para mostrar a pasta no cabeçalho.
+- [Etapa 09](09-pastas.md#onde-as-pastas-aparecem): o rótulo da pasta (`FolderLabel`, em `shell/folders/`) no espaço `lead` do `PageFrame`, que os cabeçalhos novos mantêm.
 
 ## Perguntas em aberto
 

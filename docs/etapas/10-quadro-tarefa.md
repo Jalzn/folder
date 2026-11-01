@@ -67,7 +67,11 @@ Dar às tarefas os campos e o quadro definidos no [produto](../produto.md):
 
 ## Dependências
 
-Etapa 08: shell, Visão geral, seletor e tokens. A etapa 09 não é requisito, porque tarefas não entram em pastas.
+- Etapa 08: shell, Visão geral, seletor e tokens.
+- [Etapa 09](09-pastas.md#desfazer), mesmo sem tarefas em pastas, pelo Desfazer:
+  - O ⌘Z do toast vem de `ToastProvider` (`undo` e `undoLatest`), com a guarda `acceptsUndo`.
+  - A exclusão segue o padrão de restauração versionada. `deleteColumn` exclui a coluna logicamente e responde as tarefas movidas, com as posições anteriores. `restoreColumn` recebe essa lista, confere a revisão do quadro e pula o que mudou.
+- A migração desta etapa continua sendo a 007, depois da `006_folders.sql`.
 
 ## Perguntas em aberto
 
