@@ -12,11 +12,11 @@
 | 08 | [Fundação e lateral](08-fundacao.md) | Sistema visual Sumário, lateral do projeto e todo item dentro de um projeto | Concluída localmente |
 | 09 | [Pastas](09-pastas.md) | Pastas de um nível para documentos e desenhos, árvore na lateral e Desfazer com ⌘Z | Concluída localmente |
 | 10 | [Quadro e tarefa](10-quadro-tarefa.md) | Colunas configuráveis, gaveta da tarefa, descrição, prazo e etiquetas | Concluída localmente |
-| 11 | [Documento e desenho](11-documento-desenho.md) | Tarefas e desenhos incorporados e novas páginas de documento e desenho | Planejada |
+| 11 | [Documento e desenho](11-documento-desenho.md) | Tarefas e desenhos incorporados, marcador de origem e novas páginas de documento e desenho | Detalhada |
 
 As evidências executadas estão em [validação](../validacao.md), [revisão de persistência](../revisao-workspace.md) e [revisão de backend](../revisao-backend.md).
 
-As etapas 07 a 11 seguem essa ordem. Cada uma deixa `check`, `test:db`, `build` e `e2e` verdes antes de entrar na `main`. As etapas 07 a 10 estão concluídas localmente. A etapa 11 tem o escopo inicial e é detalhada antes de começar.
+As etapas 07 a 11 seguem essa ordem. Cada uma deixa `check`, `test:db`, `build` e `e2e` verdes antes de entrar na `main`. As etapas 07 a 10 estão concluídas localmente, e a etapa 11 está detalhada.
 
 ## Para colocar na nuvem
 
