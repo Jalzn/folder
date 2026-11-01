@@ -1,5 +1,6 @@
 import type { BlockNoteEditor } from '@blocknote/core';
 import { useNavigate } from '@tanstack/react-router';
+import type { EditorBlocks } from '../../editor/schema';
 import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { downloadFile, fileNameFrom } from '../../lib/download';
@@ -11,7 +12,6 @@ import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
 import { useToast } from '../../ui';
-import type { EditorBlocks } from './document-schema';
 
 const MAX_IMPORT_BYTES = 1_048_576;
 

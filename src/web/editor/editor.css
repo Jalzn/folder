@@ -1,0 +1,76 @@
+/*
+ * The block editor shared by documents and task descriptions (src/web/editor): BlockNote on the Sumário
+ * tokens, with the headings, code and equations of a document. Each use sets its own text size and height.
+ */
+/* Every BlockNote root, including the menus it renders in portals, takes the Sumário tokens in both themes. */
+.bn-root[data-color-scheme] {
+  --bn-colors-editor-background: var(--bg);
+  --bn-colors-editor-text: var(--text);
+  --bn-colors-menu-background: var(--raised-2);
+  --bn-colors-menu-text: var(--text);
+  --bn-colors-tooltip-background: var(--toast);
+  --bn-colors-tooltip-text: var(--on-toast);
+  --bn-colors-hovered-background: var(--hover-raised);
+  --bn-colors-hovered-text: var(--text);
+  --bn-colors-selected-background: var(--selected);
+  --bn-colors-selected-text: var(--text);
+  --bn-colors-disabled-background: var(--hover);
+  --bn-colors-disabled-text: var(--text-3);
+  --bn-colors-border: var(--line);
+  --bn-colors-shadow: var(--scrim);
+  --bn-colors-side-menu: var(--icon);
+  --bn-font-family: var(--font-sans);
+}
+.block-editor .bn-editor {
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font: var(--type-body);
+  letter-spacing: var(--tracking-body);
+}
+.block-editor .bn-inline-content[data-is-empty-and-focused]::before {
+  color: var(--text-3);
+}
+/*
+ * BlockNote sizes headings by --level on a selector too specific to override, so the levels set the variable.
+ * Level 1 has no data-level attribute.
+ */
+.block-editor [data-content-type="heading"] {
+  --level: 24px;
+  color: var(--text);
+  line-height: 32px;
+  letter-spacing: var(--tracking-h1);
+}
+.block-editor [data-content-type="heading"][data-level="2"] {
+  --level: 19px;
+  line-height: 26px;
+  letter-spacing: var(--tracking-h2);
+}
+.block-editor [data-content-type="heading"][data-level="3"] {
+  --level: 16px;
+  line-height: 24px;
+  letter-spacing: var(--tracking-h3);
+}
+.block-editor [data-content-type="codeBlock"] {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raised-1);
+}
+/* Keep equations on the document surface when BlockNote selects their preview. */
+.block-editor [data-content-type="mathBlock"].ProseMirror-selectednode > *::after,
+.block-editor .ProseMirror-selectednode > [data-content-type="mathBlock"] > *::after,
+.block-editor [data-content-type="mathBlock"] .ProseMirror-selectednode::after {
+  content: none;
+}
+.block-editor [data-content-type="mathBlock"] .bn-preview-placeholder {
+  background: var(--raised-1);
+  color: var(--text-2);
+}
+.block-editor [data-content-type="mathBlock"] .bn-preview-placeholder-error {
+  border: 1px solid var(--late);
+  background: var(--late-bg);
+  color: var(--late);
+}
+.block-editor [data-content-type="mathBlock"] .bn-code-block-source-error {
+  color: var(--late);
+}

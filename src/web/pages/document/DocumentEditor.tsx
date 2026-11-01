@@ -1,6 +1,7 @@
 import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ReloadDialog, SaveBanners, SaveState, TrashItemDialog, useItemActions } from '../../components/editor';
+import { BlockEditor } from '../../editor/BlockEditor';
 import type { Snapshot } from '../../lib/autosave';
 import { formatCount } from '../../lib/count';
 import { moveThroughController } from '../../lib/editor-move';
@@ -12,7 +13,6 @@ import { usePageTitle } from '../../lib/use-page-title';
 import { FolderLabel, ItemMenu, type ItemMenuAction, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
 import { Banner, Button, IconButton } from '../../ui';
-import { DocumentContentEditor } from './DocumentContentEditor';
 import { DocumentTitle } from './DocumentTitle';
 import { documentController, documentItem } from './document-session';
 import { LinkedTasksPanel } from './LinkedTasksPanel';
@@ -150,8 +150,9 @@ export function DocumentEditor({ document }: { document: Document }) {
               onEnter={() => editor.focus()}
             />
             <hr className="document__hair" />
-            <DocumentContentEditor
+            <BlockEditor
               editor={editor}
+              className="document__content"
               theme={theme.resolved}
               onChange={() => update({ content: editor.document as unknown as DocumentContent })}
               onSelectionChange={() => setSelection(selectedText(editor))}

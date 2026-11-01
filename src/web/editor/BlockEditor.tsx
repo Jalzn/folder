@@ -1,3 +1,4 @@
+import './editor.css';
 import { type BlockNoteEditor, combineByGroup } from '@blocknote/core';
 import { filterSuggestionItems } from '@blocknote/core/extensions';
 import { BlockNoteView } from '@blocknote/mantine';
@@ -12,6 +13,7 @@ import {
   useComponentsContext,
 } from '@blocknote/react';
 import { Plus } from 'lucide-react';
+import { cx } from '../lib/cx';
 
 function CreateTaskButton({ onPress }: { onPress: () => void }) {
   const components = useComponentsContext();
@@ -29,12 +31,14 @@ function CreateTaskButton({ onPress }: { onPress: () => void }) {
 }
 
 /**
- * The document's content in BlockNote, in the resolved theme: the formatting toolbar gains "Criar tarefa",
- * and the slash menu gains the equations.
+ * The block editor shared by documents and task descriptions, in the resolved theme: BlockNote with the
+ * formatting toolbar and the slash menu, both with the equations. `onCreateTask` adds "Criar tarefa" to the
+ * toolbar, which only a document offers.
  */
-export function DocumentContentEditor({
+export function BlockEditor({
   editor,
   theme,
+  className,
   onChange,
   onSelectionChange,
   onCreateTask,
@@ -42,25 +46,26 @@ export function DocumentContentEditor({
   // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
   editor: BlockNoteEditor<any, any, any>;
   theme: 'light' | 'dark';
+  className?: string;
   onChange: () => void;
-  onSelectionChange: () => void;
-  onCreateTask: () => void;
+  onSelectionChange?: () => void;
+  onCreateTask?: () => void;
 }) {
   return (
-    <div className="document__content">
+    <div className={cx('block-editor', className)}>
       <BlockNoteView
         editor={editor}
         theme={theme}
         formattingToolbar={false}
         slashMenu={false}
         onChange={onChange}
-        onSelectionChange={onSelectionChange}
+        {...(onSelectionChange ? { onSelectionChange } : {})}
       >
         <FormattingToolbarController
           formattingToolbar={() => (
             <FormattingToolbar>
               {getFormattingToolbarItems([...blockTypeSelectItems(editor), ...getMathBlockTypeSelectItems(editor)])}
-              <CreateTaskButton onPress={onCreateTask} />
+              {onCreateTask && <CreateTaskButton onPress={onCreateTask} />}
             </FormattingToolbar>
           )}
         />

@@ -1,14 +1,8 @@
-import { ArrowDown, ArrowRight, ArrowUp, CheckCircle2, Circle, FileText } from 'lucide-react';
-import type { DragEvent } from 'react';
-import { TASK_STATUSES, type Task, taskStatusLabels } from '../../lib/types';
-import { ActionMenu } from '../../ui';
-
-export interface CardMoves {
-  /** To another column, at its end. */
-  toColumn: (status: Task['status']) => void;
-  up?: (() => void) | undefined;
-  down?: (() => void) | undefined;
-}
+import './card.css';
+import { CheckCircle2, Circle, FileText } from 'lucide-react';
+import type { Task } from '../../lib/types';
+import { CardMenu, type CardMoves } from './CardMenu';
+import type { CardDrag } from './use-board-dnd';
 
 /**
  * A task on the board: the check that completes it, the title that opens it, its ⋯ with the moves a
@@ -29,12 +23,7 @@ export function TaskCard({
   moves: CardMoves;
   onOpen: () => void;
   onComplete: () => void;
-  drag: {
-    onDragStart: (event: DragEvent) => void;
-    onDragEnd: () => void;
-    onDragOver: (event: DragEvent) => void;
-    onDrop: (event: DragEvent) => void;
-  };
+  drag: CardDrag;
 }) {
   const done = task.status === 'done';
   return (
@@ -58,24 +47,7 @@ export function TaskCard({
         <button type="button" className="task-card__title" onClick={onOpen}>
           {task.title}
         </button>
-        <ActionMenu
-          label={`Opções de ${task.title}`}
-          items={[
-            { label: 'Editar tarefa', action: onOpen },
-            ...TASK_STATUSES.filter((status) => status !== task.status).map((status) => ({
-              label: `Mover para ${taskStatusLabels[status]}`,
-              icon: <ArrowRight size={16} />,
-              action: () => moves.toColumn(status),
-            })),
-            { label: 'Mover para cima', icon: <ArrowUp size={16} />, disabled: !moves.up, action: () => moves.up?.() },
-            {
-              label: 'Mover para baixo',
-              icon: <ArrowDown size={16} />,
-              disabled: !moves.down,
-              action: () => moves.down?.(),
-            },
-          ]}
-        />
+        <CardMenu task={task} moves={moves} onOpen={onOpen} />
       </div>
       {task.source && (
         <button type="button" className="task-card__source" onClick={onOpen}>

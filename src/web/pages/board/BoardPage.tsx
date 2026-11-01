@@ -6,7 +6,7 @@ import { countOf } from '../../lib/count';
 import { useProject, useTasks } from '../../lib/queries';
 import { PageFrame, useApp } from '../../shell';
 import { Button, ErrorNotice, PageHeader, Spinner, useToast } from '../../ui';
-import { Kanban } from './Kanban';
+import { BoardColumns } from './BoardColumns';
 
 const count = (n: number) => countOf(n, 'tarefa', 'tarefas');
 
@@ -57,7 +57,12 @@ export function BoardPage() {
         ) : tasks.error ? (
           <ErrorNotice error={tasks.error} retry={() => void tasks.refetch()} />
         ) : (
-          <Kanban projectId={projectId} tasks={tasks.data.tasks} revision={tasks.data.revision} archived={archived} />
+          <BoardColumns
+            projectId={projectId}
+            tasks={tasks.data.tasks}
+            revision={tasks.data.revision}
+            archived={archived}
+          />
         )}
       </div>
     </PageFrame>

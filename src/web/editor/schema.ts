@@ -8,9 +8,9 @@ import {
 } from '@blocknote/core';
 import { pt } from '@blocknote/core/locales';
 import { createReactMathBlockSpec, locales as mathLocales } from '@blocknote/math-block';
-import { createInlineMathSpec } from '../../components/InlineMath';
+import { createInlineMathSpec } from '../components/InlineMath';
 
-/** The blocks a document holds: text, three heading levels, lists, quote, code and equations. */
+/** The blocks of a document and of a task's description: text, three heading levels, lists, quote, code and equations. */
 export const documentSchema = BlockNoteSchema.create({
   blockSpecs: {
     paragraph: defaultBlockSpecs.paragraph,
