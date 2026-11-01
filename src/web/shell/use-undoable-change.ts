@@ -25,6 +25,7 @@ export const CHANGED_LATER = 'Mudou depois; nada foi desfeito.';
  * (docs/etapas/09-pastas.md, "Desfazer"): the change begins once the write queue takes it, a newer change of
  * the same object takes the Desfazer of the toast before, and an undo waits for the write in progress and
  * checks it is still the latest before it runs. Resolves to the write's answer, or undefined when it failed.
+ * `queued` waits for the write in progress instead of being refused, as the board's moves do.
  */
 export function useUndoableChange(action: Action) {
   const toast = useToast();
@@ -35,12 +36,17 @@ export function useUndoableChange(action: Action) {
     key: string,
     write: () => Promise<T>,
     done: (value: T) => ChangeToast | null,
+    { queued = false }: { queued?: boolean } = {},
   ): Promise<T | undefined> {
     let begun = 0;
-    const value = await action.run(() => {
-      begun = changes.begin(key);
-      return write();
-    });
+    const value = await action.run(
+      () => {
+        begun = changes.begin(key);
+        return write();
+      },
+      undefined,
+      { queued },
+    );
     if (!begun) return undefined;
     const shown = value === undefined ? null : done(value);
     if (!shown?.undo) {

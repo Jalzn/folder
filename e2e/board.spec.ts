@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { card, closeDrawer, column, createInDrawer, drawer, openDrawer } from './support/board.js';
+import { card, cardMenu, closeDrawer, column, createInDrawer, drawer, openDrawer } from './support/board.js';
 import { newTask } from './support/items.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject, openBoard, showSidebar } from './support/navigation.js';
@@ -282,4 +282,26 @@ test('the label filter keeps the tasks with every chosen label; an archived proj
   await openDrawer(page, 'Alfa');
   await expect(drawer(page).getByText('Projeto arquivado: desarquive para editar a tarefa.')).toBeVisible();
   await expect(drawer(page).getByRole('textbox', { name: 'Título da tarefa' })).toHaveAttribute('readonly', '');
+});
+
+test('every move into the done column offers Desfazer, and a later move of the task takes it away', async ({
+  page,
+}) => {
+  await freshBoard(page, 'Conclusão');
+  await newTask(page, 'Pagar a conta');
+  // Mover para › Concluído completes it, with Desfazer, which puts it back.
+  await cardMenu(page, 'Pagar a conta', 'Mover para', 'Concluído');
+  await expect(toast(page)).toContainText('Concluída: Pagar a conta.');
+  await toast(page).getByRole('button', { name: 'Desfazer' }).click();
+  await expect(column(page, 'A fazer').getByRole('button', { name: 'Pagar a conta', exact: true })).toBeVisible();
+
+  // ⌘↵ completes it; moving it again by the keyboard takes that toast's Desfazer away.
+  await cardTitle(page, 'Pagar a conta').focus();
+  await pressCommand(page, 'Enter');
+  await expect(toast(page)).toContainText('Concluída: Pagar a conta.');
+  await expect(toast(page).getByRole('button', { name: 'Desfazer' })).toBeVisible();
+  await expect(cardTitle(page, 'Pagar a conta')).toBeFocused();
+  await page.keyboard.press('Shift+ArrowLeft');
+  await expect(live(page)).toHaveText('Movida para Em andamento, 1 de 1');
+  await expect(toast(page).getByRole('button', { name: 'Desfazer' })).toHaveCount(0);
 });

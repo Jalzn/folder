@@ -1,11 +1,14 @@
 import { useRef } from 'react';
+import { completedText, TASK_CHANGED } from '../../components/task/task-change-text';
 import { api, errorCode, requestId } from '../../lib/api';
+import { followingTask } from '../../lib/board-order';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import { usesCommandKey } from '../../lib/platform';
 import { cachedColumns, cachedTasks } from '../../lib/queries';
-import type { Task } from '../../lib/types';
+import { displayTitle, type Task } from '../../lib/types';
 import type { useAction } from '../../lib/use-action';
 import { useAnnounce } from '../../shell/announcer';
+import { useUndoableChange } from '../../shell/use-undoable-change';
 import { arrangeBoard, type BoardColumnView, keyLayout, placeOf } from './board-columns';
 import { AT_END, AT_TOP, beforeCardAt, boardKey, type KeyPress } from './board-keys';
 import { BOARD_CHANGED, movedText, positionText } from './board-text';
@@ -19,11 +22,19 @@ export interface CardSpot {
 /** How long after a move an edge's words join it: a burst of ⇧ and arrows. */
 const BURST_MS = 1500;
 
+/** Where a task completed by a move came from, for its Desfazer. */
+interface Completion {
+  title: string;
+  from: string;
+  before: string | null;
+  version: number;
+}
+
 type Outcome =
   | { kind: 'none' }
   | { kind: 'say'; text: string }
   | { kind: 'conflict' }
-  | { kind: 'moved'; within: boolean };
+  | { kind: 'moved'; within: boolean; completed: Completion | null };
 
 /** The board as last read, as it shows: the project's columns with their visible tasks, and its revision. */
 function readBoard(projectId: string, visible: (task: Task) => boolean) {
@@ -52,6 +63,7 @@ export function useBoardMoves(
   },
 ) {
   const live = useAnnounce();
+  const change = useUndoableChange(action);
   // The last move said, while a burst of keys may still be on its way: an edge said right after it joins it, so
   // the move that happened is never overwritten ("Posição 3 de 3 em A fazer. Já está no fim.").
   const lastMove = useRef<{ text: string; at: number } | null>(null);
@@ -75,11 +87,17 @@ export function useBoardMoves(
     hooks.moved(id, place.column.id);
   }
 
+  /**
+   * Runs a move from the queue, as a change of the task (lib/item-changes.ts): it takes the Desfazer of the task's
+   * last toast, and a move into the done column offers its own, as Concluir does (decision 14).
+   */
   async function run(
     id: string,
     write: (board: NonNullable<ReturnType<typeof readBoard>>, task: Task) => Promise<Outcome>,
   ) {
-    const outcome = await action.run(
+    const undoIntent = requestId();
+    const outcome = await change(
+      `task:${id}`,
       async (): Promise<Outcome> => {
         const board = readBoard(projectId, hooks.visible);
         const task = board?.tasks.find((each) => each.id === id);
@@ -91,13 +109,40 @@ export function useBoardMoves(
           throw error;
         }
       },
-      undefined,
+      (done) => {
+        if (done.kind !== 'moved' || !done.completed) return null;
+        const { title, from, before, version } = done.completed;
+        return {
+          text: completedText(title),
+          changed: TASK_CHANGED,
+          undo: () =>
+            onceMoreIfLost(() =>
+              api.workspace.moveTask({
+                requestId: undoIntent,
+                id,
+                expectedVersion: version,
+                columnId: from,
+                beforeTaskId: before,
+              }),
+            ),
+          undone: () => hooks.moved(id, from),
+        };
+      },
       { queued: true },
     );
     if (!outcome || outcome.kind === 'none') return;
     if (outcome.kind === 'say') announce(outcome.text);
     else if (outcome.kind === 'conflict') announce(BOARD_CHANGED);
     else sayWhere(id, outcome.within);
+  }
+
+  /** What completing by a move leaves for its undo: none unless the task enters the done column. */
+  function completion(task: Task, tasks: readonly Task[], columnId: string, version: number): Completion | null {
+    const columns = cachedColumns() ?? [];
+    const into = columns.find((column) => column.id === columnId);
+    const was = columns.find((column) => column.id === task.columnId);
+    if (!into?.isDone || was?.isDone) return null;
+    return { title: displayTitle(task.title), from: task.columnId, before: followingTask(tasks, task), version };
   }
 
   /** A move by `moveTask`, at the revision of the board it was worked out on. */
@@ -115,8 +160,12 @@ export function useBoardMoves(
         expectedRevision: board.revision,
         ...spot,
       };
-      await onceMoreIfLost(() => api.workspace.moveTask(input));
-      return { kind: 'moved', within: spot.columnId === task.columnId };
+      const ack = await onceMoreIfLost(() => api.workspace.moveTask(input));
+      return {
+        kind: 'moved',
+        within: spot.columnId === task.columnId,
+        completed: completion(task, board.tasks, spot.columnId, ack.version),
+      };
     });
   }
 
@@ -146,12 +195,12 @@ export function useBoardMoves(
      */
     toColumn: (id: string, columnId: string) => {
       const intent = requestId();
-      return run(id, async (_board, task) => {
+      return run(id, async (board, task) => {
         if (task.columnId === columnId) return { kind: 'none' };
         hooks.beforeMove();
         const input = { requestId: intent, id, expectedVersion: task.version, columnId };
-        await onceMoreIfLost(() => api.workspace.updateTask(input));
-        return { kind: 'moved', within: false };
+        const ack = await onceMoreIfLost(() => api.workspace.updateTask(input));
+        return { kind: 'moved', within: false, completed: completion(task, board.tasks, columnId, ack.version) };
       });
     },
   };

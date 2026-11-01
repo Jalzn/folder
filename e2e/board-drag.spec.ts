@@ -67,4 +67,13 @@ test('cards drag between cards, to another column and to its end; a drop off the
   await expect(titles(todo)).toHaveText(['Segunda']);
   await expect(titles(doing)).toHaveText(['Primeira', 'Terceira']);
   await expect(page.locator('.task-card[data-dragging]')).toHaveCount(0);
+
+  // Into the done column, a drop completes the task with the same Desfazer as Concluir.
+  const done = await column(page, 'Concluído').boundingBox();
+  if (!done) throw new Error('Concluído is not on screen.');
+  await drag(page, card('Segunda'), { x: done.x + 60, y: done.y + 60 });
+  await page.mouse.up();
+  await expect(page.locator('.toast')).toContainText('Concluída: Segunda.');
+  await page.locator('.toast').getByRole('button', { name: 'Desfazer' }).click();
+  await expect(titles(todo)).toHaveText(['Segunda']);
 });
