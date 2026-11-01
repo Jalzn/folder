@@ -25,45 +25,115 @@ import { addDays, todayIn } from '../src/core/domain/index.js';
 import { createDatabase, type Database, migrate } from '../src/core/infra/index.js';
 import { readConfig } from '../src/server/config.js';
 import { modules } from '../src/server/modules.js';
-import type {
-  CanvasElement,
-  CanvasScene,
-  DocumentBlock,
-  JsonValue,
-  LabelColor,
-} from '../src/workspace/domain/index.js';
+import type { CanvasScene, DocumentBlock, JsonValue, LabelColor } from '../src/workspace/domain/index.js';
 import { createWorkspaceService, type WorkspaceService } from '../src/workspace/index.js';
+import { flow } from './sample-scenes.js';
 import { assertSeedTarget, temporaryRoots } from './seed-target.js';
 
 const request = () => ({ requestId: randomUUID() });
 
 const text = (value: string): JsonValue => [{ type: 'text', text: value, styles: {} }];
 /**
- * A block with an id of its own, as the editor saves it. Without one, the editor would make up an id
- * each time it opens the document, and a task from a selection in a document nobody has edited yet
- * would point at a block the server does not have.
+ * A block as BlockNote saves it: an id of its own, default props and children included, so opening
+ * it changes nothing. Without an id, the editor would make one up each time it opens the document,
+ * and a task from a selection in a document nobody has edited yet would point at a block the server
+ * does not have.
  */
-const block = (type: string, value: string, props?: Record<string, JsonValue>): DocumentBlock & { id: string } => ({
-  id: randomUUID(),
-  type,
-  ...(props ? { props } : {}),
-  content: text(value),
-});
-const paragraph = (value: string) => block('paragraph', value);
-const heading = (value: string, level = 2) => block('heading', value, { level });
-const bullet = (value: string) => block('bulletListItem', value);
-const check = (value: string, checked = false) => block('checkListItem', value, { checked });
-
-/** A block as BlockNote saves it, default props and children included, so opening it changes nothing. */
-const editorBlock = (type: 'paragraph' | 'checkListItem', value: string, props: Record<string, JsonValue> = {}) => ({
+const block = (type: string, value: string, props: Record<string, JsonValue> = {}): DocumentBlock & { id: string } => ({
   id: randomUUID(),
   type,
   props: { backgroundColor: 'default', textColor: 'default', textAlignment: 'left', ...props },
   content: text(value),
   children: [],
 });
-const line = (value: string) => editorBlock('paragraph', value);
-const item = (value: string, checked = false) => editorBlock('checkListItem', value, { checked });
+const paragraph = (value: string) => block('paragraph', value);
+const heading = (value: string, level = 2) => block('heading', value, { level });
+const bullet = (value: string) => block('bulletListItem', value);
+const check = (value: string, checked = false) => block('checkListItem', value, { checked });
+const line = paragraph;
+const item = check;
+/** An embed as the document editor saves it: only the item's ID, no text, no blocks inside. */
+const taskEmbed = (taskId: string): DocumentBlock => ({
+  id: randomUUID(),
+  type: 'taskEmbed',
+  props: { taskId },
+  children: [],
+});
+const drawingEmbed = (canvasId: string): DocumentBlock => ({
+  id: randomUUID(),
+  type: 'drawingEmbed',
+  props: { canvasId },
+  children: [],
+});
+
+/** The paragraph of "MCP somente leitura" that "Gerar token pessoal no Perfil" was created from. */
+const TOKEN_BLOCK = paragraph(
+  'Gerar token pessoal no Perfil, mostrado uma única vez, com o comando pronto para copiar.',
+);
+export const TOKEN_EXCERPT = 'Gerar token pessoal no Perfil';
+
+/** The documents of the sample, by title, as the editor saves them, but for the embeds of the vision. */
+export const SAMPLE_DOCUMENTS = {
+  'Ideias soltas': [
+    paragraph('Anotar aqui o que ainda não tem projeto.'),
+    bullet('Um diário de leituras com trechos favoritos.'),
+    bullet('Organizar as fotos da viagem por cidade.'),
+  ],
+  'Orçamento e fornecedores': [
+    heading('Orçamento'),
+    paragraph('Teto de R$ 8.000 para marcenaria, pintura e iluminação.'),
+    heading('Fornecedores'),
+    bullet('Marcenaria Silva: armário e prateleiras sob medida.'),
+    bullet('Loja de iluminação do centro: luminária de mesa e pendente.'),
+  ],
+  'Lista de compras': [
+    check('Tinta acrílica fosca, 18 litros', true),
+    check('Fita crepe e lona'),
+    check('Luminária de mesa'),
+  ],
+  'MCP somente leitura': [
+    paragraph('O Claude Code consulta documentos, desenhos e tarefas por MCP, sem escrever nada.'),
+    TOKEN_BLOCK,
+    paragraph('Cada resposta cabe em 45.000 caracteres; documentos longos vêm em páginas.'),
+  ],
+  'Notas de arquitetura': [
+    heading('Módulos'),
+    paragraph('core, auth, workspace, server e web, cada um com domínio, aplicação e infraestrutura.'),
+    heading('Persistência'),
+    paragraph('SQLite no servidor, com migrações numeradas e escritas idempotentes.'),
+  ],
+  Portfólio: [paragraph('Projetos de 2024 e um texto curto de apresentação.')],
+} satisfies Record<string, DocumentBlock[]>;
+
+/**
+ * "Visão do produto", as the brief and the prototype have it: the drawing "Navegação com projeto no
+ * centro" after the navigation, then the task "Gerar token pessoal no Perfil" and the deleted one,
+ * "Revisar textos do onboarding", which waits in the trash.
+ */
+export function visionDocument(ids: { navigation: string; token: string; onboarding: string }): DocumentBlock[] {
+  return [
+    heading('Por que existe', 1),
+    paragraph(
+      'Um espaço pessoal e minimalista para conduzir projetos, com escrita, desenho e tarefas no mesmo lugar, ' +
+        'sem o excesso de Notion, Excalidraw e Trello.',
+    ),
+    heading('Princípios'),
+    bullet('O projeto é o centro.'),
+    bullet('Cada ferramenta faz menos que a original.'),
+    bullet('Ligações vivem nos documentos.'),
+    bullet('Nada se perde.'),
+    heading('Navegação'),
+    paragraph(
+      'O projeto fica no centro. Cada projeto tem um sumário na barra lateral, e o que é avulso mora no projeto Geral.',
+    ),
+    drawingEmbed(ids.navigation),
+    heading('Acesso pelo Claude Code'),
+    paragraph('Um servidor MCP somente leitura deixa o Claude Code consultar documentos, desenhos e tarefas.'),
+    taskEmbed(ids.token),
+    taskEmbed(ids.onboarding),
+    paragraph('Próximo passo: gerar token pessoal no Perfil para o Claude Code ler o Tinyfold.'),
+  ];
+}
 
 /** The brief's labels, in the prototype's colors. */
 const LABELS = [
@@ -149,138 +219,6 @@ const OLD_DONE = [
   'Tema escuro',
   'Testes do editor',
 ];
-
-/** Excalidraw elements with the properties its editor writes, so the editor opens them unchanged. */
-function sceneBuilder() {
-  let seed = 1;
-  const element = (fields: Record<string, JsonValue> & { id: string; type: string }): CanvasElement => ({
-    angle: 0,
-    strokeColor: '#1e1e1e',
-    backgroundColor: 'transparent',
-    fillStyle: 'solid',
-    strokeWidth: 2,
-    strokeStyle: 'solid',
-    roughness: 1,
-    opacity: 100,
-    groupIds: [],
-    frameId: null,
-    roundness: { type: 3 },
-    seed,
-    version: 1,
-    versionNonce: seed++,
-    isDeleted: false,
-    boundElements: null,
-    updated: Date.now(),
-    link: null,
-    locked: false,
-    ...fields,
-  });
-  const width = 200;
-  const height = 80;
-  return {
-    /** A rectangle with a label inside, bound to the arrows that reach it. */
-    box(id: string, x: number, y: number, label: string, arrows: string[] = []): CanvasElement[] {
-      const labelId = `${id}-label`;
-      return [
-        element({
-          id,
-          type: 'rectangle',
-          x,
-          y,
-          width,
-          height,
-          backgroundColor: '#e8ecf2',
-          boundElements: [{ id: labelId, type: 'text' }, ...arrows.map((arrow) => ({ id: arrow, type: 'arrow' }))],
-        }),
-        element({
-          id: labelId,
-          type: 'text',
-          x: x + 10,
-          y: y + 27,
-          width: width - 20,
-          height: 25,
-          roundness: null,
-          text: label,
-          originalText: label,
-          fontSize: 20,
-          fontFamily: 5,
-          textAlign: 'center',
-          verticalAlign: 'middle',
-          containerId: id,
-          autoResize: true,
-          lineHeight: 1.25,
-        }),
-      ];
-    },
-    /** An arrow from the right side of one box to the left side of another. */
-    arrow(id: string, from: { id: string; x: number; y: number }, to: { id: string; x: number; y: number }) {
-      const start = [from.x + width + 4, from.y + height / 2];
-      const end = [to.x - 4, to.y + height / 2];
-      return element({
-        id,
-        type: 'arrow',
-        x: start[0] ?? 0,
-        y: start[1] ?? 0,
-        width: Math.abs((end[0] ?? 0) - (start[0] ?? 0)),
-        height: Math.abs((end[1] ?? 0) - (start[1] ?? 0)),
-        roundness: { type: 2 },
-        points: [
-          [0, 0],
-          [(end[0] ?? 0) - (start[0] ?? 0), (end[1] ?? 0) - (start[1] ?? 0)],
-        ],
-        startBinding: { elementId: from.id, focus: 0, gap: 4 },
-        endBinding: { elementId: to.id, focus: 0, gap: 4 },
-        startArrowhead: null,
-        endArrowhead: 'arrow',
-        elbowed: false,
-      });
-    },
-    /** A free text, outside any shape. */
-    note(id: string, x: number, y: number, value: string) {
-      return element({
-        id,
-        type: 'text',
-        x,
-        y,
-        width: 12 * value.length,
-        height: 25,
-        roundness: null,
-        text: value,
-        originalText: value,
-        fontSize: 20,
-        fontFamily: 5,
-        textAlign: 'left',
-        verticalAlign: 'top',
-        containerId: null,
-        autoResize: true,
-        lineHeight: 1.25,
-      });
-    },
-  };
-}
-
-/** Boxes in a row, each linked to the next by an arrow. */
-function flow(labels: string[], caption?: string): CanvasScene {
-  const draw = sceneBuilder();
-  const boxes = labels.map((label, index) => ({ id: `b${index}`, x: 40 + index * 300, y: 120, label }));
-  const elements = boxes.flatMap((box, index) =>
-    draw.box(
-      box.id,
-      box.x,
-      box.y,
-      box.label,
-      [index > 0 ? `a${index - 1}` : undefined, index < boxes.length - 1 ? `a${index}` : undefined].filter(
-        (arrow): arrow is string => arrow !== undefined,
-      ),
-    ),
-  );
-  for (const [index, box] of boxes.slice(0, -1).entries()) {
-    const next = boxes[index + 1];
-    if (next) elements.push(draw.arrow(`a${index}`, box, next));
-  }
-  if (caption) elements.push(draw.note('caption', 40, 40, caption));
-  return { appState: { viewBackgroundColor: '#ffffff' }, elements };
-}
 
 /** Creates the folders in the order given; each new folder goes first, so they are made from the last. */
 async function folders<const Name extends string>(workspace: WorkspaceService, projectId: string, names: Name[]) {
@@ -401,32 +339,12 @@ async function seed({ workspace, at, today }: Writers, { grande }: { grande: boo
     tinyfoldFolders = all;
   } else tinyfoldFolders = await folders(workspace, tinyfold.id, ['MCP', 'Arquitetura']);
 
-  await document(geral.id, 'Ideias soltas', [
-    paragraph('Anotar aqui o que ainda não tem projeto.'),
-    bullet('Um diário de leituras com trechos favoritos.'),
-    bullet('Organizar as fotos da viagem por cidade.'),
-  ]);
+  await document(geral.id, 'Ideias soltas', SAMPLE_DOCUMENTS['Ideias soltas']);
   await drawing(geral.id, 'Rabisco de logo', flow(['Dobra', 'Folha', 'Marca'], 'Três ideias para o logo'));
   await task(geral.id, 'Renovar domínio', { column: 'A fazer', due: 16 });
 
-  await document(
-    reforma.id,
-    'Orçamento e fornecedores',
-    [
-      heading('Orçamento'),
-      paragraph('Teto de R$ 8.000 para marcenaria, pintura e iluminação.'),
-      heading('Fornecedores'),
-      bullet('Marcenaria Silva: armário e prateleiras sob medida.'),
-      bullet('Loja de iluminação do centro: luminária de mesa e pendente.'),
-    ],
-    compras.Compras,
-  );
-  await document(
-    reforma.id,
-    'Lista de compras',
-    [check('Tinta acrílica fosca, 18 litros', true), check('Fita crepe e lona'), check('Luminária de mesa')],
-    compras.Compras,
-  );
+  await document(reforma.id, 'Orçamento e fornecedores', SAMPLE_DOCUMENTS['Orçamento e fornecedores'], compras.Compras);
+  await document(reforma.id, 'Lista de compras', SAMPLE_DOCUMENTS['Lista de compras'], compras.Compras);
   const planta = await drawing(
     reforma.id,
     'Planta do escritório',
@@ -440,26 +358,16 @@ async function seed({ workspace, at, today }: Writers, { grande }: { grande: boo
   ] as const satisfies readonly (readonly [string, SampleTask])[])
     await task(reforma.id, title, sample);
 
-  const token = paragraph('Gerar token pessoal no Perfil, mostrado uma única vez, com o comando pronto para copiar.');
   const mcp = await document(
     tinyfold.id,
     'MCP somente leitura',
-    [
-      paragraph('O Claude Code consulta documentos, desenhos e tarefas por MCP, sem escrever nada.'),
-      token,
-      paragraph('Cada resposta cabe em 45.000 caracteres; documentos longos vêm em páginas.'),
-    ],
+    SAMPLE_DOCUMENTS['MCP somente leitura'],
     tinyfoldFolders.MCP,
   );
   await document(
     tinyfold.id,
     'Notas de arquitetura',
-    [
-      heading('Módulos'),
-      paragraph('core, auth, workspace, server e web, cada um com domínio, aplicação e infraestrutura.'),
-      heading('Persistência'),
-      paragraph('SQLite no servidor, com migrações numeradas e escritas idempotentes.'),
-    ],
+    SAMPLE_DOCUMENTS['Notas de arquitetura'],
     tinyfoldFolders.Arquitetura,
   );
   await drawing(
@@ -468,7 +376,11 @@ async function seed({ workspace, at, today }: Writers, { grande }: { grande: boo
     flow(['Editor', 'Rascunho local', 'Servidor'], 'Uma chamada em voo por documento'),
     tinyfoldFolders.Arquitetura,
   );
-  await drawing(tinyfold.id, 'Navegação com projeto no centro', flow(['Seletor', 'Projeto', 'Item']));
+  const navigation = await drawing(
+    tinyfold.id,
+    'Navegação com projeto no centro',
+    flow(['Seletor', 'Projeto', 'Item']),
+  );
   if (grande)
     for (const [index, title] of [...OLD_DONE, ...OLD_DONE.map((name) => `${name} (revisão)`)].entries())
       await task(tinyfold.id, title, {
@@ -483,9 +395,10 @@ async function seed({ workspace, at, today }: Writers, { grande }: { grande: boo
     ['Renderizar desenho incorporado no documento', { column: 'A fazer', labels: ['editor'] }],
   ] as const satisfies readonly (readonly [string, SampleTask])[])
     await task(tinyfold.id, title, sample);
-  await workspace.createTask({
+  // Created from the token's paragraph of "MCP somente leitura", whose origin marker it shows.
+  const token = await workspace.createTask({
     ...fields('Gerar token pessoal no Perfil', { column: 'Em andamento', due: 5, labels: ['mcp', 'backend'] }),
-    source: { documentId: mcp.id, blockId: token.id, excerpt: 'Gerar token pessoal no Perfil' },
+    source: { documentId: mcp.id, blockId: TOKEN_BLOCK.id, excerpt: TOKEN_EXCERPT },
   });
   await task(tinyfold.id, 'Colunas configuráveis no quadro', { column: 'Revisão', labels: ['kanban'] });
   await task(tinyfold.id, 'Corrigir foco ao fechar diálogo', {
@@ -497,23 +410,15 @@ async function seed({ workspace, at, today }: Writers, { grande }: { grande: boo
   const deleted = await task(tinyfold.id, 'Revisar textos do onboarding', { column: 'A fazer' });
   await workspace.deleteTask({ ...request(), id: deleted.id, expectedVersion: deleted.version });
   // Written last, so the overview names it as the last text edited.
-  const vision = await document(tinyfold.id, 'Visão do produto', [
-    heading('Por que existe', 1),
-    paragraph(
-      'Um espaço pessoal e minimalista para conduzir projetos, com escrita, desenho e tarefas no mesmo lugar, ' +
-        'sem o excesso de Notion, Excalidraw e Trello.',
-    ),
-    heading('Princípios'),
-    bullet('O projeto é o centro.'),
-    bullet('Cada ferramenta faz menos que a original.'),
-    bullet('Ligações vivem nos documentos.'),
-    bullet('Nada se perde.'),
-    paragraph('Próximo passo: gerar token pessoal no Perfil para o Claude Code ler o Tinyfold.'),
-  ]);
+  const vision = await document(
+    tinyfold.id,
+    'Visão do produto',
+    visionDocument({ navigation: navigation.id, token: token.id, onboarding: deleted.id }),
+  );
   await workspace.pinItem({ type: 'document', id: vision.id });
   await workspace.pinItem({ type: 'drawing', id: planta.id });
 
-  await document(site.id, 'Portfólio', [paragraph('Projetos de 2024 e um texto curto de apresentação.')]);
+  await document(site.id, 'Portfólio', SAMPLE_DOCUMENTS.Portfólio);
   await workspace.updateProject({ ...request(), id: site.id, expectedVersion: site.version, archived: true });
   return [tinyfold, reforma, geral, site];
 }
