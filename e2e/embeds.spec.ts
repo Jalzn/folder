@@ -216,3 +216,77 @@ test('⌘K offers "Incorporar tarefa…" in the document, which opens the picker
   await expect(embedCard(page, 'Trocar a fechadura')).toBeVisible();
   await expectSavedEmbeds(page, 1);
 });
+
+test('the card follows the drawer’s labels and checklist, and names another project with its mark', async ({
+  page,
+}) => {
+  await login(page);
+  const word = `cartao${Date.now().toString(36)}`;
+  const elsewhere = await createProject(page, `Outro projeto ${Date.now()}`);
+  await rpcTask(page, elsewhere, `Comprar ${word}`);
+  await createProject(page, `Card ao vivo ${Date.now()}`);
+  await writeDocument(page, 'Compras.');
+  await pickEmbed(page, await slash(page, 'tarefa'), word, `Comprar ${word}`);
+  const card = embedCard(page, `Comprar ${word}`);
+  await expect(card).toContainText('Outro projeto');
+  await expect(card.locator('.project-mark')).toBeVisible();
+
+  await card.click();
+  const region = drawerOf(page, `Comprar ${word}`);
+  await region.getByRole('button', { name: 'Adicionar etiqueta', exact: true }).click();
+  await expect(page.getByRole('searchbox', { name: 'Buscar ou criar etiqueta' })).toBeFocused();
+  await page.keyboard.type(word.slice(-6));
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(card).toContainText(word.slice(-6));
+  await region.getByRole('textbox', { name: 'Descrição da tarefa' }).click();
+  await page.keyboard.type('[ ] Escolher a cor');
+  await expect(card).toContainText('0/1');
+});
+
+test('figures renumber when a drawing moves above another', async ({ page }) => {
+  await login(page);
+  const here = await createProject(page, `Numeração ${Date.now()}`);
+  for (const title of ['Primeira figura', 'Segunda figura'])
+    await rpc(page, 'workspace/createCanvas', { requestId: crypto.randomUUID(), projectId: here, title });
+  await writeDocument(page, 'Figuras.');
+  await pickEmbed(page, await slash(page, 'desenho'), 'Primeira', 'Primeira figura');
+  await page.keyboard.press('ArrowDown');
+  await pickEmbed(page, await slash(page, 'desenho'), 'Segunda', 'Segunda figura');
+  await expect(embedFigure(page, 'Segunda figura')).toContainText('Figura 2 — Segunda figura');
+  // The second one, selected after its insertion, moves up a block at a time with the editor's keys.
+  const moveUp = `${process.platform === 'darwin' ? 'Meta' : 'Control'}+Shift+ArrowUp`;
+  for (let step = 0; step < 3; step += 1) await page.keyboard.press(moveUp);
+  await expect(embedFigure(page, 'Segunda figura')).toContainText('Figura 1 — Segunda figura');
+  await expect(embedFigure(page, 'Primeira figura')).toContainText('Figura 2 — Primeira figura');
+});
+
+test('a document of an archived project shows its embeds with no Restaurar or Remover', async ({ page }) => {
+  await login(page);
+  const here = await createProject(page, `Arquivado ${Date.now()}`);
+  const task = await rpcTask(page, here, 'Tarefa que saiu');
+  await rpc(page, 'workspace/deleteTask', {
+    id: task.id,
+    expectedVersion: task.version,
+    requestId: crypto.randomUUID(),
+  });
+  const document = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+    requestId: crypto.randomUUID(),
+    projectId: here,
+    title: 'Documento guardado',
+    content: [{ id: 'e1', type: 'taskEmbed', props: { taskId: task.id }, children: [] }],
+  });
+  const project = (await rpc<{ id: string; version: number }[]>(page, 'workspace/listProjects', {})).find(
+    (each) => each.id === here,
+  );
+  await rpc(page, 'workspace/updateProject', {
+    id: here,
+    expectedVersion: project?.version,
+    archived: true,
+    requestId: crypto.randomUUID(),
+  });
+  await page.goto(`/projetos/${here}/documentos/${document.id}`);
+  const missing = documentEditor(page).locator('.embed-missing');
+  await expect(missing).toContainText('Na lixeira: Tarefa que saiu');
+  await expect(missing.getByRole('button')).toHaveCount(0);
+});

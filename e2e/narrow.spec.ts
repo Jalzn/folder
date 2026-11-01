@@ -3,6 +3,7 @@ import { cardMenu, column, drawer, openDrawer } from './support/board.js';
 import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { moveToTrash, newDocument, newTask } from './support/items.js';
 import { createProject, hideSidebar, showSidebar } from './support/navigation.js';
+import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 /** Whether the project's name in the top bar ends before the page's actions start. */
@@ -122,4 +123,58 @@ test('on a phone the board scrolls sideways, ⋯ moves a card, and the drawer co
   const sheet = await drawer(page).boundingBox();
   expect(sheet && main && sheet.height >= main.height - 1).toBe(true);
   await expect(drawer(page).getByRole('button', { name: 'Fechar a gaveta', exact: true })).toBeVisible();
+});
+
+test('on a phone the embeds take the width: a tap opens the card in the drawer, Restaurar shows, the figure opens', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'chrome-mobile', 'The phone layout.');
+  await login(page);
+  const projectId = await createProject(page, `Incorporados no celular ${Date.now()}`);
+  const task = await rpc<{ id: string }>(page, 'workspace/createTask', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: 'Card no celular',
+  });
+  const trashed = await rpc<{ id: string; version: number }>(page, 'workspace/createTask', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: 'Na lixeira do celular',
+  });
+  await rpc(page, 'workspace/deleteTask', {
+    id: trashed.id,
+    expectedVersion: trashed.version,
+    requestId: crypto.randomUUID(),
+  });
+  const drawing = await rpc<{ id: string }>(page, 'workspace/createCanvas', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: 'Figura no celular',
+  });
+  const document = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: 'Documento com incorporados',
+    content: [
+      { id: 'e1', type: 'taskEmbed', props: { taskId: task.id }, children: [] },
+      { id: 'e2', type: 'taskEmbed', props: { taskId: trashed.id }, children: [] },
+      { id: 'e3', type: 'drawingEmbed', props: { canvasId: drawing.id }, children: [] },
+    ],
+  });
+  await page.goto(`/projetos/${projectId}/documentos/${document.id}`);
+  const content = page.getByTestId('document-content');
+  const card = content.getByRole('button', { name: /^Tarefa: Card no celular,/ });
+  await expect(card).toBeVisible();
+  const width = await content.evaluate((element) => element.getBoundingClientRect().width);
+  expect((await card.boundingBox())?.width ?? 0).toBeGreaterThan(width - 4);
+  const missing = content.locator('.embed-missing');
+  await expect(missing).toContainText('Na lixeira: Na lixeira do celular');
+  expect((await missing.boundingBox())?.width ?? 0).toBeGreaterThan(width - 4);
+  // Restaurar and Remover show without a pointer to hover.
+  await expect(content.getByRole('button', { name: 'Restaurar', exact: true })).toBeVisible();
+  await card.tap();
+  await expect(drawer(page)).toBeVisible();
+  await drawer(page).getByRole('button', { name: 'Fechar a gaveta', exact: true }).tap();
+  await content.getByRole('link', { name: /^Figura 1: Figura no celular\./ }).tap();
+  await expect(page).toHaveURL(new RegExp(`/projetos/${projectId}/desenhos/${drawing.id}$`));
 });

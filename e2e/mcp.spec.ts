@@ -344,3 +344,38 @@ test('Claude Code searches one folder of what the interface filed there', async 
   ]);
   await mcp.close();
 });
+
+test('Claude Code reads the tasks a document embeds as links, and follows one to read_task', async ({
+  page,
+  baseURL,
+}, info) => {
+  const mark = `incorporada${info.project.name.replace(/\W/g, '')}${Date.now().toString(36)}`;
+  await login(page);
+  const { token } = await generateToken(page, `Incorporados — ${info.project.name}`);
+  await closeTokenDialog(page);
+  const mcp = await connectMcp(baseURL as string, token);
+  await page.goto('/');
+  await expect(page).toHaveURL(projectAddress);
+  const projectId = new URL(page.url()).pathname.split('/')[2] as string;
+  const task = await rpc<{ id: string }>(page, 'workspace/createTask', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: `Tarefa ${mark}`,
+  });
+  // As the interface saves a document with a card: an embed block with the task's ID.
+  const document = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: `Plano ${mark}`,
+    content: [
+      { id: 'p1', type: 'paragraph', props: {}, content: [{ type: 'text', text: 'Antes.', styles: {} }], children: [] },
+      { id: 'e1', type: 'taskEmbed', props: { taskId: task.id }, children: [] },
+    ],
+  });
+
+  const read = textOf(await mcp.call('read_document', { id: document.id }));
+  expect(read).toContain(`[Tarefa: Tarefa ${mark} (A fazer)](tinyfold:task/${task.id})`);
+  const followed = textOf(await mcp.call('read_task', { id: task.id }));
+  expect(followed).toContain(`Tarefa ${mark}`);
+  await mcp.close();
+});
