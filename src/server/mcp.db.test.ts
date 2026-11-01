@@ -492,7 +492,9 @@ describe('MCP origin, size and rate limits', () => {
     for (let request = 0; request < 240; request += 1) expect((await post(rpc('ping'))).status).toBe(200);
     const limited = await post(rpc('ping'));
     expect(limited.status).toBe(429);
-    expect(limited.headers.get('retry-after')).toBe('60');
+    // A minute's window, counted from the first request: the 240 take a second or more on a loaded machine.
+    expect(Number(limited.headers.get('retry-after'))).toBeGreaterThanOrEqual(55);
+    expect(Number(limited.headers.get('retry-after'))).toBeLessThanOrEqual(60);
   }, 30_000);
 });
 
