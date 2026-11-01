@@ -1,8 +1,9 @@
 import { writeFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
+import { createFolder, folderRow } from './support/folders.js';
 import { moveToTrash, newDocument, newDrawing } from './support/items.js';
 import { connectMcp, jsonOf, mcpStatus, textOf } from './support/mcp.js';
-import { leaveItem, openListedItem, overviewAddress, projectAddress } from './support/navigation.js';
+import { createProject, leaveItem, openListedItem, overviewAddress, projectAddress } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -309,4 +310,32 @@ test('a drawing changed on another device gets a new preview when reopened, and 
   await page.waitForTimeout(3_000);
   expect(uploads).toBe(0);
   expect(await read()).toMatchObject({ version: before.version + 2, previewCurrent: true });
+});
+
+test('Claude Code searches one folder of what the interface filed there', async ({ page, baseURL }, info) => {
+  test.skip(isMobile(info.project.name), 'The folder is created from the fixed sidebar; the search is the same.');
+  const marker = `pasta${Date.now()}`;
+  await login(page);
+  const { token } = await generateToken(page, `Pastas — ${info.project.name}`);
+  await closeTokenDialog(page);
+  const mcp = await connectMcp(baseURL as string, token);
+  await page.goto('/');
+  const projectId = await createProject(page, `MCP ${marker}`);
+  const folderId = await createFolder(page, 'Leituras');
+  // Its "+" creates the document inside it; the other one stays at the root.
+  await folderRow(page, 'Leituras').hover();
+  await page.getByRole('button', { name: 'Novo em Leituras', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Documento', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Título do documento' }).fill(`Dentro ${marker}`);
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+  await rpc(page, 'workspace/createDocument', { requestId: crypto.randomUUID(), projectId, title: `Fora ${marker}` });
+
+  type Found = { items: { title: string; folder: { id: string; name: string } | null }[] };
+  const all = jsonOf<Found>(await mcp.call('search', { query: marker }));
+  expect(all.items.map((item) => item.title).sort()).toEqual([`Dentro ${marker}`, `Fora ${marker}`]);
+  const inFolder = jsonOf<Found>(await mcp.call('search', { query: marker, folderId }));
+  expect(inFolder.items).toEqual([
+    expect.objectContaining({ title: `Dentro ${marker}`, folder: { id: folderId, name: 'Leituras' } }),
+  ]);
+  await mcp.close();
 });

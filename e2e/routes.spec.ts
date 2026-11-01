@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { currentProjectId } from './support/navigation.js';
+import { rpcDocument, rpcFolder } from './support/folders.js';
+import { createProject, currentProjectId } from './support/navigation.js';
 import { login } from './support/session.js';
 
 test('a broken or unknown address shows a page in Portuguese inside the shell', async ({ page }) => {
@@ -41,4 +42,30 @@ test('a stored last place that would leave the app is dropped', async ({ page })
   }, project);
   await page.goto('/');
   await expect(page).toHaveURL(new RegExp(`^${origin}/projetos/${project}$`));
+});
+
+test('the Índice reads ?pasta=: a folder, the root, and anything else as Todas', async ({ page }) => {
+  await login(page);
+  const project = await createProject(page, `Rotas ${Date.now()}`);
+  const folder = await rpcFolder(page, project, 'Notas');
+  await rpcDocument(page, project, 'Na pasta', folder);
+  await rpcDocument(page, project, 'Na raiz');
+
+  await page.goto(`/projetos/${project}/indice?pasta=${folder}`);
+  await expect(page.getByRole('button', { name: 'Pasta: Notas' })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Na pasta' })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Na raiz' })).toHaveCount(0);
+
+  await page.goto(`/projetos/${project}/indice?tipo=documentos&pasta=raiz`);
+  await expect(page.getByRole('button', { name: 'Pasta: Sem pasta' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Tipo: Documentos' })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Na raiz' })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Na pasta' })).toHaveCount(0);
+
+  // A folder the project does not have, deleted or never there, becomes Todas without a new history entry.
+  await page.goto(`/projetos/${project}/indice?tipo=documentos&pasta=${crypto.randomUUID()}`);
+  await expect(page).toHaveURL(new RegExp(`/projetos/${project}/indice\\?tipo=documentos$`));
+  await expect(page.getByRole('button', { name: 'Pasta: Todas' })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/pasta=raiz$/);
 });

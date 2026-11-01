@@ -1,7 +1,8 @@
 import { expect, type Page, test } from '@playwright/test';
+import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { newDocument } from './support/items.js';
 import { pressCommand } from './support/keyboard.js';
-import { openBoard } from './support/navigation.js';
+import { createProject, openBoard } from './support/navigation.js';
 import { login } from './support/session.js';
 
 /**
@@ -145,4 +146,43 @@ test('a dialog opened from N gives the focus back to where it was', async ({ pag
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(before).toBeFocused();
+});
+
+test('Esc leaves a folder’s rename, then the move menu, one at a time, and never closes a folder', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name === 'chrome-mobile', 'The tree’s keys need the fixed sidebar.');
+  await login(page);
+  const projectId = await createProject(page, `Esc pastas ${Date.now()}`);
+  const folder = await rpcFolder(page, projectId, 'Leituras');
+  await rpcDocument(page, projectId, 'Artigo', folder);
+  await page.reload();
+  const row = folderRow(page, 'Leituras');
+  await row.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
+
+  // The rename field: Esc gives the name back and the focus to the row, with the folder still open.
+  await page.keyboard.press('F2');
+  const field = page.getByRole('textbox', { name: 'Novo nome da pasta Leituras' });
+  await field.fill('Outro nome');
+  await page.keyboard.press('Escape');
+  await expect(field).toHaveCount(0);
+  await expect(row).toBeFocused();
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
+
+  // "Mover para pasta…": the first Esc clears its filter's text, the next closes it, the one after does nothing.
+  await treeRow(page, 'Artigo').focus();
+  await page.keyboard.press('m');
+  const filter = page.getByRole('searchbox', { name: 'Mover para pasta' });
+  await filter.fill('lei');
+  await page.keyboard.press('Escape');
+  await expect(filter).toHaveValue('');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu', { name: 'Pastas' })).toBeHidden();
+  await expect(treeRow(page, 'Artigo')).toBeFocused();
+  const here = page.url();
+  await page.keyboard.press('Escape');
+  expect(page.url()).toBe(here);
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
 });

@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
+import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { moveToTrash, newDocument } from './support/items.js';
-import { createProject } from './support/navigation.js';
+import { createProject, hideSidebar, showSidebar } from './support/navigation.js';
 import { login } from './support/session.js';
 
 /** Whether the project's name in the top bar ends before the page's actions start. */
@@ -57,4 +58,42 @@ test('the page actions keep the focus when the window crosses 720 px', async ({ 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(page.locator('.top-bar')).toHaveCount(0);
   await expect(options).toBeFocused();
+});
+
+test('on a phone the tree opens over the page: a tap opens a folder, its tools show, and ⋯ moves an item', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'chrome-mobile', 'A phone: touch, no hover and no drag.');
+  await login(page);
+  const project = await createProject(page, `Celular ${Date.now()}`);
+  const folder = await rpcFolder(page, project, 'Leituras');
+  await rpcDocument(page, project, 'Artigo', folder);
+  const { id } = await rpcDocument(page, project, 'Rascunho');
+  await page.reload();
+
+  await showSidebar(page);
+  const row = folderRow(page, 'Leituras');
+  await row.tap();
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
+  await expect(treeRow(page, 'Artigo')).toBeVisible();
+  // Without hover, the folder's "+" and "⋯" stay on screen.
+  await expect(row.getByRole('button', { name: 'Novo em Leituras' })).toBeVisible();
+  await expect(row.getByRole('button', { name: 'Opções da pasta Leituras' })).toBeVisible();
+  await row.tap();
+  await expect(row).toHaveAttribute('aria-expanded', 'false');
+  await hideSidebar(page);
+
+  // The page's ⋯ says where the item is and moves it; the header has no folder label on a phone.
+  await page.goto(`/projetos/${project}/documentos/${id}`);
+  await expect(page.getByRole('button', { name: /^Sem pasta\. Mover para pasta/ })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Opções do documento', exact: true }).click();
+  await page.getByRole('menuitem', { name: /^Mover para pasta…/ }).click();
+  await page
+    .getByRole('menu', { name: 'Pastas' })
+    .getByRole('menuitem', { name: /^Leituras/ })
+    .click();
+  await expect(page.getByText('Movido para Leituras.')).toBeVisible();
+  await page.getByRole('button', { name: 'Opções do documento', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: /^Mover para pasta…/ })).toContainText('Em Leituras');
+  await page.keyboard.press('Escape');
 });

@@ -45,6 +45,8 @@ test('the project trash groups, filters, restores, deletes for good and empties'
   await openTrash(page);
   const today = page.getByRole('region', { name: 'Hoje' });
   await expect(today.getByRole('listitem')).toHaveCount(4);
+  // Origem: the project, at the root and for a task (folders.spec.ts covers an item of a folder).
+  await expect(today.getByTitle('Origem')).toHaveText([project, project, project, project]);
   await page.screenshot({ path: info.outputPath('lixeira.png'), fullPage: true });
 
   // With a filter on, emptying deletes only what the filter shows.
