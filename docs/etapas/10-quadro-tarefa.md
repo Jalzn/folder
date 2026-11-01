@@ -144,7 +144,6 @@ A última do workspace em `main` é a 006, e esta é a 007. Começa com `-- migr
      deleted_at TEXT
    );
    CREATE UNIQUE INDEX workspace_columns_active_name ON workspace_columns(name_key) WHERE deleted_at IS NULL;
-   CREATE UNIQUE INDEX workspace_columns_one_done ON workspace_columns(is_done) WHERE is_done = 1 AND deleted_at IS NULL;
    CREATE INDEX workspace_columns_order ON workspace_columns(deleted_at, position);
    ```
 
@@ -230,10 +229,15 @@ A última do workspace em `main` é a 006, e esta é a 007. Começa com `-- migr
    | `workspace_tasks_column_on_insert` e `…_on_update` (`BEFORE INSERT`, `BEFORE UPDATE OF column_id`) | Coluna inexistente ou excluída |
    | `workspace_tasks_completion_on_insert` e `…_on_update` (`BEFORE INSERT`, `BEFORE UPDATE OF column_id, completed_at`) | `completed_at` nulo numa coluna de conclusão, ou preenchido em outra |
    | `workspace_columns_empty_on_delete` (`BEFORE UPDATE OF deleted_at`, quando deixa de ser nulo) | Excluir uma coluna com qualquer tarefa, viva ou na lixeira, ou a coluna de conclusão |
-   | `workspace_columns_done_on_restore` (`BEFORE UPDATE OF deleted_at`, quando volta a nulo) | Reativar uma coluna marcada como de conclusão enquanto há outra ativa (o índice parcial já recusa; o gatilho dá uma mensagem legível) |
+   | `workspace_columns_done_on_insert` (`BEFORE INSERT`) e `workspace_columns_done_on_restore` (`BEFORE UPDATE OF deleted_at`, quando volta a nulo) | Uma segunda coluna de conclusão ativa, inserida ou reativada |
+   | `workspace_columns_done_only_active` (`BEFORE UPDATE OF is_done`, de 0 para 1) | Marcar como de conclusão uma coluna excluída |
+   | `workspace_columns_done_handover` (`AFTER UPDATE OF is_done`, de 0 para 1) | Não recusa: passa o papel. A antiga deixa de ser de conclusão, as tarefas dela perdem `completed_at`, e as da nova o ganham na nova `updated_at` da coluna, ou na hora atual se a escrita não a muda |
+   | `workspace_columns_done_kept` (`AFTER UPDATE OF is_done`, de 1 para 0) | Tirar a conclusão sem que outra a tenha recebido ("make another column the done one") |
    | `workspace_folders_id_in_use`, `workspace_columns_id_in_use` e `workspace_labels_id_in_use` (`BEFORE INSERT`) | Inserir com um `id` para o qual documentos, desenhos, tarefas ou ligações já apontam (`RAISE(ABORT, '<tabela>.id is in use')`) |
 
-   Os três últimos fecham o `INSERT OR REPLACE`, que só SQL manual faz: o `REPLACE` apaga e reinsere a linha sem rodar os gatilhos de `UPDATE`, e a chave estrangeira só é conferida no fim do comando. Um `BEFORE INSERT` roda antes do `DELETE` implícito, e uma inserção legítima nunca tem nada apontando para um `id` novo. É a pendência da [etapa 09](09-pastas.md#desvios-do-plano).
+   Os gatilhos de `is_done` vieram da revisão de dados de B1–B4: sem eles, SQL manual deixava o quadro sem coluna de conclusão ou com conclusões fora dela. Um índice único parcial não permitiria a passagem, que grava a nova coluna de conclusão antes de limpar a antiga, então os gatilhos o substituem, e `setDoneColumn` faz uma só escrita.
+
+   Os três de `id_in_use` fecham o `INSERT OR REPLACE`, que só SQL manual faz: o `REPLACE` apaga e reinsere a linha sem rodar os gatilhos de `UPDATE`, e a chave estrangeira só é conferida no fim do comando. Um `BEFORE INSERT` roda antes do `DELETE` implícito, e uma inserção legítima nunca tem nada apontando para um `id` novo. É a pendência da [etapa 09](09-pastas.md#desvios-do-plano).
 
    Os gatilhos de tarefa rodam a cada escrita de campo. Cada um é uma busca pela chave primária de `workspace_columns`, conferida por `EXPLAIN QUERY PLAN` como na etapa 09. O texto (`saveTaskText`) não toca em `column_id` nem `completed_at`, então não os dispara.
 
@@ -348,6 +352,8 @@ Segue o [Desfazer da etapa 09](09-pastas.md#desfazer) sem mudanças no mecanismo
 - `listTasks` respondendo `status`, derivado do mesmo modo.
 
 Assim cada entrega do backend fica verde com a interface antiga. B6 remove a tolerância.
+
+**Aceito na transição:** até B6, o `title` de `updateTask` grava o texto com o `textVersion` lido na própria transação. Uma aba antiga, aberta antes da implantação e com a `version` de campos ainda atual, renomeia por cima do título que a gaveta já salvou por `saveTaskText`, sem `VERSION_CONFLICT`. A descrição fica, e a próxima gravação da gaveta recebe conflito e guarda o rascunho, mas o título salvo antes se perde. É a revisão de dados de B1–B4 (B5); fica aceito porque B6 tira `title` de `updateTask`.
 
 **Alterados:**
 
