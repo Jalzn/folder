@@ -388,15 +388,15 @@ describe('workspace persistence and adversarial cases', () => {
       ['a0', 1],
       ['a1', 2],
     ]);
-    const unchanged = (title: string) => {
-      const [was, is] = [before, after].map((list) => list.tasks.find((task) => task.title === title));
-      return [is?.version === was?.version, is?.updatedAt === was?.updatedAt];
-    };
-    expect([unchanged('a0'), unchanged('a1'), unchanged('a2')]).toEqual([
-      [true, true],
-      [true, true],
-      [false, false],
-    ]);
+    const [was, is] = [before, after].map((list) => new Map(list.tasks.map((task) => [task.title, task])));
+    // The neighbours keep version and date. The moved task gets a new version; its new date may fall in
+    // the millisecond it was created in, so only the version tells.
+    for (const title of ['a0', 'a1'])
+      expect(is?.get(title)).toMatchObject({
+        version: was?.get(title)?.version,
+        updatedAt: was?.get(title)?.updatedAt,
+      });
+    expect(is?.get('a2')?.version).toBe((was?.get('a2')?.version ?? 0) + 1);
   });
 
   it('puts a task that changes project at the end of the column there, without repeating a position', async () => {
