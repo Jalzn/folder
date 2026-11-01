@@ -220,6 +220,16 @@ test('Claude Code reads what the interface created, never the trash, until the t
   expect(task).toContain(`\n- Origem: documento "Plano ${marker}" (id ${documentId})`);
   expect(task).toContain('\n  - Trecho: "O acesso usa um token pessoal somente leitura."\n');
 
+  // list_tasks filters by column name, by its key: "a fazer" finds "A fazer".
+  type Listed = { columns: { name: string }[]; tasks: { id: string; column: { name: string } }[] };
+  const projectId = new URL(documentUrl).pathname.split('/')[2];
+  const listed = jsonOf<Listed>(await mcp.call('list_tasks', { projectId, columns: ['a fazer'] }));
+  expect(listed.columns.map((column) => column.name)).toContain('A fazer');
+  expect(listed.tasks.find((each) => each.id === taskId)?.column.name).toBe('A fazer');
+  const unknown = await mcp.call('list_tasks', { columns: ['Pronto'] });
+  expect(unknown.isError).toBe(true);
+  expect(textOf(unknown)).toContain('Coluna não encontrada: Pronto.');
+
   // Trash hides the document from every tool.
   await page.goto(documentUrl);
   await moveToTrash(page, 'documento');

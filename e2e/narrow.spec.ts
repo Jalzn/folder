@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
+import { cardMenu, column, drawer, openDrawer } from './support/board.js';
 import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
-import { moveToTrash, newDocument } from './support/items.js';
+import { moveToTrash, newDocument, newTask } from './support/items.js';
 import { createProject, hideSidebar, showSidebar } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -96,4 +97,29 @@ test('on a phone the tree opens over the page: a tap opens a folder, its tools s
   await page.getByRole('button', { name: 'Opções do documento', exact: true }).click();
   await expect(page.getByRole('menuitem', { name: /^Mover para pasta…/ })).toContainText('Em Leituras');
   await page.keyboard.press('Escape');
+});
+
+test('on a phone the board scrolls sideways, ⋯ moves a card, and the drawer covers the page', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'chrome-mobile', 'A phone: touch, no hover and no drag.');
+  await login(page);
+  await createProject(page, `Quadro no celular ${Date.now()}`);
+  // newTask opens the board itself: opening it twice on a phone races the sidebar's slide.
+  await newTask(page, 'Medir a janela');
+  // The columns scroll inside the board, not the page.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const row = page.locator('.board-columns');
+  expect(await row.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  // The column's "+" and ⋯ show without hover, and the card's ⋯ moves it.
+  await expect(column(page, 'A fazer').getByRole('button', { name: 'Opções da coluna A fazer' })).toBeVisible();
+  await cardMenu(page, 'Medir a janela', 'Mover para', 'Em andamento');
+  await expect(
+    column(page, 'Em andamento').getByRole('button', { name: 'Medir a janela', exact: true }),
+  ).toBeAttached();
+  await openDrawer(page, 'Medir a janela');
+  const main = await page.locator('main').boundingBox();
+  const sheet = await drawer(page).boundingBox();
+  expect(sheet && main && sheet.height >= main.height - 1).toBe(true);
+  await expect(drawer(page).getByRole('button', { name: 'Fechar a gaveta', exact: true })).toBeVisible();
 });

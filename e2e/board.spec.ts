@@ -1,8 +1,8 @@
 import { expect, type Page, test } from '@playwright/test';
-import { card, closeDrawer, column, createInDrawer } from './support/board.js';
+import { card, closeDrawer, column, createInDrawer, drawer, openDrawer } from './support/board.js';
 import { newTask } from './support/items.js';
 import { pressCommand } from './support/keyboard.js';
-import { createProject, openBoard } from './support/navigation.js';
+import { createProject, openBoard, showSidebar } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -222,4 +222,57 @@ test('cards move by the keyboard, are announced, and complete with ⌘↵ and De
   await page.keyboard.press('Enter');
   await expect(page.getByRole('region', { name: 'Tarefa: Primeira', exact: true })).toBeVisible();
   await expect(card(page, 'Primeira')).toHaveAttribute('data-open', 'true');
+});
+
+test('the label filter keeps the tasks with every chosen label; an archived project only reads', async ({ page }) => {
+  await freshBoard(page, 'Filtro');
+  for (const title of ['Alfa', 'Beta']) await newTask(page, title);
+  const label = `mcp${Date.now() % 100_000}`;
+  await openDrawer(page, 'Alfa');
+  await drawer(page).getByRole('button', { name: 'Adicionar etiqueta', exact: true }).click();
+  await page.keyboard.type(label);
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(card(page, 'Alfa')).toContainText(label);
+  await closeDrawer(page);
+
+  // F opens the filter from the board; the count and the columns follow it.
+  await cardTitle(page, 'Alfa').focus();
+  await page.keyboard.press('f');
+  // The menu takes the name of the button that opens it.
+  const choice = page.getByRole('menuitemcheckbox', { name: label });
+  await choice.click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: `Etiquetas: ${label}` })).toBeVisible();
+  await expect(live(page)).toHaveText(`Filtro ${label}: 1 tarefa`);
+  await expect(page.locator('.board-head__count')).toHaveText('1 tarefa');
+  await expect(column(page, 'A fazer').locator('.task-card__title')).toHaveText(['Alfa']);
+  await expect(column(page, 'Em andamento')).toContainText('Nada aqui.');
+
+  // A column the filter emptied says so.
+  await page.getByRole('button', { name: 'Mais ações do quadro', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Limpar filtro de etiquetas' }).click();
+  await expect(page.locator('.board-head__count')).toHaveText('2 tarefas');
+  await page.getByRole('button', { name: 'Etiquetas', exact: true }).click();
+  await choice.click();
+  await page.keyboard.press('Escape');
+  await cardTitle(page, 'Alfa').focus();
+  await page.keyboard.press('Shift+ArrowRight');
+  await expect(column(page, 'A fazer')).toContainText(`Nenhuma tarefa com ${label}.`);
+
+  // Archived: the board shows its cards to open, without the ways to add or move.
+  await page.getByRole('button', { name: 'Mais ações do quadro', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Visão geral/ }).click();
+  await page.getByRole('button', { name: 'Opções do projeto', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Arquivar', exact: true }).click();
+  await expect(page.getByText('Projeto arquivado. O conteúdo está preservado.')).toBeVisible();
+  await showSidebar(page);
+  await openBoard(page);
+  await expect(page.getByRole('button', { name: 'Nova tarefa', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Nova coluna', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Opções de Alfa', exact: true })).toHaveCount(0);
+  await openDrawer(page, 'Alfa');
+  await expect(drawer(page).getByText('Projeto arquivado: desarquive para editar a tarefa.')).toBeVisible();
+  await expect(drawer(page).getByRole('textbox', { name: 'Título da tarefa' })).toHaveAttribute('readonly', '');
 });

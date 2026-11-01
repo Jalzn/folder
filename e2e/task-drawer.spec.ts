@@ -82,3 +82,42 @@ test('the drawer edits the due date, the labels and the text, which saves and sh
     drawerOf(page, 'Escrever o plano de lançamento').getByRole('textbox', { name: 'Descrição da tarefa' }),
   ).toContainText('Segundo passo');
 });
+
+test('a description typed offline survives a reload, and ⌘↵ in a code block stays with the editor', async ({
+  page,
+  context,
+}) => {
+  await login(page);
+  await createProject(page, `Rascunho ${Date.now()}`);
+  await openBoard(page);
+  await newTask(page, 'Anotar a reunião');
+  await openDrawer(page, 'Anotar a reunião');
+  const description = openTask(page).getByRole('textbox', { name: 'Descrição da tarefa' });
+
+  // In a code block, ⌘↵ leaves the block (BlockNote), and nothing is completed.
+  await description.click();
+  await page.keyboard.type('```');
+  await page.keyboard.press('Space');
+  await page.keyboard.type('npm test');
+  await pressCommand(page, 'Enter');
+  await expect(toast(page)).toHaveCount(0);
+  await expect(openTask(page).getByText('Salvo', { exact: true })).toBeVisible();
+
+  // Offline, the text waits in this device's draft, and the next load sends it.
+  await context.setOffline(true);
+  await page.keyboard.type('Pauta: prazos e custos');
+  await expect(openTask(page).getByRole('button', { name: 'Tentar de novo', exact: true })).toBeVisible();
+  await expect(card(page, 'Anotar a reunião').locator('.task-card__unsaved')).toBeVisible();
+  await context.setOffline(false);
+  await page.reload();
+  await openDrawer(page, 'Anotar a reunião');
+  await expect(openTask(page).getByRole('textbox', { name: 'Descrição da tarefa' })).toContainText(
+    'Pauta: prazos e custos',
+  );
+  await expect(openTask(page).getByText('Salvo', { exact: true })).toBeVisible();
+  await page.reload();
+  await openDrawer(page, 'Anotar a reunião');
+  await expect(openTask(page).getByRole('textbox', { name: 'Descrição da tarefa' })).toContainText(
+    'Pauta: prazos e custos',
+  );
+});
