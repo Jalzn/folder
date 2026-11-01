@@ -76,7 +76,7 @@ describe('moving items between projects', () => {
     const overview = await service.projectOverview({ projectId: to.id });
     expect(overview.recent.map((item) => item.title)).toEqual(['Depois', 'Fluxo', 'Plano']);
     expect(overview.lastEdited?.id).toBe(later.id);
-    expect((await service.projectNavigation({ projectId: from.id })).documents.total).toBe(0);
+    expect((await service.projectNavigation({ projectId: from.id })).tree.total).toBe(0);
   });
 
   it('takes an item out of its folder when it moves to another project, and refuses a folder there', async () => {

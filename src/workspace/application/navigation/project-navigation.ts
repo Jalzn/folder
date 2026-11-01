@@ -1,4 +1,4 @@
-import { navSection, openTaskCount } from '../../domain/navigation.js';
+import { openTaskCount } from '../../domain/navigation.js';
 import { navTree } from '../../domain/navigation-tree.js';
 import { requireProject } from '../helpers.js';
 import type { ProjectNavigationInput } from '../schemas/navigation.js';
@@ -6,8 +6,7 @@ import type { NavigationContext } from './ports.js';
 
 /**
  * What the project's sidebar shows: its documents and drawings as the "Itens" tree (see navTree), the
- * number of open tasks and the number of items in its trash. Until B5 it also answers the per-type
- * sections the sidebar of stage 08 shows.
+ * number of open tasks and the number of items in its trash.
  */
 export async function projectNavigation(ctx: NavigationContext, input: ProjectNavigationInput) {
   const { documents, drawings, folders, taskCounts, trashCount } = await ctx.read(async (reader) => {
@@ -22,8 +21,6 @@ export async function projectNavigation(ctx: NavigationContext, input: ProjectNa
   });
   return {
     tree: navTree([...documents, ...drawings], folders, input.sort, input.limit),
-    documents: navSection(documents, input.documentsSort, input.limit),
-    drawings: navSection(drawings, input.drawingsSort, input.limit),
     openTasks: openTaskCount(taskCounts),
     trashCount,
   };

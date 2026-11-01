@@ -1,11 +1,11 @@
 import { TASK_STATUSES, type TaskStatus } from './task-status.js';
 
-/** The item types the sidebar lists in sections, which are also the ones that can be pinned. */
+/** The item types the sidebar's tree lists, which are also the ones that can be pinned and filed. */
 export const NAV_ITEM_TYPES = ['document', 'drawing'] as const;
 
 export type NavItemType = (typeof NAV_ITEM_TYPES)[number];
 
-/** How a sidebar section orders its items: last edited, A–Z, or last created first. */
+/** How the sidebar's tree orders unpinned items: last edited, A–Z, or last created first. */
 export const NAV_SORTS = ['recent', 'title', 'created'] as const;
 
 export type NavSort = (typeof NAV_SORTS)[number];
@@ -20,15 +20,6 @@ export interface NavItem {
   pinnedAt: string | null;
   /** Null at the project's root. */
   folderId: string | null;
-}
-
-export interface NavSection {
-  /** Every live item of the type in the project, pinned ones included. */
-  total: number;
-  /** In the order they were pinned. */
-  pinned: NavItem[];
-  /** The first unpinned items in the chosen order. */
-  items: NavItem[];
 }
 
 const titles = new Intl.Collator('pt-BR');
@@ -47,16 +38,6 @@ export const byPinOrder = (a: NavItem, b: NavItem) =>
 
 /** Items in the chosen order, IDs breaking ties, so the order never changes between reads. */
 export const bySort = (sort: NavSort) => (a: NavItem, b: NavItem) => orders[sort](a, b) || ascending(a.id, b.id);
-
-/**
- * A sidebar section from all the live items of one type: the pinned ones first, then up to `limit`
- * of the others in `sort` order. IDs break ties, so the order never changes between reads.
- */
-export function navSection(items: readonly NavItem[], sort: NavSort, limit: number): NavSection {
-  const pinned = items.filter((item) => item.pinnedAt !== null).sort(byPinOrder);
-  const unpinned = items.filter((item) => item.pinnedAt === null).sort(bySort(sort));
-  return { total: items.length, pinned, items: unpinned.slice(0, limit) };
-}
 
 /** Columns of open tasks: every one but the last, where finished tasks go. */
 const OPEN_STATUSES = TASK_STATUSES.filter((status) => status !== 'done');

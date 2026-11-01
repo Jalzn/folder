@@ -55,18 +55,17 @@ describe('navigation queries', () => {
       await service.createDocument({ ...request(), projectId: (await testProject(service, 'Outro')).id });
 
       const navigation = await service.projectNavigation({ projectId: project.id });
-      expect(navigation.documents.total).toBe(9);
-      expect(titles(navigation.documents.pinned)).toEqual(['Zeta', 'Gama']);
-      expect(titles(navigation.documents.items)).toEqual([
-        'Lambda',
-        'Kappa',
-        'Iota',
-        'Ômega',
-        'beta',
-        'Delta',
-        'Ébano',
-      ]);
-      expect(navigation.documents.pinned[0]).toEqual({
+      expect(Object.keys(navigation)).toEqual(['tree', 'openTasks', 'trashCount']);
+      const { tree } = navigation;
+      expect(tree.total).toBe(10);
+      expect(titles(tree.pinned)).toEqual(['Zeta', 'Gama']);
+      // Documents and drawings together, by last edit: the drawing came last.
+      expect(tree.loose.total).toBe(8);
+      expect(titles(tree.loose.items)).toEqual(['Mapa', 'Lambda', 'Kappa', 'Iota', 'Ômega', 'beta', 'Delta', 'Ébano']);
+      expect(tree.loose.items[0]).toEqual(
+        expect.objectContaining({ type: 'drawing', id: drawing.id, folderId: null, pinnedAt: null }),
+      );
+      expect(tree.pinned[0]).toEqual({
         type: 'document',
         folderId: null,
         id: zeta?.id,
@@ -76,15 +75,10 @@ describe('navigation queries', () => {
         createdAt: zeta?.updatedAt,
         pinnedAt: expect.any(String),
       });
-      expect(navigation.drawings).toEqual({
-        total: 1,
-        pinned: [],
-        items: [expect.objectContaining({ id: drawing.id, title: 'Mapa', pinnedAt: null })],
-      });
       expect(navigation.trashCount).toBe(1);
     });
 
-    it('orders each section by last edit, by title or by creation, up to the limit', async () => {
+    it('orders the loose items by last edit, by title or by creation, up to the limit', async () => {
       for (const title of ['Banco', 'árvore', 'Casa', 'Doc 10', 'Doc 2']) await newDocument(title);
       const first = (await service.listDocuments({ projectId: project.id })).at(-1);
       await service.saveDocument({
@@ -94,16 +88,19 @@ describe('navigation queries', () => {
         title: 'Banco',
         content: [],
       });
-      const sorted = async (documentsSort: 'recent' | 'title' | 'created', limit?: number) =>
+      const sorted = async (sort: 'recent' | 'title' | 'created', limit?: number) =>
         titles(
-          (await service.projectNavigation({ projectId: project.id, documentsSort, ...(limit ? { limit } : {}) }))
-            .documents.items,
+          (await service.projectNavigation({ projectId: project.id, sort, ...(limit ? { limit } : {}) })).tree.loose
+            .items,
         );
       expect(await sorted('recent')).toEqual(['Banco', 'Doc 2', 'Doc 10', 'Casa', 'árvore']);
       expect(await sorted('title')).toEqual(['árvore', 'Banco', 'Casa', 'Doc 10', 'Doc 2']);
       expect(await sorted('created')).toEqual(['Doc 2', 'Doc 10', 'Casa', 'árvore', 'Banco']);
       expect(await sorted('title', 2)).toEqual(['árvore', 'Banco']);
       expect(() => service.projectNavigation({ projectId: project.id, limit: 21 })).toThrow();
+      // An old client's per-type orders are dropped, as any unknown key: the tree keeps its own order.
+      const old = { projectId: project.id, documentsSort: 'title', drawingsSort: 'title' } as { projectId: string };
+      expect(titles((await service.projectNavigation(old)).tree.loose.items)).toEqual(await sorted('recent'));
     });
 
     it('builds the items tree: root pins, folders in order with their first children, then loose items', async () => {
@@ -142,8 +139,6 @@ describe('navigation queries', () => {
         total: 1,
         items: [expect.objectContaining({ title: 'Navegação', folderId: null })],
       });
-      // Until B5 the per-type sections still answer.
-      expect((await service.projectNavigation({ projectId: project.id })).documents.total).toBe(6);
     });
 
     it('counts open tasks and every type in the trash, for archived projects too', async () => {

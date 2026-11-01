@@ -226,8 +226,6 @@ O roteiro é ensaiado sobre bases reais com 001 a 005 e `foreign_keys=ON`. Ao fi
 
 ## Contratos RPC
 
-**Compatibilidade transitória:** `projectNavigation` ganha `tree` sem perder `documents` e `drawings`. Assim cada entrega do backend fica verde com a lateral da etapa 08. A entrega B5, depois do web, remove as seções por tipo e as ordens `documentsSort` e `drawingsSort`.
-
 **Alterados:**
 
 | Procedimento | Mudança |
@@ -237,7 +235,7 @@ O roteiro é ensaiado sobre bases reais com 001 a 005 e `foreign_keys=ON`. Ao fi
 | `restoreDocument`, `restoreCanvas` | Respondem `{ id, version, updatedAt, folderGone }`. `folderGone` é verdadeiro quando a pasta tinha sido excluída e o item voltou para a raiz |
 | `moveItem` | Entrada `{ requestId, type, id, projectId, folderId?: uuid \| null, expectedVersion?: int }` e saída `{ id, projectId, folderId, version, pinnedAt }`. Regras na tabela abaixo |
 | `pinItem` | Conta os fixados do escopo do item (raiz ou pasta). A mensagem do 9.º nomeia o escopo |
-| `projectNavigation` | Entrada `{ projectId, sort?: 'recent' \| 'title' \| 'created' (padrão 'recent'), limit?: 1–20 (padrão 8) }`. Ganha `tree` (abaixo). Até B5, aceita e responde também as seções por tipo |
+| `projectNavigation` | Entrada `{ projectId, sort?: 'recent' \| 'title' \| 'created' (padrão 'recent'), limit?: 1–20 (padrão 8) }`. Responde `tree` (abaixo) no lugar das seções por tipo `documents` e `drawings`. As ordens `documentsSort` e `drawingsSort` de um cliente antigo são descartadas, como qualquer chave desconhecida |
 | `projectOverview` | `recent[]` ganha `folder: { id, name } \| null` |
 | `listTrash` | `items[]` ganha `folder: { id, name, deleted } \| null`. É nulo nas tarefas e nos itens da raiz |
 | `search` (RPC e MCP) | A entrada aceita `folderId?: uuid`. Documentos e desenhos ganham `folder: { id, name } \| null` (seção MCP) |
@@ -265,7 +263,7 @@ interface NavItem { type: 'document' | 'drawing'; id: string; title: string; upd
                     createdAt: string; pinnedAt: string | null; folderId: string | null }
 ```
 
-Desempates por `id`, como em `navSection`. "Ver todos na raiz · n" usa `pinned.length + loose.total`, o mesmo conjunto que o Índice filtrado mostra.
+Desempates por `id`. "Ver todos na raiz · n" usa `pinned.length + loose.total`, o mesmo conjunto que o Índice filtrado mostra.
 
 **Novos:**
 
@@ -736,7 +734,7 @@ router/paths.ts, routes.tsx   index(projectId, { tipo, pasta }) e validateSearch
 - `workspace.db.test.ts`: `createDocument` e `createCanvas` com `folderId`; cópia na pasta.
 - `navigation.db.test.ts`:
   - `tree` com a lixeira e as pastas excluídas de fora, os limites e as ordenações;
-  - as seções por tipo até B5;
+  - as ordens por tipo de um cliente antigo, descartadas;
   - `projectOverview` com a pasta e `listFolders`.
 
 **MCP:**
