@@ -101,18 +101,25 @@ describe('dropSpotAt', () => {
     { key: 'item:document:a', top: 30, height: 30 },
     { key: 'empty:g', top: 60, height: 30 },
   ];
-  it('splits a folder in thirds and another row in halves', () => {
-    expect(dropSpotAt(rows, 5)).toEqual({ key: 'folder:f', position: 'before' });
-    expect(dropSpotAt(rows, 15)).toEqual({ key: 'folder:f', position: 'on' });
-    expect(dropSpotAt(rows, 25)).toEqual({ key: 'folder:f', position: 'after' });
-    expect(dropSpotAt(rows, 40)).toEqual({ key: 'item:document:a', position: 'before' });
-    expect(dropSpotAt(rows, 50)).toEqual({ key: 'item:document:a', position: 'after' });
+  it('gives an item the whole row of a folder, and a folder its thirds to reorder', () => {
+    for (const y of [1, 5, 15, 25, 29])
+      expect(dropSpotAt(rows, y, 'item')).toEqual({ key: 'folder:f', position: 'on' });
+    expect(dropSpotAt(rows, 5, 'folder')).toEqual({ key: 'folder:f', position: 'before' });
+    expect(dropSpotAt(rows, 15, 'folder')).toEqual({ key: 'folder:f', position: 'on' });
+    expect(dropSpotAt(rows, 25, 'folder')).toEqual({ key: 'folder:f', position: 'after' });
+  });
+
+  it('splits any other row in halves', () => {
+    for (const kind of ['item', 'folder'] as const) {
+      expect(dropSpotAt(rows, 40, kind)).toEqual({ key: 'item:document:a', position: 'before' });
+      expect(dropSpotAt(rows, 50, kind)).toEqual({ key: 'item:document:a', position: 'after' });
+    }
   });
 
   it('puts "Pasta vazia" always on, the space below the rows at the root and the rest nowhere', () => {
-    expect(dropSpotAt(rows, 62)).toEqual({ key: 'empty:g', position: 'on' });
-    expect(dropSpotAt(rows, 200)).toBe('root');
-    expect(dropSpotAt(rows, -4)).toBeNull();
-    expect(dropSpotAt([], 10)).toBeNull();
+    expect(dropSpotAt(rows, 62, 'item')).toEqual({ key: 'empty:g', position: 'on' });
+    expect(dropSpotAt(rows, 200, 'item')).toBe('root');
+    expect(dropSpotAt(rows, -4, 'item')).toBeNull();
+    expect(dropSpotAt([], 10, 'item')).toBeNull();
   });
 });

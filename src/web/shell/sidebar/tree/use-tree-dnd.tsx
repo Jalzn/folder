@@ -23,16 +23,20 @@ const OPEN_AFTER_MS = 800;
  * Aria's own delegate tries another place on the same row when this one is refused, and its collection
  * falls back to the root: here a refused place is no target, so the cursor says "not allowed".
  */
-function strictDelegate(tree: RefObject<HTMLElement | null>): DropTargetDelegate {
+function strictDelegate(
+  tree: RefObject<HTMLElement | null>,
+  dragging: () => DragSource['kind'] | null,
+): DropTargetDelegate {
   return {
     getDropTargetFromPoint(_x, y, isValidDropTarget) {
       const element = tree.current;
-      if (!element) return null;
+      const kind = dragging();
+      if (!element || !kind) return null;
       const rows = [...element.querySelectorAll<HTMLElement>('[role="row"][data-key]')].map((row) => {
         const rect = row.getBoundingClientRect();
         return { key: row.dataset.key ?? '', top: rect.top, height: rect.height };
       });
-      const spot = dropSpotAt(rows, y + element.getBoundingClientRect().top);
+      const spot = dropSpotAt(rows, y + element.getBoundingClientRect().top, kind);
       const target: DropTarget | null =
         spot === 'root' ? { type: 'root' } : spot && { type: 'item', key: spot.key, dropPosition: spot.position };
       return target && isValidDropTarget(target) ? target : null;
@@ -111,7 +115,7 @@ export function useTreeDnd({
       return [];
     },
     acceptedDragTypes: [ITEM_DRAG, FOLDER_DRAG],
-    dropTargetDelegate: strictDelegate(tree),
+    dropTargetDelegate: strictDelegate(tree, () => dragging.current?.kind ?? null),
     getDropOperation: (target) => (resultOf(target) ? 'move' : 'cancel'),
     onDropEnter: (event) => {
       const target = event.target;

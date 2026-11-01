@@ -75,15 +75,21 @@ export interface MeasuredRow {
 }
 
 /**
- * Where the pointer at `y` is (docs/etapas/09-pastas.md, "Arrastar"): on a folder by thirds (before, on,
- * after), "Pasta vazia" always on, any other row by halves, and below the last row the root. Above the
- * rows, or between them, nothing.
+ * Where the pointer at `y` is (docs/etapas/09-pastas.md, "Arrastar"), for what is dragged. An item takes a
+ * folder's whole row as on it, since before and after a folder mean nothing for an item; a folder splits a
+ * folder's row in thirds (before, on, after) to reorder. "Pasta vazia" is always on, any other row splits in
+ * halves, and below the last row is the root. Above the rows, or between them, nothing.
  */
-export function dropSpotAt(rows: readonly MeasuredRow[], y: number): DropSpot | 'root' | null {
+export function dropSpotAt(
+  rows: readonly MeasuredRow[],
+  y: number,
+  dragging: DragSource['kind'],
+): DropSpot | 'root' | null {
   for (const row of rows) {
     if (y < row.top || y >= row.top + row.height) continue;
     const at = (y - row.top) / row.height;
     if (row.key.startsWith('empty:')) return { key: row.key, position: 'on' };
+    if (row.key.startsWith('folder:') && dragging === 'item') return { key: row.key, position: 'on' };
     if (row.key.startsWith('folder:'))
       return { key: row.key, position: at < 1 / 3 ? 'before' : at > 2 / 3 ? 'after' : 'on' };
     return { key: row.key, position: at < 0.5 ? 'before' : 'after' };

@@ -72,26 +72,26 @@ test('a folder dragged between folders reorders them, and Esc cancels a drag', a
   await expect(toast(page)).toHaveCount(0);
 });
 
-test('the plan’s refused places stay refused: an item before a folder, a folder on another', async ({ page }) => {
+test('an item takes a folder’s whole row, and a folder on the middle of another stays refused', async ({ page }) => {
   await sampleProject(page);
-  // The top third of a folder row is before it: no target, and nothing moves.
-  await drag(page, treeRow(page, 'Solto'), folderRow(page, 'Primeira'), { y: 0.15 });
-  await expect(treeRow(page, 'Solto')).toHaveAttribute('aria-level', '1');
-  await expect(folderRow(page, 'Primeira')).toHaveAttribute('aria-label', /, 0 itens$/);
+  // Near the top edge of a folder row, an item still goes into it.
+  await drag(page, treeRow(page, 'Solto'), folderRow(page, 'Primeira'), { y: 0.1 });
+  await expect(page.locator('.toast')).toContainText('Movido para Primeira.');
+  await expect(folderRow(page, 'Primeira')).toHaveAttribute('aria-label', /, 1 item$/);
   // A folder on the middle of another folder neither nests nor reorders.
   await drag(page, folderRow(page, 'Segunda'), folderRow(page, 'Primeira'));
   expect(await folderNames(page)).toEqual(['Primeira', 'Segunda']);
-  await expect(page.locator('.toast')).toHaveCount(0);
 });
 
-test('a closed folder opens under a held item that keeps moving a little', async ({ page }) => {
+test('a closed folder opens under a held item that keeps moving a little, anywhere on its row', async ({ page }) => {
   await sampleProject(page);
-  await drag(page, treeRow(page, 'Solto'), folderRow(page, 'Segunda'), { release: false });
+  await drag(page, treeRow(page, 'Solto'), folderRow(page, 'Segunda'), { y: 0.85, release: false });
   const box = await folderRow(page, 'Segunda').boundingBox();
   if (!box) throw new Error('No folder row.');
-  // A pixel every 200 ms, as a hand on a trackpad: React Aria's own timer would start over each time.
+  // A pixel every 200 ms near the bottom edge, as a hand on a trackpad: React Aria's own timer would start
+  // over each time.
   for (let step = 0; step < 6; step += 1) {
-    await page.mouse.move(box.x + 60 + (step % 2), box.y + box.height / 2);
+    await page.mouse.move(box.x + 60 + (step % 2), box.y + box.height * 0.85);
     await page.waitForTimeout(200);
   }
   await expect(folderRow(page, 'Segunda')).toHaveAttribute('aria-expanded', 'true');
