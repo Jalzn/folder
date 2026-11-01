@@ -61,7 +61,7 @@ pastas.md é a especificação mais recente e vale sobre sidebar.md, conforme [i
 
 ## Decisões técnicas
 
-As duas perguntas em aberto do escopo inicial estão resolvidas aqui, nas linhas 1 e 2. As escolhas de produto que dependem do usuário estão no fim, em [Perguntas para o usuário](#perguntas-para-o-usuário).
+As duas perguntas em aberto do escopo inicial estão resolvidas aqui, nas linhas 1 e 2. As escolhas de produto que o usuário fez estão no fim, em [Decisões do usuário](#decisões-do-usuário).
 
 | # | Decisão | Motivo |
 | --- | --- | --- |
@@ -69,7 +69,7 @@ As duas perguntas em aberto do escopo inicial estão resolvidas aqui, nas linhas
 | 2 | Desfazer a exclusão: exclusão lógica da pasta e restauração versionada (`restoreFolder`), com o inverso enviado pelo cliente a partir da resposta da exclusão. O ⌘Z é um desfazer genérico pequeno no cliente (`ToastProvider`), e não no `core` | Ver [Desfazer](#desfazer). O `undo.ts` do Orbis (`../orbis/src/core/infra/undo.ts`, que não está neste repositório) foi inspecionado. Ele exigiria tabela e migração no `core`, mudar a assinatura de `idempotentWrite` para todos os módulos, despachar do `core` para o workspace e criar um código de erro novo, tudo para duas ações. A etapa 10 segue o mesmo padrão em `deleteColumn` |
 | 3 | Mudar de pasta não é edição: `version` e `updatedAt` ficam. Vale a última gravação, como em fixar e na ordem do seletor | Se mudar de pasta subisse a versão, arrastar na lateral criaria conflito no autosave de um editor aberto, inclusive em outro aparelho. A pasta não depende do conteúdo |
 | 4 | `moveItem` ganha `folderId`, e `expectedVersion` passa a ser exigido só para mudar de projeto | Um procedimento só para dizer onde o item vive. Mudar de projeto continua como na etapa 08, com versão e passando pelo autosave. Mudar de pasta não precisa ler o item antes, o que a etapa 08 aceitou como custo no mover de projeto |
-| 5 | Fixados por escopo: até 8 na raiz e até 8 em cada pasta. Um item fixado que muda de pasta continua fixado se o destino tiver vaga; senão, perde o fixado e o toast avisa | Segue o escopo inicial, com o fixado "no topo da raiz ou da própria pasta". O protótipo conta 8 por projeto; ver a [pergunta 1](#perguntas-para-o-usuário). Manter o fixado quando cabe segue o protótipo, que não desafixa ao mover entre pastas |
+| 5 | Fixados por escopo: até 8 na raiz e até 8 em cada pasta. Um item fixado que muda de pasta continua fixado se o destino tiver vaga; senão, perde o fixado e o toast avisa | Decisão do usuário ([1](#decisões-do-usuário)), conforme o escopo inicial, com o fixado "no topo da raiz ou da própria pasta". O protótipo conta 8 por projeto, e a diferença fica registrada. Manter o fixado quando cabe segue o protótipo, que não desafixa ao mover entre pastas |
 | 6 | Uma pasta excluída continua no banco (`deleted_at`) e nunca é listada. A linha nomeia a origem dos itens na Lixeira e permite o Desfazer. Pastas não são apagadas de vez | É o que a Lixeira precisa para mostrar "Tinyfold › MCP" e para avisar ao restaurar. As linhas são poucas e pequenas |
 | 7 | Nome único entre as pastas ativas do projeto, sem diferenciar caixa e acentos: coluna `name_key` com `searchText` do nome, sob um índice único parcial | Assim, "mcp" e "MCP" ou "Ações" e "acoes" não convivem. O SQLite não normaliza NFD, então a aplicação calcula a chave e o índice é a última barreira |
 | 8 | Limites: nome de 1 a 100 caracteres, com os espaços colapsados, e até 200 pastas ativas por projeto. O MCP lista até 50 por projeto, com `folderCount` | O limite de 200 é técnico e ninguém o alcança no uso real. Ele limita a resposta da lateral e a renumeração das posições. Sem o corte de 50, uma resposta de `list_projects` com nomes pesados poderia passar de 45.000 caracteres num projeto só |
@@ -511,7 +511,7 @@ Soltar mostra o mesmo toast do M. Arrastar fica desligado num projeto arquivado,
 | ⌘K, itens | À direita, a marca e o caminho "Tinyfold › MCP" em 12 `--text-3`. Na raiz, só o projeto |
 | ⌘K, Pastas | Grupo depois de Projetos, só com texto digitado, com até 6 de `listFolders` filtradas localmente: "MCP · pasta · 12 itens", com o projeto à direita e os arquivados sinalizados. ↵ abre o projeto da pasta se for outro, expande a pasta e foca o primeiro filho |
 | ⌘K, comandos | "Nova pasta", "Recolher todas as pastas" (quando o projeto tem pastas) e, em "Neste item", "Mover para pasta…" (M) |
-| Índice | Filtros "Tipo" e "Pasta: Todas, Sem pasta, <pastas>", que correspondem a `?tipo=` e `?pasta=<id>\|raiz`. Uma pasta desconhecida ou excluída na URL vira Todas, com `replace`. O interruptor "Agrupar por pasta" começa ligado e fica guardado no dispositivo, junto da ordem. Os grupos são linhas de cabeçalho (`Cell colSpan`), com ícone de pasta, nome e contagem, na ordem manual, e "Sem pasta" por último. A ordem da tabela vale dentro de cada grupo. Resumo: "12 itens em Tinyfold · MCP." com o filtro. A coluna Pasta depende da [pergunta 2](#perguntas-para-o-usuário). "Ver todos" da lateral abre o Índice filtrado |
+| Índice | Filtros "Tipo" e "Pasta: Todas, Sem pasta, <pastas>", que correspondem a `?tipo=` e `?pasta=<id>\|raiz`. Uma pasta desconhecida ou excluída na URL vira Todas, com `replace`. O interruptor "Agrupar por pasta" começa ligado e fica guardado no dispositivo, junto da ordem. Os grupos são linhas de cabeçalho (`Cell colSpan`), com ícone de pasta, nome e contagem, na ordem manual, e "Sem pasta" por último. A ordem da tabela vale dentro de cada grupo. Resumo: "12 itens em Tinyfold · MCP." com o filtro. Com "Agrupar por pasta" desligado, a tabela ganha a coluna Pasta, depois de Tipo, com o nome da pasta ou "Sem pasta"; agrupada, ela some, porque o cabeçalho de cada grupo já diz a pasta ([decisão do usuário 2](#decisões-do-usuário)). "Ver todos" da lateral abre o Índice filtrado |
 | Visão geral › Editados recentemente | A meta mostra o tipo e a pasta: "Documento · MCP" e "Desenho · Arquitetura" |
 | Lixeira | A coluna Origem mostra "Tinyfold › MCP" ou "Tinyfold"; nas tarefas, o projeto. A pasta aparece mesmo excluída, e o aviso vem ao restaurar. Toasts: "“X” restaurado em MCP." com "Abrir", ou "A pasta “MCP” foi excluída; o item voltou para a raiz." com "Abrir" |
 
@@ -642,7 +642,7 @@ shell/keyboard/               ⌘Z, acceptsUndo, chords.pending(), tabela; use-i
 shell/command-palette/        palette-folders.ts (grupo Pastas e caminho), commands.ts, use-here-actions.tsx
 ui/Toast.tsx                  undo e undoLatest(); toast-undo.ts com o estado do Desfazer
 lib/queries/folders.ts        listFolders; navigation.ts com sort e tree
-pages/project/item-index/     index-groups.ts (puro), IndexFilters.tsx, IndexTable.tsx (grupos)
+pages/project/item-index/     index-groups.ts (puro), IndexFilters.tsx, IndexTable.tsx (grupos e coluna Pasta)
 pages/project/overview/       RecentSection.tsx com a pasta
 pages/project/trash/          TrashGroups.tsx (Origem), trash-text.ts (avisos de restauração)
 pages/document/, pages/drawing/  FolderLabel no cabeçalho; cópias e importações na pasta
@@ -678,7 +678,7 @@ router/paths.ts, routes.tsx   index(projectId, { tipo, pasta }) e validateSearch
 - **Teclado:**
   - `keyboard.test.ts`: `acceptsUndo` em campo, editor, `.excalidraw` e overlay; encaminhamento da árvore (N, P, M, G, `/`, `?` e o acorde pendente vão aos atalhos; outras letras ficam com o typeahead); `chords.pending()`.
   - `toast-undo.test.ts`: o mais novo substitui; `undoLatest` só roda o toast na tela e nada depois que ele sai.
-- **Textos e telas:** `folder-text.test.ts` (plurais: "1 item foi", "3 itens foram", "Estava vazia.", "1 deixou de ficar fixado."); `palette-sections.test.ts` (grupo Pastas, caminho, limite de 6); `commands.test.ts` (os comandos novos e quando aparecem); `index-groups.test.ts` (ordem manual, "Sem pasta" por último, filtros `raiz` e pasta, pasta desconhecida); `trash-text.test.ts` (Origem e os avisos de restauração).
+- **Textos e telas:** `folder-text.test.ts` (plurais: "1 item foi", "3 itens foram", "Estava vazia.", "1 deixou de ficar fixado."); `palette-sections.test.ts` (grupo Pastas, caminho, limite de 6); `commands.test.ts` (os comandos novos e quando aparecem); `index-groups.test.ts` (ordem manual, "Sem pasta" por último, filtros `raiz` e pasta, pasta desconhecida, colunas com e sem agrupar); `trash-text.test.ts` (Origem e os avisos de restauração).
 
 ### Banco (`test:db`, SQLite temporário)
 
@@ -752,7 +752,7 @@ As specs existentes trocam só o caminho de criar e os seletores da lateral, sem
 
 | Spec | Cenários |
 | --- | --- |
-| `folders.spec.ts` (novo) | **Criar:** pelo "+" de Itens, com "Nova pasta" selecionado; nome vazio cancela; nome repetido com outra caixa dá erro inline; N › Pasta e ⌘K "Nova pasta".<br>**Renomear e reordenar:** F2 e duplo clique, Esc restaura; ⌥↑/⌥↓ e o menu.<br>**Mover:** M com filtro, raiz, "Nova pasta…" que cria e move, "Outro projeto…"; toast com Desfazer e ⌘Z.<br>**Excluir:** os itens vão para a raiz e o Desfazer devolve pasta, posição e fixados; "Excluir pasta e itens…" com diálogo, Lixeira e Desfazer.<br>**Lixeira:** restaurar um item de pasta excluída vai para a raiz, com o aviso.<br>**Fixados:** 8 por escopo, e o 9.º recusado com o nome do escopo.<br>**Páginas:** rótulo do cabeçalho e o popover dele; N e o menu Novo na página de um item de pasta ("Novo documento em MCP").<br>**Índice:** agrupado por padrão, "Sem pasta" por último, filtro Pasta e `?pasta=`.<br>**⌘K:** a pasta como resultado expande e foca o primeiro filho; caminho à direita.<br>**Visão geral:** "Documento · MCP" |
+| `folders.spec.ts` (novo) | **Criar:** pelo "+" de Itens, com "Nova pasta" selecionado; nome vazio cancela; nome repetido com outra caixa dá erro inline; N › Pasta e ⌘K "Nova pasta".<br>**Renomear e reordenar:** F2 e duplo clique, Esc restaura; ⌥↑/⌥↓ e o menu.<br>**Mover:** M com filtro, raiz, "Nova pasta…" que cria e move, "Outro projeto…"; toast com Desfazer e ⌘Z.<br>**Excluir:** os itens vão para a raiz e o Desfazer devolve pasta, posição e fixados; "Excluir pasta e itens…" com diálogo, Lixeira e Desfazer.<br>**Lixeira:** restaurar um item de pasta excluída vai para a raiz, com o aviso.<br>**Fixados:** 8 por escopo, e o 9.º recusado com o nome do escopo.<br>**Páginas:** rótulo do cabeçalho e o popover dele; N e o menu Novo na página de um item de pasta ("Novo documento em MCP").<br>**Índice:** agrupado por padrão, "Sem pasta" por último, filtro Pasta e `?pasta=`; a coluna Pasta só aparece sem agrupar.<br>**⌘K:** a pasta como resultado expande e foca o primeiro filho; caminho à direita.<br>**Visão geral:** "Documento · MCP" |
 | `folder-tree.spec.ts` (novo) | **Papéis:** `treegrid`, `row`, `aria-level` e `aria-expanded`.<br>**Teclas:** ↑ ↓ Home End → ← ↵; typeahead com uma letra que não é atalho; N, P, M e G P com o foco numa linha; ⇧F10 na pasta.<br>**Esc:** cancela a renomeação e nunca recolhe pasta nem navega.<br>**Estado aberto:** persiste ao recarregar, por projeto; na primeira visita, só a pasta do item ativo abre; um link para item de pasta fechada a expande e rola até ele.<br>**Escala** (projeto grande): 8 filhos e "Ver todos · n", que abre o Índice filtrado; o item ativo como 9.ª linha; "Ver todos na raiz".<br>**Pasta vazia:** os dois links alcançáveis pelo teclado.<br>**Links:** clique do meio e ⌘-clique abrem outra aba; um clique cria uma entrada só no histórico.<br>**Ponto não salvo** na pasta fechada e no ícone Itens da faixa.<br>**Popover Itens** da faixa recolhida |
 | `folder-drag.spec.ts` (novo, só desktop) | Item sobre a pasta (estado de alvo); item no cabeçalho Itens vai para a raiz; item entre filhos vai para a pasta; pasta reordenada pelo arrastar; pasta sobre pasta recusada sem mudança; pasta fechada abre depois do tempo de ativação; Esc cancela o arrasto |
 | `navigation.spec.ts` | O limite de fixados passa a ser por escopo. M abre "Mover para pasta…", e mover de projeto passa por "Outro projeto…" |
@@ -812,7 +812,7 @@ DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm dev
 2. **Teclado:** a tabela da seção [Teclado e Esc](#teclado-e-esc) na árvore, inclusive o typeahead, ⌘Z depois de excluir e de mover, e a sequência do Esc. Nenhum Esc recolhe pasta nem navega.
 3. **Arrastar:** os casos da tabela de arrastar, com o indicador no nível certo e o cursor de "não permitido".
 4. **Larguras:** em 1024 px, a lateral sobre a página com a árvore e a criação de pasta abrindo a lateral; na emulação de Pixel 7, o toque e o ⋯.
-5. **Registro:** as diferenças aceitas vão para `validacao.md`, por exemplo os 800 ms, os fixados por `pinned_at` e o fixado por escopo, se for o caso. As capturas vão para `docs/screens/`.
+5. **Registro:** as diferenças aceitas vão para `validacao.md`, por exemplo os 800 ms, os fixados por `pinned_at` e o limite de fixados por escopo, que o protótipo conta por projeto. As capturas vão para `docs/screens/`.
 6. **Limpeza:** parar o `dev` e o servidor do protótipo e rodar `rm -rf "$TF_TMP"`.
 
 ## Critérios de pronto
@@ -862,7 +862,7 @@ Ao terminar B4, o backend entrega ao web os contratos e exemplos reais de respos
 | W2 | `feat(web): replace sidebar sections with the items tree`. Árvore, grade de 256 px, `tree-rows.ts`, estado aberto, cabeçalho Itens com ordenar e recolher, escala, pasta vazia, ponto não salvo, popover Itens da faixa, filtro com Pastas, encaminhamento de teclas e typeahead. O M continua "Mover para projeto…" até W4. Ajudantes de E2E e specs atualizados |
 | W3 | `feat(web): add folder actions to the sidebar`. Criar e renomear no lugar, reordenar, menu da pasta, excluir com Desfazer, excluir com os itens, ⇧F10, N e "+" na pasta |
 | W4 | `feat(web): move items between folders`. `MoveToFolderPopover` (M, ⋯ da página, ⌘K), "Nova pasta…", "Outro projeto…", toasts, arrastar e soltar, fixados por escopo |
-| W5 | `feat(web): show folders across pages`. `FolderLabel` e `lead` no `PageFrame`, menu Novo com a pasta, cópias e importações na pasta, ⌘K (pastas, caminho, comandos), Índice (filtros, agrupar, `?pasta=`), Visão geral, Lixeira |
+| W5 | `feat(web): show folders across pages`. `FolderLabel` e `lead` no `PageFrame`, menu Novo com a pasta, cópias e importações na pasta, ⌘K (pastas, caminho, comandos), Índice (filtros, agrupar, coluna Pasta sem agrupar, `?pasta=`), Visão geral, Lixeira |
 | W6 | `test(e2e): cover folders, tree keyboard and drag`, com as capturas |
 
 **3. Backend** (depois de W6):
@@ -912,12 +912,9 @@ Ao terminar B4, o backend entrega ao web os contratos e exemplos reais de respos
 | `src/workspace/README.md` | Regras de pastas, fixados por escopo, Lixeira com a origem e restauração |
 | `etapas/README.md` e esta página | Estado, critérios marcados, Resultado e Desvios |
 
-## Perguntas para o usuário
+## Decisões do usuário
 
-1. **Limite de fixados com pastas.** O escopo inicial e este plano contam até 8 fixados na raiz e mais 8 em cada pasta. O protótipo aprovado conta 8 no projeto inteiro. Qual vale?
-   - **A — 8 por escopo, na raiz e em cada pasta (recomendado).** Cada pasta tem os próprios itens no topo, sem disputar vaga com a raiz. Mover para uma pasta cheia tira o fixado, e o toast avisa.
-   - **B — 8 no projeto inteiro, como no protótipo e na etapa 08.** Mover entre pastas nunca tira o fixado, e o código fica mais simples. Fixar numa pasta pode ser recusado porque a raiz já tem 8.
-2. **Coluna Pasta no Índice.** pastas.md fala em coluna Tipo e filtros Tipo e Pasta, com "Agrupar por pasta" ligado; o escopo inicial fala também em coluna de pasta; o protótipo não tem essa coluna. Como fica?
-   - **A — Só quando "Agrupar por pasta" está desligado (recomendado).** Agrupado, o cabeçalho de cada grupo já diz a pasta. Sem agrupar, a coluna mostra onde cada item está.
-   - **B — Nunca, como no protótipo.** O agrupamento e o filtro bastam.
-   - **C — Sempre**, mesmo repetindo o nome do grupo.
+Respostas de 2026-10-31, registradas em [decisões](../decisoes.md):
+
+1. **Fixados por escopo:** até 8 na raiz do projeto e até 8 em cada pasta, como no escopo inicial. Mover um item fixado para uma pasta cheia tira o fixado, e o toast avisa. O limite de 8 no projeto inteiro, do protótipo e da etapa 08, foi descartado.
+2. **Coluna Pasta no Índice só sem agrupar:** com "Agrupar por pasta" ligado, o padrão, o cabeçalho de cada grupo diz a pasta; desligado, a tabela mostra a coluna Pasta. As alternativas de nunca mostrá-la, como no protótipo, e de mostrá-la sempre foram descartadas.
