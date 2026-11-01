@@ -75,7 +75,10 @@ test('keys of an IME composition, Esc included, stay with the composition', asyn
   await search.evaluate((field) =>
     field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 229, bubbles: true })),
   );
+  // A close would still show the field during the overlay's exit: wait past it before looking.
+  await page.waitForTimeout(500);
   await expect(search).toHaveValue('にほ');
+  await expect(overlay).toBeVisible();
 });
 
 test('Esc in a new task with a typed title asks before discarding, and Esc there goes back to it', async ({ page }) => {

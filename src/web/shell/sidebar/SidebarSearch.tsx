@@ -25,8 +25,12 @@ export function SidebarSearch({
   inputRef: RefObject<HTMLInputElement | null>;
 }) {
   function keyDown(event: KeyboardEvent<HTMLInputElement>) {
-    // Keys that confirm or cancel an IME composition belong to it.
-    if (isComposing(event.nativeEvent)) return;
+    // Keys that confirm or cancel an IME composition belong to it. React Aria's overlay reads only isComposing,
+    // so an Esc with keyCode 229 would close the sidebar over the page: it stops here.
+    if (isComposing(event.nativeEvent)) {
+      event.stopPropagation();
+      return;
+    }
     if (event.key === 'Escape' && query) {
       event.preventDefault();
       event.stopPropagation();
