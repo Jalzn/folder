@@ -14,13 +14,18 @@
  * - the zero-width joiner between two emoji (the technologist, the family), and both joiners after a
  *   letter or mark of a script they shape (Persian, Devanagari, Sinhala), before another letter;
  * - the text and emoji presentation selectors (U+FE0E, U+FE0F) right after a character that has an
- *   emoji form (the heart, the keycap digits). Every other selector goes, U+E0100 to U+E01EF included.
+ *   emoji form (the heart, the copyright sign). After a digit, "#" or "*" they only stay in a keycap,
+ *   followed by U+20E3: alone they draw nothing there. Every other selector goes, U+E0100 to U+E01EF
+ *   included.
  */
 const INVISIBLE = /\p{Default_Ignorable_Code_Point}/u;
 /** Code points no character is assigned to yet: they draw nothing today, so a name drops them. */
 const UNASSIGNED = /\p{Cn}/gu;
 const PRESENTATION = /[\u{FE0E}\u{FE0F}]/u;
 const EMOJI = /\p{Emoji}/u;
+/** The keycap bases, which only draw as emoji with the enclosing keycap after the selector. */
+const KEYCAP_BASE = /[0-9#*]/u;
+const KEYCAP = '\u{20E3}';
 const TAG = /[\u{E0000}-\u{E007F}]/u;
 const TAG_SPEC = /[\u{E0020}-\u{E007E}]/u;
 /** The subdivision flags in the emoji set (RGI), by the letters their tags spell. */
@@ -70,14 +75,21 @@ function flagTags(points: readonly string[]): Set<number> {
   return kept;
 }
 
+/** Whether the presentation selector at `index` draws: right after an emoji, and in a keycap for a digit. */
+function presents(points: readonly string[], index: number): boolean {
+  const before = points[index - 1] ?? '';
+  return EMOJI.test(before) && (!KEYCAP_BASE.test(before) || points[index + 1] === KEYCAP);
+}
+
 /**
- * The text without the characters that draw nothing where they are (see INVISIBLE), and nothing else
- * changed: spaces and line breaks stay. Names and titles go through it as they are stored
- * (visibleText), and everything the MCP returns goes through it again, for what was stored before
- * and for document content.
+ * The text without the characters that draw nothing where they are (see INVISIBLE), in NFC, and
+ * nothing else changed: spaces and line breaks stay. NFC because a letter written whole or as a base
+ * and a mark looks the same, and the choice could carry a bit per letter. Names and titles go through
+ * it as they are stored (visibleText), and everything the MCP returns goes through it again, for what
+ * was stored before and for document content.
  */
 export function withoutHidden(text: string): string {
-  if (!INVISIBLE.test(text)) return text;
+  if (!INVISIBLE.test(text)) return text.normalize('NFC');
   const points = Array.from(text);
   const tags = flagTags(points);
   return points
@@ -85,10 +97,11 @@ export function withoutHidden(text: string): string {
       if (TAG.test(point)) return tags.has(index);
       if (point === ZWJ) return joinsEmoji(points, index) || shapesScript(points, index);
       if (point === ZWNJ) return shapesScript(points, index);
-      if (PRESENTATION.test(point)) return EMOJI.test(points[index - 1] ?? '');
+      if (PRESENTATION.test(point)) return presents(points, index);
       return !INVISIBLE.test(point);
     })
-    .join('');
+    .join('')
+    .normalize('NFC');
 }
 
 /**

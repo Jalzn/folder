@@ -52,6 +52,8 @@ describe('folders', () => {
       ['ё', 'е'],
       ['ѓ', 'г'],
       ['Ќ', 'К'],
+      ['ѝ', 'и'],
+      ['ѐ', 'е'],
     ] as [string, string][])
       expect(folderNameKey(one)).not.toBe(folderNameKey(other));
   });
@@ -68,7 +70,7 @@ describe('folders', () => {
       ['ά', 'α'],
       // Cyrillic stress, the acute and the grave over a vowel.
       ['за\u{0301}мок', 'замок'],
-      ['ѐ', 'е'],
+      ['дома\u{0300}', 'дома'],
       ['ё\u{0301}', 'ё'],
     ] as [string, string][])
       expect(folderNameKey(one)).toBe(folderNameKey(other));

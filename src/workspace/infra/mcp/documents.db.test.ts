@@ -99,6 +99,7 @@ describe('read_document', () => {
         paragraph(`seletores 😀${selectors} e M\u{FE0F}CP, ❤\u{FE0F} fim`),
         paragraph('zero\u{200B}\u{200C}\u{200D}\u{2060}largura\u{FEFF} fim, می\u{200C}خواهم e ශ්\u{200D}රී'),
         paragraph(`ignoráveis M${'\u{034F}'.repeat(20)}CP\u{E0080}\u{2065}\u{FFF0}\u{17B4} fim`),
+        paragraph('digitos 1\u{FE0F}2\u{FE0E}3 e 1\u{FE0F}\u{20E3}, forma c\u{0327}a'),
       ],
     });
     // Rows from before visibleText, as only SQL can write them now.
@@ -118,6 +119,7 @@ describe('read_document', () => {
     expect(text).toContain('seletores 😀 e MCP, ❤\u{FE0F} fim');
     expect(text).toContain('zerolargura fim, می\u{200C}خواهم e ශ්\u{200D}රී');
     expect(text).toContain('ignoráveis MCP fim');
+    expect(text).toContain('digitos 123 e 1\u{FE0F}\u{20E3}, forma \u{00E7}a');
     expect(allowed(text)).not.toMatch(hiddenText);
     for (const [name, input] of [
       ['search', { query: 'bandeira' }],

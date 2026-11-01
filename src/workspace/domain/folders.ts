@@ -38,14 +38,17 @@ const ACCENTED_SCRIPT = /[\p{sc=Latin}\p{sc=Greek}]/u;
 const CYRILLIC = /\p{sc=Cyrillic}/u;
 /**
  * In Cyrillic only the stress accents fold, the acute and the grave written over a vowel. The breve
- * and the diaeresis make other letters (й, ў, ї, ё), and so does the acute of Macedonian ѓ and ќ.
+ * and the diaeresis make other letters (й, ў, ї, ё), and so do the acute of Macedonian ѓ and ќ and the
+ * grave of ѐ and ѝ, which Bulgarian and Macedonian write to tell words apart ("ѝ", her, from "и", and).
  */
-const STRESS = /[\u{0300}\u{0301}]/u;
+const ACUTE = '\u{0301}';
+const GRAVE = '\u{0300}';
 const ACUTE_LETTER = /[\u{0413}\u{0433}\u{041A}\u{043A}]/u;
+const GRAVE_LETTER = /[\u{0415}\u{0435}\u{0418}\u{0438}]/u;
+const foldsStress = (base: string, mark: string) =>
+  (mark === ACUTE && !ACUTE_LETTER.test(base)) || (mark === GRAVE && !GRAVE_LETTER.test(base));
 const foldsOn = (base: string, mark: string) =>
-  LETTER.test(base) &&
-  (ACCENTED_SCRIPT.test(base) ||
-    (CYRILLIC.test(base) && STRESS.test(mark) && !(mark === '\u{0301}' && ACUTE_LETTER.test(base))));
+  LETTER.test(base) && (ACCENTED_SCRIPT.test(base) || (CYRILLIC.test(base) && foldsStress(base, mark)));
 const MARK = /\p{M}/u;
 /** The text and emoji presentation selectors: one heart either way. */
 const PRESENTATION = /[\u{FE0E}\u{FE0F}]/u;

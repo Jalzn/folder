@@ -95,6 +95,19 @@ describe('visible text', () => {
     expect(withoutHidden('a\u{034F}\u{E0080}b\u{0378}')).toBe('ab\u{0378}');
   });
 
+  it('writes names and text for agents in NFC, so a letter whole or as base and mark is one form', () => {
+    expect(visibleText('Ac\u{0327}o\u{0303}es')).toBe('A\u{00E7}\u{00F5}es');
+    expect(withoutHidden('c\u{0327}a\u{034F}\u{0301}')).toBe('\u{00E7}\u{00E1}');
+    expect(withoutHidden('sem nada')).toBe('sem nada');
+  });
+
+  it('keeps a presentation selector after a digit, "#" or "*" only in a keycap', () => {
+    for (const text of ['1\u{FE0F}\u{20E3}', '#\u{FE0F}\u{20E3}', '*\u{FE0F}\u{20E3}', '©\u{FE0F}', '❤\u{FE0E}'])
+      expect(visibleText(text)).toBe(text);
+    expect(visibleText('1\u{FE0F}2\u{FE0E}3')).toBe('123');
+    expect(withoutHidden('#\u{FE0F} e *\u{FE0E}')).toBe('# e *');
+  });
+
   it('reads a text with nothing visible as empty', () => {
     for (const text of ['\u{200B}', '\u{200D}', '\u{0301}', ' \u{3164} ', '\u{FEFF}', '\u{E0067}', tags('x'), ''])
       expect(visibleText(text)).toBe('');
