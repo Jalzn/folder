@@ -285,3 +285,14 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* On a phone, the columns snap as they scroll sideways. */
+@media (max-width: 719px) {
+  .board-columns {
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 16px;
+  }
+  .board-column {
+    scroll-snap-align: start;
+  }
+}
