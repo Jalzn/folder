@@ -9,11 +9,11 @@ const nouns: Record<NavItem['type'], string> = { document: 'documento', drawing:
 export const itemLabel = (node: ItemNode) =>
   `${displayTitle(node.item.title)}, ${nouns[node.item.type]}${node.item.pinnedAt ? ', fixado' : ''}${node.pending ? ', não salvo' : ''}`;
 
-/** "MCP, pasta, 12 itens", and ", 1 item não salvo". */
+/** "MCP, pasta, 12 itens", then ", 1 item não salvo", and closed over the open item ", contém o item aberto". */
 export const folderLabel = (node: FolderNode) =>
   `${node.folder.name}, pasta, ${countOf(node.folder.total, 'item', 'itens')}${
     node.pending ? `, ${countOf(node.pending, 'item não salvo', 'itens não salvos')}` : ''
-  }`;
+  }${node.holdsCurrent && !node.expanded ? ', contém o item aberto' : ''}`;
 
 /** "Ver todos os 18 itens de Arquitetura no Índice", or of the project's root. */
 export const moreLabel = (node: MoreNode, folderName: string | null) =>

@@ -6,7 +6,7 @@ import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { useToast } from '../../ui';
 import { useShellUi } from '../shell-ui';
-import { deletedText, positionText, restoredText, trashedText } from './folder-text';
+import { deletedText, edgeText, positionText, restoredText, trashedText } from './folder-text';
 
 /** What an undo of a folder's deletion says when it fails, whatever the server said. */
 export const RESTORE_FAILED = 'Não foi possível desfazer a exclusão da pasta.';
@@ -60,7 +60,11 @@ export function useFolderActions(projectId: string) {
   async function move(folder: NavFolder, folders: readonly NavFolder[], direction: 'up' | 'down') {
     const at = folders.findIndex((each) => each.id === folder.id);
     const to = direction === 'up' ? at - 1 : at + 1;
-    if (at < 0 || to < 0 || to >= folders.length) return false;
+    if (at < 0) return false;
+    if (to < 0 || to >= folders.length) {
+      ui.announce(edgeText(folder.name, direction));
+      return false;
+    }
     // Before the folder now at `to` going up; before the one after it going down, or last.
     return place(folder, direction === 'up' ? (folders[to]?.id ?? null) : (folders[to + 1]?.id ?? null));
   }

@@ -66,3 +66,28 @@ export function dropResult(source: DragSource, spot: DropSpot, rows: readonly Tr
 
 /** An indicator between rows starts at the text edge of the level it drops into: x=76 in a folder, else 52. */
 export const dropsIntoFolder = (key: string, rows: readonly TreeNode[]) => places(rows).get(key)?.parent != null;
+
+/** A row as measured on screen: its key and its top and height in the page. */
+export interface MeasuredRow {
+  key: string;
+  top: number;
+  height: number;
+}
+
+/**
+ * Where the pointer at `y` is (docs/etapas/09-pastas.md, "Arrastar"): on a folder by thirds (before, on,
+ * after), "Pasta vazia" always on, any other row by halves, and below the last row the root. Above the
+ * rows, or between them, nothing.
+ */
+export function dropSpotAt(rows: readonly MeasuredRow[], y: number): DropSpot | 'root' | null {
+  for (const row of rows) {
+    if (y < row.top || y >= row.top + row.height) continue;
+    const at = (y - row.top) / row.height;
+    if (row.key.startsWith('empty:')) return { key: row.key, position: 'on' };
+    if (row.key.startsWith('folder:'))
+      return { key: row.key, position: at < 1 / 3 ? 'before' : at > 2 / 3 ? 'after' : 'on' };
+    return { key: row.key, position: at < 0.5 ? 'before' : 'after' };
+  }
+  const last = rows.at(-1);
+  return last && y >= last.top + last.height ? 'root' : null;
+}

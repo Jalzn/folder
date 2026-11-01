@@ -100,7 +100,13 @@ export function NewItemPopover({
 }) {
   const create = useCreate(project, folder);
   return (
-    <PopoverSurface triggerRef={triggerRef} isOpen={isOpen} onOpenChange={onOpenChange} placement={placement}>
+    <PopoverSurface
+      triggerRef={triggerRef}
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      placement={placement}
+      aria-label={`Novo em ${folder ? folder.name : project.name}`}
+    >
       <MenuList
         aria-label={`Novo em ${project.name}`}
         autoFocus="first"

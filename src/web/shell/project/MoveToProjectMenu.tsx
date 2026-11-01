@@ -30,7 +30,13 @@ export function MoveToProjectMenu({
   const projects = activeProjects(useProjects(true).data ?? []);
   const { move } = useMoveItem();
   return (
-    <PopoverSurface triggerRef={triggerRef} isOpen={isOpen} onOpenChange={onOpenChange} placement="bottom start">
+    <PopoverSurface
+      triggerRef={triggerRef}
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      placement="bottom start"
+      aria-label="Mover para projeto"
+    >
       <MenuList
         aria-label="Mover para projeto"
         // The arrows work at once, whether M or ⌘K opened the menu.

@@ -11,4 +11,5 @@ export { ProjectMenu } from './project/ProjectMenu';
 export { useCopyDestination } from './project/use-copy-destination';
 export { useCurrentProject } from './project/use-current-project';
 export { useProjectActions } from './project/use-project-actions';
+export { useOptionalShellUi } from './shell-ui';
 export { useTrashCount } from './sidebar/use-navigation-data';

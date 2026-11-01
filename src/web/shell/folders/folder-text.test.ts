@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   deletedText,
   deleteWithItemsTitle,
+  edgeText,
   movedText,
   positionText,
   restoredText,
@@ -43,5 +44,12 @@ describe('folder copy', () => {
     expect(movedText(null, false)).toBe('Movido para a raiz do projeto.');
     expect(movedText('MCP', true)).toBe('Movido para MCP, sem fixar: a pasta já tem 8 fixados.');
     expect(movedText(null, true)).toBe('Movido para a raiz do projeto, sem fixar: a raiz já tem 8 fixados.');
+  });
+});
+
+describe('edgeText', () => {
+  it('says the folder cannot go further', () => {
+    expect(edgeText('MCP', 'up')).toBe('“MCP” já é a primeira pasta.');
+    expect(edgeText('MCP', 'down')).toBe('“MCP” já é a última pasta.');
   });
 });

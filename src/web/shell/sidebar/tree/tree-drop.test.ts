@@ -1,6 +1,6 @@
 import type { NavFolder, NavItem } from '@tinyfold/workspace/domain';
 import { describe, expect, it } from 'vitest';
-import { type DragSource, dropResult, dropsIntoFolder } from './tree-drop';
+import { type DragSource, dropResult, dropSpotAt, dropsIntoFolder } from './tree-drop';
 import { treeRows } from './tree-rows';
 
 const item = (id: string, folderId: string | null = null, pinned = false): NavItem => ({
@@ -92,5 +92,27 @@ describe('dropsIntoFolder', () => {
     expect(dropsIntoFolder('item:document:a1', rows)).toBe(true);
     expect(dropsIntoFolder('item:document:loose', rows)).toBe(false);
     expect(dropsIntoFolder('folder:a', rows)).toBe(false);
+  });
+});
+
+describe('dropSpotAt', () => {
+  const rows = [
+    { key: 'folder:f', top: 0, height: 30 },
+    { key: 'item:document:a', top: 30, height: 30 },
+    { key: 'empty:g', top: 60, height: 30 },
+  ];
+  it('splits a folder in thirds and another row in halves', () => {
+    expect(dropSpotAt(rows, 5)).toEqual({ key: 'folder:f', position: 'before' });
+    expect(dropSpotAt(rows, 15)).toEqual({ key: 'folder:f', position: 'on' });
+    expect(dropSpotAt(rows, 25)).toEqual({ key: 'folder:f', position: 'after' });
+    expect(dropSpotAt(rows, 40)).toEqual({ key: 'item:document:a', position: 'before' });
+    expect(dropSpotAt(rows, 50)).toEqual({ key: 'item:document:a', position: 'after' });
+  });
+
+  it('puts "Pasta vazia" always on, the space below the rows at the root and the rest nowhere', () => {
+    expect(dropSpotAt(rows, 62)).toEqual({ key: 'empty:g', position: 'on' });
+    expect(dropSpotAt(rows, 200)).toBe('root');
+    expect(dropSpotAt(rows, -4)).toBeNull();
+    expect(dropSpotAt([], 10)).toBeNull();
   });
 });

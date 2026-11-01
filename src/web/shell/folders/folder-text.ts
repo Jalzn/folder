@@ -40,3 +40,7 @@ export function movedText(folderName: string | null, lostPin: boolean) {
   const full = folderName === null ? 'a raiz já tem 8 fixados' : 'a pasta já tem 8 fixados';
   return `Movido para ${place}, sem fixar: ${full}.`;
 }
+
+/** ⌥↑ on the first folder or ⌥↓ on the last: "“MCP” já é a primeira pasta." */
+export const edgeText = (name: string, direction: 'up' | 'down') =>
+  `“${name}” já é a ${direction === 'up' ? 'primeira' : 'última'} pasta.`;

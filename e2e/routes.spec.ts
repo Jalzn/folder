@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { rpcDocument, rpcFolder } from './support/folders.js';
-import { createProject, currentProjectId } from './support/navigation.js';
+import { createProject, currentProjectId, showSidebar } from './support/navigation.js';
 import { login } from './support/session.js';
 
 test('a broken or unknown address shows a page in Portuguese inside the shell', async ({ page }) => {
@@ -68,4 +68,28 @@ test('the Índice reads ?pasta=: a folder, the root, and anything else as Todas'
   await expect(page.getByRole('button', { name: 'Pasta: Todas' })).toBeVisible();
   await page.goBack();
   await expect(page).toHaveURL(/pasta=raiz$/);
+});
+
+test('a failure in the shell itself still shows the error page in Portuguese', async ({ page }) => {
+  await login(page);
+  // A sidebar answer the shell cannot draw.
+  await page.route('**/rpc/workspace/projectNavigation', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        json: {
+          tree: { total: 1, pinned: null, folders: [], loose: { total: 0, items: [] } },
+          openTasks: 0,
+          trashCount: 0,
+        },
+      }),
+    }),
+  );
+  await page.reload();
+  // On a phone the tree draws when the sidebar opens over the page.
+  await showSidebar(page);
+  await expect(page.getByRole('heading', { name: 'Algo deu errado nesta página', level: 1 })).toBeVisible();
+  await expect(page.getByText('Something went wrong')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Ir para o início' })).toBeVisible();
 });

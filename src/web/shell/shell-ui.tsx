@@ -78,6 +78,9 @@ export function useShellUi() {
   return value;
 }
 
+/** The shell's interface, or null outside it, as on the error page of a shell that failed. */
+export const useOptionalShellUi = () => useContext(ShellUiContext);
+
 /** The shell's open layers and requests, shared by the sidebar, the shortcuts and the palette. */
 export function ShellUiProvider({ children }: { children: ReactNode }) {
   const [layers] = useState(createLayerStack);

@@ -27,7 +27,11 @@ export interface MenuProps<T> extends Omit<AriaMenuProps<T>, 'className'> {
 /** A menu in a popover. Put it after its trigger inside a `MenuTrigger` or a `SubmenuTrigger`. */
 export function Menu<T extends object>({ placement = 'bottom end', ...props }: MenuProps<T>) {
   return (
-    <PopoverSurface placement={placement} className="menu-popover">
+    <PopoverSurface
+      placement={placement}
+      className="menu-popover"
+      {...(props['aria-label'] ? { 'aria-label': props['aria-label'] } : {})}
+    >
       <MenuList {...props} />
     </PopoverSurface>
   );

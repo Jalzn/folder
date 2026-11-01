@@ -188,7 +188,10 @@ test('a closed folder and the rail show the dot of an item not yet saved, and th
   await page.route('**/rpc/workspace/saveDocument', () => undefined);
   await page.locator('[contenteditable="true"]').first().click();
   await page.keyboard.type('Ainda não salvo.');
-  await expect(folderRow(page, 'Arquitetura')).toHaveAttribute('aria-label', /, 1 item não salvo$/);
+  await expect(folderRow(page, 'Arquitetura')).toHaveAttribute(
+    'aria-label',
+    /, 1 item não salvo, contém o item aberto$/,
+  );
 
   // Collapsed, the rail's Itens carries it and opens the same tree in a popover.
   await pressCommand(page, 'Backslash');
@@ -197,7 +200,9 @@ test('a closed folder and the rail show the dot of an item not yet saved, and th
   await items.click();
   const popover = page.getByRole('dialog', { name: /^Itens de / });
   await expect(popover.getByRole('treegrid')).toBeVisible();
-  await expect(popover.getByRole('row', { name: /^Arquitetura, pasta, 2 itens, 1 item não salvo$/ })).toBeVisible();
+  await expect(
+    popover.getByRole('row', { name: /^Arquitetura, pasta, 2 itens, 1 item não salvo, contém o item aberto$/ }),
+  ).toBeVisible();
   await page.keyboard.press('Escape');
   await page.unroute('**/rpc/workspace/saveDocument');
   await pressCommand(page, 'Backslash');

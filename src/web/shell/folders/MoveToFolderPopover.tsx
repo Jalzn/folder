@@ -66,6 +66,7 @@ export function MoveToFolderPopover({
       onOpenChange={onOpenChange}
       placement="bottom start"
       className="move-folder"
+      aria-label="Mover para pasta"
     >
       <Autocomplete filter={(text, input, node) => matches(text, input, node.key)}>
         <AriaSearchField aria-label="Mover para pasta" className="move-folder__filter" autoFocus>

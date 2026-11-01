@@ -1,8 +1,8 @@
-import { useRef } from 'react';
+import { type RefObject, useRef } from 'react';
 import { DropIndicator, type DropTarget, useDragAndDrop } from 'react-aria-components';
 import { cx } from '../../../lib/cx';
 import type { FolderMoveItem } from '../../folders/use-move-to-folder';
-import { type DragSource, dropResult, dropsIntoFolder } from './tree-drop';
+import { type DragSource, dropResult, dropSpotAt, dropsIntoFolder } from './tree-drop';
 import type { TreeNode } from './tree-rows';
 import type { useExpandedFolders } from './use-expanded-folders';
 
@@ -13,13 +13,42 @@ export const FOLDER_DRAG = 'application/x-tinyfold-folder';
 const findRow = (rows: readonly TreeNode[], key: string) =>
   rows.flatMap((row) => (row.kind === 'folder' ? [row, ...row.children] : [row])).find((row) => row.key === key);
 
+type DropTargetDelegate = NonNullable<Parameters<typeof useDragAndDrop>[0]['dropTargetDelegate']>;
+
+/** How long a closed folder waits under a held item before it opens (decision 13). */
+const OPEN_AFTER_MS = 800;
+
+/**
+ * The drop target under the pointer, by the plan's table and nothing else (tree-drop.ts `dropSpotAt`). React
+ * Aria's own delegate tries another place on the same row when this one is refused, and its collection
+ * falls back to the root: here a refused place is no target, so the cursor says "not allowed".
+ */
+function strictDelegate(tree: RefObject<HTMLElement | null>): DropTargetDelegate {
+  return {
+    getDropTargetFromPoint(_x, y, isValidDropTarget) {
+      const element = tree.current;
+      if (!element) return null;
+      const rows = [...element.querySelectorAll<HTMLElement>('[role="row"][data-key]')].map((row) => {
+        const rect = row.getBoundingClientRect();
+        return { key: row.dataset.key ?? '', top: rect.top, height: rect.height };
+      });
+      const spot = dropSpotAt(rows, y + element.getBoundingClientRect().top);
+      const target: DropTarget | null =
+        spot === 'root' ? { type: 'root' } : spot && { type: 'item', key: spot.key, dropPosition: spot.position };
+      return target && isValidDropTarget(target) ? target : null;
+    },
+  };
+}
+
 /**
  * Dragging in the sidebar's tree (docs/etapas/09-pastas.md, "Arrastar"): items into folders and to the root,
- * folders among folders, by the rules of tree-drop.ts. A closed folder opens after React Aria's 800 ms over
- * it; Esc cancels. Off in the rail's popover, in an archived project and while a folder is named.
+ * folders among folders, by the rules of tree-drop.ts, with no other place tried. A closed folder opens after
+ * 800 ms over it, counted from when the pointer came on it, however it moves there; Esc cancels. Off in the
+ * rail's popover, in an archived project and while a folder is named.
  */
 export function useTreeDnd({
   projectId,
+  tree,
   rows,
   expanded,
   enabled,
@@ -27,6 +56,7 @@ export function useTreeDnd({
   onReorder,
 }: {
   projectId: string;
+  tree: RefObject<HTMLElement | null>;
   rows: TreeNode[];
   expanded: ReturnType<typeof useExpandedFolders>;
   enabled: boolean;
@@ -35,6 +65,12 @@ export function useTreeDnd({
 }) {
   // What the pointer carries, from the start of a drag to its end.
   const dragging = useRef<DragSource | null>(null);
+  // The closed folder the pointer is on, and its timer, which only a new target restarts.
+  const opening = useRef<{ key: string; timer: number } | null>(null);
+  const stopOpening = () => {
+    if (opening.current) window.clearTimeout(opening.current.timer);
+    opening.current = null;
+  };
   const sourceOf = (keys: Set<unknown>): DragSource | null => {
     const key = String([...keys][0] ?? '');
     const row = findRow(rows, key);
@@ -75,12 +111,21 @@ export function useTreeDnd({
       return [];
     },
     acceptedDragTypes: [ITEM_DRAG, FOLDER_DRAG],
+    dropTargetDelegate: strictDelegate(tree),
     getDropOperation: (target) => (resultOf(target) ? 'move' : 'cancel'),
-    onDropActivate: (event) => {
-      const key = event.target.type === 'item' ? String(event.target.key) : '';
-      if (key.startsWith('folder:')) expanded.expand(key.slice('folder:'.length));
+    onDropEnter: (event) => {
+      const target = event.target;
+      const key = target.type === 'item' && target.dropPosition === 'on' ? String(target.key) : '';
+      if (opening.current?.key === key) return;
+      stopOpening();
+      if (!key.startsWith('folder:')) return;
+      const folderId = key.slice('folder:'.length);
+      if (expanded.isExpanded(folderId)) return;
+      opening.current = { key, timer: window.setTimeout(() => expanded.expand(folderId), OPEN_AFTER_MS) };
     },
+    onDropExit: stopOpening,
     onDrop: (event) => {
+      stopOpening();
       const result = resultOf(event.target);
       const dragged = dragging.current;
       if (!result || !dragged) return;
@@ -102,6 +147,7 @@ export function useTreeDnd({
     },
     onDragEnd: () => {
       dragging.current = null;
+      stopOpening();
     },
     renderDropIndicator: (target) => (
       <DropIndicator

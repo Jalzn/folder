@@ -1,0 +1,9 @@
+/* The error page when the shell itself failed: the page's column alone, on the page's background. */
+.route-error {
+  min-height: 100dvh;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 32px;
+  background: var(--bg);
+  outline: none;
+}

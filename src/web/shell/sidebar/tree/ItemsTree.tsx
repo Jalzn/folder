@@ -19,10 +19,11 @@ import { FolderNameField } from './FolderNameField';
 import { FolderRow } from './FolderRow';
 import { ItemRow, modifiedClick } from './ItemRow';
 import { MoreRow } from './MoreRow';
-import { rowKind, treeKeyAction } from './tree-keys';
+import { rowKind, TYPEAHEAD_MS, treeKeyAction, typesAhead } from './tree-keys';
 import { folderLabel, itemLabel, moreLabel } from './tree-labels';
 import { type FolderNode, folderKey, type ItemNode, type TreeNode } from './tree-rows';
 import type { useExpandedFolders } from './use-expanded-folders';
+import { useTabEntry } from './use-tab-entry';
 import { useTreeDnd } from './use-tree-dnd';
 import { DRAFT_KEY, useTreeFolders } from './use-tree-folders';
 
@@ -81,6 +82,8 @@ export function ItemsTree({
   };
   const archived = Boolean(project.archivedAt);
   const linkPress = useRef<LinkPress | null>(null);
+  // When the type-to-select last took a letter, so the next letters go on its search.
+  const typedAt = useRef(Number.NEGATIVE_INFINITY);
   const [moving, setMoving] = useState<{ node: ItemNode; neighbour: string | null } | null>(null);
   const ownRef = useRef<HTMLDivElement>(null);
   const tree = treeRef ?? ownRef;
@@ -98,6 +101,7 @@ export function ItemsTree({
   const moveToFolder = useMoveToFolder();
   const dragAndDropHooks = useTreeDnd({
     projectId: project.id,
+    tree,
     rows,
     expanded,
     enabled: editable && !folders.renaming && !folders.draft,
@@ -122,6 +126,15 @@ export function ItemsTree({
     if (!currentKey) return;
     tree.current?.querySelector(`[data-key="${CSS.escape(currentKey)}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [currentKey, tree]);
+  // The row that takes the focus says it is the page on screen, as its link does; React Aria's row takes no
+  // aria-current of its own, so it is set on the element, after every render that may redraw it.
+  useLayoutEffect(() => {
+    for (const row of tree.current?.querySelectorAll('[role="row"][aria-current]') ?? [])
+      if (row.getAttribute('data-key') !== currentKey) row.removeAttribute('aria-current');
+    if (currentKey) rowByKey(currentKey)?.setAttribute('aria-current', 'page');
+  });
+
+  const tabEntry = useTabEntry(() => (currentKey ? rowByKey(currentKey) : null));
 
   const open = (node: ItemNode) => {
     const press = linkPress.current;
@@ -148,18 +161,27 @@ export function ItemsTree({
     const kind = key ? rowKind(key) : null;
     if (!row || !key || !kind) return;
     const first = tree.current?.querySelector('[role="row"]') === row;
+    const typing = event.timeStamp - typedAt.current < TYPEAHEAD_MS;
     const action = treeKeyAction(event, kind, {
       first,
       chordPending: chordPending(),
       inFolder: row.getAttribute('aria-level') === '2',
       editable,
+      expanded: row.getAttribute('aria-expanded') === 'true',
+      typing,
     });
+    // A letter the type-to-select takes starts or goes on its search.
+    if (!action && typesAhead(event)) typedAt.current = event.timeStamp;
     if (!action) return;
     event.preventDefault();
     event.stopPropagation();
     if (action === 'forward') forwardToShortcuts(event);
     else if (action === 'leave-up') onLeaveUp?.();
-    else if (
+    else if (action === 'first-child') {
+      const node = findNode(key);
+      const child = node?.kind === 'folder' ? node.children[0] : undefined;
+      if (child) rowByKey(child.key)?.focus();
+    } else if (
       action === 'new-here' ||
       action === 'rename' ||
       action === 'move-up' ||
@@ -171,8 +193,10 @@ export function ItemsTree({
       const node = findNode(key);
       if (node?.kind !== 'item') return;
       if (action === 'pin') {
-        if (node.item.pinnedAt) void pins.unpin(node.item.type, node.item.id);
-        else void pins.pin(node.item.type, node.item.id);
+        const pinned = Boolean(node.item.pinnedAt);
+        void (pinned ? pins.unpin(node.item.type, node.item.id) : pins.pin(node.item.type, node.item.id)).then(
+          (done) => done && ui.announce(pinned ? 'Desafixado.' : 'Fixado.'),
+        );
       } else if (!archived) {
         const all = [...(tree.current?.querySelectorAll<HTMLElement>('[role="row"]') ?? [])];
         const at = all.indexOf(row);
@@ -335,7 +359,7 @@ export function ItemsTree({
 
   const expandedKeys = new Set<Key>([...expanded.expanded].map(folderKey));
   return (
-    <div className="items-tree" data-variant={variant} onKeyDownCapture={onKeyDownCapture}>
+    <div className="items-tree" data-variant={variant} onKeyDownCapture={onKeyDownCapture} onFocusCapture={tabEntry}>
       <Tree
         ref={tree}
         aria-label={`Itens de ${project.name}`}
@@ -382,7 +406,16 @@ export function ItemsTree({
             pinned: moving.node.item.pinnedAt !== null,
           }}
           triggerRef={moveAnchor}
-          onClose={() => setMoving(null)}
+          onClose={() => {
+            // Closed without a move: back to the row, also where the menu leaves the focus on nothing, as
+            // inside the sidebar over the page.
+            const key = moving.node.key;
+            setMoving(null);
+            requestAnimationFrame(() => {
+              const active = document.activeElement;
+              if (!active || active === document.body) rowByKey(key)?.focus();
+            });
+          }}
           onMovedToFolder={(folderId) => {
             // The folder that receives an item opens, and the item keeps the focus in its new place.
             if (folderId) expanded.expand(folderId);

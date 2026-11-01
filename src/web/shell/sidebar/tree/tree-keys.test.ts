@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rowKind, type TreeKey, treeKeyAction } from './tree-keys';
+import { rowKind, type TreeKey, treeKeyAction, typesAhead } from './tree-keys';
 
 const press = (key: string, modifiers: Partial<TreeKey> = {}): TreeKey => ({
   key,
@@ -82,5 +82,38 @@ describe('rowKind', () => {
     expect(rowKind('more:root')).toBe('more');
     expect(rowKind('empty:f')).toBe('empty');
     expect(rowKind('other')).toBeNull();
+  });
+});
+
+describe('treeKeyAction during a type-to-select search', () => {
+  const typing = { ...calm, typing: true };
+  it('keeps N, P, M and G with the search while it goes on, and gives them back after the pause', () => {
+    for (const key of ['n', 'p', 'm', 'g']) {
+      expect(treeKeyAction(press(key), 'item', typing)).toBeNull();
+      expect(treeKeyAction(press(key), 'item', calm)).not.toBeNull();
+    }
+    expect(treeKeyAction(press('n'), 'folder', typing)).toBeNull();
+  });
+
+  it('still lets a waiting G chord and the keys that are no letters act', () => {
+    expect(treeKeyAction(press('v'), 'item', { ...typing, chordPending: true })).toBe('forward');
+    expect(treeKeyAction(press('F2'), 'folder', typing)).toBe('rename');
+    expect(treeKeyAction(press('ArrowRight'), 'item', typing)).toBe('swallow');
+  });
+
+  it('tells which keys go on a search', () => {
+    expect(typesAhead(press('p'))).toBe(true);
+    expect(typesAhead(press('7'))).toBe(true);
+    expect(typesAhead(press(' '))).toBe(false);
+    expect(typesAhead(press('Enter'))).toBe(false);
+    expect(typesAhead(press('p', { metaKey: true }))).toBe(false);
+  });
+});
+
+describe('treeKeyAction on an open folder', () => {
+  it('takes → to the first child instead of the buttons of the row, and leaves a closed one to open', () => {
+    expect(treeKeyAction(press('ArrowRight'), 'folder', { ...calm, expanded: true })).toBe('first-child');
+    expect(treeKeyAction(press('ArrowRight'), 'folder', { ...calm, expanded: false })).toBeNull();
+    expect(treeKeyAction(press('ArrowRight', { shiftKey: true }), 'folder', { ...calm, expanded: true })).toBeNull();
   });
 });
