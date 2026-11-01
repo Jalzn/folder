@@ -3,7 +3,10 @@ export const PROJECT_COLORS = ['violet', 'ochre', 'gray', 'green'] as const;
 
 export type ProjectColor = (typeof PROJECT_COLORS)[number];
 
-/** Documents and drawings pinned at the top of a project's sidebar, counted together. */
+/**
+ * Documents and drawings pinned at the top of one scope of a project's sidebar, counted together: the
+ * project's root, or each folder.
+ */
 export const MAX_PINNED = 8;
 
 const graphemes = new Intl.Segmenter('pt-BR', { granularity: 'grapheme' });

@@ -1,7 +1,8 @@
 import { AppError } from '@tinyfold/core/application';
 import { type Canvas, type CanvasAck, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
 import { previewShowsScene } from '../domain/canvas-preview.js';
-import { requireFolderInProject } from './folders/folder-rules.js';
+import type { RestoreAck } from '../domain/models.js';
+import { folderAfterRestore, requireFolderInProject } from './folders/folder-rules.js';
 import { assertVersion, requireActiveProject } from './helpers.js';
 import type { WorkspaceContext, WorkspaceRepository } from './ports.js';
 import type {
@@ -83,24 +84,27 @@ export function saveCanvas(ctx: WorkspaceContext, input: SaveCanvasInput): Promi
     return { id: canvas.id, version, updatedAt };
   });
 }
-function setDeleted(
-  ctx: WorkspaceContext,
-  input: DeleteCanvasInput | RestoreCanvasInput,
-  deleted: boolean,
-): Promise<CanvasAck> {
-  return ctx.write(deleted ? 'workspace.deleteCanvas' : 'workspace.restoreCanvas', input, async (repo) => {
+/** Sends a drawing to the trash, unpinned. It keeps its folder, as its origin. */
+export function deleteCanvas(ctx: WorkspaceContext, input: DeleteCanvasInput): Promise<CanvasAck> {
+  return ctx.write('workspace.deleteCanvas', input, async (repo) => {
     const canvas = await requireCanvas(repo, input.id, true);
     assertVersion(canvas.version, input.expectedVersion);
     const updatedAt = ctx.now();
     const version = canvas.version + 1;
-    // Trashing unpins; restoring does not pin again.
-    const pinnedAt = deleted ? null : canvas.pinnedAt;
-    await repo.saveCanvas(
-      { ...canvas, deletedAt: deleted ? updatedAt : null, pinnedAt, version, updatedAt },
-      canvas.version,
-    );
+    await repo.saveCanvas({ ...canvas, deletedAt: updatedAt, pinnedAt: null, version, updatedAt }, canvas.version);
     return { id: canvas.id, version, updatedAt };
   });
 }
-export const deleteCanvas = (ctx: WorkspaceContext, input: DeleteCanvasInput) => setDeleted(ctx, input, true);
-export const restoreCanvas = (ctx: WorkspaceContext, input: RestoreCanvasInput) => setDeleted(ctx, input, false);
+
+/** Brings a drawing back from the trash, unpinned, into its folder, or to the root if the folder is gone. */
+export function restoreCanvas(ctx: WorkspaceContext, input: RestoreCanvasInput): Promise<RestoreAck> {
+  return ctx.write('workspace.restoreCanvas', input, async (repo) => {
+    const canvas = await requireCanvas(repo, input.id, true);
+    assertVersion(canvas.version, input.expectedVersion);
+    const updatedAt = ctx.now();
+    const version = canvas.version + 1;
+    const { folderId, folderGone } = await folderAfterRestore(repo, canvas.folderId);
+    await repo.saveCanvas({ ...canvas, deletedAt: null, folderId, version, updatedAt }, canvas.version);
+    return { id: canvas.id, version, updatedAt, folderGone };
+  });
+}

@@ -10,6 +10,7 @@ import type { WorkspaceTables } from '../infra/db.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
+import { testFolder } from '../testing/folders.js';
 import { pngImage } from '../testing/png.js';
 import { testProject } from '../testing/projects.js';
 
@@ -71,20 +72,75 @@ describe('project trash and permanent delete', () => {
 
     const { items } = await service.listTrash({ projectId: project.id });
     expect(items).toEqual([
-      { type: 'task', id: task.id, title: 'Tarefa velha', version: task.version, deletedAt: expect.any(String) },
-      { type: 'drawing', id: canvas.id, title: 'Esboço', version: canvas.version, deletedAt: canvas.updatedAt },
+      {
+        type: 'task',
+        id: task.id,
+        title: 'Tarefa velha',
+        version: task.version,
+        deletedAt: expect.any(String),
+        folder: null,
+      },
+      {
+        type: 'drawing',
+        id: canvas.id,
+        title: 'Esboço',
+        version: canvas.version,
+        deletedAt: canvas.updatedAt,
+        folder: null,
+      },
       {
         type: 'document',
         id: document.id,
         title: 'Rascunho',
         version: document.version,
         deletedAt: document.updatedAt,
+        folder: null,
       },
     ]);
     // An archived project's trash still answers.
     await service.updateProject({ ...request(), id: project.id, expectedVersion: project.version, archived: true });
     expect((await service.listTrash({ projectId: project.id })).items).toHaveLength(3);
     await expect(service.listTrash({ projectId: randomUUID() })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('restores into the folder while it is active, and to the root, saying so, once it was deleted', async () => {
+    const [mcp, gone] = [await testFolder(service, project.id, 'MCP'), await testFolder(service, project.id, 'Antiga')];
+    const inMcp = await service.createDocument({ ...request(), projectId: project.id, folderId: mcp.id });
+    const inGone = await service.createCanvas({ ...request(), projectId: project.id, folderId: gone.id });
+    const trashedDocument = await service.deleteDocument({ ...request(), id: inMcp.id, expectedVersion: 1 });
+    const trashedCanvas = await service.deleteCanvas({ ...request(), id: inGone.id, expectedVersion: 1 });
+    await service.deleteFolder({ ...request(), id: gone.id, expectedVersion: 1, withItems: false });
+
+    const { items } = await service.listTrash({ projectId: project.id });
+    expect(items.map((item) => [item.id, item.folder])).toEqual([
+      [inGone.id, { id: gone.id, name: 'Antiga', deleted: true }],
+      [inMcp.id, { id: mcp.id, name: 'MCP', deleted: false }],
+    ]);
+    expect(
+      await service.restoreDocument({ ...request(), id: inMcp.id, expectedVersion: trashedDocument.version }),
+    ).toMatchObject({ version: 3, folderGone: false });
+    expect((await service.getDocument({ id: inMcp.id })).folderId).toBe(mcp.id);
+    expect(
+      await service.restoreCanvas({ ...request(), id: inGone.id, expectedVersion: trashedCanvas.version }),
+    ).toMatchObject({ version: 3, folderGone: true });
+    expect((await service.getCanvas({ id: inGone.id })).folderId).toBeNull();
+  });
+
+  it('deletes for good and empties items of a deleted folder, keeping the folder row', async () => {
+    const gone = await testFolder(service, project.id, 'Antiga');
+    const document = await service.createDocument({ ...request(), projectId: project.id, folderId: gone.id });
+    const canvas = await service.createCanvas({ ...request(), projectId: project.id, folderId: gone.id });
+    const deleted = await service.deleteFolder({ ...request(), id: gone.id, expectedVersion: 1, withItems: true });
+    const [first, second] = deleted.trashed;
+    await service.purgeDocument({ ...request(), id: document.id, expectedVersion: first?.version ?? 0 });
+    expect(
+      await service.emptyTrash({
+        ...request(),
+        projectId: project.id,
+        items: [{ type: 'drawing', id: canvas.id, version: second?.version ?? 0 }],
+      }),
+    ).toEqual({ purged: 1, skipped: 0 });
+    expect(await rowCount('workspace_folders')).toBe(1);
   });
 
   it('restores a task to the end of its column with a new version and board revision', async () => {

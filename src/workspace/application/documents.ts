@@ -1,6 +1,6 @@
 import { documentPlainText, withBlockIds } from '../domain/document.js';
-import type { DocumentAck } from '../domain/models.js';
-import { requireFolderInProject } from './folders/folder-rules.js';
+import type { DocumentAck, RestoreAck } from '../domain/models.js';
+import { folderAfterRestore, requireFolderInProject } from './folders/folder-rules.js';
 import { assertVersion, requireActiveProject, requireDocument } from './helpers.js';
 import type { WorkspaceContext } from './ports.js';
 import type {
@@ -68,25 +68,30 @@ export function saveDocument(ctx: WorkspaceContext, input: SaveDocumentInput): P
   });
 }
 
-function setDeleted(
-  ctx: WorkspaceContext,
-  input: DeleteDocumentInput | RestoreDocumentInput,
-  deleted: boolean,
-): Promise<DocumentAck> {
-  return ctx.write(deleted ? 'workspace.deleteDocument' : 'workspace.restoreDocument', input, async (repo) => {
+/** Sends a document to the trash, unpinned. It keeps its folder, as its origin. */
+export function deleteDocument(ctx: WorkspaceContext, input: DeleteDocumentInput): Promise<DocumentAck> {
+  return ctx.write('workspace.deleteDocument', input, async (repo) => {
     const document = await requireDocument(repo, input.id, true);
     assertVersion(document.version, input.expectedVersion);
     const updatedAt = ctx.now();
     const version = document.version + 1;
-    // Trashing unpins; restoring does not pin again.
-    const pinnedAt = deleted ? null : document.pinnedAt;
     await repo.saveDocument(
-      { ...document, deletedAt: deleted ? updatedAt : null, pinnedAt, version, updatedAt },
+      { ...document, deletedAt: updatedAt, pinnedAt: null, version, updatedAt },
       document.version,
     );
     return { id: document.id, version, updatedAt };
   });
 }
 
-export const deleteDocument = (ctx: WorkspaceContext, input: DeleteDocumentInput) => setDeleted(ctx, input, true);
-export const restoreDocument = (ctx: WorkspaceContext, input: RestoreDocumentInput) => setDeleted(ctx, input, false);
+/** Brings a document back from the trash, unpinned, into its folder, or to the root if the folder is gone. */
+export function restoreDocument(ctx: WorkspaceContext, input: RestoreDocumentInput): Promise<RestoreAck> {
+  return ctx.write('workspace.restoreDocument', input, async (repo) => {
+    const document = await requireDocument(repo, input.id, true);
+    assertVersion(document.version, input.expectedVersion);
+    const updatedAt = ctx.now();
+    const version = document.version + 1;
+    const { folderId, folderGone } = await folderAfterRestore(repo, document.folderId);
+    await repo.saveDocument({ ...document, deletedAt: null, folderId, version, updatedAt }, document.version);
+    return { id: document.id, version, updatedAt, folderGone };
+  });
+}

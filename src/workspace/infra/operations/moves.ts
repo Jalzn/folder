@@ -1,4 +1,4 @@
-import { moveItem } from '../../application/moves.js';
+import { moveItem } from '../../application/moves/move-item.js';
 import type { WorkspaceContext } from '../../application/ports.js';
 import { MoveItemInput } from '../../application/schemas/moves.js';
 import { operation } from './operation.js';

@@ -9,6 +9,7 @@ import type { Project } from '../domain/models.js';
 import { MAX_PINNED } from '../domain/project.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
+import { testFolder } from '../testing/folders.js';
 import { testProject } from '../testing/projects.js';
 
 const request = () => ({ requestId: randomUUID() });
@@ -29,8 +30,10 @@ describe('pins', () => {
     await db.destroy();
     await rm(directory, { recursive: true, force: true });
   });
-  const newDocument = () => service.createDocument({ ...request(), projectId: project.id });
-  const newCanvas = () => service.createCanvas({ ...request(), projectId: project.id });
+  const newDocument = (folderId?: string) =>
+    service.createDocument({ ...request(), projectId: project.id, ...(folderId ? { folderId } : {}) });
+  const newCanvas = (folderId?: string) =>
+    service.createCanvas({ ...request(), projectId: project.id, ...(folderId ? { folderId } : {}) });
 
   it('pins without making it an edit, repeats safely and keeps no request record', async () => {
     const document = await newDocument();
@@ -50,7 +53,7 @@ describe('pins', () => {
     expect(operations.rows.map((row) => row.operation)).not.toContain('workspace.pinItem');
   });
 
-  it(`refuses a pin beyond ${MAX_PINNED} per project, documents and drawings together`, async () => {
+  it(`refuses a pin beyond ${MAX_PINNED} at the root, documents and drawings together`, async () => {
     for (let index = 0; index < MAX_PINNED; index += 1) {
       const item = index % 2 ? await newDocument() : await newCanvas();
       await service.pinItem({ type: index % 2 ? 'document' : 'drawing', id: item.id });
@@ -58,13 +61,43 @@ describe('pins', () => {
     const ninth = await newDocument();
     await expect(service.pinItem({ type: 'document', id: ninth.id })).rejects.toMatchObject({
       code: 'DOMAIN_RULE',
-      message: 'Máximo de 8 fixados neste projeto. Desafixe um item antes.',
+      message: 'Máximo de 8 fixados na raiz do projeto. Desafixe um item antes.',
     });
     const elsewhere = await service.createDocument({
       ...request(),
       projectId: (await testProject(service, 'Outro')).id,
     });
     expect((await service.pinItem({ type: 'document', id: elsewhere.id })).pinnedAt).not.toBeNull();
+  });
+
+  it(`counts ${MAX_PINNED} pins in each folder apart from the root, and names the full folder`, async () => {
+    const mcp = await testFolder(service, project.id, 'MCP');
+    for (let index = 0; index < MAX_PINNED; index += 1) {
+      await service.pinItem({ type: 'document', id: (await newDocument()).id });
+      await service.pinItem({ type: 'drawing', id: (await newCanvas(mcp.id)).id });
+    }
+    await expect(service.pinItem({ type: 'document', id: (await newDocument(mcp.id)).id })).rejects.toMatchObject({
+      code: 'DOMAIN_RULE',
+      message: 'Máximo de 8 fixados em MCP. Desafixe um item antes.',
+    });
+    await expect(service.pinItem({ type: 'document', id: (await newDocument()).id })).rejects.toMatchObject({
+      message: 'Máximo de 8 fixados na raiz do projeto. Desafixe um item antes.',
+    });
+    // Another folder has room of its own.
+    const other = await testFolder(service, project.id, 'Outra');
+    expect((await service.pinItem({ type: 'document', id: (await newDocument(other.id)).id })).pinnedAt).not.toBeNull();
+  });
+
+  it('keeps the limit of a folder when two pins race for its last free place', async () => {
+    const mcp = await testFolder(service, project.id, 'MCP');
+    for (let index = 0; index < MAX_PINNED - 1; index += 1)
+      await service.pinItem({ type: 'document', id: (await newDocument(mcp.id)).id });
+    const [first, second] = [await newDocument(mcp.id), await newCanvas(mcp.id)];
+    const results = await Promise.allSettled([
+      service.pinItem({ type: 'document', id: first.id }),
+      service.pinItem({ type: 'drawing', id: second.id }),
+    ]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
   });
 
   it('keeps the limit when two pins race for the last free place', async () => {

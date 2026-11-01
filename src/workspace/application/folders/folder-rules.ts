@@ -22,6 +22,19 @@ export async function requireFolderInProject(
   return folder;
 }
 
+/**
+ * Where a restored item goes: back to its folder while the folder is active, or to the project's root
+ * once it was deleted, which `folderGone` tells.
+ */
+export async function folderAfterRestore(
+  repo: Pick<FolderRepository, 'findFolder'>,
+  folderId: string | null,
+): Promise<{ folderId: string | null; folderGone: boolean }> {
+  if (folderId === null) return { folderId, folderGone: false };
+  const folder = await repo.findFolder(folderId);
+  return folder && !folder.deletedAt ? { folderId, folderGone: false } : { folderId: null, folderGone: true };
+}
+
 /** The project whose folders change: an archived project's folders are read-only. */
 export async function requireProjectForFolders(repo: WorkspaceRepository, projectId: string): Promise<Project> {
   const project = await requireProject(repo, projectId);

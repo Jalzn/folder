@@ -43,4 +43,6 @@ export interface TrashItem {
   /** What restoring or deleting the item for good must expect. */
   version: number;
   deletedAt: string;
+  /** The folder a document or drawing was in, even one deleted since; null for tasks and the root. */
+  folder: { id: string; name: string; deleted: boolean } | null;
 }

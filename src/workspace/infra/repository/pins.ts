@@ -8,20 +8,6 @@ import { itemTable } from '../item-tables.js';
 export function pinRepository(connection: Database): PinRepository {
   const db = tables<WorkspaceTables>(connection);
   return {
-    async pinnedCount(projectId) {
-      const pinned = (type: NavItemType) =>
-        db
-          .selectFrom(itemTable(db, type))
-          .select('item.id')
-          .where('item.project_id', '=', projectId)
-          .where('item.pinned_at', 'is not', null)
-          .where('item.deleted_at', 'is', null);
-      const row = await db
-        .selectFrom(pinned('document').unionAll(pinned('drawing')).as('pinned'))
-        .select(sql<number>`count(*)`.as('count'))
-        .executeTakeFirstOrThrow();
-      return row.count;
-    },
     async pinnedInScope(projectId, folderId) {
       const pinned = (type: NavItemType) => {
         const query = db

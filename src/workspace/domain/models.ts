@@ -90,6 +90,17 @@ export interface TaskAck {
   revision: number;
 }
 
+/**
+ * What restoring a document or drawing answers. `folderGone` says its folder was deleted meanwhile,
+ * so it came back at the project's root instead.
+ */
+export interface RestoreAck {
+  id: string;
+  version: number;
+  updatedAt: string;
+  folderGone: boolean;
+}
+
 export interface DocumentAck {
   id: string;
   version: number;
