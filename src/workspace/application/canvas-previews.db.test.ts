@@ -1,36 +1,28 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { Project } from '../domain/models.js';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
 import { workspaceModule } from '../infra/module.js';
-import { createWorkspaceService } from '../infra/service.js';
+import { createWorkspaceService, type WorkspaceService } from '../infra/service.js';
+import { request } from '../testing/builders.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
+import { useWorkspaceDb } from '../testing/database.js';
 import { legacyRows, migrateWorkspaceTo } from '../testing/legacy-workspace.js';
 import { pngChunk, pngFile, pngFrom, pngHeaderChunk, pngImage, storedZlib } from '../testing/png.js';
 import { testProject } from '../testing/projects.js';
 
-const request = () => ({ requestId: randomUUID() });
-
 describe('drawing previews', () => {
+  const workspace = useWorkspaceDb({ prefix: 'tinyfold-previews-' });
   let directory: string;
   let db: Database;
-  let service: ReturnType<typeof createWorkspaceService>;
+  let service: WorkspaceService;
   let project: Project;
   beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'tinyfold-previews-'));
-    db = createDatabase(join(directory, 'test.sqlite'));
-    await migrate(db, [coreModule, workspaceModule]);
-    service = createWorkspaceService(db);
+    ({ db, service, folder: directory } = workspace);
     project = await testProject(service);
-  });
-  afterEach(async () => {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
   });
   const storedPreview = (canvasId: string) =>
     tables<{ workspace_canvas_previews: { canvas_id: string; scene_version: number; png: Uint8Array; width: number } }>(

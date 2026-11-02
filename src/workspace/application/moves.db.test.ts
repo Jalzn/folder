@@ -1,42 +1,26 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { DocumentBlock, Project } from '../domain/models.js';
-import { workspaceModule } from '../infra/module.js';
-import { createWorkspaceService } from '../infra/service.js';
+import type { WorkspaceService } from '../infra/service.js';
+import { request } from '../testing/builders.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
+import { useWorkspaceDb } from '../testing/database.js';
 import { testFolder } from '../testing/folders.js';
 import { testProject } from '../testing/projects.js';
 
-const request = () => ({ requestId: randomUUID() });
 const content: DocumentBlock[] = [
   { id: 'b', type: 'paragraph', content: [{ type: 'text', text: 'Texto', styles: {} }] },
 ];
 
 describe('moving items between projects', () => {
-  let directory: string;
-  let db: Database;
-  let service: ReturnType<typeof createWorkspaceService>;
+  const workspace = useWorkspaceDb({ prefix: 'tinyfold-moves-', start: '2026-10-31T12:00:00Z' });
+  let service: WorkspaceService;
   let from: Project;
   let to: Project;
   beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'tinyfold-moves-'));
-    db = createDatabase(join(directory, 'test.sqlite'));
-    await migrate(db, [coreModule, workspaceModule]);
-    let now = new Date('2026-10-31T12:00:00Z');
-    service = createWorkspaceService(db, () => {
-      now = new Date(now.getTime() + 1000);
-      return now;
-    });
+    ({ service } = workspace);
     from = await testProject(service, 'Origem');
     to = await testProject(service, 'Destino');
-  });
-  afterEach(async () => {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
   });
 
   it('moves a document and a drawing without editing them, and unpins them', async () => {

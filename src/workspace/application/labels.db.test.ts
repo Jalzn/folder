@@ -1,32 +1,20 @@
-import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import type { Database } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { Project } from '../domain/models.js';
-import { workspaceModule } from '../infra/module.js';
-import { createWorkspaceService } from '../infra/service.js';
+import type { WorkspaceService } from '../infra/service.js';
+import { request } from '../testing/builders.js';
+import { useWorkspaceDb } from '../testing/database.js';
 import { testProject } from '../testing/projects.js';
 
-const request = () => ({ requestId: randomUUID() });
-
 describe('labels', () => {
-  let directory: string;
+  const workspace = useWorkspaceDb({ prefix: 'tinyfold-labels-' });
   let db: Database;
-  let service: ReturnType<typeof createWorkspaceService>;
+  let service: WorkspaceService;
   let project: Project;
   beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'tinyfold-labels-'));
-    db = createDatabase(join(directory, 'test.sqlite'));
-    await migrate(db, [coreModule, workspaceModule]);
-    service = createWorkspaceService(db);
+    ({ db, service } = workspace);
     project = await testProject(service);
-  });
-  afterEach(async () => {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
   });
 
   const create = (name: string, color?: 'blue' | 'lime') =>

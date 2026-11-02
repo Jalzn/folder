@@ -5,7 +5,8 @@
   "exports": {
     "./domain": "./domain/index.ts",
     "./application": "./application/index.ts",
-    "./infra": "./infra/index.ts"
+    "./infra": "./infra/index.ts",
+    "./testing": "./testing/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p ."
