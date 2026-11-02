@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   HiddenFileInput,
   ItemEditorDialogs,
+  onlyTrashNotice,
   SaveBanners,
   TrashedItem,
   useItemEditor,
@@ -60,7 +61,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   useEffect(() => () => previews.release(), [previews]);
 
   // In the trash with nothing local to keep, the page only leads to the trash.
-  if (canvas.deletedAt && state.status === 'saved' && !state.recovered && !state.recoveryData && !state.storageFailed)
+  if (onlyTrashNotice(canvas.deletedAt, state))
     return (
       <PageFrame>
         <TrashedItem

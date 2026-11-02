@@ -1,6 +1,13 @@
 import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, Shapes, X } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { HiddenFileInput, ItemEditorDialogs, SaveBanners, useItemEditor } from '../../components/item-page';
+import {
+  HiddenFileInput,
+  ItemEditorDialogs,
+  onlyTrashNotice,
+  SaveBanners,
+  TrashedItem,
+  useItemEditor,
+} from '../../components/item-page';
 import { useProject } from '../../lib/queries';
 import type { Document } from '../../lib/types';
 import { FolderLabel, PageFrame, useApp, usePageCommands, useTaskDrawer } from '../../shell';
@@ -110,6 +117,18 @@ export function DocumentEditor({ document }: { document: Document }) {
     trash: page.openTrash,
   });
 
+  // In the trash with nothing local to keep, the page only leads to the trash; with local text, the editor stays
+  // with the trashed band and the copy, as the drawing's (decision 1).
+  if (onlyTrashNotice(document.deletedAt, state))
+    return (
+      <PageFrame>
+        <TrashedItem
+          title="Este documento está na lixeira"
+          description="Você pode restaurá-lo para continuar escrevendo."
+          projectId={document.projectId}
+        />
+      </PageFrame>
+    );
   return (
     <PageFrame
       lead={<FolderLabel projectId={projectId} folderId={document.folderId} />}
@@ -136,6 +155,7 @@ export function DocumentEditor({ document }: { document: Document }) {
           {...page.banners}
           className="editor-banners editor-banners--column"
           noun="Este documento"
+          trashed={Boolean(document.deletedAt)}
           projectId={projectId}
           onDownloadRecovery={files.downloadRecovery}
           onExport={() => void files.exportMarkdown()}

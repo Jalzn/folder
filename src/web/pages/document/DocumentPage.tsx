@@ -1,20 +1,11 @@
 import './document.css';
-import { TrashedItem } from '../../components/item-page';
 import type { Document } from '../../lib/types';
-import { PageFrame } from '../../shell';
 import { DocumentEditor } from './DocumentEditor';
 
-/** A document's page, once its route found it under its own project; in the trash, the way to restore it. */
+/**
+ * A document's page, once its route found it under its own project. In the trash, the editor shows the way to
+ * restore it, or keeps the text not yet saved (DocumentEditor).
+ */
 export function DocumentPage({ document }: { document: Document }) {
-  if (document.deletedAt)
-    return (
-      <PageFrame>
-        <TrashedItem
-          title="Este documento está na lixeira"
-          description="Você pode restaurá-lo para continuar escrevendo."
-          projectId={document.projectId}
-        />
-      </PageFrame>
-    );
   return <DocumentEditor key={document.id} document={document} />;
 }
