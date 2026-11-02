@@ -50,8 +50,14 @@ function embedBeside({ selection, doc }: EditorState, forward: boolean) {
  * Takes in the DOM's selection before a key decides on the caret: a ⌘← pressed right before ⌫ has moved it,
  * but ProseMirror reads it only at the selectionchange still to come, and the deletion that runs after this
  * key reads the DOM (review, fast-key race). ProseMirror's observer has no public way to do it.
+ *
+ * Only for a key the person pressed. After the browser deleted a character itself, ProseMirror offers the
+ * handlers a ⌫ it makes up (`isTrusted` false) while the editor still holds the text before the deletion; the
+ * DOM's caret has already moved back, so reading it then put a caret at offset 1 at the start, and ⌫ selected
+ * the embed above instead of deleting the first letter (validation of stage 11).
  */
-function readDomSelection(editor: AnyEditor) {
+function readDomSelection(editor: AnyEditor, event: Event) {
+  if (!event.isTrusted) return;
   (editor.prosemirrorView as unknown as { domObserver?: { flush(): void } } | undefined)?.domObserver?.flush();
 }
 
@@ -62,8 +68,8 @@ function readDomSelection(editor: AnyEditor) {
  * BlockNote takes it, selecting the embed above, and a heading or a list item first becomes a paragraph.
  */
 function deletes(forward: boolean, actions: EmbedKeyActions) {
-  return ({ editor }: { editor: AnyEditor }) => {
-    readDomSelection(editor);
+  return ({ editor, event }: { editor: AnyEditor; event: KeyboardEvent }) => {
+    readDomSelection(editor, event);
     if (selectedEmbed(editor)) {
       actions.remove(editor.getTextCursorPosition().block.id);
       return true;

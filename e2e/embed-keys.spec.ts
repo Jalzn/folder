@@ -480,3 +480,57 @@ test('⇧↓ and ⇧↑ from an embed take the block beside it, and Page Down st
     'Depois',
   ]);
 });
+
+test('⌫ and Delete beside an embed take every letter typed there and select the embed only from the edge', async ({
+  page,
+}) => {
+  await login(page);
+  const projectId = await createProject(page, `Letras ao lado ${Date.now()}`);
+  const taskId = await task(page, projectId, 'Card das letras');
+  await openDocument(page, projectId, [
+    { ...paragraph('Antes'), id: 'antes' },
+    { ...card(taskId), id: 'card' },
+    { ...paragraph('Depois'), id: 'depois' },
+    { ...card(await task(page, projectId, 'Card do fim')), id: 'fim' },
+    { ...paragraph(''), id: 'vazio' },
+  ]);
+  /** Presses the key a moment after the last, as a person does, and reads the caret's block. */
+  const press = async (key: string) => {
+    await page.waitForTimeout(300);
+    await page.keyboard.press(key);
+    await page.waitForTimeout(100);
+    return caret(page);
+  };
+
+  // ⌫ after letters typed at the start of the text after a card: each one goes, and only at the start does ⌫
+  // select the card.
+  await clickText(page, 'Depois', 'start');
+  await page.keyboard.type('abc', { delay: 150 });
+  const back = [];
+  for (let step = 0; step < 4; step += 1) back.push(await press('Backspace'));
+  expect(back).toEqual(['abDepois', 'aDepois', 'Depois', '[card]']);
+  // One letter, then ⌫ right away.
+  await clickText(page, 'Depois', 'start');
+  await page.keyboard.type('X');
+  await page.keyboard.press('Backspace');
+  await expect.poll(() => caret(page)).toBe('Depois');
+
+  // Delete before letters typed at the end of the text before a card: each one goes, and only at the end does
+  // Delete select the card.
+  await clickText(page, 'Antes', 'end');
+  await page.keyboard.type('xyz', { delay: 150 });
+  for (let step = 0; step < 3; step += 1) await press('ArrowLeft');
+  const forward = [];
+  for (let step = 0; step < 4; step += 1) forward.push(await press('Delete'));
+  expect(forward).toEqual(['Antesyz', 'Antesz', 'Antes', '[card]']);
+
+  // In the empty line after the last card, letters typed then taken back one by one, and ⌫ on the empty line
+  // goes to the card above.
+  await documentEditor(page).locator('[data-id="vazio"] .bn-inline-content').first().click();
+  // The click takes the caret off the selected card before a key comes, as a person's pace leaves it time to.
+  await expect.poll(() => caret(page)).toBe('');
+  await page.keyboard.type('ok', { delay: 150 });
+  const empty = [];
+  for (let step = 0; step < 3; step += 1) empty.push(await press('Backspace'));
+  expect(empty).toEqual(['o', '', '[fim]']);
+});
