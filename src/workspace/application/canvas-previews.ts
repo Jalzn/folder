@@ -1,6 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
+import { isCanvasId } from '../domain/canvas.js';
 import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas-preview.js';
-import { EMBED_ID } from '../domain/embeds.js';
 import { hasValidRowFilters, readPngInfo } from '../domain/png.js';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
 import type { PngImageData, WorkspaceContext } from './ports.js';
@@ -20,7 +20,7 @@ export interface CanvasPreviewImage {
  * browser revalidates and never shows an older scene once a newer preview is stored.
  */
 export function readCanvasPreviewImage(ctx: WorkspaceContext, id: string): Promise<CanvasPreviewImage | undefined> {
-  if (!EMBED_ID.test(id)) throw new AppError('VALIDATION', 'Identificador de desenho inválido.');
+  if (!isCanvasId(id)) throw new AppError('VALIDATION', 'Identificador de desenho inválido.');
   return ctx.read(async (repo) => {
     const preview = await repo.liveCanvasPreviewImage(id);
     return preview && { png: preview.png, etag: `"${preview.sceneFingerprint ?? `v${preview.sceneVersion}`}"` };

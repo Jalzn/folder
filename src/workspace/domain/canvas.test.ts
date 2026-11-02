@@ -4,6 +4,7 @@ import {
   canvasPlainText,
   compactCanvasScene,
   emptyCanvasScene,
+  isCanvasId,
   MAX_CANVAS_BYTES,
   RECOVERY_CANVAS_LIMITS,
   readCanvasScene,
@@ -345,5 +346,15 @@ describe('persisted canvas tombstone compaction', () => {
     expect(compacted.elements.map((element) => element.id)).toEqual(['live', 'arrow']);
     expect(readCanvasScene(compacted)).toEqual(compacted);
     expect(compactCanvasScene(emptyCanvasScene())).toEqual(emptyCanvasScene());
+  });
+});
+
+describe('canvas IDs', () => {
+  it('takes the lowercase UUIDs the server gives drawings and nothing else', () => {
+    const id = '9f3d8e3a-3b5a-4cad-9e4f-2c3d4e5f6071';
+    expect(isCanvasId(id)).toBe(true);
+    expect(isCanvasId(crypto.randomUUID())).toBe(true);
+    for (const other of [id.toUpperCase(), `${id} `, '', 'nao-e-um-id', '../../etc/passwd', id.replace(/-/gu, '')])
+      expect(isCanvasId(other)).toBe(false);
   });
 });
