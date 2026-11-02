@@ -11,6 +11,28 @@ import {
   type EditorSchemaKind,
 } from './schema';
 
+/** Embed blocks in BlockNote's own clipboard HTML. */
+const EMBED_HTML = /data-content-type="(?:taskEmbed|drawingEmbed)"/;
+
+/**
+ * A paste in a task's description, which has no embeds (decision 2): cards and figures copied from a document
+ * come in as the links other apps get (review B3), from the clipboard's HTML, never as nothing.
+ */
+function pasteInDescription({
+  event,
+  editor,
+  defaultPasteHandler,
+}: {
+  event: ClipboardEvent;
+  editor: { pasteHTML: (html: string) => void };
+  defaultPasteHandler: () => boolean | undefined;
+}) {
+  const html = event.clipboardData?.getData('text/html');
+  if (!html || !EMBED_HTML.test(event.clipboardData?.getData('blocknote/html') ?? '')) return defaultPasteHandler();
+  editor.pasteHTML(html);
+  return true;
+}
+
 /**
  * A BlockNote editor of a document or of a task's description (`schema`), started from `initial`. Each new `epoch`, a newer version taken
  * from elsewhere (a reload or an adopted remote save), replaces the blocks with `content`.
@@ -54,6 +76,7 @@ export function useBlockEditor({
       : documentDictionary,
     ...(start.current.length ? { initialContent: start.current as unknown as EditorBlocks } : {}),
     domAttributes: { editor: { 'aria-label': label, ...(testId ? { 'data-testid': testId } : {}) } },
+    ...(schema === 'description' ? { pasteHandler: pasteInDescription } : {}),
   });
   const lastEpoch = useRef(epoch);
   useEffect(() => {

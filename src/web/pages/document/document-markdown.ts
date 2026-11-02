@@ -1,18 +1,6 @@
-import {
-  type DocumentBlock,
-  documentToMarkdown,
-  type EmbedKind,
-  embedIds,
-  embedResolver,
-} from '@tinyfold/workspace/domain';
+import { type DocumentBlock, documentToMarkdown, embedIds, embedResolver } from '@tinyfold/workspace/domain';
+import { appEmbedHref } from '../../editor/blocks/embed-text';
 import type { EmbeddedItems } from '../../lib/queries/embeds';
-
-/**
- * An embed's link outside the app (docs/etapas/11-documento-desenho.md, decision 6): the item's permanent
- * address, `<origin>/tarefas/<id>` or `<origin>/desenhos/<id>`, which opens it wherever it went.
- */
-export const appEmbedHref = (origin: string) => (kind: EmbedKind, id: string) =>
-  `${origin}/${kind === 'task' ? 'tarefas' : 'desenhos'}/${encodeURIComponent(id)}`;
 
 /**
  * A document as an exported `.md`: its title as the heading, then the domain's serializer and resolver, the

@@ -1,4 +1,5 @@
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type EmbedText, embedText } from '../../editor/blocks/embed-text';
 import { EmbedsProvider, type EmbedsValue } from '../../editor/blocks/embeds-context';
 import { EmbedPicker } from '../../editor/EmbedPicker';
 import { type EmbedKind, embedSlashItems } from '../../editor/insert-menu';
@@ -9,7 +10,10 @@ import { useDocumentEmbeds } from './use-document-embeds';
 import { useEmbedActions } from './use-embed-actions';
 import { useEmbedPreviews } from './use-embed-preview';
 
-/** What the document's page asks of its embeds: ⌘K's "Incorporar…", "Incorporar no documento" and ⌫ on one. */
+/**
+ * What the document's page asks of its embeds: ⌘K's "Incorporar…", "Incorporar no documento", and ⌫ and ⌘C on
+ * one.
+ */
 export interface EmbedCommands {
   /** Opens the picker on the block of the text cursor, as the `/` menu does. */
   openPicker: (kind: EmbedKind) => void;
@@ -17,6 +21,8 @@ export interface EmbedCommands {
   insertTaskAfter: (blockId: string, taskId: string) => boolean;
   /** "Remover" of an embed's block, with Desfazer, as ⌫ and Delete take a selected embed out. */
   remove: (blockId: string) => void;
+  /** A copied embed's words and link, from the item as the document resolved it. */
+  describe: (kind: EmbedKind, id: string) => EmbedText;
 }
 
 /**
@@ -60,14 +66,18 @@ export function DocumentEmbeds({
     anchor.current = editor.domElement?.querySelector<HTMLElement>(`[data-id="${CSS.escape(block.id)}"]`) ?? null;
     setPicker({ kind, blockId: block.id });
   }
-  const latest = useRef({ openPicker, insert });
-  latest.current = { openPicker, insert };
+  const latest = useRef({ openPicker, insert, states });
+  latest.current = { openPicker, insert, states };
   useEffect(() => {
     commands.current = {
       openPicker: (kind) => latest.current.openPicker(kind),
       insertTaskAfter: (blockId, taskId) =>
         Boolean(editor.getBlock(blockId)) && latest.current.insert(blockId, 'task', taskId),
       remove: (blockId) => actions.remove(blockId),
+      describe: (kind, id) => {
+        const { tasks, drawings } = latest.current.states;
+        return embedText(kind, id, kind === 'task' ? tasks.get(id) : drawings.get(id), window.location.origin);
+      },
     };
     return () => {
       commands.current = null;

@@ -1,5 +1,6 @@
 import { type BlockNoteEditor, createExtension } from '@blocknote/core';
 import type { EditorState } from '@tiptap/pm/state';
+import { type EmbedClipboardActions, embedClipboard } from './embed-clipboard';
 import { type BlockPlace, blockAfter, blockBefore } from './embed-places';
 import { embedSelectionHold } from './embed-selection-hold';
 
@@ -25,10 +26,11 @@ function open({ editor }: { editor: AnyEditor }) {
   return true;
 }
 
-/** What the keys ask of the document: an embed's block out, as "Remover" takes it, with Desfazer. */
-export interface EmbedKeyActions {
-  remove: (blockId: string) => void;
-}
+/**
+ * What the keys ask of the document: an embed's block out, as "Remover" takes it, with Desfazer, and the
+ * words and link of a copied one (embed-clipboard.ts).
+ */
+export type EmbedKeyActions = EmbedClipboardActions;
 
 /**
  * The embed next to a caret at the edge of a text: after its end (`forward`) or before its start, in reading
@@ -112,12 +114,13 @@ function lifts({ editor }: { editor: AnyEditor }) {
  * editor: ↵ on an embed selected as a node opens it as a click would, the card's task in the drawer and the
  * figure's drawing, and does nothing on an unavailable one; ⌫ and Delete select an embed beside the caret,
  * then take it out (`deletes`). Never in a field, and the suggestion menus take ↵ first. Tab and ⇧Tab keep
- * blocks out of embeds (`nests`, `lifts`), and the arrows go through them a block at a time (`arrow`).
+ * blocks out of embeds (`nests`, `lifts`), and the arrows go through them a block at a time (`arrow`). ⌘C
+ * and ⌘X copy a selected embed as its block and as its link (embed-clipboard.ts).
  */
 export const createEmbedKeys = (actions: EmbedKeyActions) =>
   createExtension({
     key: 'embedKeys',
-    prosemirrorPlugins: [embedSelectionHold(embedSelectedIn)],
+    prosemirrorPlugins: [embedSelectionHold(embedSelectedIn), embedClipboard(embedSelectedIn, actions)],
     keyboardShortcuts: {
       Enter: open,
       Backspace: deletes(false, actions),

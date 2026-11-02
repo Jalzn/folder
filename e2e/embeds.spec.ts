@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { drawer, drawerOf, newTaskDrawer } from './support/board.js';
-import { documentEditor, editorUndo, embedCard, embedFigure, pickEmbed, slash } from './support/document.js';
+import { clickText, documentEditor, editorUndo, embedCard, embedFigure, pickEmbed, slash } from './support/document.js';
 import { newDocument } from './support/items.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject, currentProjectId } from './support/navigation.js';
@@ -302,4 +302,51 @@ test('a document of an archived project shows its embeds with no Restaurar or Re
   const missing = documentEditor(page).locator('.embed-missing');
   await expect(missing).toContainText('Na lixeira: Tarefa que saiu');
   await expect(missing.getByRole('button')).toHaveCount(0);
+});
+
+test('⌘C on a card copies its words and its link, and a paste in a description brings the link', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await login(page);
+  const projectId = await createProject(page, `Copiar o card ${Date.now()}`);
+  const task = await rpcTask(page, projectId, 'Card copiado');
+  const { id } = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: 'Copiar',
+    content: [
+      { type: 'paragraph', content: [{ type: 'text', text: 'Antes', styles: {} }] },
+      { type: 'taskEmbed', props: { taskId: task.id } },
+      { type: 'paragraph', content: [{ type: 'text', text: 'Depois', styles: {} }] },
+    ],
+  });
+  await page.goto(`/projetos/${projectId}/documentos/${id}`);
+  await expect(embedCard(page, 'Card copiado')).toBeVisible();
+  // What the copy hands the clipboard, read in the event itself: Markdown has no place in the async API.
+  await page.evaluate(() =>
+    document.addEventListener('copy', (event) => {
+      const types = ['text/plain', 'text/html', 'text/markdown'];
+      (window as unknown as { copied: string[] }).copied = types.map(
+        (type) => event.clipboardData?.getData(type) ?? '',
+      );
+    }),
+  );
+
+  await clickText(page, 'Antes');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ControlOrMeta+c');
+  const link = `${new URL(page.url()).origin}/tarefas/${task.id}`;
+  const [plain, html, markdown] = await page.evaluate(() => (window as unknown as { copied: string[] }).copied);
+  expect(plain).toBe('Tarefa: Card copiado (A fazer)');
+  expect(html).toBe(`<p><a href="${link}">Tarefa: Card copiado (A fazer)</a></p>`);
+  expect(markdown).toBe(`[Tarefa: Card copiado (A fazer)](${link})`);
+
+  // The task's description has no embeds: the paste is the link, in a paragraph.
+  await embedCard(page, 'Card copiado').click();
+  const description = drawerOf(page, 'Card copiado').getByRole('textbox', { name: 'Descrição da tarefa' });
+  await description.click();
+  await page.keyboard.press('ControlOrMeta+v');
+  await expect(description.getByRole('link', { name: 'Tarefa: Card copiado (A fazer)' })).toHaveAttribute('href', link);
 });

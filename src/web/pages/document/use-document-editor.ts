@@ -1,6 +1,7 @@
 import { useSearch } from '@tanstack/react-router';
 import { type RefObject, useEffect, useRef, useState } from 'react';
 import { createEmbedKeys, type EmbedKeyActions } from '../../editor/blocks/embed-keys';
+import { embedText } from '../../editor/blocks/embed-text';
 import { createOriginMarkers } from '../../editor/origin-markers';
 import { type BlockEditorInstance, useBlockEditor } from '../../editor/use-block-editor';
 import type { AutosaveController, SaveState } from '../../lib/autosave';
@@ -18,8 +19,8 @@ export const savedContent = (editor: BlockEditorInstance) =>
 
 /**
  * The BlockNote editor of a document, started from the draft or the saved content, with its origin markers,
- * which open their task through `openOrigin`, and the keys of its embeds, which take one out through
- * `embedActions` once the page has them. A newer version taken from elsewhere (a reload or an adopted remote
+ * which open their task through `openOrigin`, and the keys of its embeds, which take one out and copy one
+ * through `embedActions` once the page has them. A newer version taken from elsewhere (a reload or an adopted remote
  * save) replaces the blocks.
  */
 export function useDocumentEditor(
@@ -31,7 +32,11 @@ export function useDocumentEditor(
 ) {
   const [extensions] = useState(() => [
     createOriginMarkers((taskId) => openOrigin.current(taskId)),
-    createEmbedKeys({ remove: (blockId) => embedActions.current?.remove(blockId) }),
+    createEmbedKeys({
+      remove: (blockId) => embedActions.current?.remove(blockId),
+      describe: (kind, id) =>
+        embedActions.current?.describe(kind, id) ?? embedText(kind, id, undefined, window.location.origin),
+    }),
   ]);
   const editor = useBlockEditor({
     extensions,
