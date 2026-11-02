@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createItemChanges } from './item-changes';
 import { type ChangeToast, runUndoableChange, type UndoableChangeDeps } from './undoable-change';
-import type { RunOptions } from './use-action';
 import { createWriteQueue } from './write-queue';
 
 /** The protocol with useAction's queue and a toast that keeps its undo, without React. */
@@ -12,7 +11,7 @@ function setup() {
   const announced: string[] = [];
   const withdrawn: number[] = [];
   const changes = createItemChanges();
-  const run = <T>(work: () => Promise<T>, success?: (value: T) => void, options: RunOptions = {}) => {
+  const run = <T>(work: () => Promise<T>, success?: (value: T) => void, options: { queued?: boolean } = {}) => {
     const attempt = async () => {
       try {
         const value = await work();

@@ -1,6 +1,6 @@
 import { api, requestId } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/lost-answer';
-import type { WriteRunner } from '../../lib/use-action';
+import type { WriteRunner } from '../../shell/writes';
 
 /**
  * Creating a label with the next color, the one way for the labels dialog, the drawer's picker and a new task's:

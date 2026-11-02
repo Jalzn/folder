@@ -1,6 +1,6 @@
 import { api } from '../../lib/api';
 import type { ItemType } from '../../lib/types';
-import { useAction } from '../../lib/use-action';
+import { useAction } from '../writes';
 
 /**
  * Pins and unpins documents and drawings: repeatable writes without a request record that change neither

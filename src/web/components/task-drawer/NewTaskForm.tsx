@@ -5,10 +5,10 @@ import { api, errorMessage, refreshWorkspace, reportSessionError } from '../../l
 import { doneAndFirstOpen } from '../../lib/board-order';
 import { useColumns, useLabels, useProjects } from '../../lib/queries';
 import { openEditor } from '../../lib/save-registry';
-import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { useOwnerToday } from '../../shell/AppProvider';
 import { type DrawerContent, useTaskDrawer } from '../../shell/task-drawer-state';
+import { useAction } from '../../shell/writes';
 import { AlertDialog, Button, useToast } from '../../ui';
 import { useCreateLabel } from '../labels/use-create-label';
 import { DueField } from './DueField';

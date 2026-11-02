@@ -1,7 +1,7 @@
 import { type CSSProperties, type ReactNode, type RefObject, useImperativeHandle, useRef } from 'react';
 import type { LabelSummary } from '../../lib/queries';
 import type { Task } from '../../lib/types';
-import { useAction } from '../../lib/use-action';
+import { useAction } from '../../shell/writes';
 import { useElementRefs } from '../../ui';
 import { AddColumn } from './AddColumn';
 import { BoardColumn } from './BoardColumn';

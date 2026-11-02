@@ -2,9 +2,8 @@ import type { LabelColor } from '@tinyfold/workspace/domain';
 import { api, requestId } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import type { LabelSummary } from '../../lib/queries/labels';
-import type { WriteRunner } from '../../lib/use-action';
 import { useAnnounce } from '../../shell/announcer';
-import { useUndoableChange } from '../../shell/use-undoable-change';
+import { useUndoableChange, type WriteRunner } from '../../shell/writes';
 import { useToast } from '../../ui';
 import {
   LABEL_CHANGED,

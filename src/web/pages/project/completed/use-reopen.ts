@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import { useTaskCompletion } from '../../../components/task/use-task-completion';
 import { useColumns, useTasks } from '../../../lib/queries';
-import { useAction } from '../../../lib/use-action';
+import { useAction } from '../../../shell/writes';
 import { type ElementRefs, focusIsLost, pageTitle, returnFocus, whenPresent } from '../../../ui';
 
 /** The rows' titles by task ID, for the focus. */

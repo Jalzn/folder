@@ -2,9 +2,9 @@ import { useNavigate } from '@tanstack/react-router';
 import { api, queryClient, requestId } from '../../lib/api';
 import { projectsQuery } from '../../lib/queries';
 import type { Project } from '../../lib/types';
-import { useAction } from '../../lib/use-action';
 import { paths } from '../../router/paths';
 import { useToast } from '../../ui';
+import { useAction } from '../writes';
 import { type MoveDirection, moveTarget } from './project-order';
 
 /** The project as the server has it now, for a write that follows another one. */

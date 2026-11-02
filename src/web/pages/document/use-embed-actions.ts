@@ -7,10 +7,10 @@ import type { BlockEditorInstance } from '../../editor/use-block-editor';
 import { api } from '../../lib/api';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
 import { onceMoreIfLost } from '../../lib/lost-answer';
-import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { useTaskDrawer } from '../../shell';
+import { useAction } from '../../shell/writes';
 import { useToast } from '../../ui';
 import { putBackRemoved } from './embed-removal';
 

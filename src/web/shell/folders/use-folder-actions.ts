@@ -2,11 +2,11 @@ import { useNavigate } from '@tanstack/react-router';
 import type { NavFolder, NavItem } from '@tinyfold/workspace/domain';
 import { api } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/lost-answer';
-import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { useToast } from '../../ui';
 import { useAnnounce } from '../announcer';
+import { useAction } from '../writes';
 import { deletedText, edgeText, positionText, restoredText, trashedText } from './folder-text';
 
 /** What an undo of a folder's deletion says when it fails, whatever the server said. */

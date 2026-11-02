@@ -4,8 +4,7 @@ import { Refusal } from '../../lib/errors';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import { cachedColumns, cachedTasks } from '../../lib/queries';
 import { displayTitle } from '../../lib/types';
-import type { WriteRunner } from '../../lib/use-action';
-import { useUndoableChange } from '../../shell/use-undoable-change';
+import { useUndoableChange, type WriteRunner } from '../../shell/writes';
 import { completedText, reopenedText, TASK_CHANGED } from './task-change-text';
 
 /**

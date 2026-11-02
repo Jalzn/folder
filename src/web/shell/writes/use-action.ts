@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useToast } from '../ui';
-import { errorMessage, refreshWorkspace } from './api';
-import { createWriteQueue } from './write-queue';
+import { errorMessage, refreshWorkspace } from '../../lib/api';
+import { createWriteQueue } from '../../lib/write-queue';
+import { useToast } from '../../ui';
 
 export interface RunOptions {
   /** Waits for the write in progress instead of being refused, as an undo: it is never lost. */

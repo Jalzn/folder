@@ -1,6 +1,5 @@
 import { errorCode } from './errors';
 import type { ItemChanges } from './item-changes';
-import type { RunOptions } from './use-action';
 
 /** What a change shows once it is done: its toast and, while the toast is on screen, its undo. */
 export interface ChangeToast {
@@ -18,7 +17,11 @@ export interface ChangeToast {
 
 /** What the protocol works with: the write queue, the toast, the announcer and the items' latest changes. */
 export interface UndoableChangeDeps {
-  run: <T>(work: () => Promise<T>, success?: (value: T) => void, options?: RunOptions) => Promise<T | undefined>;
+  run: <T>(
+    work: () => Promise<T>,
+    success?: (value: T) => void,
+    options?: { queued?: boolean },
+  ) => Promise<T | undefined>;
   toast: (text: string, options?: { undo: () => unknown; onUndoGone: () => void }) => number;
   announce: (text: string) => void;
   withdrawUndo: (toastId: number) => void;

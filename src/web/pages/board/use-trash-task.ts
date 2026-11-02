@@ -1,7 +1,7 @@
 import { api, requestId } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import type { Task } from '../../lib/types';
-import type { WriteRunner } from '../../lib/use-action';
+import type { WriteRunner } from '../../shell/writes';
 import { useToast } from '../../ui';
 import type { BoardFocus, BoardLayout } from './board-keys';
 

@@ -4,10 +4,10 @@ import { errorCode, errorMessage, queryClient, refreshWorkspace, reportSessionEr
 import type { AutosaveController } from '../../lib/autosave';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
 import { displayTitle, type ItemType } from '../../lib/types';
-import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
+import { useAction } from '../../shell/writes';
 import { useToast } from '../../ui';
 import { itemWords } from './item-words';
 

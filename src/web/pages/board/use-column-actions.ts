@@ -3,9 +3,8 @@ import { api, requestId } from '../../lib/api';
 import { inBoardOrder } from '../../lib/board-order';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import type { ColumnSummary } from '../../lib/queries';
-import type { WriteRunner } from '../../lib/use-action';
 import { useAnnounce } from '../../shell/announcer';
-import { useUndoableChange } from '../../shell/use-undoable-change';
+import { useUndoableChange, type WriteRunner } from '../../shell/writes';
 import { useToast } from '../../ui';
 import {
   COLUMN_CHANGED,

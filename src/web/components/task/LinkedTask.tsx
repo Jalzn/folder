@@ -3,7 +3,7 @@ import { CheckCircle2, Circle } from 'lucide-react';
 import type { Ref } from 'react';
 import { useColumns, useTasks } from '../../lib/queries';
 import type { Task } from '../../lib/types';
-import { useAction } from '../../lib/use-action';
+import { useAction } from '../../shell/writes';
 import { useTaskCompletion } from './use-task-completion';
 
 /**

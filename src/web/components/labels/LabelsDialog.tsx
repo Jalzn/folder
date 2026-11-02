@@ -5,7 +5,7 @@ import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
 import { usesCommandKey } from '../../lib/platform';
 import { type LabelSummary, useLabels } from '../../lib/queries/labels';
-import { useAction } from '../../lib/use-action';
+import { useAction } from '../../shell/writes';
 import {
   Dialog,
   ErrorNotice,
