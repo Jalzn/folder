@@ -28,7 +28,7 @@ Projetos, documentos, desenhos e tarefas pertencem ao mesmo módulo para preserv
 
 ## Execução e SQLite
 
-Em produção, um processo Node serve a SPA, `/rpc` e `/mcp` pela mesma origem HTTPS. O navegador consulta `/rpc`, o Claude Code consulta `/mcp`, e o SQLite fica no servidor, em volume persistente. A configuração rejeita origem HTTP e força cookie Secure em produção.
+Em produção, um processo Node serve a SPA, `/rpc`, `/mcp` e as prévias das figuras (`/arquivos`) pela mesma origem HTTPS. O navegador consulta `/rpc`, o Claude Code consulta `/mcp`, e o SQLite fica no servidor, em volume persistente. A configuração rejeita origem HTTP e força cookie Secure em produção.
 
 Kysely usa better-sqlite3 com um dialeto que inicia transações com `BEGIN IMMEDIATE`, reservando a escrita antes de consultar versões e pedidos anteriores. SQLite usa `foreign_keys=ON`, WAL, `busy_timeout=5000` e `synchronous=FULL`. Escritas são curtas; o cálculo de senha ocorre fora da transação.
 
@@ -106,6 +106,32 @@ As regras completas estão no [README do workspace](../src/workspace/README.md);
 - **Gaveta da tarefa:** fica no shell (`TaskDrawerProvider` em `shell/task-drawer-state.tsx` e `DrawerRegion.tsx`), fora das páginas, então ela e o editor da descrição sobrevivem à navegação. Abaixo de 720 px, cobre a página. O texto salva por uma sessão de autosave por tarefa (`components/task-drawer/task-session.ts`), num conjunto (`lib/session-pool.ts`) que a guarda enquanto a gaveta mostra a tarefa ou enquanto o texto não está salvo; solta sem estar salva, ela tenta de novo quando a rede volta e avisa antes de sair da página.
 - **Quadro na web:** um widget com uma parada de Tab (`pages/board/board-keys.ts`), em que as setas andam entre cards e colunas e ⇧ e setas movem; o arrastar é HTML nativo, com o alvo calculado por `board-drop.ts`. Os movimentos passam pela fila de escritas, e cada um tira o Desfazer do toast anterior da mesma tarefa.
 
+## Documento e incorporados
+
+O plano e os desvios estão na [etapa 11](etapas/11-documento-desenho.md); as regras do domínio, no [README do workspace](../src/workspace/README.md#incorporados).
+
+- **Blocos:** `taskEmbed { taskId }` e `drawingEmbed { canvasId }` são nós sem conteúdo no JSON do documento. Existem só no esquema do documento (`documentSchema`); a descrição usa `descriptionSchema`, sem eles. O domínio só os aceita por `readDocumentContent(…, { embeds: true })`, com um UUID em minúsculas, sem filhos e até 200 por documento. Não há migração, chave estrangeira nem índice reverso. O texto de busca, o lead e o trecho ignoram os incorporados, e `format_version` continua 1.
+- **Resolução:** `resolveEmbeds` responde um estado por ID (`live`, `trashed` ou `missing`), numa leitura sem registro de pedido, pelo SQL de `infra/reader/embeds.ts`, que o MCP também usa.
+  - **Na web:** `DocumentEmbeds.tsx` manda os IDs do editor, salvos ou não, a uma consulta por documento (`['workspace', 'embeds']`). As escritas do workspace a invalidam, e ela é lida de novo ao voltar à aba. Os blocos leem o estado de um contexto (`embeds-context.tsx`).
+  - **IDs recusados:** um ID que o servidor recusa nunca chega ao resolver, e o bloco aparece como excluído.
+- **Prévias:** a figura mostra a prévia guardada por `GET /arquivos/desenhos/:id/previa.png` (`src/server/files/`).
+  - **Rota:** exige a sessão (o cookie, nunca um bearer) e responde com `ETag` da impressão digital, `Cache-Control: private, no-cache` e `nosniff`. Com `If-None-Match`, responde 304; para desenho na lixeira, excluído ou sem prévia, 404.
+  - **Regeneração:** o documento regenera a prévia defasada (`use-embed-preview.ts`), uma de cada vez e com o navegador ocioso. O módulo de exportação do Excalidraw só carrega nessa hora.
+  - **Tema escuro:** a imagem recebe o filtro do modo escuro do Excalidraw.
+- **Inserir e remover:**
+  - **Inserir:** o menu `/` (`insert-menu.tsx`) e o ⌘K abrem o seletor (`EmbedPicker.tsx`). O bloco toma o lugar do parágrafo vazio do `/`, ou entra depois do bloco atual, e fica selecionado como nó.
+  - **Remover:** é uma edição do documento, com toast e Desfazer. O Desfazer devolve o bloco ao lugar dele, com o mesmo ID (`embed-removal.ts`), e não faz nada se o ⌘Z do editor já o devolveu.
+  - **Tarefa de um trecho:** com "Incorporar no documento", a criação chama o `insertEmbedAfter` do editor aberto, registrado no `save-registry`.
+- **Teclado:** `embed-keys.ts` é uma extensão do BlockNote, uma por editor. Com um incorporado selecionado como nó:
+  - as setas levam ao bloco seguinte ou ao anterior pela API do editor;
+  - ↵ abre; ⌫ e Delete primeiro selecionam e depois removem;
+  - ⇧↑ e ⇧↓ estendem a seleção ao bloco vizinho, e Page Up e Page Down não fazem nada;
+  - digitar abre um parágrafo depois do incorporado (`embed-typing.ts`), e ⌘C escreve o link do item (`embed-clipboard.ts`).
+
+  Em qualquer seleção, Tab não aninha blocos sob um incorporado. `embed-selection-hold.ts` recusa a deriva da seleção do Chrome para o primeiro texto do documento ([etapa 11](etapas/11-documento-desenho.md#desvios-do-plano)). Colar deixa de fora um incorporado com ID recusado (`embed-paste.ts`), e os rascunhos e os salvamentos passam por `sanitizeEmbeds`.
+- **Marcador de origem:** uma decoração do ProseMirror (`origin-markers.tsx`, com os lugares em `origin-places.ts`), feita das origens das tarefas do documento, sem tocar no JSON. É um botão no fim do trecho (`excerptEnd`), ou no fim do bloco quando o trecho mudou. Abre a gaveta e, no hover, sublinha o trecho por um destaque CSS. Fica fora da ordem do Tab, e o popover "Tarefas · n" leva às mesmas tarefas.
+- **Markdown e endereço:** a exportação `.md` usa `documentToMarkdown` do domínio com `embedResolver` e os endereços do aplicativo (`/tarefas/<id>` e `/desenhos/<id>`). `/tarefas/$taskId` abre a tarefa na gaveta, no quadro do projeto dela.
+
 ## Salvamento e múltiplos dispositivos
 
 1. O editor registra a edição local em localStorage, separada por instalação, documento e escritor da página.
@@ -137,13 +163,13 @@ A SPA usa TanStack Router com endereços em português, sempre dentro de um proj
 | `/projetos` | Estado vazio, sem projeto ativo |
 | `/perfil` e `/entrar` | Perfil e login |
 
-`/` reabre o último lugar do último projeto, com a rolagem, guardado no dispositivo por instalação; o caminho guardado só é usado se for um endereço interno conhecido. Os endereços anteriores (`/documentos/$id`, `/desenhos/$id`, listas e `/login`) redirecionam, e um item aberto no endereço de outro projeto passa ao endereço certo. Uma codificação quebrada ou um endereço desconhecido mostram uma página em português dentro do shell.
+`/` reabre o último lugar do último projeto, com a rolagem, guardado no dispositivo por instalação; o caminho guardado só é usado se for um endereço interno conhecido. Os endereços anteriores (`/documentos/$id`, `/desenhos/$id`, listas e `/login`) redirecionam, e um item aberto no endereço de outro projeto passa ao endereço certo. `/tarefas/$taskId`, o endereço permanente de uma tarefa nos arquivos exportados, abre a tarefa na gaveta, no quadro do projeto dela. Uma codificação quebrada ou um endereço desconhecido mostram uma página em português dentro do shell.
 
 O shell (`src/web/shell/`) tem a lateral de 256 px a partir de 1.100 px, com a árvore Itens (o `Tree` do React Aria, `treegrid`), em que os atalhos N, P, M e G ganham do typeahead e um arrastar leva itens entre pastas e reordena pastas, a faixa de 52 px (⌘\\) e a lateral sobre a página entre 720 e 1.100 px, e abaixo de 720 px uma barra de 44 px que recebe as ações da página. Buscar filtra na lateral; o ⌘K busca em todos os projetos e lista as ações do item aberto e os comandos. Atalhos de uma tecla não valem em campos editáveis, durante uma composição de IME nem no Excalidraw, e o Esc fecha só a camada mais recente, sem navegar. Toasts mostram um por vez, o mais novo no lugar do anterior, em regiões vivas que um modal não esconde. A gaveta da tarefa fica abaixo da página, na mesma coluna de trabalho, que ela empurra para cima; é uma camada do Esc e uma região do F6, e a tarefa aberta fica no estado do shell, não no endereço.
 
 ## Tema, tokens e fontes
 
-`src/web/styles/tokens/` (`palette.ts` e `scale.ts`) é a fonte das cores, sombras, tipos, raios, alturas e durações; `pnpm tokens` grava `tokens.css`, e o `check` falha quando o arquivo diverge, quando um valor difere de `docs/interface/prototipo/tokens.py` ou quando um par de contraste fica abaixo do exigido. O tema Sistema, Claro ou Escuro fica no dispositivo (`tinyfold:theme`); `public/theme.js` aplica `data-theme`, `color-scheme` e a cor da barra antes da primeira pintura, e `useTheme` mantém isso enquanto o aplicativo roda, inclusive entre abas. BlockNote e Excalidraw seguem o tema; a prévia guardada do desenho continua clara.
+`src/web/styles/tokens/` (`palette.ts` e `scale.ts`) é a fonte das cores, sombras, tipos, raios, alturas e durações; `pnpm tokens` grava `tokens.css`, e o `check` falha quando o arquivo diverge, quando um valor difere de `docs/interface/prototipo/tokens.py` ou quando um par de contraste fica abaixo do exigido. O tema Sistema, Claro ou Escuro fica no dispositivo (`tinyfold:theme`); `public/theme.js` aplica `data-theme`, `color-scheme` e a cor da barra antes da primeira pintura, e `useTheme` mantém isso enquanto o aplicativo roda, inclusive entre abas. BlockNote e Excalidraw seguem o tema; a prévia guardada do desenho continua clara, e a figura de um documento a mostra com o filtro do modo escuro do Excalidraw.
 
 Inter vem completa de `inter-ui` (com `cv05`, `ss03`, `case` e `tnum`) e JetBrains Mono da Fontsource, ambas emitidas pelo Vite na própria origem, com o arquivo regular da Inter pré-carregado.
 
@@ -155,11 +181,11 @@ Equações usam o esquema e o renderizador KaTeX de `@blocknote/math-block`, na 
 
 O conteúdo persistido tem limite de 1 MiB e 5.000 blocos; pedidos HTTP têm limite de 2 MiB. A recuperação local admite, de forma limitada, até 5 MiB e 20.000 blocos válidos para permitir reabrir e exportar uma edição que ultrapassou o limite do servidor. Isso não aumenta o limite de persistência.
 
-Importar Markdown cria outro documento e preserva o documento aberto. Exportar usa o conteúdo atual do editor. Propriedades que Markdown não representa podem ser perdidas; projetos, tarefas, vínculos e sessões não fazem parte do arquivo `.md`.
+Importar Markdown cria outro documento e preserva o documento aberto. Exportar usa o conteúdo atual do editor e o serializador do domínio, o mesmo do MCP: tarefas e desenhos incorporados viram links para o aplicativo, que a importação traz de volta como links comuns. Propriedades que Markdown não representa podem ser perdidas; projetos, vínculos de origem e sessões não fazem parte do arquivo `.md`.
 
 O intercâmbio de equações usa a árvore sintática Markdown para reconhecer delimitadores fora de código, links e HTML. As demais estruturas continuam sendo processadas pelo BlockNote. A exportação preserva a fonte LaTeX sem depender da renderização, inclusive quando inválida, e verifica se todas as fórmulas foram restituídas. Ver [equações](equacoes.md) para sintaxe e limites.
 
-O editor em blocos fica em `src/web/editor/` e é o mesmo para documentos e para a descrição das tarefas, que ganha só o tamanho próprio (14/22) e não tem "Criar tarefa". Criar tarefa é uma ação explícita sobre a seleção. Um trecho de um único bloco usa sua âncora; uma seleção que atravessa blocos usa o documento como origem. Checklists continuam locais ao texto.
+O editor em blocos fica em `src/web/editor/` e é o mesmo para documentos e para a descrição das tarefas, com dois esquemas: o do documento tem os incorporados, e o da descrição, não. A descrição ganha só o tamanho próprio (14/22) e não tem "Criar tarefa". Criar tarefa é uma ação explícita sobre a seleção. Um trecho de um único bloco usa sua âncora; uma seleção que atravessa blocos usa o documento como origem. Checklists continuam locais ao texto.
 
 ## Canvas e limites
 
@@ -206,7 +232,7 @@ As ferramentas do workspace são objetos simples (`createWorkspaceTools(db, { lo
 - **Busca:** exige todas as palavras da consulta, normalizadas sem caixa e acentos, e ordena por palavras no título e depois pela edição mais recente. O trecho de 240 caracteres vem de uma janela do texto em volta da primeira ocorrência, numa linha só, com os blocos do documento ou os textos do desenho separados por vírgula.
 - **Listas:** são paginadas por chave (`s~…`, `t~…`, `p~…`). O cursor do quadro fixa a revisão do quadro e a posição da coluna, e é recusado depois de qualquer mudança na ordem.
 - **Tarefas:** `list_tasks` filtra pelos nomes das colunas e das etiquetas e traz, de cada tarefa, a coluna, o prazo, o atraso no fuso do dono, as etiquetas, o checklist e a conclusão; `read_task` responde em Markdown, como `read_document`, com a descrição em páginas de 36.000 caracteres; a busca acha tarefas também pela descrição.
-- **Documentos:** saem em Markdown do serializador puro do domínio (`documentToMarkdown`), em páginas de 36.000 caracteres com cursor `<impressão>:<deslocamento>`, presas ao texto paginado, e não à versão, para que mover ou renomear não as invalide; a primeira reserva 9.000 para cabeçalho e rodapé. Um bloco cortado pela página é fechado e reaberto.
+- **Documentos:** saem em Markdown do serializador puro do domínio (`documentToMarkdown`), em páginas de 36.000 caracteres com cursor `<impressão>:<deslocamento>`, presas ao texto paginado, e não à versão, para que mover ou renomear não as invalide; a primeira reserva 9.000 para cabeçalho e rodapé. Um bloco cortado pela página é fechado e reaberto. Os incorporados saem como links `tinyfold:task/<id>` e `tinyfold:drawing/<id>`, que `read_task` e `read_drawing` recebem, ou como `[Item indisponível]`, resolvidos na mesma leitura; o cursor fica preso ao texto resolvido.
 - **Desenhos:** saem como estrutura textual da cena atual (`outlineCanvasScene`) e a prévia PNG guardada.
 - **Projetos e origens:** `list_projects` traz cor, posição, `folderCount` e até 50 pastas por projeto, com a contagem de itens, sem `withoutProject`; a busca diz se o item está fixado e em que pasta está (`folder`), e aceita `folderId`; `read_document` e `read_drawing` trazem a linha da pasta no cabeçalho; uma origem de tarefa cujo documento foi excluído de vez vem com `documentId: null` e o título guardado.
 - **Respostas:** têm até 45.000 caracteres de texto, rodapés e erros incluídos, só em `content`, sem `structuredContent`. O Claude Code 2.1.310 grava num arquivo o resultado que passa de 50.000 e mostra ao modelo só uma prévia. Cada ferramenta cabe no teto pelo próprio orçamento, e `withTextCeiling` corta, com aviso, o que ainda passasse.
@@ -219,13 +245,13 @@ O navegador renderiza a prévia com o próprio Excalidraw, em tema claro, 1,5 s 
 
 O servidor só aceita um PNG completo, cujos dados de imagem descomprimem exatamente no tamanho do cabeçalho, em linhas com tipos de filtro válidos, até 1.568 px e 256 KiB. A prévia guarda a impressão digital da cena (`sceneFingerprint`): renomear, mover ou passar pela lixeira não a torna defasada. `getCanvas` devolve `previewVersion` e `previewCurrent`.
 
-O editor gera a prévia ao abrir um desenho sem prévia atual, ao adotar uma versão salva em outro dispositivo e depois de cada salvamento que muda a cena. Uma cena que nenhum tamanho comporta não é renderizada de novo até mudar.
+O editor gera a prévia ao abrir um desenho sem prévia atual, ao adotar uma versão salva em outro dispositivo e depois de cada salvamento que muda a cena. Um documento gera a de um desenho incorporado cuja prévia está defasada ou ausente, e a mostra pela rota da prévia ([Documento e incorporados](#documento-e-incorporados)). Uma cena que nenhum tamanho comporta não é renderizada de novo até mudar.
 
 ### Módulos e portas
 
 - **auth:** `domain/access-token.ts`, os casos de uso em `application/access-tokens/` e, na infraestrutura, o repositório, os segredos e `createAccessTokens`.
 - **workspace:** no domínio, o serializador Markdown, as páginas, a estrutura da cena, `png.ts`, `scene-fingerprint.ts` e os limites; na aplicação, `reading/` e `canvas-previews.ts`, que valida a prévia pela porta `PngImageData`; na infraestrutura, `reader/`, `mcp/` (ferramentas e formatação) e `png-image-data.ts`.
-- **server:** compõe tudo em `src/server/mcp/`, com `bearer.ts`, `request-body.ts`, `mcp-server.ts` (registro das ferramentas no SDK) e `endpoint.ts` (`mountMcp`), e o IP do cliente em `client-ip.ts`.
+- **server:** serve a prévia aos documentos em `src/server/files/canvas-preview-route.ts`, antes do fallback da SPA, e compõe o MCP em `src/server/mcp/`, com `bearer.ts`, `request-body.ts`, `mcp-server.ts` (registro das ferramentas no SDK) e `endpoint.ts` (`mountMcp`), e o IP do cliente em `client-ip.ts`.
 - **Migrações:** `auth/002_access_tokens.sql`, `workspace/003_canvas_previews.sql` e `workspace/004_canvas_preview_fingerprint.sql`.
 
 ## Operação

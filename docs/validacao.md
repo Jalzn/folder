@@ -2,6 +2,202 @@
 
 Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. Nenhuma publicação na nuvem foi realizada.
 
+## Etapa 11: documento e desenho
+
+A etapa foi implementada entre 2026-11-01 e 2026-11-02 por dois subagentes, backend (B1 a B4) e web (W1 a W7), primeiro em worktrees próprias e, a partir dos pontos de integração, em `feat/documento`. Três revisores adversariais examinaram, cada um, dados e MCP; o editor (teclado, acessibilidade e foco); e segurança e qualidade. Os achados passaram por quatro rodadas de correção; as três primeiras foram retestadas pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
+
+| Verificação | Resultado, em `6bd99cf` |
+| --- | --- |
+| `mise exec -- pnpm check` | Biome; tipos de todos os pacotes, dos E2E e dos scripts; dependency-cruiser sem violações em 866 módulos; 648 testes unitários em 105 arquivos, com tokens, contraste e paridade com `tokens.py` |
+| `mise exec -- pnpm test:db` | 264 testes em 37 arquivos, com SQLite temporário |
+| `mise exec -- pnpm build` | Bundle de produção aprovado |
+| `E2E_PORT=5171 mise exec -- pnpm e2e` | 197 aprovados e 113 pulados, em 155 testes por perfil (desktop e Pixel 7). No celular, pulam os testes que precisam do desktop: o teclado do editor e dos incorporados, o hover, o arrastar, a faixa e as larguras. No desktop, pulam os que são só do celular |
+
+Os testes de unidade e de banco cobrem, além do que já existia:
+
+- **Domínio:**
+  - **Blocos:** só com a opção `embeds`, com `props` estritas e IDs em minúsculas, sem conteúdo nem filhos, e o 201º recusado. O texto, o lead e o trecho ficam sem eles.
+  - **Trecho e números:** `excerptEnd` com formatação, espaços colapsados e trecho repetido; `figureNumbers`.
+  - **Markdown:** o serializador com o resolvedor, o escape do texto do link e `[Item indisponível]` (`embed-resolver.test.ts`); `isCanvasId`.
+- **Banco:**
+  - **Estados** (`embeds.db.test.ts`): os três estados de tarefas e desenhos; item na lixeira, excluído de vez, com outro projeto ou outra pasta, e projeto arquivado; prévia atual, defasada e ausente; cena vazia; 201 IDs; IDs repetidos; nenhum registro de pedido.
+  - **Escritas:** salvar e criar documentos com incorporados, e a descrição que os recusa.
+  - **Rota da prévia** (`files.db.test.ts`): 401 sem sessão, também com um bearer do MCP; 404 para desenho na lixeira, excluído, inexistente ou sem prévia; 400 para ID inválido; 200 com `image/png`, `ETag`, `nosniff` e `private, no-cache`; 304; e a rota antes do fallback da SPA.
+  - **MCP:** os links e `[Item indisponível]` no `read_document`; o cursor recusado quando uma tarefa incorporada muda entre as páginas; o teto de 45.000 caracteres com 200 incorporados de títulos pesados, metade na lixeira, lidos até a última página.
+  - **Backup e exemplo:** um backup com incorporados, e o exemplo guardado pelo seed (`seed-sample.db.test.ts`).
+- **Web:**
+  - **Incorporados:** a limpeza dos inválidos e dos filhos (`sanitize-embeds`, `embed-paste`); os lugares das setas (`embed-places`); o texto copiado (`embed-text`); o que cada estado mostra (`embed-view`); o lugar do Desfazer (`embed-removal`).
+  - **Markdown e marcador:** a exportação e a importação de volta (`document-markdown`); os lugares do marcador, com o editor real (`origin-places`).
+  - **Exemplo:** passa pelo BlockNote real nos dois esquemas (`sample-documents`).
+  - **Menus e atalhos:** o grupo do menu `/` (`insert-menu`), "editado hoje" (`edited-phrase`), os rótulos dos atalhos (`Kbd`) e o ⌘⌥T no editor, no campo e no Excalidraw (`keyboard`).
+  - **ProseMirror:** a cópia única e o `domObserver.flush` (`prosemirror-copy` e `prosemirror-internals`).
+
+### Fluxos no Chrome
+
+Os E2E rodam no Google Chrome instalado, no desktop (1440×1000) e na emulação do Pixel 7, digitando com teclas reais, inclusive o `/tarefa`, o filtro do seletor e os títulos. Os da etapa:
+
+1. **Inserir** (`embeds.spec.ts`):
+   - `/tarefa` e `/desenho`, com um item existente ou novo, e o seletor com o projeto do documento primeiro;
+   - ↵ no seletor com o texto digitado, um título existente e um título repetido em dois projetos;
+   - o ⌘K "Incorporar tarefa…".
+
+   Os resultados são conferidos no servidor.
+2. **Card, figura e indisponíveis:**
+   - o card segue a gaveta (coluna, etiquetas, checklist e "aberta abaixo") e diz o outro projeto;
+   - as figuras se renumeram ao reordenar;
+   - Restaurar, e Remover com Desfazer;
+   - o documento de um projeto arquivado sem ações;
+   - ⌘C de um card e a colagem na descrição;
+   - um incorporado colado com ID recusado.
+3. **Teclado** (`embed-keys.spec.ts`):
+   - **Setas:** atravessam sequências de cards e figuras, no começo, no meio e no fim, sem pausa e com 200 ms entre as teclas, e um documento misto nos dois sentidos.
+   - **Edição:** Tab sob um card; ⌫ e Delete; ⌫ logo depois de ⌘←; digitar e compor um acento num card selecionado.
+   - **Restaurar:** com o foco e as setas depois dele.
+   - **⇧ e Page:** ⇧↑, ⇧↓ e Page Down a partir de um incorporado, ao ritmo de uma pessoa.
+   - **Teclas que passam:** ⌘↓, ⌘↑ e uma seleção posta no DOM.
+4. **Figura** (`drawing-embed.spec.ts`): a imagem pela rota, com 200 e depois 304; a prévia ausente gerada pelo documento; o filtro do escuro; o clique do meio em outra aba; e o arrastar, que não solta texto no documento.
+5. **Marcador** (`origin-marker.spec.ts`): o marcador depois do trecho, com o nome e a gaveta. Ele vai ao fim do bloco quando o trecho muda e sai com a tarefa na lixeira. Também:
+   - "Incorporar no documento" põe o card abaixo, e só com o documento aberto;
+   - o marcador fica fora do Tab, e o hover redesenha sem quebrar.
+6. **Página do documento** (`document-page.spec.ts`): a barra e o ⋯, o ⌘⌥T, o popover "Tarefas · n" com as setas, ↵ e Esc, a faixa fixa, `/tarefas/<id>` e o `.md` exportado e importado de volta.
+7. **Página do desenho** (`drawing-page.spec.ts`): "Exportar ▾" com PNG e `.excalidraw`, e o ⋯ que começa com Importar.
+8. **Exemplo** (`seed-sample.spec.ts`): abrir cada documento e desenho do exemplo não envia `saveDocument` nem `saveCanvas`, e todos continuam na versão 1.
+9. **MCP e celular:** o Claude Code lê os incorporados como links e segue um até `read_task`. No Pixel 7, os incorporados ocupam a largura, um toque no card abre a gaveta, Restaurar aparece e a figura abre o desenho.
+
+### Validação no Chrome real contra o protótipo
+
+```sh
+TF_TMP="$(mktemp -d -t tinyfold-11)"
+export OWNER_PASSWORD='validacao-documento-11' PORT=3521 WEB_PORT=5321 \
+  APP_ORIGIN=http://localhost:5321 COOKIE_SECURE=false BACKUP_DIR="$TF_TMP/backups"
+# 1. Atualização: um banco criado pelo código da etapa 10, numa worktree na pasta de rascunho
+git worktree add "$SCRATCH/tf-10" 7624a8f
+(cd "$SCRATCH/tf-10" && mise exec -- pnpm install --frozen-lockfile \
+  && DATABASE_PATH="$TF_TMP/antigo.sqlite" mise exec -- pnpm seed:sample)
+DATABASE_PATH="$TF_TMP/antigo.sqlite" mise exec -- pnpm dev   # sem migração; conferido e parado
+# 2. Exemplo da etapa 11
+DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm seed:sample
+DATABASE_PATH="$TF_TMP/grande.sqlite" mise exec -- pnpm seed:sample --grande
+DATABASE_PATH="$TF_TMP/tinyfold.sqlite" mise exec -- pnpm dev
+```
+
+**Ensaio de atualização.** O log confirmou `Banco: <TF_TMP>/antigo.sqlite` e `Tinyfold em http://127.0.0.1:3521`. A subida não aplicou migração: continuaram as 11 da etapa 10, com as mesmas datas. Os sete documentos e os quatro desenhos foram abertos um a um no Google Chrome, com os pedidos contados:
+
+- **Documentos:** nenhum enviou `saveDocument`, e todos continuaram na versão 1 e no `format_version` 1.
+- **Desenhos:** cada um se salvou uma vez (`saveCanvas` e a prévia) e passou à versão 2. É o comportamento esperado das cenas do exemplo antigo, gravadas sem a normalização do Excalidraw. Os do exemplo novo não se salvam.
+- **Tarefas:** nenhuma mudou de versão. `integrity_check` respondeu `ok`, e `foreign_key_check` não listou nada.
+- **MCP:** pelo `/mcp`, com um token criado no Perfil, `read_document` leu a "Visão do produto" antiga e `read_drawing` leu "Fluxo do autosave".
+- **Incorporar num documento antigo:** em "Notas de arquitetura", o `/tarefa` incorporou "Gerar token pessoal no Perfil", e o `/desenho`, "Fluxo do autosave", com teclas reais. O documento salvou duas vezes (versão 3), com os dois blocos, e o `read_document` passou a trazer `[Desenho: Fluxo do autosave](tinyfold:drawing/…)` e `[Tarefa: Gerar token pessoal no Perfil (Em andamento)](tinyfold:task/…)`.
+
+**Exemplo da etapa 11.** Os dois bancos foram abertos sem nenhum salvamento:
+
+- **Exemplo normal:** depois da comparação com o protótipo, nenhum documento, desenho ou tarefa mudou de versão. A figura da "Visão do produto" gravou a prévia do desenho incorporado na primeira abertura, com o desenho na versão 1.
+- **Banco `--grande`:** foram abertos 25 documentos, a "Visão do produto" entre eles, e 8 desenhos. Nenhum `saveDocument` nem `saveCanvas` foi enviado, e nenhuma versão mudou; só as prévias que faltavam foram gravadas.
+- **MCP:** `read_document` da "Visão do produto" trouxe `[Desenho: Navegação com projeto no centro](tinyfold:drawing/…)`, `[Tarefa: Gerar token pessoal no Perfil (Em andamento)](tinyfold:task/…)` e `[Item indisponível]`. `read_task` e `read_drawing` aceitaram os IDs desses links.
+
+**Lado a lado.** O protótipo foi servido como UTF-8 de `127.0.0.1:5299`, e o aplicativo usou o exemplo da etapa 11. As duas telas foram abertas no Google Chrome instalado, pelo Playwright (`channel: 'chrome'`), nos dois temas, em 1440×900 e 1280×800: a "Visão do produto" com a figura, o card e o indisponível; o card aberto na gaveta; o marcador de "MCP somente leitura" com o ponteiro em cima; e a página "Navegação com projeto no centro" com "Exportar ▾" aberto. As medidas usaram `getBoundingClientRect` e `getComputedStyle` no mesmo Chrome.
+
+As peças medidas são iguais nas duas telas, nos dois temas e nas duas larguras. No escuro, os pesos de interface sobem para 450 nas duas.
+
+| Peça | Medidas |
+| --- | --- |
+| Coluna | 680 px com padding 28/160; título 600 30/36; fio com 20 px acima e 24 abaixo; corpo 15/24 |
+| Card | 680 × 68 px, padding 10/12, raio 8, borda `--line` e fundo `--raised-1`; título 500 14/20; meta e coluna 12/16 `--text-3` |
+| Card aberto | fundo `--selected`, borda `--accent-35` e "aberta abaixo" em 12/16, ao lado do título |
+| Figura | moldura com padding 12, raio 8, borda `--line` e fundo `--bg`; legenda 12/16 `--text-3`; "Abrir ↗" em `--accent`, com opacidade 0 e 1 no hover |
+| Indisponível | 680 × 44 px, padding 6 6 6 12, raio 8 e borda tracejada `--line-strong`; texto 13/20; botões de 24 px |
+| Marcador | 18 × 18 px, raio 4, 4 px depois do trecho, fundo `--selected` no hover |
+| Barras | 44 px com padding 0 12 0 32; salvamento 12/16 `--text-3`, com "Salvo · editado hoje"; "Exportar ▾" de 117 × 28 px, padding 0 10, raio 6 e 500 13/20 |
+
+**Larguras e teclado:**
+
+- **1024 px:** a coluna e os incorporados têm 680 px, e a página não rola de lado.
+- **Pixel 7:** a coluna e os incorporados têm 380 px, Restaurar e Remover ficam visíveis com 24 px e a página não rola de lado.
+- **Teclado:** foi percorrido à mão, pelo Playwright, no Google Chrome do Mac, com 250 ms entre as teclas:
+  - em "Ideias soltas", `/tarefa` abre o seletor com o foco no campo; "backup" filtra; ↓ e ↵ incorporam "Configurar backup externo", que fica selecionado;
+  - digitar escreve num parágrafo novo depois do card;
+  - ↑ e ↓ passam pelo card um bloco por vez, e Page Down o mantém selecionado;
+  - ⇧↓ seleciona do card ao fim do parágrafo seguinte;
+  - ⌘⌥T, num trecho de um parágrafo da "Visão do produto" e num item de lista de "Ideias soltas", abre a gaveta da tarefa nova com "Incorporar no documento" marcado.
+- **Não validado à mão no Chrome:**
+  - o resto da tabela de teclado e a ordem do Esc, cobertos pelos E2E e pelos roteiros do revisor do editor;
+  - a seleção com o VoiceOver;
+  - o ditado e o painel de emoji num incorporado selecionado;
+  - um aparelho físico com toque;
+  - uma aba aberta com o código da etapa 10 durante a atualização, que fica como risco aceito, com a nota em [operação](implantacao.md#atualizar-para-a-etapa-11).
+
+**Diferenças aceitas em relação ao protótipo:**
+
+- **"Tarefas · n"** fica na barra do documento ([decisão do usuário 2](etapas/11-documento-desenho.md#decisões-do-usuário)); o protótipo não tem o botão.
+- **Restaurar e Remover** do indisponível são só texto, com 73 px; no protótipo, têm os ícones de restaurar e de fechar, com 93 px.
+- **A dica do marcador** é o `title` do navegador, "Originou: … · Em andamento", porque o marcador é um widget do ProseMirror fora do React; o protótipo desenha a dica dele. O sublinhado do trecho é o mesmo.
+- **A figura** mostra a prévia PNG guardada, clara e filtrada no escuro, com a altura do desenho; o protótipo desenha um SVG. Os desenhos de exemplo também diferem: três caixas em linha no aplicativo e uma árvore no protótipo.
+- **"Exportar ▾"** aberto pelo ponteiro não marca o primeiro item; o protótipo marca "PNG". Pelo teclado, o primeiro item é marcado nas duas.
+- **A barra de ferramentas do Excalidraw** é a dele, com todas as ferramentas; o protótipo simula uma barra curta.
+- **Dados de exemplo:** as etiquetas do card vêm em ordem alfabética ([etapa 10](etapas/10-quadro-tarefa.md), decisão 16), o prazo conta do dia do seed, e "MCP somente leitura" e o último parágrafo da "Visão do produto" têm o texto do brief.
+
+| Tela | 1440, claro | 1440, escuro | 1280, claro | 1280, escuro | Pixel 7 |
+| --- | --- | --- | --- | --- | --- |
+| Documento com incorporados | [Captura](screens/documento-claro-1440.png) | [Captura](screens/documento-escuro-1440.png) | [Captura](screens/documento-claro-1280.png) | [Captura](screens/documento-escuro-1280.png) | [Captura](screens/documento-celular.png) |
+| Marcador de origem | [Captura](screens/documento-marcador-claro-1440.png) | [Captura](screens/documento-marcador-escuro-1440.png) | [Captura](screens/documento-marcador-claro-1280.png) | [Captura](screens/documento-marcador-escuro-1280.png) | — |
+| Menu `/` com "Incorporar" | [Captura](screens/documento-menu-claro-1440.png) | [Captura](screens/documento-menu-escuro-1440.png) | [Captura](screens/documento-menu-claro-1280.png) | [Captura](screens/documento-menu-escuro-1280.png) | — |
+| Seletor | [Captura](screens/documento-seletor-claro-1440.png) | [Captura](screens/documento-seletor-escuro-1440.png) | [Captura](screens/documento-seletor-claro-1280.png) | [Captura](screens/documento-seletor-escuro-1280.png) | — |
+| Desenho com "Exportar ▾" | [Captura](screens/desenho-claro-1440.png) | [Captura](screens/desenho-escuro-1440.png) | [Captura](screens/desenho-claro-1280.png) | [Captura](screens/desenho-escuro-1280.png) | [Captura](screens/desenho-celular.png) |
+
+As capturas são as de W6, feitas do exemplo da etapa 11. Na validação, elas foram refeitas de um exemplo novo e comparadas pixel a pixel com as versionadas. Só o prazo do card mudou ("06 nov" para "07 nov"), porque conta do dia em que o seed roda, então as versionadas ficaram. Ao fim, o `dev` e o servidor do protótipo foram parados, a worktree `tf-10` foi removida e `$TF_TMP` foi apagado.
+
+### Rodadas adversariais
+
+Corrigidos e retestados:
+
+- **Dados e MCP:** a revisão cedo de B1 e B2 achou o ID em maiúsculas, que o validador aceitava e o SQLite resolvia como excluído (`de033bb`).
+- **Editor: teclado, acessibilidade e foco** (`11ff514`, `0a3fcf1`, `1bac96f`, `641ff87`, `f0d0fc2`, `fbfc7e7`, `a1bf79f`, `91d7288`, `59155c0`, `ad15aec`, `4a4ca44`, `7d2df70`, `5504b6b`, `79a48a3`, `c27fd4f`, `b22fc02`, `014814f`, `7066af2`, `43a3cf2`, `822441c`, `b271965`, `9569015`, `6bd99cf`). Os achados:
+  - **Tab e documento quebrado:** Tab sob um card aninhava o parágrafo, e todo salvamento falhava.
+  - **Setas:** com três incorporados seguidos, as setas voltavam ao topo ou pulavam os do meio. Depois da primeira correção, isso continuava com 80 ms ou mais entre as teclas, por causa da deriva da seleção do Chrome.
+  - **⌫, Delete e Desfazer:** ⌫ e Delete removiam o incorporado com uma tecla, sem toast, também logo depois de um ⌘←. O Desfazer o devolvia ao topo ou fora do fim.
+  - **Foco:** Restaurar deixava o foco na página. O marcador tomava o foco com Tab e quebrava a página.
+  - **Arquivado e arrastar:** o documento de um projeto arquivado aceitava teclas. Arrastar a figura soltava a legenda no texto.
+  - **Seletor:** perdia o texto digitado, criava uma segunda tarefa com o título de uma existente e marcava "Nova tarefa…" sozinho.
+  - **Copiar e digitar:** um card copiado virava "Tarefa copiadaA fazer". Um acento num card selecionado ia para o parágrafo de cima.
+  - **Nomes e rótulos:** os botões de vários indisponíveis tinham o mesmo nome, e o ⋯ mostrava "Ctrl⌥T" no Pixel 7.
+  - **Celular e Tab:** um toque no card trazia o teclado da tela de volta, e o campo escondido do Markdown tomava uma parada de Tab.
+  - **R1:** a proteção da seleção prendia ⌘↓, Home, End, ⇧↓ e as seleções de um leitor de tela.
+  - **B-f:** ⇧↑, ⇧↓ e Page Down agiam a partir do primeiro texto.
+
+  O terceiro reteste, em `20e7835` e com 150 a 600 ms entre as teclas, não achou regressão nem nada de severidade média ou maior. A correção B-f (`6bd99cf`), da quarta rodada, ainda espera o reteste do revisor.
+- **Segurança e qualidade** (`7e6de9e`, `f4d5ff4`, `d3cebc3`, `e12ac46`, `d366e3c`, `1ab1572`, `e9b5f1d`, `06a5061`, `473024a`, `7bdbebd`, `20e7835`). Os achados:
+  - **Duplicações:** a exportação da web resolvia os incorporados com uma cópia do resolvedor do servidor, e o menu `/` repetia o tipo dos incorporados.
+  - **Regras:** a rota da prévia conferia o ID pela regra dos incorporados.
+  - **Exemplo:** o teste do seed carregava código da web por URL.
+  - **ProseMirror:** nada garantia uma cópia só, nem o `domObserver.flush` privado.
+  - **Colagem forjada:** um `blocknote/html` com um ID inválido derrubava todo salvamento e deixava todos os cards em "Carregando…". Depois da correção, a colagem ainda perdia o que o incorporado forjado continha.
+  - **Importações:** `ErrorNotice` levava o cliente HTTP ao barril da UI.
+
+### Aceitos
+
+Os itens aceitos estão na lista "Aceitos" de [Desvios do plano](etapas/11-documento-desenho.md#desvios-do-plano), com as diferenças em relação ao protótipo listadas acima:
+
+- a proteção da seleção e a assinatura da deriva que ela recusa;
+- Home, End e ⌃E a partir do primeiro texto;
+- o `collapse()` no primeiro texto recusado;
+- ⌘→, ⌥→ e ⌘← que selecionam o incorporado vizinho;
+- o primeiro Esc do seletor, que limpa o campo;
+- o texto sem keydown;
+- os incorporados forjados que saem da colagem;
+- o `domObserver.flush()` privado;
+- o aviso do ProseMirror depois de ⇧↑ e ⇧↓;
+- os rótulos Ctrl+… e Shift+…;
+- os IDs só em minúsculas;
+- o texto genérico de `VALIDATION` pelo `/rpc`;
+- a prévia gravada na primeira abertura do exemplo;
+- a aba antiga com `format_version` 1.
+
+### Pendências
+
+- Os desenhos do exemplo, que se salvavam na primeira abertura, pendência das etapas 09 e 10: fechada pelo seed normalizado e por `e2e/seed-sample.spec.ts`.
+- O backup antes da atualização do banco real, que ainda está na etapa 07 ([operação](implantacao.md#atualizar-para-a-etapa-11)).
+- A versão de celular da interface ainda não foi desenhada, e as pendências de hospedagem da etapa 07 continuam.
+
 ## Etapa 10: quadro e tarefa
 
 A etapa foi implementada em 2026-11-01 por dois subagentes: backend (B1 a B6) e web (W1 a W7), em worktrees próprias até os pontos de integração e depois em `feat/quadro`. Três revisores adversariais examinaram, cada um, dados e migração, o quadro e a gaveta (teclado, acessibilidade e arrastar) e segurança e qualidade; os achados passaram por rodadas de correção, cada uma com reteste pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
@@ -116,7 +312,7 @@ Os itens aceitos estão na lista "Aceitos" de [Desvios do plano](etapas/10-quadr
 ### Pendências
 
 - A dica do Quadro na lateral e o calendário em tela cheia no celular, que esperam o design do celular.
-- Os desenhos do exemplo, salvos uma vez na primeira abertura (nota na [etapa 11](etapas/11-documento-desenho.md#mudanças-previstas-de-dados-e-contratos)).
+- Os desenhos do exemplo, salvos uma vez na primeira abertura: fechada na [etapa 11](#etapa-11-documento-e-desenho).
 - O backup antes de subir a 007 no banco real, que está na etapa 07 ([operação](implantacao.md#atualizar-para-a-etapa-10)).
 - A versão de celular da interface ainda não foi desenhada; as pendências de hospedagem da etapa 07 continuam.
 
@@ -229,7 +425,7 @@ Os casos de dados estão descritos em [Desvios do plano](etapas/09-pastas.md#des
 ### Pendências
 
 - O gatilho `BEFORE INSERT` de `workspace_folders` (migração 007, [etapa 10](etapas/10-quadro-tarefa.md#migração-srcworkspaceinframigrations007_boardsql)), feito na etapa 10.
-- Os desenhos do exemplo, salvos uma vez na primeira abertura porque o Excalidraw normaliza a cena do seed (nota na [etapa 11](etapas/11-documento-desenho.md#mudanças-previstas-de-dados-e-contratos)).
+- Os desenhos do exemplo, salvos uma vez na primeira abertura porque o Excalidraw normaliza a cena do seed: fechada na [etapa 11](#etapa-11-documento-e-desenho).
 - A versão de celular da interface ainda não foi desenhada; as pendências de hospedagem da etapa 07 continuam.
 
 ## Etapa 08: fundação e lateral

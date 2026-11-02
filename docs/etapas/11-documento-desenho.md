@@ -1,6 +1,8 @@
 # Etapa 11 — Documento e desenho
 
-**Estado:** detalhada em 2026-11-01, a partir do escopo inicial de 2026-10-31. As seções "Resultado" e "Desvios do plano" entram ao concluir, como nas etapas [09](09-pastas.md) e [10](10-quadro-tarefa.md).
+**Estado:** concluída localmente em 2026-11-02, nas entregas B1 a B4 (backend) e W1 a W7 (web). Seguiram-se três revisões adversariais (dados e MCP; editor, com teclado, acessibilidade e foco; segurança e qualidade), quatro rodadas de correção (as três primeiras retestadas pelo próprio revisor) e a validação no Chrome real contra o protótipo, com o ensaio de atualização de um banco da etapa 10. As verificações executadas estão em [validação](../validacao.md#etapa-11-documento-e-desenho).
+
+As seções a partir de "Referências e precedência" são o plano aprovado, detalhado em 2026-11-01 a partir do escopo inicial de 2026-10-31. O que mudou na implementação está em [Resultado](#resultado) e [Desvios do plano](#desvios-do-plano); a descrição do que existe está em [arquitetura](../arquitetura.md#documento-e-incorporados) e no [README do workspace](../../src/workspace/README.md#incorporados).
 
 ## Objetivo
 
@@ -11,6 +13,104 @@ Levar ao documento as ligações do produto:
 - o marcador de origem no fim do trecho que originou uma tarefa.
 
 As páginas de documento e de desenho passam ao Sumário, conforme [visual.md](../interface/visual.md) e o protótipo. O Markdown exportado e o MCP passam a mostrar os incorporados como links. O seed deixa de salvar os desenhos do exemplo na primeira abertura.
+
+## Resultado
+
+- **Incorporados no documento.** Os blocos `taskEmbed { taskId }` e `drawingEmbed { canvasId }` existem só no esquema do documento e são validados no domínio: um UUID em minúsculas, sem conteúdo nem filhos, até 200 por documento. Não há migração, e `format_version` continua 1. `resolveEmbeds` lê numa só vez os estados de até 200 tarefas e 200 desenhos, pelo mesmo SQL do MCP.
+- **Card, figura e indisponível.**
+  - **Card:** mostra a tarefa ao vivo, com o anel da coluna, o título, a meta do card do quadro (`TaskMeta`) e a coluna. Diz "aberta abaixo" enquanto a gaveta mostra a tarefa e traz o projeto quando ele não é o do documento.
+  - **Figura:** mostra a prévia guardada pela rota `GET /arquivos/desenhos/:id/previa.png`, com sessão e `ETag`. O documento regenera a prévia defasada, aplica o filtro do tema escuro e escreve a legenda "Figura n — título". A figura é um link para o desenho.
+  - **Indisponível:** caixa tracejada com Restaurar e Remover, este com Desfazer; um item excluído de vez tem só Remover. O documento de um projeto arquivado só lê.
+- **Inserir:**
+  - **Menu `/`:** o grupo "Incorporar", com Tarefa e Desenho, abre o seletor, que mostra primeiro os itens do projeto do documento e depois os dos outros projetos, com a marca. "Nova tarefa…" passa pela gaveta, e "Novo desenho" cria o desenho na pasta do documento.
+  - **⌘K:** "Incorporar tarefa…", "Incorporar desenho…" e "Criar tarefa da seleção".
+  - **Tarefa de um trecho:** com "Incorporar no documento" marcado, o card entra logo abaixo do trecho.
+- **Teclado do editor:**
+  - **Setas:** atravessam os incorporados um bloco por vez, pela seleção de nó, também ao ritmo de uma pessoa. ⇧↑ e ⇧↓ estendem a seleção do incorporado ao bloco vizinho, e Page Up e Page Down não fazem nada com um incorporado selecionado.
+  - **Abrir e remover:** ↵ abre o incorporado. ⌫ e Delete primeiro o selecionam e, na segunda vez, o removem, com toast e Desfazer.
+  - **Digitar e copiar:** digitar num incorporado selecionado escreve num parágrafo novo depois dele, e ⌘C copia o link. Tab não aninha blocos sob um incorporado.
+- **Marcador de origem:** uma decoração do ProseMirror de 18 px no fim do trecho, ou no fim do bloco quando o trecho mudou. Abre a gaveta e sublinha o trecho no hover. Serve ao ponteiro e ao toque; pelo teclado, o popover "Tarefas · n" leva às mesmas tarefas.
+- **Páginas no Sumário:**
+  - **Barra:** a pasta, "Salvo · editado hoje", "Tarefas · n" e o ⋯, com "Criar tarefa" (⌘⌥T) no topo.
+  - **Faixas e coluna:** faixas fixas, e uma coluna de 680 px com o título 30/36 e o fio.
+  - **Desenho:** a página do desenho ganha "Exportar ▾".
+  - **Endereço da tarefa:** `/tarefas/$id` abre a tarefa no quadro do projeto dela.
+- **Markdown:** a exportação passa a `documentToMarkdown`, o serializador do MCP. Os incorporados viram links para o aplicativo, ou `[Item indisponível]`, e a importação os traz de volta como links comuns.
+- **MCP:** `read_document` escreve os incorporados como `tinyfold:task/<id>` e `tinyfold:drawing/<id>`, ou `[Item indisponível]`, dentro de 45.000 caracteres. `read_task` e `read_drawing` aceitam esses IDs.
+- **Exemplo:** documentos e desenhos do exemplo abrem sem salvar. Os documentos estão no formato que o BlockNote grava, e as cenas no que o Excalidraw 0.18.1 restaura, com os incorporados e a origem do brief.
+
+## Desvios do plano
+
+**Dados e contratos (backend)**
+
+- **IDs só em minúsculas** (revisão de dados, `de033bb`). `EMBED_ID` aceitava maiúsculas, e o SQLite compara IDs como texto. Por isso uma tarefa viva incorporada com o ID em maiúsculas aparecia como excluída no editor e como `[Item indisponível]` no MCP, e duas grafias do mesmo item contavam como dois itens. O validador, `resolveEmbeds` e a rota da prévia passaram a recusar maiúsculas, em vez de converter o ID: o servidor só gera IDs minúsculos, e o validador nunca reescreve um documento.
+- **Resolvedor no domínio** (`7e6de9e`, achado Q2 da revisão de qualidade). `embedResolver(itens, href)` e os tipos dos estados foram de `application/embeds` para `domain/embed-resolver.ts` e `domain/embed-items.ts`. Assim a exportação da web usa o resolvedor do MCP, só com outro `href` (`e12ac46`).
+- **ID da prévia** (`f4d5ff4`, Q3). `readCanvasPreviewImage` confere o ID com `isCanvasId`, de `domain/canvas.ts`, e não com a regra dos incorporados.
+- **Exemplo** (`d3cebc3`, Q1). O conteúdo do exemplo fica em `scripts/sample-content.ts`, um módulo só de dados com os documentos, as descrições e as cenas, que o seed grava; o `scripts/sample-scenes.ts` do plano foi absorvido por ele. Três testes cobrem o exemplo:
+  - `scripts/seed-sample.test.ts` confere os dados sem carregar o BlockNote;
+  - o BlockNote real roda no teste da web `editor/sample-documents.test.ts`, que passa os documentos pelo esquema do documento e as descrições pelo da descrição (`1ab1572`);
+  - `scripts/seed-sample.db.test.ts` confere o que o seed guarda.
+- **Teste de taxa do MCP** (`936ce1b`). O `Retry-After` do limite por token pode chegar a 59 numa máquina carregada, porque a janela conta a partir do primeiro pedido. O teste aceita de 55 a 60.
+
+**Web**
+
+- **Arquivos.** A organização seguiu a tabela, com estas diferenças:
+  - **Extensões:** `insert-menu` e `embed-specs` são `.tsx` (`d366e3c`). `origin-markers.ts` virou `origin-markers.tsx` (o plugin e o widget), `origin-places.ts` (os lugares, puro) e `pages/document/use-origin-markers.ts`.
+  - **Teclas e colagem:** ficam em `editor/blocks/`: `embed-keys.ts`, com `embed-selection-hold.ts`, `embed-places.ts`, `embed-typing.ts`, `embed-clipboard.ts`, `embed-paste.ts`, `embed-text.ts` e `EmbedExport.tsx`. Os incorporados inválidos saem por `lib/sanitize-embeds.ts`, e a consulta fica em `lib/queries/embeds.ts`.
+  - **Página do documento:** ganhou `DocumentEmbeds.tsx` (o provedor, o seletor e os comandos dos incorporados) e `embed-removal.ts` (onde o Desfazer devolve o bloco, puro). `DocumentEditor.tsx` ficou com 229 linhas: a composição e os comandos da página.
+  - **Meta do card:** o `CardMeta` do quadro virou `components/task/TaskMeta.tsx`, que o card do quadro e o incorporado compartilham.
+  - **Testes:** `use-embed-actions.test.ts` virou `embed-removal.test.ts`. O teste de ida e volta do Markdown fica em `document-markdown.test.ts`, e o de `origin-markers`, em `origin-places.test.ts`. `editor/schema.test.ts` não foi criado: a ida e volta do exemplo pelos dois esquemas (Q1) substitui o teste de colar do esquema, e a colagem de um incorporado na descrição está em `embed-paste.test.ts` e nos E2E.
+- **Dependência `@tiptap/pm` 3.32.0** (`200b26a`). O marcador precisa de `Plugin`, `PluginKey` e `Decoration`, que o BlockNote 0.56 não reexporta, e o pnpm não deixa importar pacotes não declarados. A versão é a que o BlockNote já resolve, então o lockfile só ganha a entrada do importador, e um teste falha se o ProseMirror deixar de ser uma cópia só (`e9b5f1d`).
+- **Seleção de nó no Chrome** (achados A2 e R1 do revisor do editor). Num incorporado sem texto ao lado, o Chrome leva a seleção do DOM ao primeiro texto do documento. Isso acontece no keyup de uma tecla tratada e de novo no keydown seguinte, e o ProseMirror a lia antes de qualquer plugin. `embed-selection-hold.ts` recusa essa leitura em dois casos, e depois de cada recusa o editor devolve a própria seleção ao DOM:
+  - **qualquer seleção lida do DOM,** desde o keydown de uma tecla que as teclas dos incorporados tratam (setas, ↵, ⌫, Delete, Page Up e Page Down, ⇧↑ e ⇧↓) até 80 ms depois do keyup;
+  - **a seleção no primeiro lugar de texto do documento,** que é a assinatura da deriva, depois de uma tecla tratada ou de uma seleção feita pelas próprias ações (Restaurar, inserir). Vale até outra tecla ou um clique (`0a3fcf1`, `014814f`, `b271965`).
+
+  As outras seleções postas no DOM, como as de ⌘↓, de um leitor de tela ou da busca da página, passam. As teclas dos incorporados leem a seleção do DOM antes de ⌫ e Delete decidirem, pelo `domObserver.flush()` privado do ProseMirror (`7066af2`).
+- **⇧↑, ⇧↓, Page Up e Page Down** com um incorporado selecionado (`6bd99cf`, achado B-f). ⇧↑ e ⇧↓ estendiam a seleção a partir do primeiro texto, e Page Down paginava do topo. Agora ⇧↓ seleciona do incorporado ao fim do bloco seguinte, e ⇧↑ do começo do bloco anterior ao incorporado, pelo estado do editor. Page Up e Page Down são consumidas sem efeito, e não repetidas como ↑ e ↓.
+  - Um ⇧ pressionado sozinho deixa a proteção da seleção como está; ⌘, Ctrl e ⌥ a soltam antes da tecla nativa.
+  - Como a ponta do intervalo fica na borda do incorporado, que não tem texto, o ProseMirror avisa uma vez por página no console ("TextSelection endpoint not pointing into a node with inline content").
+- **⌫ e Delete** (`1bac96f`, M1). O primeiro seleciona o incorporado e o segundo o remove, com o toast e Desfazer, em vez de removê-lo com uma tecla só, sem toast. O Desfazer devolve o bloco antes do que vinha depois dele quando o anterior também saiu, e só na falta dos dois volta ao índice (`59155c0`, `43a3cf2`).
+- **Tab** (`11ff514`, A1). Tab não aninha um bloco sob um incorporado, e nem Tab nem ⇧Tab movem um incorporado. Os filhos que um incorporado já tenha, num rascunho ou numa cópia, sobem para logo depois dele (`sanitizeEmbeds`).
+- **Digitar, copiar e colar:**
+  - **Digitar:** com um incorporado selecionado, uma letra, um acento ou uma composição de IME abrem um parágrafo depois dele e escrevem ali (`4a4ca44`, B4).
+  - **Copiar:** ⌘C escreve "Tarefa: título (coluna)" ou "Desenho: título" e o link do item, e colar na descrição de uma tarefa traz um parágrafo com o link (`ad15aec`, B2 e B3).
+  - **Colar com ID recusado:** um incorporado colado com um ID que o servidor recusa sai, e o que ele continha fica no lugar (`06a5061` e `20e7835`, Sec R1 e R4). Os rascunhos e os salvamentos passam pela mesma limpeza, e o resolver só recebe IDs válidos.
+- **Seletor:**
+  - **Texto digitado:** o texto do campo vira o título de "Nova tarefa…" ou de "Novo desenho" (`91d7288`, M6). ↵ incorpora o item cujo título é o texto digitado, ignorando caixa e acentos e preferindo o projeto do documento, a menos que as setas tenham movido a marca (`822441c`, `9569015`).
+  - **Esc:** o primeiro Esc limpa o campo, e o segundo fecha o seletor.
+- **Marcador** (`f0d0fc2`, M3). O marcador fica fora da ordem do Tab e sem ouvintes de foco, como manda a decisão 9. O sublinhado do trecho é um destaque CSS (`::highlight`) só no hover, e não uma decoração: a decoração redesenhava o marcador sob o ponteiro, e o sublinhado ficava preso.
+- **Figura** (`a1bf79f`, M5). A figura só se arrasta pela alça do bloco: arrastar o link e a imagem nativos soltava a legenda no texto.
+- **Barra e menus:**
+  - **"Criar tarefa" sem seleção** abre uma tarefa nova no projeto, em vez de ficar só com a nota.
+  - **Popover "Tarefas":** não abre sozinho depois de uma tarefa criada.
+  - **"Abrir" do toast de Restaurar,** num desenho, vai por `/desenhos/<id>`.
+  - **No celular,** as notas dos menus quebram a linha e os atalhos saem das linhas.
+  - **Atalhos fora das plataformas Apple:** todos os rótulos usam nomes ligados por "+", como Ctrl+Alt+T, Ctrl+K e Shift+F6. No Pixel 7, o ⋯ mostrava "Ctrl⌥T" (`5504b6b`, B9).
+- **Foco e celular:**
+  - **Restaurar** dá o foco ao bloco restaurado, selecionado no editor (`641ff87`, M2).
+  - **No celular,** tocar num card não devolve o foco ao editor quando a gaveta fecha, então o teclado da tela não sobe (`79a48a3`, B10).
+  - **Importar Markdown:** o campo escondido saiu da ordem do Tab (`c27fd4f`, B11).
+- **Projeto arquivado** (`fbfc7e7`, M4). Como pede o plano, o editor e o título só leem, "Criar tarefa" fica desabilitado com a nota de arquivado e o ⌘⌥T avisa. Antes da correção, eles aceitavam teclas e salvavam.
+
+**Aceitos**
+
+- **Seleção e teclado:**
+  - a proteção da seleção nas suas duas partes, e a assinatura da deriva que ela recusa;
+  - Home, End e ⌃E a partir de um incorporado selecionado agem a partir do primeiro texto do documento (B-f);
+  - um `collapse()` exatamente no primeiro lugar de texto é recusado enquanto a segunda parte vale (o VoiceOver não foi testado);
+  - ⌘→, ⌥→ e ⌘← na borda de um texto vizinho selecionam o incorporado;
+  - o primeiro Esc do seletor limpa o campo (B7);
+  - um texto que chega sem keydown (ditado, painel de emoji) com um incorporado selecionado não passa pela regra do B4;
+  - o aviso do ProseMirror no console depois de ⇧↑ ou ⇧↓, uma vez por página.
+- **Dados e segurança:**
+  - os incorporados forjados saem na colagem, e o que eles continham fica;
+  - o `domObserver.flush()` privado, guardado por um teste (`7bdbebd`, Sec R3);
+  - IDs de incorporado só em minúsculas;
+  - pelo `/rpc`, um erro de incorporado chega com o texto genérico de `VALIDATION` ("Revise os dados enviados e tente de novo."), não com a frase do domínio.
+- **Exemplo e implantação:**
+  - a figura do exemplo grava a prévia do desenho incorporado na primeira abertura, sem mudar a versão;
+  - o risco da aba antiga com `format_version` 1 (decisão 3), com a nota em [operação](../implantacao.md#atualizar-para-a-etapa-11).
+- **Interface:** o formato global dos atalhos (Ctrl+…, Shift+…) fora das plataformas Apple, e as diferenças em relação ao protótipo registradas na [validação](../validacao.md#etapa-11-documento-e-desenho).
 
 ## Referências e precedência
 
@@ -352,7 +452,7 @@ src/workspace/infra/
 src/server/
   files/canvas-preview-route.ts   GET /arquivos/desenhos/:id/previa.png, antes do fallback da SPA
 scripts/
-  seed-sample.ts, sample-scenes.ts   cenas normalizadas e os incorporados do brief
+  seed-sample.ts, sample-content.ts  o exemplo só de dados (cenas normalizadas e os incorporados do brief), que o seed grava
 ```
 
 **Entradas públicas** (`domain/index.ts`): `embedIds`, `figureNumbers`, `excerptEnd`, `EMBED_LIMITS` e o tipo `EmbedResolver`.
@@ -417,7 +517,7 @@ src/web/vite.config.ts        /arquivos no proxy
   - `edited-phrase.test.ts`: hoje, ontem, outra data;
   - `keyboard.test.ts`: ⌘⌥T no editor, no campo e no Excalidraw;
   - `use-embed-actions.test.ts`: o Desfazer de Remover depois do ⌘Z do editor não duplica o bloco.
-- **Exemplo:** `scripts/seed-sample.test.ts` passa os documentos do exemplo, com os incorporados, pelo BlockNote real com o esquema do documento, e eles saem iguais.
+- **Exemplo:** `scripts/seed-sample.test.ts` confere os dados de `scripts/sample-content.ts` sem carregar o BlockNote, e `scripts/seed-sample.db.test.ts`, o que o seed guarda. O BlockNote real roda na web: `editor/sample-documents.test.ts` passa os documentos do exemplo, com os incorporados, pelo esquema do documento, e as descrições pelo da descrição, e eles saem iguais.
 
 ### Banco (`test:db`)
 
@@ -512,19 +612,19 @@ Tudo isso é gravado no formato normalizado (decisão 16).
 
 ## Critérios de pronto
 
-- [ ] `check`, `test:db`, `build` e `e2e` (desktop e Pixel 7) verdes depois de cada entrega.
-- [ ] Os dois blocos validados no domínio, só no documento, com limite e sem migração.
-- [ ] O card e a figura vivos, somente leitura, com os estados indisponíveis, Restaurar, Remover e Desfazer, sem o documento quebrar em caso nenhum.
-- [ ] A figura na versão atual, com a prévia regenerada quando defasada, e a rota da prévia com sessão, `ETag` e 404 nos casos certos.
-- [ ] O marcador de origem no fim do trecho, que abre a gaveta e some com a tarefa na lixeira.
-- [ ] Inserir pelo `/` e ao criar de um trecho, com o teclado da tabela e o foco por referência.
-- [ ] Markdown exportado pelo serializador do domínio, com os links, e importado de volta. `/tarefas/$id` redireciona.
-- [ ] MCP com os incorporados como referências, dentro de 45.000 caracteres.
-- [ ] Documento e desenho no Sumário, com as faixas fixas e "Exportar ▾".
-- [ ] O exemplo sem salvamento na primeira abertura, documentos e desenhos.
-- [ ] Os arquivos divididos conforme a tabela.
-- [ ] Validação no Chrome real contra o protótipo e ensaio de atualização registrados, com bancos temporários e as portas 3521 e 5321.
-- [ ] Documentação atualizada conforme a seção final.
+- [x] `check`, `test:db`, `build` e `e2e` (desktop e Pixel 7) verdes depois de cada entrega.
+- [x] Os dois blocos validados no domínio, só no documento, com limite e sem migração.
+- [x] O card e a figura vivos, somente leitura, com os estados indisponíveis, Restaurar, Remover e Desfazer, sem o documento quebrar em caso nenhum.
+- [x] A figura na versão atual, com a prévia regenerada quando defasada, e a rota da prévia com sessão, `ETag` e 404 nos casos certos.
+- [x] O marcador de origem no fim do trecho, que abre a gaveta e some com a tarefa na lixeira.
+- [x] Inserir pelo `/` e ao criar de um trecho, com o teclado da tabela e o foco por referência.
+- [x] Markdown exportado pelo serializador do domínio, com os links, e importado de volta. `/tarefas/$id` redireciona.
+- [x] MCP com os incorporados como referências, dentro de 45.000 caracteres.
+- [x] Documento e desenho no Sumário, com as faixas fixas e "Exportar ▾".
+- [x] O exemplo sem salvamento na primeira abertura, documentos e desenhos.
+- [x] Os arquivos divididos conforme a tabela.
+- [x] Validação no Chrome real contra o protótipo e ensaio de atualização registrados, com bancos temporários e as portas 3521 e 5321.
+- [x] Documentação atualizada conforme a seção final.
 
 ## Divisão do trabalho
 
@@ -533,7 +633,7 @@ Dois subagentes em worktrees próprias na pasta de rascunho da sessão (nunca em
 **Backend.** Dono de:
 
 - `src/workspace/**` e `src/server/**`;
-- `scripts/seed-sample.ts`, `scripts/sample-scenes.ts` e `scripts/seed-sample.test.ts`;
+- `scripts/seed-sample.ts`, `scripts/sample-content.ts`, `scripts/seed-sample.test.ts` e `scripts/seed-sample.db.test.ts`;
 - em B4, só `e2e/seed-sample.spec.ts`.
 
 | Ordem | Entrega (commit) |

@@ -14,7 +14,7 @@
 | Validação | Zod na fronteira e validação estrutural do documento | Contratos explícitos |
 | Persistência | Kysely e better-sqlite3 13.0.3, SQLite 3.53.4 | Substitui PostgreSQL |
 | Login | Conta única, scrypt, sessões por cookie | Adaptado do módulo auth |
-| Editor | BlockNote 0.56.0 e integração Mantine | JSON versionado, Markdown e idioma pt-BR |
+| Editor | BlockNote 0.56.0 e integração Mantine; `@tiptap/pm` 3.32.0, a mesma cópia do ProseMirror que o BlockNote resolve, para o marcador de origem e os plugins dos incorporados | JSON versionado, Markdown e idioma pt-BR |
 | Desenho | Excalidraw 0.18.1 | Cena vetorial própria, idioma pt-BR e carregamento sob demanda |
 | Acesso por agentes | SDK MCP oficial `@modelcontextprotocol/server` 2.4.0, versão exata; cliente 2.4.0 só nos testes | Sem equivalente no Orbis; o SDK fica restrito a `src/server/mcp/` |
 | Qualidade | Biome, tipos, dependency-cruiser, Vitest e Playwright | Testes de banco em SQLite e navegador Chrome |
@@ -24,7 +24,9 @@ O driver inclui binários nativos para as plataformas suportadas; a instalação
 
 O editor carrega sob demanda ao abrir um documento. O CSS permanece antecipado para manter a ordem do tema estável. Os componentes React Aria cobrem diálogos, menus, o ⌘K, a tabela do Índice, dicas e grupos de rádio; o editor usa o tema Mantine do BlockNote com as variáveis apontadas para os tokens, e BlockNote e Excalidraw seguem o tema escolhido.
 
-O JSON é a fonte do conteúdo. Importação/exportação Markdown usa a conversão do BlockNote e pode perder propriedades que Markdown não representa. O escopo usa apenas blocos de texto suportados; upload de mídia e recursos XL não estão habilitados.
+O JSON é a fonte do conteúdo. A exportação Markdown usa o serializador do domínio, o mesmo do MCP, e a importação usa a conversão do BlockNote; as duas podem perder propriedades que Markdown não representa. O escopo usa os blocos de texto suportados e, só no documento, as tarefas e os desenhos incorporados; upload de mídia e recursos XL não estão habilitados.
+
+O BlockNote 0.56 não reexporta o `Plugin`, a `PluginKey` e as decorações do ProseMirror, e o pnpm não deixa importar um pacote não declarado. Por isso a web declara `@tiptap/pm` na versão que o BlockNote já usa: o lockfile só ganhou a entrada do importador. Um teste unitário falha se `prosemirror-view`, `-state` ou `-model` passarem a ter outra cópia, e outro confere que `domObserver.flush()`, interno do ProseMirror e usado pelas teclas dos incorporados, continua existindo. Ao atualizar o BlockNote, atualizar `@tiptap/pm` para a versão que ele resolve.
 
 ## Fontes do canvas
 

@@ -4,15 +4,15 @@
 
 Use `mise install` para as versões fixadas, seguido de `mise exec -- pnpm install`. Copie `.env.example` para `.env` e defina `OWNER_PASSWORD` antes da primeira subida. A conta é criada uma vez; alterações posteriores dessa variável não trocam a senha gravada.
 
-`mise exec -- pnpm dev` inicia o servidor em `127.0.0.1:3370` e a interface em `http://localhost:5170`. O Vite encaminha `/rpc`, `/mcp` e `/.well-known` ao servidor, então o comando do Claude Code mostrado no Perfil funciona em `localhost:5170`. O caminho relativo `DATABASE_PATH` é resolvido a partir da raiz do repositório, independentemente do diretório atual. Na subida, o servidor registra o caminho do banco aberto (`Banco: …`).
+`mise exec -- pnpm dev` inicia o servidor em `127.0.0.1:3370` e a interface em `http://localhost:5170`. O Vite encaminha `/rpc`, `/mcp`, `/.well-known` e `/arquivos` (as prévias das figuras dos documentos) ao servidor, então o comando do Claude Code mostrado no Perfil funciona em `localhost:5170`. O caminho relativo `DATABASE_PATH` é resolvido a partir da raiz do repositório, independentemente do diretório atual. Na subida, o servidor registra o caminho do banco aberto (`Banco: …`).
 
 `mise exec -- pnpm seed:sample` preenche um banco com os dados de exemplo, para validação visual e capturas, nunca para uso real. Ele só grava na pasta temporária do sistema, num arquivo novo ou num banco vazio, por exemplo `DATABASE_PATH="$(mktemp -d)/tinyfold.sqlite"`, e confere o destino antes de migrar qualquer coisa. Recusa outro lugar, um link simbólico, qualquer `data/tinyfold.sqlite`, o banco de produção (`/data/tinyfold.sqlite`), `NODE_ENV=production` e um arquivo que já tenha tabelas. Rode-o com o `dev` parado e suba o `dev` com o mesmo `DATABASE_PATH`.
 
-O exemplo traz o quadro do brief: as colunas A fazer, Em andamento, Revisão e Concluído, sete etiquetas, prazos contados do dia em que o seed roda e descrições com checklist. `mise exec -- pnpm seed:sample --grande` grava a variante grande, com o Tinyfold em 55 itens e quatro pastas, como o comando "Simular projeto grande" do protótipo, e 60 tarefas concluídas de 15 a 120 dias antes. Serve só para validar a escala da lateral, o rodapé da coluna de conclusão e as páginas de Concluídas, com as mesmas recusas.
+O exemplo traz o quadro do brief: as colunas A fazer, Em andamento, Revisão e Concluído, sete etiquetas, prazos contados do dia em que o seed roda e descrições com checklist. `mise exec -- pnpm seed:sample --grande` grava a variante grande, com o Tinyfold em 55 itens e quatro pastas, como o comando "Simular projeto grande" do protótipo, e 60 tarefas concluídas de 15 a 120 dias antes. Serve só para validar a escala da lateral, o rodapé da coluna de conclusão e as páginas de Concluídas, com as mesmas recusas. Nas duas variantes, a "Visão do produto" incorpora uma tarefa, um desenho e uma tarefa que está na lixeira, e abrir um documento ou desenho do exemplo não salva nada; a figura só grava, na primeira abertura, a prévia do desenho incorporado, sem mudar a versão dele.
 
 ## Produção
 
-A imagem Docker serve a interface compilada, `/rpc` e `/mcp` no mesmo processo. Configurar:
+A imagem Docker serve a interface compilada, `/rpc`, `/mcp` e as prévias das figuras (`/arquivos/desenhos/:id/previa.png`) no mesmo processo. Configurar:
 
 - `APP_ORIGIN` com a origem HTTPS exata, sem caminho ou barra final.
 - `DATABASE_PATH=/data/tinyfold.sqlite` e volume persistente em `/data`.
@@ -25,6 +25,7 @@ A imagem Docker serve a interface compilada, `/rpc` e `/mcp` no mesmo processo. 
 Se existir proxy, configurar `TRUST_PROXY` somente após conferir o encaminhamento do IP na infraestrutura. Sem ele, todos os clientes atrás do proxy compartilham o limite de falhas de autenticação por IP do login e do `/mcp`. O proxy também precisa:
 
 - encaminhar `/mcp` e `/.well-known/*` ao processo, com o cabeçalho `Authorization` sem alteração;
+- encaminhar `/arquivos/*` ao processo com os cookies e o `If-None-Match`, sem cache próprio: a prévia responde `Cache-Control: private, no-cache` e só sai com a sessão;
 - passar `text/event-stream` em `/mcp` sem buffer. Clientes que negociam uma revisão 2025 do protocolo MCP recebem a resposta como um único evento SSE.
 
 Hospedagem e domínio ainda não foram escolhidos/configurados para Tinyfold.
@@ -40,6 +41,15 @@ docker run --detach --name tinyfold --restart unless-stopped \
 ```
 
 O proxy HTTPS deve encaminhar para essa porta local. O volume de backups desse exemplo está no mesmo host; uma cópia externa continua necessária para proteger contra perda do servidor. `.env.production` não deve entrar no Git.
+
+## Atualizar para a etapa 11
+
+A versão da etapa 11 não tem migração. Os itens incorporados são blocos do JSON do documento, resolvidos a cada leitura, e `format_version` continua 1, porque todo documento antigo continua válido.
+
+1. **Fazer o backup.** Criar um backup com `mise exec -- pnpm backup:create` e conferir que ele terminou com a verificação de integridade. O banco real ainda está na etapa 07, então esta subida aplica também as migrações das etapas 08 a 10, como descrito em [Atualizar para a etapa 10](#atualizar-para-a-etapa-10), e o backup antes dela continua obrigatório.
+2. **Subir a versão nova.** Documentos, desenhos e tarefas abrem como estavam, e abrir um documento não o salva. O ensaio com um banco da etapa 10 está na [validação](validacao.md#etapa-11-documento-e-desenho). Um documento só ganha incorporados quando alguém os insere pelo menu `/`, pelo ⌘K ou ao criar uma tarefa de um trecho.
+3. **Recarregar as abas abertas.** Uma aba carregada antes da atualização tem o editor da etapa anterior, que não conhece os blocos novos. Nela, um documento com incorporados não abre até recarregar, e a página de erro em português oferece recarregar.
+4. **Conferir o proxy.** Se existir proxy, ele deve encaminhar `/arquivos/*` como descrito em [Produção](#produção). Sem isso, as figuras dos documentos ficam sem a imagem.
 
 ## Atualizar para a etapa 10
 

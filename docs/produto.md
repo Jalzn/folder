@@ -1,6 +1,6 @@
 # Tinyfold — Produto
 
-**Estado:** implementado localmente até a [etapa 10](etapas/10-quadro-tarefa.md), que trouxe as colunas configuráveis, a gaveta da tarefa, a descrição, o prazo e as etiquetas, depois da [etapa 09](etapas/09-pastas.md), com as pastas, e da [etapa 08](etapas/08-fundacao.md), que pôs tudo dentro de um projeto, com a lateral e o visual Sumário. Ver [validação](validacao.md) para evidências e limites. A definição foi revisada em 2026-10-30 e 2026-10-31; itens marcados como **Planejado** ainda não foram implementados.
+**Estado:** implementado localmente até a [etapa 11](etapas/11-documento-desenho.md), que trouxe as tarefas e os desenhos incorporados aos documentos, o marcador de origem e as páginas de documento e desenho no Sumário, depois da [etapa 10](etapas/10-quadro-tarefa.md), com as colunas configuráveis, a gaveta da tarefa, a descrição, o prazo e as etiquetas, da [etapa 09](etapas/09-pastas.md), com as pastas, e da [etapa 08](etapas/08-fundacao.md), que pôs tudo dentro de um projeto, com a lateral e o visual Sumário. Ver [validação](validacao.md) para evidências e limites. A definição foi revisada em 2026-10-30 e 2026-10-31; itens marcados como **Planejado** ainda não foram implementados.
 
 Espaço pessoal e minimalista para conduzir projetos, de software ou não. Reúne escrita, desenho e tarefas, que antes ficavam espalhados entre Notion, Excalidraw e Trello, em um só lugar e sem o excesso dessas ferramentas. O aplicativo funciona no navegador e guarda os dados em um servidor acessível de vários dispositivos.
 
@@ -65,13 +65,13 @@ Criar e editar tarefa são estados contextuais da interface. No celular, os flux
 - Rascunho recuperável após recarga, queda de rede ou sessão expirada.
 - Importação e exportação `.md` como formato de intercâmbio, com comportamento documentado para elementos específicos do aplicativo.
 - Busca por título e texto. Exclusão recuperável na lixeira.
-
-**Planejado:**
-
-- Incorporar uma tarefa: o documento exibe um card com título, coluna, prazo, etiquetas e progresso do checklist. O card reflete o estado atual e abre a tarefa.
-- Incorporar um desenho: o documento exibe a versão atual, somente leitura. Clicar abre o editor do desenho.
-- Itens excluídos aparecem como indisponíveis, sem quebrar o documento.
-- Na exportação `.md`, itens incorporados viram links com o título; na importação, permanecem links comuns.
+- **Tarefa incorporada:** pelo menu `/` ou pelo ⌘K, uma tarefa existente ou nova vira um card com título, coluna, prazo, etiquetas e progresso do checklist. O card reflete o estado atual, diz o projeto quando é outro e abre a tarefa na gaveta.
+- **Desenho incorporado:** um desenho existente ou novo aparece como "Figura n — título", na versão atual e somente leitura. Clicar abre o editor do desenho.
+- **Seletor:** oferece os itens de todos os projetos ativos, com os do projeto do documento primeiro.
+- **Indisponíveis:** um item na lixeira ou excluído aparece como indisponível, com Restaurar e Remover, e o documento nunca quebra. Remover tem Desfazer.
+- **Teclado:** as setas chegam aos incorporados um bloco por vez. ↵ abre o incorporado, e ⌫ e Delete o removem na segunda vez.
+- **Tarefa de um trecho:** criar uma tarefa a partir de um trecho põe o card logo abaixo, com "Incorporar no documento". Um marcador no fim do trecho mostra a tarefa que nasceu dele e a abre.
+- **Markdown:** na exportação `.md`, os itens incorporados viram links com o título; na importação, permanecem links comuns.
 
 ## Desenhos
 
@@ -120,16 +120,13 @@ Colunas diferentes por projeto ficam fora do escopo, para manter o modelo simple
 Servidor MCP somente leitura para o Claude Code consultar o espaço, por exemplo um documento que descreve uma ideia, um desenho de arquitetura ou as tarefas de um projeto. Implementado na [etapa 07](etapas/07-mcp.md):
 
 - Listar projetos e buscar documentos, desenhos e tarefas por palavras.
-- Ler um documento em Markdown, com as tarefas que nasceram dele.
+- Ler um documento em Markdown, com as tarefas que nasceram dele e as tarefas e os desenhos incorporados como referências, que a leitura de tarefa e de desenho aceita; um item na lixeira ou excluído aparece como indisponível.
 - Ler um desenho como imagem PNG e como textos e estrutura da cena, com as ligações das setas.
 - Ler tarefas com coluna, posição, prazo, atraso, etiquetas, checklist e trecho de origem, filtrar por coluna e etiqueta, e ler a descrição em Markdown. A busca também acha tarefas pela descrição.
 - Ver as pastas de cada projeto, com a contagem, e a pasta de cada documento e desenho na busca e na leitura.
 - Itens na lixeira ficam de fora. O acesso usa um token pessoal somente leitura, criado e revogado no Perfil, que mostra o último uso de cada token.
 
-**Planejado:**
-
-- Itens incorporados como referências entram nas saídas do MCP com a etapa 11.
-- Criar ou alterar conteúdo pelo MCP fica para depois.
+**Planejado:** criar ou alterar conteúdo pelo MCP fica para depois.
 
 ## Em aberto
 

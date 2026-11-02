@@ -2,7 +2,7 @@
 
 Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar, sempre dentro de um projeto. Interface Sumário, limpa e tipográfica, em tema claro e escuro, com dados em SQLite no servidor e autenticação por senha.
 
-**Estado:** implementado e validado localmente até a [etapa 10](docs/etapas/10-quadro-tarefa.md). Hospedagem pública, domínio e destino externo dos backups ainda não estão configurados.
+**Estado:** implementado e validado localmente até a [etapa 11](docs/etapas/11-documento-desenho.md). Hospedagem pública, domínio e destino externo dos backups ainda não estão configurados.
 
 ## O que funciona
 
@@ -12,26 +12,31 @@ Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e ac
 - Visão geral, Índice do projeto e Lixeira por projeto, com restaurar, excluir de vez e esvaziar.
 - ⌘K para buscar em todos os projetos e rodar comandos, atalhos de teclado e Esc que fecha só a camada mais recente.
 - Tema Sistema, Claro ou Escuro, sem piscar ao carregar.
-- Documentos com editor visual em blocos, atalhos Markdown e importação/exportação `.md`.
+- Documentos com editor visual em blocos, atalhos Markdown e importação/exportação `.md`, na página Sumário: a coluna de 680 px, a barra com o salvamento ("Salvo · editado hoje"), "Tarefas · n" e o ⋯, e as faixas fixas.
+- Tarefas e desenhos incorporados nos documentos, pelo menu `/` ou pelo ⌘K, de qualquer projeto ativo. O card da tarefa mostra coluna, prazo, etiquetas e checklist ao vivo e abre a gaveta; a figura mostra o desenho na versão atual e abre o editor. Itens na lixeira ou excluídos ficam indisponíveis, com Restaurar e Remover. As setas chegam aos incorporados um bloco por vez, e o `.md` exportado os leva como links.
 - Equações LaTeX em linha e em bloco, com prévia e preservação da fonte no Markdown.
 - Salvamento automático, recuperação de rascunhos e resolução explícita de conflitos entre dispositivos.
-- Desenhos com Excalidraw: formas, setas, texto e traço livre; importação/exportação `.excalidraw` e exportação PNG.
+- Desenhos com Excalidraw: formas, setas, texto e traço livre; importação/exportação `.excalidraw` e exportação PNG pelo "Exportar ▾" da barra.
 - Quadro do projeto com colunas configuráveis, as mesmas em todos os projetos: criar, renomear, reordenar, excluir com destino e escolher a coluna de conclusão, com Desfazer. Cards com prazo, atraso, etiquetas e progresso do checklist; mover arrastando, pelo teclado ou pelo menu; filtro por etiqueta.
 - Gaveta da tarefa, que empurra a página e fica aberta durante a navegação: coluna, prazo com calendário, etiquetas, projeto e a descrição com o editor dos documentos, salvamento automático e rascunho recuperável. ⌘↵ conclui ou reabre, com Desfazer.
 - Concluídas por mês, as atrasadas na Visão geral, no seletor e na lateral, e as datas no fuso do dono, que o Perfil troca.
-- Criar tarefa a partir de um trecho e voltar ao documento de origem.
+- Criar tarefa a partir de um trecho (⌘⌥T), com o card incorporado logo abaixo e um marcador no fim do trecho que abre a tarefa, e voltar ao documento de origem.
 - Perfil com troca de senha, gerenciamento de sessões e tokens pessoais para o Claude Code.
-- Acesso do Claude Code por MCP somente leitura: lista projetos com as pastas, busca, lê documentos em Markdown, desenhos como imagem e estrutura, e tarefas com coluna, prazo, etiquetas, checklist e a descrição. A lixeira fica de fora.
+- Acesso do Claude Code por MCP somente leitura: lista projetos com as pastas, busca, lê documentos em Markdown, com as tarefas e os desenhos incorporados como links, desenhos como imagem e estrutura, e tarefas com coluna, prazo, etiquetas, checklist e a descrição. A lixeira fica de fora.
 
 | Quadro | Gaveta da tarefa | Celular |
 | --- | --- | --- |
 | ![Quadro no tema claro](docs/screens/quadro-claro-1440.png) | ![Gaveta da tarefa no tema escuro](docs/screens/gaveta-escuro-1440.png) | ![Quadro no celular](docs/screens/quadro-celular.png) |
 
+| Documento com incorporados | Marcador de origem | Desenho |
+| --- | --- | --- |
+| ![Documento com a figura, o card e um item na lixeira, no tema claro](docs/screens/documento-claro-1440.png) | ![Marcador de origem com o trecho sublinhado, no tema escuro](docs/screens/documento-marcador-escuro-1440.png) | ![Página do desenho com Exportar aberto, no tema claro](docs/screens/desenho-claro-1440.png) |
+
 | Visão geral | Pastas | Concluídas |
 | --- | --- | --- |
 | ![Visão geral no tema claro](docs/screens/visao-geral-claro-1440.png) | ![Mover para pasta no tema escuro](docs/screens/pastas-mover-escuro-1440.png) | ![Concluídas no tema claro](docs/screens/concluidas-claro-1440.png) |
 
-Mais capturas, nos dois temas e em três larguras, estão na validação das etapas [10](docs/validacao.md#etapa-10-quadro-e-tarefa), [09](docs/validacao.md#etapa-09-pastas) e [08](docs/validacao.md#etapa-08-fundação-e-lateral).
+Mais capturas, nos dois temas e em três larguras, estão na validação das etapas [11](docs/validacao.md#etapa-11-documento-e-desenho), [10](docs/validacao.md#etapa-10-quadro-e-tarefa), [09](docs/validacao.md#etapa-09-pastas) e [08](docs/validacao.md#etapa-08-fundação-e-lateral).
 
 ## Executar
 
@@ -77,4 +82,4 @@ Se a porta padrão dos testes estiver ocupada, use `E2E_PORT=5172 mise exec -- p
 | [Etapas](docs/etapas/README.md) | Estado das entregas |
 | [Decisões](docs/decisoes.md) | Histórico de produto e implementação |
 
-Equipes, colaboração em tempo real, anexos e sincronização offline completa ficam fora desta versão. Desenhos aceitam elementos vetoriais; imagens e conteúdo incorporado ainda não estão habilitados. Markdown e `.excalidraw` são formatos de intercâmbio; o backup SQLite preserva o aplicativo completo.
+Equipes, colaboração em tempo real, anexos e sincronização offline completa ficam fora desta versão. Desenhos aceitam elementos vetoriais; imagens e conteúdo incorporado dentro de um desenho ainda não estão habilitados. Markdown e `.excalidraw` são formatos de intercâmbio; o backup SQLite preserva o aplicativo completo.
