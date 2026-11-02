@@ -261,7 +261,8 @@
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
-.origin-excerpt {
+/* The excerpt of the hovered marker: a CSS highlight, so the text's DOM never changes (origin-markers.tsx). */
+::highlight(origin-excerpt) {
   text-decoration: underline dotted var(--accent) 1px;
   text-underline-offset: 3px;
 }

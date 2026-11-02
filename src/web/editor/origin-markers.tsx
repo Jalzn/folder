@@ -9,33 +9,35 @@ export type { OriginMarker } from './origin-places';
 
 interface MarkersState {
   markers: readonly OriginMarker[];
-  hovered: string | null;
   decorations: DecorationSet;
 }
 
-type MarkersMeta = { markers: readonly OriginMarker[] } | { hovered: string | null };
+type MarkersMeta = { markers: readonly OriginMarker[] };
+
+/** The CSS highlight that underlines a hovered marker's excerpt: `::highlight(origin-excerpt)` styles it. */
+export const EXCERPT_HIGHLIGHT = 'origin-excerpt';
 
 export const originMarkersKey = new PluginKey<MarkersState>('originMarkers');
 
-/** The marker's button: 18 px, with the task's ring in the accent, which opens the task (visual.md). */
+/**
+ * The marker's button: 18 px, with the task's ring in the accent, which opens the task (visual.md). It is for
+ * the pointer and touch only, out of the Tab order (decision 9): the keyboard reaches the document's tasks
+ * through "Tarefas · n".
+ */
 function markerButton(marker: OriginMarker, open: (taskId: string) => void, hover: (taskId: string | null) => void) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'origin-marker';
   button.contentEditable = 'false';
+  button.tabIndex = -1;
   button.dataset.task = marker.taskId;
   button.setAttribute('aria-label', `Tarefa originada aqui: ${marker.title}, ${marker.status}. Abrir`);
   button.title = `Originou: ${marker.title} · ${marker.status}`;
   // A press keeps the editor's selection; the click opens the task.
   button.addEventListener('mousedown', (event) => event.preventDefault());
   button.addEventListener('click', () => open(marker.taskId));
-  for (const [type, value] of [
-    ['mouseenter', marker.taskId],
-    ['focus', marker.taskId],
-    ['mouseleave', null],
-    ['blur', null],
-  ] as const)
-    button.addEventListener(type, () => hover(value));
+  button.addEventListener('mouseenter', () => hover(marker.taskId));
+  button.addEventListener('mouseleave', () => hover(null));
   const root = createRoot(button);
   root.render(<ColumnRing index={marker.ring.index} count={marker.ring.count} isDone={marker.ring.done} size={12} />);
   return { button, root };
@@ -47,13 +49,12 @@ type Roots = WeakMap<HTMLElement, ReturnType<typeof createRoot>>;
 function decorationsOf(
   state: EditorState,
   markers: readonly OriginMarker[],
-  hovered: string | null,
   open: (taskId: string) => void,
   hover: (taskId: string | null) => void,
   roots: Roots,
 ) {
   const decorations: Decoration[] = [];
-  for (const [index, place] of markerPlaces(state.doc, markers, hovered).entries()) {
+  for (const [index, place] of markerPlaces(state.doc, markers).entries()) {
     const { marker } = place;
     decorations.push(
       Decoration.widget(
@@ -77,34 +78,55 @@ function decorationsOf(
         },
       ),
     );
-    if (place.excerpt && place.excerpt.from < place.excerpt.to)
-      decorations.push(Decoration.inline(place.excerpt.from, place.excerpt.to, { class: 'origin-excerpt' }));
   }
   return DecorationSet.create(state.doc, decorations);
 }
 
 /**
+ * The underline of a hovered marker's excerpt (review M3): a CSS highlight over the text's range, which leaves
+ * the DOM alone. A decoration would redraw the text around the marker, and the marker with it, under the
+ * pointer; Chrome then lost the pointer's leaving, and the underline stayed. Browsers without CSS highlights
+ * show no underline.
+ */
+function underline(view: EditorView, markers: readonly OriginMarker[], taskId: string | null) {
+  const highlights = typeof CSS !== 'undefined' && 'highlights' in CSS ? CSS.highlights : null;
+  if (!highlights || typeof Highlight === 'undefined') return;
+  const excerpt = taskId
+    ? markerPlaces(view.state.doc, markers, taskId).find((place) => place.marker.taskId === taskId)?.excerpt
+    : null;
+  if (!excerpt || excerpt.from >= excerpt.to) {
+    highlights.delete(EXCERPT_HIGHLIGHT);
+    return;
+  }
+  const start = view.domAtPos(excerpt.from);
+  const end = view.domAtPos(excerpt.to);
+  const range = view.dom.ownerDocument.createRange();
+  range.setStart(start.node, start.offset);
+  range.setEnd(end.node, end.offset);
+  highlights.set(EXCERPT_HIGHLIGHT, new Highlight(range));
+}
+
+/**
  * The origin markers of a document (docs/etapas/11-documento-desenho.md, "Marcador de origem"): a ProseMirror
  * decoration, so the JSON never changes. The document hands it the tasks born there with `setOriginMarkers`;
- * the decorations follow the text as it changes, and hovering a marker underlines its excerpt.
+ * the decorations follow the text as it changes, and hovering a marker underlines its excerpt (`underline`),
+ * with no change to the editor's state or DOM.
  */
 export function createOriginMarkers(open: (taskId: string) => void) {
   let view: EditorView | null = null;
   const roots: Roots = new WeakMap();
   const hover = (taskId: string | null) => {
-    if (view)
-      view.dispatch(view.state.tr.setMeta(originMarkersKey, { hovered: taskId }).setMeta('addToHistory', false));
+    if (view) underline(view, originMarkersKey.getState(view.state)?.markers ?? [], taskId);
   };
   const plugin = new Plugin<MarkersState>({
     key: originMarkersKey,
     state: {
-      init: () => ({ markers: [], hovered: null, decorations: DecorationSet.empty }),
+      init: () => ({ markers: [], decorations: DecorationSet.empty }),
       apply(tr, value, _old, state) {
         const meta = tr.getMeta(originMarkersKey) as MarkersMeta | undefined;
         if (!meta && !tr.docChanged) return value;
-        const markers = meta && 'markers' in meta ? meta.markers : value.markers;
-        const hovered = meta && 'hovered' in meta ? meta.hovered : value.hovered;
-        return { markers, hovered, decorations: decorationsOf(state, markers, hovered, open, hover, roots) };
+        const markers = meta ? meta.markers : value.markers;
+        return { markers, decorations: decorationsOf(state, markers, open, hover, roots) };
       },
     },
     props: { decorations: (state) => originMarkersKey.getState(state)?.decorations },
@@ -112,6 +134,7 @@ export function createOriginMarkers(open: (taskId: string) => void) {
       view = editorView;
       return {
         destroy: () => {
+          hover(null);
           view = null;
         },
       };

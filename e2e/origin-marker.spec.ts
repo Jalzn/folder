@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer } from './support/board.js';
-import { createTaskFromSelection, documentEditor, embedCard } from './support/document.js';
+import { clickText, createTaskFromSelection, documentEditor, embedCard, expectSelected } from './support/document.js';
 import { newDocument } from './support/items.js';
 import { createProject } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
@@ -10,6 +10,12 @@ import { login } from './support/session.js';
 test.skip(({ isMobile }) => isMobile, 'Desktop: hover and the drawer below the document.');
 
 const toast = (page: Page) => page.locator('.toast');
+/** The text the hovered marker's underline covers: the CSS highlight "origin-excerpt", or null without one. */
+const underlined = (page: Page) =>
+  page.evaluate(() => {
+    const highlight = CSS.highlights.get('origin-excerpt');
+    return highlight ? [...highlight].map((range) => range.toString()).join('') : null;
+  });
 /** A marker by its task's title; as `has` of a block, it is looked up inside that block. */
 const marker = (page: Page, title: string) =>
   page.getByRole('button', { name: new RegExp(`^Tarefa originada aqui: ${title},`) });
@@ -70,7 +76,7 @@ test('a task from an excerpt leaves a marker after it, which names the task and 
 
   // Hovering underlines the excerpt; a click opens the task.
   await button.hover();
-  await expect(documentEditor(page).locator('.origin-excerpt')).toHaveText('Ligar para o banco amanhã.');
+  await expect.poll(() => underlined(page)).toBe('Ligar para o banco amanhã.');
   await button.click();
   await expect(drawerOf(page, 'Ligar para o banco')).toBeVisible();
 });
@@ -132,4 +138,57 @@ test('"Incorporar no documento" puts the card under the paragraph, and only whil
   await page.getByRole('link', { name: 'Visão geral' }).click();
   await newTaskDrawer(page).getByRole('button', { name: 'Criar', exact: true }).click();
   await expect(toast(page)).toContainText('Tarefa criada em A fazer');
+});
+
+test('the marker of a word in mid-sentence stays out of the Tab order, and the hover redraws without breaking', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await login(page);
+  await createProject(page, `Marcador no meio ${Date.now()}`);
+  const line = 'Primeiro: ligar para o fornecedor amanhã cedo.';
+  await writeDocument(page, [line]);
+  // "fornecedor", in the middle of the line, selected by a double click on it.
+  const word = await documentEditor(page)
+    .getByText(line, { exact: true })
+    .evaluate((element) => {
+      // The typed line can be in several text nodes: the word's range goes through them.
+      const range = document.createRange();
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      const from = (element.textContent ?? '').indexOf('fornecedor');
+      const to = from + 'fornecedor'.length;
+      let seen = 0;
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const length = node.textContent?.length ?? 0;
+        if (from >= seen && from <= seen + length) range.setStart(node, from - seen);
+        if (to >= seen && to <= seen + length) range.setEnd(node, to - seen);
+        seen += length;
+      }
+      const box = range.getBoundingClientRect();
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    });
+  await page.mouse.dblclick(word.x, word.y);
+  await expectSelected(page, 'fornecedor');
+  await createTaskFromSelection(page);
+  await createInDrawer(page, 'Ligar para o fornecedor');
+  await closeDrawer(page);
+
+  const button = marker(page, 'Ligar para o fornecedor');
+  await expect(button).toBeVisible();
+  await expect(button).toHaveAttribute('tabindex', '-1');
+  await clickText(page, line, 'start');
+  await page.keyboard.press('Tab');
+  await expect(button).not.toBeFocused();
+
+  // The underline leaves the marker's element as it was, and goes when the pointer does.
+  const element = await button.elementHandle();
+  await button.hover();
+  await expect.poll(() => underlined(page)).toBe('fornecedor');
+  expect(await element?.evaluate((node) => node.isConnected)).toBe(true);
+  await page.mouse.move(0, 0);
+  await expect.poll(() => underlined(page)).toBeNull();
+  await button.click();
+  await expect(drawerOf(page, 'Ligar para o fornecedor')).toBeVisible();
+  expect(errors).toEqual([]);
 });
