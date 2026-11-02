@@ -294,7 +294,7 @@ describe('server boundaries', () => {
     };
     const ack = await client.workspace.saveCanvas(input);
     expect(await client.workspace.saveCanvas(input)).toEqual(ack);
-    expect((await client.workspace.listCanvases({ query: 'Atualizado' }))[0]?.id).toBe(canvas.id);
+    expect((await client.workspace.search({ query: 'Atualizado', types: ['drawing'] })).items[0]?.id).toBe(canvas.id);
     await expect(client.workspace.saveCanvas({ ...input, requestId: randomUUID() })).rejects.toMatchObject({
       status: 409,
       data: { code: 'VERSION_CONFLICT' },

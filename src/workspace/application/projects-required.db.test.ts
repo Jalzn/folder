@@ -124,9 +124,11 @@ describe('migration 005', () => {
       [trashedCanvas, await service.getCanvas({ id: trashedCanvas.id })],
     ] as const)
       expect(read).toMatchObject({ projectId: generalId, version: row.version, updatedAt: row.updated_at });
-    expect(await service.listDocuments({ deleted: true })).toEqual([
-      expect.objectContaining({ id: trashedDocument.id, projectId: generalId, version: 2 }),
-    ]);
+    expect(await service.getDocument({ id: trashedDocument.id })).toMatchObject({
+      projectId: generalId,
+      version: 2,
+      deletedAt: expect.any(String),
+    });
     expect((await service.getDocument({ id: kept.id })).projectId).toBe(project.id);
     expect((await service.listTasks({ projectId: generalId })).tasks).toEqual([
       expect.objectContaining({ id: task.id, version: 1, updatedAt: task.updated_at }),

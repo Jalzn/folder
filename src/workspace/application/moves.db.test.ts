@@ -185,6 +185,6 @@ describe('moving items between projects', () => {
       code: 'NOT_FOUND',
     });
     expect((await service.getDocument({ id: document.id })).deletedAt).toBe(trashed.updatedAt);
-    expect((await service.listDocuments({ deleted: true }))[0]).toMatchObject({ projectId: from.id, version: 2 });
+    expect(await service.getDocument({ id: document.id })).toMatchObject({ projectId: from.id, version: 2 });
   });
 });

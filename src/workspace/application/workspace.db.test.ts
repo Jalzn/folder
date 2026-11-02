@@ -90,12 +90,12 @@ describe('workspace persistence and adversarial cases', () => {
     await migrate(db, [coreModule, workspaceModule]);
     service = createWorkspaceService(db);
     expect((await service.getDocument({ id: document.id })).content).toEqual(equations);
-    expect((await service.listDocuments({ query: String.raw`\frac{a+b}{c}` })).map((item) => item.id)).toEqual([
-      document.id,
-    ]);
-    expect((await service.listDocuments({ query: String.raw`\sin^2(x)` })).map((item) => item.id)).toEqual([
-      document.id,
-    ]);
+    expect(
+      (await service.search({ query: String.raw`\frac{a+b}{c}`, types: ['document'] })).items.map((item) => item.id),
+    ).toEqual([document.id]);
+    expect(
+      (await service.search({ query: String.raw`\sin^2(x)`, types: ['document'] })).items.map((item) => item.id),
+    ).toEqual([document.id]);
     const unfinished: DocumentBlock[] = [
       { id: 'equation', type: 'mathBlock', props: {}, content: String.raw`\frac{a}{` },
     ];
@@ -108,9 +108,9 @@ describe('workspace persistence and adversarial cases', () => {
     });
     expect((await service.getDocument({ id: document.id })).content).toEqual(unfinished);
     expect((await service.getDocument({ id: document.id })).version).toBe(ack.version);
-    expect((await service.listDocuments({ query: String.raw`\frac{a}{` })).map((item) => item.id)).toEqual([
-      document.id,
-    ]);
+    expect(
+      (await service.search({ query: String.raw`\frac{a}{`, types: ['document'] })).items.map((item) => item.id),
+    ).toEqual([document.id]);
   });
 
   it('rejects malformed math before writing and preserves the previous valid document', async () => {
@@ -218,6 +218,21 @@ describe('workspace persistence and adversarial cases', () => {
     expect((await service.getDocument({ id: document.id })).plainText).toBe('Rascunho na lixeira');
   });
 
+  it('lists live documents and drawings whatever query or deleted a client still sends (decision 5)', async () => {
+    const live = await service.createDocument({ ...request(), projectId: project.id, title: 'Plano' });
+    const other = await service.createDocument({ ...request(), projectId: project.id, title: 'Outro' });
+    const trashed = await service.createDocument({ ...request(), projectId: project.id, title: 'Plano antigo' });
+    await service.deleteDocument({ ...request(), id: trashed.id, expectedVersion: 1 });
+    const drawing = await service.createCanvas({ ...request(), projectId: project.id, title: 'Plano' });
+    const old = { query: 'Plano', deleted: true } as Record<string, unknown>;
+    expect((await service.listDocuments({ projectId: project.id, ...old })).map((item) => item.id).sort()).toEqual(
+      [live.id, other.id].sort(),
+    );
+    expect((await service.listCanvases({ projectId: project.id, ...old })).map((item) => item.id)).toEqual([
+      drawing.id,
+    ]);
+  });
+
   it('rejects stale document changes from another database connection', async () => {
     const document = await service.createDocument({
       ...request(),
@@ -270,9 +285,12 @@ describe('workspace persistence and adversarial cases', () => {
       title: 'Ideias de ação',
       content: content('Referências para o portfólio: 100% pessoal'),
     });
-    expect((await service.listDocuments({ query: 'REFERENCIAS' })).map((item) => item.id)).toEqual([document.id]);
-    expect(await service.listDocuments({ query: '%' })).toHaveLength(1);
-    expect(await service.listDocuments({ query: '_' })).toHaveLength(0);
+    expect((await service.search({ query: 'REFERENCIAS', types: ['document'] })).items.map((item) => item.id)).toEqual([
+      document.id,
+    ]);
+    expect((await service.search({ query: '100%', types: ['document'] })).items.map((item) => item.id)).toEqual([
+      document.id,
+    ]);
   });
 
   it('creates documents and drawings in an active folder of their project, or at the root', async () => {
@@ -360,7 +378,7 @@ describe('workspace persistence and adversarial cases', () => {
       excerpt: 'meu portfólio',
     });
     expect((await service.getDocument({ id: document.id })).deletedAt).toBe(removed.updatedAt);
-    expect(await service.listDocuments({ deleted: true })).toHaveLength(1);
+    expect((await service.listDocuments({})).map((item) => item.id)).not.toContain(document.id);
     await service.restoreDocument({ ...request(), id: document.id, expectedVersion: removed.version });
     expect((await service.listTasks({})).tasks[0]?.source?.available).toBe(true);
   });

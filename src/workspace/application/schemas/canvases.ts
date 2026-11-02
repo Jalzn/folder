@@ -16,8 +16,6 @@ const scene = z.unknown().transform((value, ctx) => {
 
 export const ListCanvasesInput = z.object({
   projectId: id.optional(),
-  query: z.string().max(300).optional(),
-  deleted: z.boolean().optional(),
 });
 export const GetCanvasInput = z.object({ id });
 export const CreateCanvasInput = z.object({

@@ -123,9 +123,12 @@ describe('canvas persistence and concurrency', () => {
       title: 'Rascunho 100%',
       scene: drawingFixture(),
     });
-    expect((await service.listCanvases({ query: 'ACAO' })).map((item) => item.id)).toEqual([canvas.id]);
-    expect(await service.listCanvases({ query: '%' })).toHaveLength(1);
-    expect(await service.listCanvases({ query: '_' })).toHaveLength(0);
+    expect((await service.search({ query: 'ACAO', types: ['drawing'] })).items.map((item) => item.id)).toEqual([
+      canvas.id,
+    ]);
+    expect((await service.search({ query: '100%', types: ['drawing'] })).items.map((item) => item.id)).toEqual([
+      canvas.id,
+    ]);
   });
   it('filters by project, preserves archived projects and restores trash', async () => {
     const other = await testProject(service, 'Outro');
@@ -165,7 +168,8 @@ describe('canvas persistence and concurrency', () => {
         scene: emptyCanvasScene(),
       }),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    expect((await service.listCanvases({ deleted: true })).map((item) => item.id)).toEqual([canvas.id]);
+    expect((await service.getCanvas({ id: canvas.id })).deletedAt).not.toBeNull();
+    expect((await service.listCanvases({})).map((item) => item.id)).not.toContain(canvas.id);
     const restoration = { ...request(), id: canvas.id, expectedVersion: deleted.version };
     expect(await service.restoreCanvas(restoration)).toEqual(await service.restoreCanvas(restoration));
     expect(await service.getCanvas({ id: canvas.id })).toMatchObject({

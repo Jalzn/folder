@@ -34,12 +34,9 @@ export interface TaskSourceRecord extends Pick<TaskSource, 'blockId' | 'excerpt'
   documentId: string;
 }
 
-/** Which documents or drawings to list: one project's or every project's, live or trashed. */
+/** Which live documents or drawings to list: one project's or every project's. Search finds by text. */
 export interface ItemListQuery {
   projectId?: string | undefined;
-  /** Text the item contains, ignoring case and accents. */
-  query?: string | undefined;
-  deleted?: boolean | undefined;
 }
 
 export interface TaskListQuery {

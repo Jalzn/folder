@@ -22,8 +22,6 @@ export const descriptionContent = blockContent({});
 
 export const ListDocumentsInput = z.object({
   projectId: id.optional(),
-  query: z.string().max(300).optional(),
-  deleted: z.boolean().optional(),
 });
 export const GetDocumentInput = z.object({ id });
 export const CreateDocumentInput = z.object({
