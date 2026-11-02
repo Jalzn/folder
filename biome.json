@@ -22,19 +22,35 @@
   },
   "linter": {
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "correctness": {
+        "noPlaywrightMissingAwait": "error"
+      },
+      "suspicious": {
+        "noPlaywrightWaitForTimeout": "warn"
+      },
+      "style": {
+        "noDescendingSpecificity": "error"
+      }
     }
   },
+  "overrides": [
+    {
+      "includes": ["e2e/**", "**/*.test.ts", "**/*.test.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noFocusedTests": "error"
+          }
+        }
+      }
+    }
+  ],
   "assist": {
     "actions": {
       "source": {
         "organizeImports": "on"
       }
-    }
-  },
-  "css": {
-    "parser": {
-      "tailwindDirectives": true
     }
   }
 }

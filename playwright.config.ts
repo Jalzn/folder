@@ -8,6 +8,8 @@ const port = Number(process.env.E2E_PORT ?? 5171);
 const origin = `http://localhost:${port}`;
 export default defineConfig({
   testDir: './e2e',
+  // A test.only left behind would make CI run one test and pass.
+  forbidOnly: Boolean(process.env.CI),
   fullyParallel: false,
   workers: 1,
   timeout: 45_000,
