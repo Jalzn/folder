@@ -47,6 +47,17 @@ export function useEmbedActions({
   const restoreRequest = useRequest();
   const canvasRequest = useRequest();
 
+  /**
+   * A block's index at the document's top level; a nested one counts as right after its top-level ancestor,
+   * where Desfazer can put it back when the block before it is gone.
+   */
+  function topIndex(blockId: string) {
+    let top = blockId;
+    for (let parent = editor.getParentBlock(top); parent; parent = editor.getParentBlock(top)) top = parent.id;
+    const index = editor.document.findIndex((block) => block.id === top);
+    return top === blockId ? index : index + 1;
+  }
+
   /** The editor is still on the page: a task created after the document closed does not reach it. */
   const present = () => Boolean(editor.domElement?.isConnected);
 
@@ -127,7 +138,7 @@ export function useEmbedActions({
     remove: (blockId) => {
       const block = editor.getBlock(blockId);
       if (!block) return;
-      const previousId = editor.getPrevBlock(blockId)?.id ?? null;
+      const where = { previousId: editor.getPrevBlock(blockId)?.id ?? null, index: topIndex(blockId) };
       const next = editor.getNextBlock(blockId) ?? editor.getPrevBlock(blockId);
       editor.removeBlocks([blockId]);
       if (next) editor.setTextCursorPosition(next, 'start');
@@ -139,13 +150,16 @@ export function useEmbedActions({
             {
               has: (id) => Boolean(editor.getBlock(id)),
               insertAfter: (removed, referenceId) => editor.insertBlocks([removed], referenceId, 'after'),
-              insertFirst: (removed) => {
-                const first = editor.document[0];
-                if (first) editor.insertBlocks([removed], first, 'before');
+              insertAt: (removed, index) => {
+                const blocks = editor.document;
+                const at = blocks[index];
+                const last = blocks.at(-1);
+                if (at) editor.insertBlocks([removed], at, 'before');
+                else if (last) editor.insertBlocks([removed], last, 'after');
               },
             },
             block,
-            previousId,
+            where,
           );
           if (back) editor.setTextCursorPosition(block.id);
           editor.focus();
