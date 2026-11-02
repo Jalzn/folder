@@ -21,6 +21,8 @@ export {
   RECOVERY_DOCUMENT_LIMITS,
   readDocumentContent,
 } from './document.js';
+export type { EmbeddedDrawing, EmbeddedItems, EmbeddedTask, EmbedPreview, EmbedProject } from './embed-items.js';
+export { embedResolver } from './embed-resolver.js';
 export { EMBED_LIMITS, EMBED_TYPES, type EmbedBlockType, type EmbedKind, embedIds, figureNumbers } from './embeds.js';
 export { excerptAround, excerptFromStart, type TextCut } from './excerpt.js';
 export { folderName, folderNameKey } from './folders.js';

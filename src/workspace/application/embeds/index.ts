@@ -1,4 +1,3 @@
-export { agentEmbedHref, embedResolver } from './embed-resolver.js';
 export type {
   EmbedContext,
   EmbeddedDrawing,

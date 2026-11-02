@@ -1,11 +1,11 @@
 import { AppError } from '@tinyfold/core/application';
-import { embedIds } from '../../domain/embeds.js';
+import { embedResolver } from '../../domain/embed-resolver.js';
+import { type EmbedKind, embedIds } from '../../domain/embeds.js';
 import { textFingerprint } from '../../domain/fingerprint.js';
 import { documentToMarkdown } from '../../domain/markdown.js';
 import { pageMarkdown } from '../../domain/markdown-pages.js';
 import { documentCursor, readDocumentCursor } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import { agentEmbedHref, embedResolver } from '../embeds/embed-resolver.js';
 import type { ReadingContext } from './ports.js';
 import type { ReadDocumentInput } from './schemas.js';
 
@@ -16,6 +16,9 @@ import type { ReadDocumentInput } from './schemas.js';
  * too (stage 11, decision 13). The first page also lists the tasks created from it. The read is
  * short: conversion and paging run after the transaction.
  */
+/** Where an agent follows an embed: read_task and read_drawing take the ID after the slash. */
+const agentEmbedHref = (kind: EmbedKind, id: string) => `tinyfold:${kind}/${id}`;
+
 export async function readDocument(ctx: ReadingContext, input: ReadDocumentInput) {
   const cursor = input.cursor === undefined ? undefined : readDocumentCursor(input.cursor);
   const found = await ctx.read(async (reader) => {
