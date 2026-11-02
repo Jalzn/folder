@@ -15,7 +15,7 @@ export function moveColumn(ctx: WorkspaceContext, input: MoveColumnInput) {
       column.id,
       input.beforeColumnId,
     );
-    if (!order) throw new AppError('NOT_FOUND', 'A coluna de referência não está mais entre as do quadro.');
+    if (!order) throw new AppError('VERSION_CONFLICT', 'A coluna de referência não está mais entre as do quadro.');
     const byId = new Map(columns.map((item) => [item.id, item]));
     const ordered = order.flatMap((id) => byId.get(id) ?? []);
     await renumberColumns(repo, ordered);

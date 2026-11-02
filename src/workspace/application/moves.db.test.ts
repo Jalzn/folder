@@ -150,7 +150,7 @@ describe('moving items between projects', () => {
     const mcp = await testFolder(service, from.id, 'MCP');
     await service.updateProject({ ...request(), id: from.id, expectedVersion: 1, archived: true });
     await expect(file(mcp.id)).rejects.toMatchObject({
-      code: 'VALIDATION',
+      code: 'DOMAIN_RULE',
       message: 'Desarquive o projeto antes de mudar as pastas.',
     });
   });
@@ -168,7 +168,7 @@ describe('moving items between projects', () => {
       });
     await service.updateProject({ ...request(), id: to.id, expectedVersion: 1, archived: true });
     await expect(move({})).rejects.toMatchObject({
-      code: 'VALIDATION',
+      code: 'DOMAIN_RULE',
       message: 'Desarquive o projeto antes de adicionar conteúdo a ele.',
     });
     await expect(move({ projectId: randomUUID() })).rejects.toMatchObject({ code: 'NOT_FOUND' });

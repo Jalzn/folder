@@ -39,7 +39,7 @@ export async function folderAfterRestore(
 /** The project whose folders change: an archived project's folders are read-only. */
 export async function requireProjectForFolders(repo: WorkspaceRepository, projectId: string): Promise<Project> {
   const project = await requireProject(repo, projectId);
-  if (project.archivedAt) throw new AppError('VALIDATION', 'Desarquive o projeto antes de mudar as pastas.');
+  if (project.archivedAt) throw new AppError('DOMAIN_RULE', 'Desarquive o projeto antes de mudar as pastas.');
   return project;
 }
 

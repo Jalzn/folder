@@ -25,7 +25,7 @@ export async function requireProject(source: Pick<ProjectRepository, 'findProjec
 /** Items are only added to an existing project that is not archived. */
 export async function requireActiveProject(repo: WorkspaceRepository, id: string): Promise<Project> {
   const project = await requireProject(repo, id);
-  if (project.archivedAt) throw new AppError('VALIDATION', 'Desarquive o projeto antes de adicionar conteúdo a ele.');
+  if (project.archivedAt) throw new AppError('DOMAIN_RULE', 'Desarquive o projeto antes de adicionar conteúdo a ele.');
   return project;
 }
 

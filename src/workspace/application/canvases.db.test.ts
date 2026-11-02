@@ -145,7 +145,7 @@ describe('canvas persistence and concurrency', () => {
       scene: drawingFixture(),
     });
     await expect(service.createCanvas({ ...request(), projectId: project.id })).rejects.toMatchObject({
-      code: 'VALIDATION',
+      code: 'DOMAIN_RULE',
     });
     await expect(service.createCanvas({ ...request(), projectId: randomUUID() })).rejects.toMatchObject({
       code: 'NOT_FOUND',

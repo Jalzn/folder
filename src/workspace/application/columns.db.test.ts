@@ -120,7 +120,7 @@ describe('columns', () => {
         message: 'Escolha outra coluna como referência.',
       });
       await expect(service.moveColumn({ ...request(), id: todo, beforeColumnId: randomUUID() })).rejects.toMatchObject({
-        code: 'NOT_FOUND',
+        code: 'VERSION_CONFLICT',
       });
     });
   });

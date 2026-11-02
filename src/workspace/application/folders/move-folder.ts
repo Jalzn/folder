@@ -19,7 +19,7 @@ export function moveFolder(ctx: WorkspaceContext, input: MoveFolderInput) {
       folder.id,
       input.beforeFolderId,
     );
-    if (!order) throw new AppError('NOT_FOUND', 'A pasta de referência não está mais entre as do projeto.');
+    if (!order) throw new AppError('VERSION_CONFLICT', 'A pasta de referência não está mais entre as do projeto.');
     const byId = new Map(folders.map((item) => [item.id, item]));
     const ordered = order.flatMap((id) => byId.get(id) ?? []);
     await renumberFolders(repo, ordered);

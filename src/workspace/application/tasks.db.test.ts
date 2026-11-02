@@ -92,7 +92,7 @@ describe('tasks', () => {
       await service.updateProject({ ...request(), id: archived.id, expectedVersion: 1, archived: true });
       await expect(
         service.updateTask({ ...request(), id: created.id, expectedVersion: 1, projectId: archived.id }),
-      ).rejects.toMatchObject({ code: 'VALIDATION' });
+      ).rejects.toMatchObject({ code: 'DOMAIN_RULE' });
       await expect(
         service.updateTask({ ...request(), id: created.id, expectedVersion: 1, columnId: randomUUID() }),
       ).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'A coluna não está disponível.' });

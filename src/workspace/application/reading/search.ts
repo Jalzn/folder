@@ -1,5 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
 import { readSearchCursor, SEARCH_ITEM_TYPES, searchCursor } from '../../domain/paging.js';
+import { readClientCursor } from '../client-cursor.js';
 import { keysetPage } from './keyset-page.js';
 import { searchKey } from './list-order.js';
 import type { ReadingContext } from './ports.js';
@@ -12,7 +13,8 @@ import type { SearchInput } from './schemas.js';
  * A folder narrows it to the documents and drawings in that active folder.
  */
 export async function search(ctx: ReadingContext, input: SearchInput) {
-  const after = input.cursor === undefined ? undefined : readSearchCursor(input.cursor);
+  const { cursor } = input;
+  const after = cursor === undefined ? undefined : readClientCursor(() => readSearchCursor(cursor));
   const terms = queryTerms(input.query);
   const types = input.types ?? SEARCH_ITEM_TYPES;
   const page = await ctx.read(async (reader) => {

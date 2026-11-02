@@ -115,7 +115,7 @@ describe('folders', () => {
     it('refuses an archived or missing project', async () => {
       await service.updateProject({ ...request(), id: project.id, expectedVersion: 1, archived: true });
       await expect(service.createFolder({ ...request(), projectId: project.id, name: 'MCP' })).rejects.toMatchObject({
-        code: 'VALIDATION',
+        code: 'DOMAIN_RULE',
         message: 'Desarquive o projeto antes de mudar as pastas.',
       });
       await expect(service.createFolder({ ...request(), projectId: randomUUID(), name: 'MCP' })).rejects.toMatchObject({
@@ -176,14 +176,14 @@ describe('folders', () => {
       ]);
       const elsewhere = await testFolder(service, (await testProject(service, 'Outro')).id, 'D');
       await expect(service.moveFolder({ ...request(), id: a.id, beforeFolderId: elsewhere.id })).rejects.toMatchObject({
-        code: 'NOT_FOUND',
+        code: 'VERSION_CONFLICT',
       });
       await expect(service.moveFolder({ ...request(), id: a.id, beforeFolderId: a.id })).rejects.toMatchObject({
         code: 'VALIDATION',
       });
       await service.updateProject({ ...request(), id: project.id, expectedVersion: 1, archived: true });
       await expect(service.moveFolder({ ...request(), id: a.id, beforeFolderId: null })).rejects.toMatchObject({
-        code: 'VALIDATION',
+        code: 'DOMAIN_RULE',
       });
     });
   });
@@ -480,7 +480,7 @@ describe('folders', () => {
       const deleted = await service.deleteFolder({ ...request(), id: mcp.id, expectedVersion: 1, withItems: false });
       const kept = await testFolder(service, project.id, 'Arquitetura');
       await service.updateProject({ ...request(), id: project.id, expectedVersion: 1, archived: true });
-      const archived = { code: 'VALIDATION', message: 'Desarquive o projeto antes de mudar as pastas.' };
+      const archived = { code: 'DOMAIN_RULE', message: 'Desarquive o projeto antes de mudar as pastas.' };
       await expect(
         service.renameFolder({ ...request(), id: kept.id, expectedVersion: 1, name: 'Outro' }),
       ).rejects.toMatchObject(archived);

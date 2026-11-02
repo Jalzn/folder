@@ -332,7 +332,7 @@ describe('items need a project', () => {
         service.createTask({ ...request(), title: 'Do trecho', source: { documentId: document.id, excerpt: 'Texto' } }),
     ])
       await expect(create()).rejects.toMatchObject({
-        code: 'VALIDATION',
+        code: 'DOMAIN_RULE',
         message: 'Desarquive o projeto antes de adicionar conteúdo a ele.',
       });
     // Existing items stay editable.

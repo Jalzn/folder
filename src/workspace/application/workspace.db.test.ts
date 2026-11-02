@@ -254,6 +254,12 @@ describe('workspace persistence and adversarial cases', () => {
     });
   });
 
+  it('refuses a search cursor it did not give with VALIDATION, as the completed tasks do (decision 3)', async () => {
+    const refused = { code: 'VALIDATION', message: 'Cursor inválido. Repita a consulta sem cursor.' };
+    await expect(service.search({ cursor: 'o:40' })).rejects.toMatchObject(refused);
+    await expect(service.listCompletedTasks({ projectId: project.id, cursor: 'o:40' })).rejects.toMatchObject(refused);
+  });
+
   it('rejects stale document changes from another database connection', async () => {
     const document = await service.createDocument({
       ...request(),
@@ -362,7 +368,7 @@ describe('workspace persistence and adversarial cases', () => {
       content: [],
     });
     await expect(service.createDocument({ ...request(), projectId: site.id })).rejects.toMatchObject({
-      code: 'VALIDATION',
+      code: 'DOMAIN_RULE',
     });
     await expect(service.createDocument({ ...request(), projectId: randomUUID() })).rejects.toMatchObject({
       code: 'NOT_FOUND',
