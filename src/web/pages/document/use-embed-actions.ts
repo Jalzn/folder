@@ -155,7 +155,11 @@ export function useEmbedActions({
     remove: (blockId) => {
       const block = editor.getBlock(blockId);
       if (!block) return;
-      const where = { previousId: editor.getPrevBlock(blockId)?.id ?? null, index: topIndex(blockId) };
+      const where = {
+        previousId: editor.getPrevBlock(blockId)?.id ?? null,
+        nextId: editor.getNextBlock(blockId)?.id ?? null,
+        index: topIndex(blockId),
+      };
       const next = editor.getNextBlock(blockId) ?? editor.getPrevBlock(blockId);
       editor.removeBlocks([blockId]);
       if (next) editor.setTextCursorPosition(next, 'start');
@@ -167,6 +171,7 @@ export function useEmbedActions({
             {
               has: (id) => Boolean(editor.getBlock(id)),
               insertAfter: (removed, referenceId) => editor.insertBlocks([removed], referenceId, 'after'),
+              insertBefore: (removed, referenceId) => editor.insertBlocks([removed], referenceId, 'before'),
               insertAt: (removed, index) => {
                 const blocks = editor.document;
                 const at = blocks[index];
