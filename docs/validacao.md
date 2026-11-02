@@ -4,14 +4,14 @@ Validação local a partir de 29 de outubro de 2026. A primeira versão foi impl
 
 ## Etapa 11: documento e desenho
 
-A etapa foi implementada entre 2026-11-01 e 2026-11-02 por dois subagentes, backend (B1 a B4) e web (W1 a W7), primeiro em worktrees próprias e, a partir dos pontos de integração, em `feat/documento`. Três revisores adversariais examinaram, cada um, dados e MCP; o editor (teclado, acessibilidade e foco); e segurança e qualidade. Os achados passaram por quatro rodadas de correção; as três primeiras foram retestadas pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
+A etapa foi implementada entre 2026-11-01 e 2026-11-02 por dois subagentes, backend (B1 a B4) e web (W1 a W7), primeiro em worktrees próprias e, a partir dos pontos de integração, em `feat/documento`. Três revisores adversariais examinaram, cada um, dados e MCP; o editor (teclado, acessibilidade e foco); e segurança e qualidade. Os achados passaram por cinco rodadas de correção; as quatro primeiras foram retestadas pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
 
-| Verificação | Resultado, em `6bd99cf` |
+| Verificação | Resultado, em `959a8cc` |
 | --- | --- |
 | `mise exec -- pnpm check` | Biome; tipos de todos os pacotes, dos E2E e dos scripts; dependency-cruiser sem violações em 866 módulos; 648 testes unitários em 105 arquivos, com tokens, contraste e paridade com `tokens.py` |
 | `mise exec -- pnpm test:db` | 264 testes em 37 arquivos, com SQLite temporário |
 | `mise exec -- pnpm build` | Bundle de produção aprovado |
-| `E2E_PORT=5171 mise exec -- pnpm e2e` | 197 aprovados e 113 pulados, em 155 testes por perfil (desktop e Pixel 7). No celular, pulam os testes que precisam do desktop: o teclado do editor e dos incorporados, o hover, o arrastar, a faixa e as larguras. No desktop, pulam os que são só do celular |
+| `E2E_PORT=5191 mise exec -- pnpm e2e` | 200 aprovados e 116 pulados, em 158 testes por perfil (desktop e Pixel 7). No celular, pulam os testes que precisam do desktop: o teclado do editor e dos incorporados, o hover, o arrastar, a faixa e as larguras. No desktop, pulam os que são só do celular |
 
 Os testes de unidade e de banco cobrem, além do que já existia:
 
@@ -53,7 +53,8 @@ Os E2E rodam no Google Chrome instalado, no desktop (1440×1000) e na emulação
    - **Setas:** atravessam sequências de cards e figuras, no começo, no meio e no fim, sem pausa e com 200 ms entre as teclas, e um documento misto nos dois sentidos.
    - **Edição:** Tab sob um card; ⌫ e Delete; ⌫ logo depois de ⌘←; digitar e compor um acento num card selecionado.
    - **Restaurar:** com o foco e as setas depois dele.
-   - **⇧ e Page:** ⇧↑, ⇧↓ e Page Down a partir de um incorporado, ao ritmo de uma pessoa.
+   - **⇧, ⌘ e Page:** ⇧↑ e ⇧↓ seguidos, que crescem e encolhem a faixa um bloco por vez, ⌘↓ e ⌘↑ de cada card de uma sequência e Page Down, a partir de um incorporado, ao ritmo de uma pessoa.
+   - **Letras ao lado:** letras digitadas no começo do texto depois de um card e no fim do texto antes dele saem uma a uma com ⌫ e Delete, e só a borda seleciona o card.
    - **Teclas que passam:** ⌘↓, ⌘↑ e uma seleção posta no DOM.
 4. **Figura** (`drawing-embed.spec.ts`): a imagem pela rota, com 200 e depois 304; a prévia ausente gerada pelo documento; o filtro do escuro; o clique do meio em outra aba; e o arrastar, que não solta texto no documento.
 5. **Marcador** (`origin-marker.spec.ts`): o marcador depois do trecho, com o nome e a gaveta. Ele vai ao fim do bloco quando o trecho muda e sai com a tarefa na lixeira. Também:
@@ -164,7 +165,7 @@ Corrigidos e retestados:
   - **R1:** a proteção da seleção prendia ⌘↓, Home, End, ⇧↓ e as seleções de um leitor de tela.
   - **B-f:** ⇧↑, ⇧↓ e Page Down agiam a partir do primeiro texto.
 
-  O terceiro reteste, em `20e7835` e com 150 a 600 ms entre as teclas, não achou regressão nem nada de severidade média ou maior. A correção B-f (`6bd99cf`), da quarta rodada, ainda espera o reteste do revisor.
+  O terceiro reteste, em `20e7835` e com 150 a 600 ms entre as teclas, não achou regressão nem nada de severidade média ou maior. O quarto reteste, em `0db610f`, confirmou a correção B-f e achou B-i e B-j, corrigidos na quinta rodada com o ⌫ achado na validação (`983a5d7`, `d369832`, `959a8cc`), que ainda espera o reteste.
 - **Segurança e qualidade** (`7e6de9e`, `f4d5ff4`, `d3cebc3`, `e12ac46`, `d366e3c`, `1ab1572`, `e9b5f1d`, `06a5061`, `473024a`, `7bdbebd`, `20e7835`). Os achados:
   - **Duplicações:** a exportação da web resolvia os incorporados com uma cópia do resolvedor do servidor, e o menu `/` repetia o tipo dos incorporados.
   - **Regras:** a rota da prévia conferia o ID pela regra dos incorporados.
