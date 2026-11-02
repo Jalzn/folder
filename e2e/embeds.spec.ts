@@ -103,6 +103,19 @@ test('"Nova tarefa…" creates the task in the drawer and the card takes the lin
   await expect(documentEditor(page).locator('.bn-block-outer')).toHaveCount(3);
 });
 
+test('↵ after typing in the picker opens "Nova tarefa…" with the typed text as its title', async ({ page }) => {
+  await login(page);
+  await createProject(page, `Nova com o filtro ${Date.now()}`);
+  await writeDocument(page, 'Combinar com o vizinho.');
+  await slash(page, 'tarefa');
+  const typed = `Muro do vizinho ${Date.now().toString(36)}`;
+  await page.keyboard.type(typed);
+  await page.keyboard.press('Enter');
+  const title = newTaskDrawer(page).getByRole('textbox', { name: 'Título da nova tarefa' });
+  await expect(title).toBeFocused();
+  await expect(title).toHaveValue(typed);
+});
+
 test('the arrows select a card: ↵ opens it, ⌫ removes it and the editor’s ⌘Z brings it back', async ({ page }) => {
   await login(page);
   const here = await createProject(page, `Teclas do card ${Date.now()}`);

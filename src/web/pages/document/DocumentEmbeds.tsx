@@ -91,10 +91,10 @@ export function DocumentEmbeds({
             setPicker(null);
             back(picker.blockId);
           }}
-          onNew={() => {
+          onNew={(title) => {
             setPicker(null);
-            if (picker.kind === 'task') newTask(picker.blockId);
-            else void newDrawing(picker.blockId);
+            if (picker.kind === 'task') newTask(picker.blockId, title);
+            else void newDrawing(picker.blockId, title);
           }}
           onPick={(item) => {
             setPicker(null);

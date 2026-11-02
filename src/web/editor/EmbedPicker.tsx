@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { type RefObject, useEffect, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import { Menu as AriaMenu, SearchField as AriaSearchField, Autocomplete, Input } from 'react-aria-components';
 import { type SearchResult, useProjects, useSearch } from '../lib/queries';
 import { displayTitle } from '../lib/types';
@@ -50,10 +50,12 @@ export function EmbedPicker({
   projectId: string;
   triggerRef: RefObject<HTMLElement | null>;
   onClose: () => void;
-  onNew: () => void;
+  /** "Nova tarefa…" or "Novo desenho", with what the field has as the new item's title (review M6). */
+  onNew: (title: string) => void;
   onPick: (item: SearchResult) => void;
 }) {
   const [text, setText] = useState('');
+  const list = useRef<HTMLDivElement>(null);
   const type = kind === 'task' ? 'task' : 'drawing';
   const own = useSearch({ query: text, types: [type], projectId, limit: 20 });
   const all = useSearch({ query: text, types: [type], limit: 20 });
@@ -78,13 +80,31 @@ export function EmbedPicker({
       {/* No filter: the search already matched every word, and the list shows what it answered. */}
       <Autocomplete inputValue={text} onInputChange={setText}>
         <AriaSearchField aria-label={say.label} className="embed-picker__filter" autoFocus>
-          <Input className="embed-picker__input" placeholder={kind === 'task' ? 'Buscar tarefa' : 'Buscar desenho'} />
+          <Input
+            className="embed-picker__input"
+            placeholder={kind === 'task' ? 'Buscar tarefa' : 'Buscar desenho'}
+            onKeyDownCapture={(event) => {
+              // ↵ with text typed and no item marked by the arrows is "Nova tarefa…" or "Novo desenho", titled
+              // with that text (review M6); with an item marked, the list takes it. Read before the list acts
+              // on the key: the mark is on the list's item at once, the field's aria-activedescendant later.
+              if (event.key !== 'Enter' || event.nativeEvent.isComposing || !text.trim()) return;
+              if (
+                list.current?.querySelector('[data-focused]') ||
+                event.currentTarget.getAttribute('aria-activedescendant')
+              )
+                return;
+              event.preventDefault();
+              event.stopPropagation();
+              onNew(text.trim());
+            }}
+          />
         </AriaSearchField>
         <AriaMenu
+          ref={list}
           className="menu embed-picker__list"
           aria-label={say.label}
           onAction={(key) => {
-            if (key === NEW) return onNew();
+            if (key === NEW) return onNew(text.trim());
             const item = items.find((each) => each.id === key);
             if (item) onPick(item);
           }}

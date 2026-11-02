@@ -67,18 +67,21 @@ export function useEmbedActions({
     return true;
   }
 
-  /** "Nova tarefa…": the drawer's new task, in the document's project; the card goes in place once it is created. */
-  function newTask(at: string | null) {
-    drawer.newTask(projectId, { onCreated: (task) => insert(at, 'task', task.id) });
+  /**
+   * "Nova tarefa…": the drawer's new task, in the document's project, titled with what the picker's field had;
+   * the card goes in place once it is created.
+   */
+  function newTask(at: string | null, title = '') {
+    drawer.newTask(projectId, { ...(title ? { title } : {}), onCreated: (task) => insert(at, 'task', task.id) });
   }
 
-  /** "Novo desenho": a drawing in the document's project and folder, embedded at once. */
-  async function newDrawing(at: string | null) {
-    const input = { projectId, ...(folderId ? { folderId } : {}) };
+  /** "Novo desenho": a drawing in the document's project and folder, titled as the field had, embedded at once. */
+  async function newDrawing(at: string | null, title = '') {
+    const input = { projectId, ...(folderId ? { folderId } : {}), ...(title ? { title } : {}) };
     await action.run(
       () =>
         inFolderOrRoot(folderId ?? undefined, (folder) => {
-          const attempt = { projectId, ...(folder ? { folderId: folder } : {}) };
+          const attempt = { projectId, ...(folder ? { folderId: folder } : {}), ...(title ? { title } : {}) };
           return onceMoreIfLost(() =>
             api.workspace.createCanvas({ ...attempt, requestId: canvasRequest.for({ documentId, ...input }) }),
           );
