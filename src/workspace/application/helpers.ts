@@ -4,12 +4,12 @@ import type { Document, Project } from '../domain/models.js';
 import type { NavItemType } from '../domain/navigation.js';
 import type { ProjectRepository, TaskRecord, WorkspaceRepository } from './ports.js';
 
+/** The one answer to a stale version, whether the write sees it before or during its UPDATE. */
+export const versionConflict = () =>
+  new AppError('VERSION_CONFLICT', 'Este item mudou em outro dispositivo. Atualize os dados antes de continuar.');
+
 export function assertVersion(actual: number, expected: number): void {
-  if (actual !== expected)
-    throw new AppError(
-      'VERSION_CONFLICT',
-      'Este item mudou em outro dispositivo. Atualize os dados antes de continuar.',
-    );
+  if (actual !== expected) throw versionConflict();
 }
 
 /**

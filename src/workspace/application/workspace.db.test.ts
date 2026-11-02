@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
 import type { DocumentBlock, Project, TaskAck } from '../domain/models.js';
 import { workspaceModule } from '../infra/module.js';
+import { workspaceRepository } from '../infra/repository/index.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { testFolder } from '../testing/folders.js';
 import { testProject } from '../testing/projects.js';
@@ -238,6 +239,19 @@ describe('workspace persistence and adversarial cases', () => {
     const document = await service.createDocument({ ...request(), projectId: project.id, content: content(text) });
     const [listed] = await service.listDocuments({ projectId: project.id });
     expect(listed).toMatchObject({ id: document.id, plainText: `${'a'.repeat(279)}😀` });
+  });
+
+  it('says a version conflict in one sentence, before or during the UPDATE (decision 7)', async () => {
+    const sentence = 'Este item mudou em outro dispositivo. Atualize os dados antes de continuar.';
+    const document = await service.createDocument({ ...request(), projectId: project.id, content: content('Texto') });
+    const save = { ...request(), id: document.id, expectedVersion: 2, title: 'Outro', content: content('Outro') };
+    await expect(service.saveDocument(save)).rejects.toMatchObject({ code: 'VERSION_CONFLICT', message: sentence });
+    // The UPDATE's own check, for a write that read the version before another device saved.
+    const stored = await service.getDocument({ id: document.id });
+    await expect(workspaceRepository(db).saveDocument({ ...stored, version: 3 }, 2)).rejects.toMatchObject({
+      code: 'VERSION_CONFLICT',
+      message: sentence,
+    });
   });
 
   it('rejects stale document changes from another database connection', async () => {
