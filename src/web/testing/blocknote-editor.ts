@@ -40,11 +40,15 @@ const schema = BlockNoteSchema.create().extend({
   },
   inlineContentSpecs: { math: createReactInlineMathSpec() },
 });
-const createEditor = (initialContent?: DocumentContent) =>
+const createEditor = (initialContent?: DocumentContent, extensions: readonly unknown[] = []) =>
   BlockNoteEditor.create({
     schema,
     ...(initialContent ? { initialContent: initialContent as never } : {}),
+    ...(extensions.length ? { extensions: extensions as never } : {}),
   });
+
+/** An editor of `createEditor` mounted on the happy-dom document, so its view runs keys and plugins. */
+export type MountedBlockNoteEditor = ReturnType<typeof createEditor>;
 
 /**
  * The real BlockNote 0.56 editor with the document's blocks, the embeds included, on happy-dom, for the calling
@@ -97,6 +101,19 @@ export function setupBlockNoteEditor() {
       const result = JSON.parse(JSON.stringify(opened.document)) as DocumentContent;
       opened._tiptapEditor.destroy();
       return result;
+    },
+    /**
+     * The blocks in an editor mounted on the page, with `extensions` (the document's embed keys), whose view takes
+     * keys as a person's would reach it, without the browser's own moves. Destroy it with `close()`.
+     */
+    mount(blocks: DocumentContent, extensions: readonly unknown[] = []) {
+      const opened = createEditor(blocks, extensions);
+      const host = emptyElement() as unknown as HTMLElement;
+      (globalThis as unknown as { document: { body: { appendChild(node: unknown): void } } }).document.body.appendChild(
+        host,
+      );
+      opened.mount(host);
+      return { editor: opened, close: () => opened._tiptapEditor.destroy() };
     },
     /** Opens the blocks in a new editor, as reopening the document does; both sides must be a valid document. */
     reload(blocks: DocumentContent): DocumentContent {
