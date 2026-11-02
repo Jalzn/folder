@@ -53,13 +53,6 @@ export function readTransaction<T>(db: Database, work: (trx: DatabaseTransaction
   return db.transaction().execute(work);
 }
 
-export async function backupDatabase(db: Database, destination: string): Promise<void> {
-  const handle = handles.get(db);
-  if (!handle) throw new Error('Unknown database handle.');
-  mkdirSync(dirname(resolve(destination)), { recursive: true });
-  await handle.backup(destination);
-}
-
 function handleOf(db: Database): SQLite.Database {
   const handle = handles.get(db);
   if (!handle) throw new Error('Unknown database handle.');

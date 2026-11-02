@@ -27,7 +27,7 @@ const statuses: Record<ErrorCode, [string, number]> = {
   DOMAIN_RULE: ['UNPROCESSABLE_CONTENT', 422],
   RATE_LIMITED: ['TOO_MANY_REQUESTS', 429],
 };
-export function toORPCError(error: AppError) {
+function toORPCError(error: AppError) {
   const [code, status] = statuses[error.code];
   return new ORPCError(code, { status, message: error.message, data: { code: error.code } });
 }
@@ -39,8 +39,7 @@ export const pub = base.use(async ({ context, next }) => {
     return await next();
   } catch (error) {
     if (error instanceof AppError) throw toORPCError(error);
-    if (error instanceof DomainError)
-      throw toORPCError(new AppError(error.conflict ? 'VERSION_CONFLICT' : 'DOMAIN_RULE', error.message));
+    if (error instanceof DomainError) throw toORPCError(new AppError('DOMAIN_RULE', error.message));
     if (error instanceof ORPCError && error.cause instanceof ValidationError)
       throw toORPCError(new AppError('VALIDATION', 'Revise os dados enviados e tente de novo.'));
     throw error;
@@ -50,4 +49,3 @@ export const authedProcedure = pub.use(({ context, next }) => {
   if (!context.session) throw toORPCError(new AppError('UNAUTHENTICATED', 'Sua sessão terminou. Entre de novo.'));
   return next({ context: { session: context.session } });
 });
-export const authed = authedProcedure;

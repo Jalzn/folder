@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { sql } from 'kysely';
 import { afterEach, describe, expect, it } from 'vitest';
-import { backupDatabase, createDatabase, type Database, tables, writeTransaction } from './db.js';
+import { createDatabase, type Database, writeTransaction } from './db.js';
 import { migrate } from './migrate.js';
 import { coreModule, defineModule } from './module.js';
 import { idempotentWrite } from './write.js';
@@ -75,20 +75,10 @@ describe('SQLite foundation', () => {
     expect(await idempotentWrite(db, 'broken', input, async () => ({ recovered: true }))).toEqual({ recovered: true });
   });
 
-  it('enforces foreign keys and preserves the original database during a backup', async () => {
-    const { db, folder } = await fixture();
+  it('enforces foreign keys', async () => {
+    const { db } = await fixture();
     await sql`create table children (parent_id text references counters(id))`.execute(db);
     await expect(sql`insert into children values ('missing')`.execute(db)).rejects.toThrow();
-    const target = join(folder, 'snapshot.sqlite');
-    await backupDatabase(db, target);
-    const copy = createDatabase(target);
-    resources.push({ db: copy });
-    expect(
-      (await tables<{ counters: { id: string; value: number } }>(copy).selectFrom('counters').selectAll().execute())[0]
-        ?.value,
-    ).toBe(0);
-    await sql`update counters set value = 12`.execute(db);
-    expect((await sql<{ value: number }>`select value from counters`.execute(copy)).rows[0]?.value).toBe(0);
   });
 
   it('rejects a contending second writer without partial changes and recovers afterwards', async () => {
