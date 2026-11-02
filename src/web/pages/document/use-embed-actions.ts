@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { EmbedKind } from '@tinyfold/workspace/domain';
 import { useRef, useState } from 'react';
+import { holdSelectedEmbed } from '../../editor/blocks/embed-selection-hold';
 import type { EmbedActions } from '../../editor/blocks/embeds-context';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
 import { api } from '../../lib/api';
@@ -58,6 +59,17 @@ export function useEmbedActions({
     return top === blockId ? index : index + 1;
   }
 
+  /**
+   * Selects an embed's block as a node, held against Chrome's drift until the next key or press: it may have no
+   * text beside it (embed-selection-hold.ts).
+   */
+  function selectEmbed(blockId: string) {
+    editor.transact((tr) => {
+      editor.setTextCursorPosition(blockId);
+      holdSelectedEmbed(tr);
+    });
+  }
+
   /** The editor is still on the page: a task created after the document closed does not reach it. */
   const present = () => Boolean(editor.domElement?.isConnected);
 
@@ -73,7 +85,7 @@ export function useEmbedActions({
     if (!inserted) return false;
     // A last embed gets a paragraph after it, where the writing goes on.
     if (!editor.getNextBlock(inserted)) editor.insertBlocks([{ type: 'paragraph' }], inserted, 'after');
-    editor.setTextCursorPosition(inserted);
+    selectEmbed(inserted.id);
     editor.focus();
     return true;
   }
@@ -123,7 +135,7 @@ export function useEmbedActions({
       const restored = (open: () => void) => {
         restoreRequest.clear();
         if (present() && editor.getBlock(blockId)) {
-          editor.setTextCursorPosition(blockId);
+          selectEmbed(blockId);
           editor.focus();
         }
         toast(`“${item.title}” restaurado.`, { action: { label: 'Abrir', onAction: open } });
@@ -166,7 +178,7 @@ export function useEmbedActions({
             block,
             where,
           );
-          if (back) editor.setTextCursorPosition(block.id);
+          if (back) selectEmbed(block.id);
           editor.focus();
         },
       });

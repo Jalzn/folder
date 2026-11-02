@@ -32,16 +32,18 @@ export async function clickText(page: Page, text: string, at: 'middle' | 'start'
   const box = await line.boundingBox();
   if (at === 'middle' || !box) await line.click();
   else await line.click({ position: { x: at === 'start' ? 1 : box.width - 1, y: box.height / 2 } });
+  // The text, and the caret at its edge when the click was there: the caret may have been in it already.
+  const edge = at === 'start' ? 'start' : at === 'end' ? 'end' : 'any';
   await expect
     .poll(() =>
-      documentEditor(page).evaluate(
-        (element) =>
-          (
-            element as HTMLElement & {
-              editor?: { state: { selection: { $from: { parent: { textContent: string } } } } };
-            }
-          ).editor?.state.selection.$from.parent.textContent,
-      ),
+      documentEditor(page).evaluate((element, edge) => {
+        type From = { parentOffset: number; parent: { textContent: string; content: { size: number } } };
+        const $from = (element as HTMLElement & { editor?: { state: { selection: { $from: From } } } }).editor?.state
+          .selection.$from;
+        if (!$from) return null;
+        const offset = edge === 'start' ? 0 : edge === 'end' ? $from.parent.content.size : $from.parentOffset;
+        return $from.parentOffset === offset ? $from.parent.textContent : null;
+      }, edge),
     )
     .toBe(text);
 }

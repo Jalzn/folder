@@ -328,3 +328,58 @@ test('after Restaurar pressed with an embed selected, the arrows still go a bloc
   expect(await caret(page)).toBe('[x3]');
   expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'])).toEqual(['[x4]', '[x5]', 'Depois']);
 });
+
+test('from a selected embed, keys the embed keys leave alone and a selection set in the page move it as always', async ({
+  page,
+}) => {
+  await login(page);
+  const projectId = await createProject(page, `Outras teclas ${Date.now()}`);
+  const run: Block[] = [];
+  for (const index of [1, 2, 3]) run.push({ ...card(await task(page, projectId, `Card ${index}`)), id: `x${index}` });
+  const lines = [1, 2, 3, 4, 5].map((index) => ({ ...paragraph(`Linha ${index}`), id: `l${index}` }));
+  await openDocument(page, projectId, [{ ...paragraph('Antes'), id: 'antes' }, ...run, ...lines]);
+  const apple = process.platform === 'darwin';
+  /** The middle card selected with the keys, a moment after they went up, when nothing holds it any more. */
+  const selectMiddle = async () => {
+    await clickText(page, 'Antes', 'end');
+    expect(await walk(page, ['ArrowDown', 'ArrowDown'])).toEqual(['[x1]', '[x2]']);
+    await page.waitForTimeout(200);
+  };
+  const selected = () =>
+    documentEditor(page).evaluate((element) => {
+      type State = {
+        doc: { textBetween(from: number, to: number, separator: string): string };
+        selection: { from: number; to: number; node?: unknown };
+      };
+      const state = (element as HTMLElement & { editor?: { state: State } }).editor?.state;
+      return state && !state.selection.node
+        ? state.doc.textBetween(state.selection.from, state.selection.to, '|')
+        : null;
+    });
+
+  // Each from a fresh page: after ⌘↑ or a selection set in the DOM, Chrome on a Mac takes the next click as one
+  // that extends the selection.
+  await selectMiddle();
+  await page.keyboard.press(apple ? 'Meta+ArrowDown' : 'Control+End');
+  await expect.poll(() => caret(page)).toBe('Linha 5');
+  await page.reload();
+  await selectMiddle();
+  await page.keyboard.press(apple ? 'Meta+ArrowUp' : 'Control+Home');
+  await expect.poll(() => caret(page)).toBe('Antes');
+  // A selection a screen reader or the page's search puts in the DOM.
+  await page.reload();
+  await selectMiddle();
+  await documentEditor(page)
+    .getByText('Linha 4', { exact: true })
+    .evaluate((element) => {
+      const text = element.firstChild as Text;
+      element.ownerDocument.getSelection()?.collapse(text, 3);
+    });
+  await expect.poll(() => caret(page)).toBe('Linha 4');
+  // Shift+↓ extends the selection, as the browser does: from where Chrome keeps the DOM's selection, which for
+  // a card between two cards is not the card.
+  await page.reload();
+  await selectMiddle();
+  await page.keyboard.press('Shift+ArrowDown');
+  await expect.poll(async () => ((await selected()) ?? '').length).toBeGreaterThan(0);
+});
