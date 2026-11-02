@@ -1,12 +1,17 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import type { EmbeddedDrawing, EmbeddedTask } from '@tinyfold/workspace/domain';
 import { api } from '../api';
 
-export type EmbeddedItems = Awaited<ReturnType<typeof api.workspace.resolveEmbeds>>;
-export type EmbeddedTask = EmbeddedItems['tasks'][number];
-export type EmbeddedDrawing = EmbeddedItems['drawings'][number];
+/** The states of embedded items, as the domain declares them and resolveEmbeds answers. */
+export type {
+  EmbeddedDrawing,
+  EmbeddedItems,
+  EmbeddedTask,
+  EmbedPreview,
+  EmbedProject,
+} from '@tinyfold/workspace/domain';
 export type LiveTask = Extract<EmbeddedTask, { state: 'live' }>;
 export type LiveDrawing = Extract<EmbeddedDrawing, { state: 'live' }>;
-export type EmbedProject = LiveTask['project'];
 
 /** Every embeds query: the writes that change what an embed shows refresh them (decision 11). */
 export const embedsKey = ['workspace', 'embeds'] as const;

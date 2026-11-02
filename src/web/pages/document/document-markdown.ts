@@ -1,31 +1,23 @@
-import { type DocumentBlock, documentToMarkdown, type EmbedResolver, embedIds } from '@tinyfold/workspace/domain';
+import {
+  type DocumentBlock,
+  documentToMarkdown,
+  type EmbedKind,
+  embedIds,
+  embedResolver,
+} from '@tinyfold/workspace/domain';
 import type { EmbeddedItems } from '../../lib/queries/embeds';
 
 /**
- * The embeds of an exported `.md` (docs/etapas/11-documento-desenho.md, decision 6): a live task as
- * "[Tarefa: título (coluna)](<origin>/tarefas/<id>)", a live drawing as "[Desenho: título](<origin>/desenhos/<id>)",
- * on the app's permanent addresses, which open the item wherever it went; one in the trash or gone as
- * "[Item indisponível]".
+ * An embed's link outside the app (docs/etapas/11-documento-desenho.md, decision 6): the item's permanent
+ * address, `<origin>/tarefas/<id>` or `<origin>/desenhos/<id>`, which opens it wherever it went.
  */
-export function fileEmbedResolver(items: EmbeddedItems, origin: string): EmbedResolver {
-  const tasks = new Map(items.tasks.map((task) => [task.id, task]));
-  const drawings = new Map(items.drawings.map((drawing) => [drawing.id, drawing]));
-  return {
-    resolve(kind, id) {
-      if (kind === 'task') {
-        const task = tasks.get(id);
-        return task?.state === 'live' ? { title: task.title, column: task.column.name } : null;
-      }
-      const drawing = drawings.get(id);
-      return drawing?.state === 'live' ? { title: drawing.title } : null;
-    },
-    href: (kind, id) => `${origin}/${kind === 'task' ? 'tarefas' : 'desenhos'}/${encodeURIComponent(id)}`,
-  };
-}
+export const appEmbedHref = (origin: string) => (kind: EmbedKind, id: string) =>
+  `${origin}/${kind === 'task' ? 'tarefas' : 'desenhos'}/${encodeURIComponent(id)}`;
 
 /**
- * A document as an exported `.md`: its title as the heading, then the domain's serializer, the one the MCP
- * uses, with the embeds resolved in one read as the file names them.
+ * A document as an exported `.md`: its title as the heading, then the domain's serializer and resolver, the
+ * ones the MCP uses, with the embeds resolved in one read: a live task as "[Tarefa: título (coluna)](link)",
+ * a live drawing as "[Desenho: título](link)", one in the trash or gone as "[Item indisponível]".
  */
 export async function documentMarkdown(
   title: string,
@@ -35,5 +27,5 @@ export async function documentMarkdown(
 ) {
   const ids = embedIds(blocks);
   const items = ids.taskIds.length + ids.canvasIds.length ? await resolve(ids) : { tasks: [], drawings: [] };
-  return `# ${title}\n\n${documentToMarkdown(blocks, { embeds: fileEmbedResolver(items, origin) })}`;
+  return `# ${title}\n\n${documentToMarkdown(blocks, { embeds: embedResolver(items, appEmbedHref(origin)) })}`;
 }
