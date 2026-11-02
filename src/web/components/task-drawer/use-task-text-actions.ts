@@ -1,16 +1,14 @@
 import { useRef, useState } from 'react';
-import { api, errorCode, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
+import { api, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import { taskQuery } from '../../lib/queries';
 import { displayTitle, type Task } from '../../lib/types';
 import { useTaskDrawer } from '../../shell/task-drawer-state';
 import { useToast } from '../../ui';
+import { copyTitle, isFinalRefusal } from '../item-page/item-copy';
 import type { TaskTextController } from './task-session';
 import { taskTextSnapshot } from './task-session';
 import type { TaskTextSnapshot } from './task-text-draft';
-
-/** Refusals that a retry with the same request would only repeat. */
-const FINAL_ERRORS = ['VALIDATION', 'DOMAIN_RULE', 'BAD_REQUEST', 'PAYLOAD_TOO_LARGE', 'NOT_FOUND'];
 
 /**
  * A text conflict's ways out (docs/etapas/10-quadro-tarefa.md, "Conflito"): take the saved version, or save
@@ -47,7 +45,7 @@ export function useTaskTextActions(controller: TaskTextController, task: Task) {
     try {
       pending.current ??= { requestId: crypto.randomUUID(), text: structuredClone(controller.getState().snapshot) };
       const { requestId, text } = pending.current;
-      const title = `${displayTitle(text.title.trim())} — cópia`.slice(0, 300);
+      const title = copyTitle(text.title.trim());
       const input = {
         requestId,
         title,
@@ -66,7 +64,7 @@ export function useTaskTextActions(controller: TaskTextController, task: Task) {
       toast(`Cópia criada: ${title}.`);
     } catch (error) {
       reportSessionError(error);
-      if (FINAL_ERRORS.includes(errorCode(error) ?? '')) pending.current = null;
+      if (isFinalRefusal(error, { notFound: true })) pending.current = null;
       toast(errorMessage(error), 'error');
     } finally {
       setCopying(false);

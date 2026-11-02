@@ -1,18 +1,16 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
-import { errorCode, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
+import { errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
-import { displayTitle, type ItemType } from '../../lib/types';
+import type { ItemType } from '../../lib/types';
 import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
 import { useAction } from '../../shell/writes';
 import { useToast } from '../../ui';
+import { copyTitle, isFinalRefusal } from './item-copy';
 import { itemWords } from './item-words';
-
-/** Refusals that a retry with the same request would only repeat: the next copy starts a new request. */
-const FINAL_ERRORS = ['VALIDATION', 'DOMAIN_RULE', 'BAD_REQUEST', 'PAYLOAD_TOO_LARGE'];
 
 /** What the shared actions need to know about one kind of item: its reads and writes by RPC. */
 export interface ItemAdapter<Snapshot extends { title: string; projectId: string }, Item extends { version: number }> {
@@ -106,7 +104,7 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
         return;
       }
       const copied = pending.snapshot;
-      const title = `${displayTitle(copied.title)} — cópia`.slice(0, 300);
+      const title = copyTitle(copied.title);
       // A folder deleted elsewhere sends the copy to the root, and a retry goes there too. A refused request
       // records nothing, so the root takes the same request ID.
       const { created: copy, atRoot } = await inFolderOrRoot(pending.folderId, (folderId) => {
@@ -134,7 +132,8 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
       );
       void navigate({ href: paths.item(pending.projectId, item.type, copy.id) });
     } catch (error) {
-      if (FINAL_ERRORS.includes(errorCode(error) ?? '')) pendingCopy.current = null;
+      // A final refusal: the next copy starts a new request.
+      if (isFinalRefusal(error)) pendingCopy.current = null;
       reportSessionError(error);
       toast(errorMessage(error), 'error');
     } finally {

@@ -1,13 +1,8 @@
 import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, Shapes, X } from 'lucide-react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ReloadDialog, SaveBanners, TrashItemDialog, useItemActions } from '../../components/item-page';
-import type { Snapshot } from '../../lib/autosave';
-import { moveThroughController } from '../../lib/editor-move';
-import { useHasActiveProject, useProject } from '../../lib/queries';
-import { registerOpenEditor } from '../../lib/save-registry';
-import { type Document, UNTITLED } from '../../lib/types';
-import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
-import { usePageTitle } from '../../lib/use-page-title';
+import { useRef, useState } from 'react';
+import { HiddenFileInput, ItemEditorDialogs, SaveBanners, useItemEditor } from '../../components/item-page';
+import { useProject } from '../../lib/queries';
+import type { Document } from '../../lib/types';
 import { FolderLabel, PageFrame, useApp, usePageCommands, useTaskDrawer } from '../../shell';
 import { useTheme } from '../../shell/theme';
 import { Banner, IconButton, useToast } from '../../ui';
@@ -33,31 +28,23 @@ export function DocumentEditor({ document }: { document: Document }) {
   const drawer = useTaskDrawer();
   const [controller] = useState(() => documentController(document, app.owner.installationId));
   const embedCommands = useRef<EmbedCommands | null>(null);
-  useEffect(
-    () =>
-      registerOpenEditor('document', document.id, {
-        moveTo: (move) => moveThroughController(controller, move),
-        insertEmbedAfter: (blockId, taskId) => embedCommands.current?.insertTaskAfter(blockId, taskId) ?? false,
-      }),
-    [controller, document.id],
-  );
-  useAutosaveLifecycle(controller);
-  const state = useSyncExternalStore(controller.subscribe, controller.getState);
-  usePageTitle(state.snapshot.title);
+  const page = useItemEditor({
+    controller,
+    item: documentItem(document.id),
+    openEditor: {
+      insertEmbedAfter: (blockId, taskId) => embedCommands.current?.insertTaskAfter(blockId, taskId) ?? false,
+    },
+  });
+  const { state, fileInput } = page;
   const openOrigin = useRef<(taskId: string) => void>(() => undefined);
   const editor = useDocumentEditor(controller, document, state, openOrigin, embedCommands);
   useOriginMarkers(editor, document.id, openOrigin);
   const anchor = useBlockAnchor(editor);
-  const hasActiveProject = useHasActiveProject();
   const [selection, setSelection] = useState('');
-  const [trashOpen, setTrashOpen] = useState(false);
-  const [reloadOpen, setReloadOpen] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
   const files = useDocumentFiles(editor, controller, document.id);
   const taskFromSelection = useTaskFromSelection(editor, controller, document);
   const projectId = state.snapshot.projectId;
   const archived = Boolean(useProject(projectId)?.archivedAt);
-  const actions = useItemActions(controller, documentItem(document.id));
   const titleRef = useRef<HTMLTextAreaElement>(null);
   useNewDocument(document.id, editor, titleRef);
 
@@ -117,14 +104,11 @@ export function DocumentEditor({ document }: { document: Document }) {
         id: 'import',
         label: 'Importar Markdown',
         icon: <ArrowUpFromLine size={16} />,
-        run: () => fileInput.current?.click(),
+        run: page.openImport,
       },
     ],
-    trash: () => setTrashOpen(true),
+    trash: page.openTrash,
   });
-
-  const update = (patch: Partial<Snapshot>) => controller.change({ ...controller.getState().snapshot, ...patch });
-  const title = state.snapshot.title === UNTITLED ? '' : state.snapshot.title;
 
   return (
     <PageFrame
@@ -142,23 +126,18 @@ export function DocumentEditor({ document }: { document: Document }) {
             archived,
             onCreateTask: createTask,
             onExport: () => void files.exportMarkdown(),
-            onImport: () => fileInput.current?.click(),
-            onTrash: () => setTrashOpen(true),
+            onImport: page.openImport,
+            onTrash: page.openTrash,
           }}
         />
       }
       bands={
         <SaveBanners
+          {...page.banners}
           className="editor-banners editor-banners--column"
-          state={state}
           noun="Este documento"
           projectId={projectId}
-          canCopy={hasActiveProject}
-          copying={actions.copying}
           onDownloadRecovery={files.downloadRecovery}
-          onReload={() => setReloadOpen(true)}
-          onSaveCopy={() => void actions.saveCopy()}
-          onRetry={() => void controller.flush()}
           onExport={() => void files.exportMarkdown()}
         >
           {archived && <Banner tone="info">Projeto arquivado: desarquive para editar o documento.</Banner>}
@@ -178,18 +157,11 @@ export function DocumentEditor({ document }: { document: Document }) {
       }
     >
       {/* "Importar Markdown" in the ⋯ and in ⌘K opens it; out of the Tab order, it has nothing to show (review B11). */}
-      <input
-        ref={fileInput}
-        type="file"
+      <HiddenFileInput
+        inputRef={fileInput}
         accept=".md,.markdown,.txt,text/markdown,text/plain"
-        className="sr-only"
-        tabIndex={-1}
-        aria-label="Importar arquivo Markdown"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = '';
-          if (file) void files.importMarkdown(file);
-        }}
+        label="Importar arquivo Markdown"
+        onFile={(file) => void files.importMarkdown(file)}
       />
       <DocumentEmbeds
         editor={editor}
@@ -202,11 +174,11 @@ export function DocumentEditor({ document }: { document: Document }) {
         {(slashItems) => (
           <DocumentBody
             editor={editor}
-            title={title}
+            title={page.title}
             titleRef={titleRef}
             theme={theme.resolved}
-            onTitleChange={(value) => update({ title: value })}
-            onChange={() => update({ content: savedContent(editor) })}
+            onTitleChange={(value) => page.change({ title: value })}
+            onChange={() => page.change({ content: savedContent(editor) })}
             onSelectionChange={() => setSelection(selectedText(editor))}
             onCreateTask={() => void taskFromSelection.create()}
             slashItems={slashItems}
@@ -214,20 +186,7 @@ export function DocumentEditor({ document }: { document: Document }) {
           />
         )}
       </DocumentEmbeds>
-      <TrashItemDialog
-        type="document"
-        open={trashOpen}
-        pending={actions.trashing}
-        onClose={() => setTrashOpen(false)}
-        onConfirm={() => void actions.moveToTrash().then((moved) => moved && setTrashOpen(false))}
-      >
-        As tarefas vinculadas continuam no quadro.
-      </TrashItemDialog>
-      <ReloadDialog
-        open={reloadOpen}
-        onClose={() => setReloadOpen(false)}
-        onConfirm={() => void actions.reloadRemote().then((loaded) => loaded && setReloadOpen(false))}
-      />
+      <ItemEditorDialogs {...page.dialogs} trashNote="As tarefas vinculadas continuam no quadro." />
     </PageFrame>
   );
 }

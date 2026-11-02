@@ -1,13 +1,14 @@
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { ArrowDownToLine, ArrowUpFromLine, ImageDown } from 'lucide-react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ReloadDialog, SaveBanners, TrashedItem, TrashItemDialog, useItemActions } from '../../components/item-page';
-import { moveThroughController } from '../../lib/editor-move';
-import { useHasActiveProject } from '../../lib/queries';
-import { registerOpenEditor } from '../../lib/save-registry';
+import { useEffect, useRef, useState } from 'react';
+import {
+  HiddenFileInput,
+  ItemEditorDialogs,
+  SaveBanners,
+  TrashedItem,
+  useItemEditor,
+} from '../../components/item-page';
 import { displayTitle, UNTITLED } from '../../lib/types';
-import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
-import { usePageTitle } from '../../lib/use-page-title';
 import { FolderLabel, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
 import { canvasItem, canvasSession, canvasSnapshot, type EditableCanvas } from './canvas-session';
@@ -25,23 +26,12 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const app = useApp();
   const theme = useTheme();
   const [{ controller, previews }] = useState(() => canvasSession(canvas, app.owner.installationId));
-  useEffect(
-    () => registerOpenEditor('drawing', canvas.id, { moveTo: (move) => moveThroughController(controller, move) }),
-    [controller, canvas.id],
-  );
-  useAutosaveLifecycle(controller, { persistDraft: true });
-  const state = useSyncExternalStore(controller.subscribe, controller.getState);
-  usePageTitle(state.snapshot.title);
+  const page = useItemEditor({ controller, item: canvasItem(canvas.id), persistDraft: true });
+  const { state, fileInput, openImport } = page;
   const editor = useRef<ExcalidrawImperativeAPI | null>(null);
   const scene = useSceneChanges(controller, state, editor);
   const viewport = useViewport(`tinyfold:canvas-view:${app.owner.installationId}:${canvas.id}`);
   const files = useCanvasFiles(controller, canvas.id, theme.resolved === 'dark');
-  const actions = useItemActions(controller, canvasItem(canvas.id));
-  const hasActiveProject = useHasActiveProject();
-  const [trashOpen, setTrashOpen] = useState(false);
-  const [reloadOpen, setReloadOpen] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
-  const openImport = () => fileInput.current?.click();
   // ⌘S saves now and, after a failure, tries again; ⌘K lists the item's actions under "Neste item".
   usePageCommands({
     saveNow: () => void controller.flush(),
@@ -55,7 +45,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
       },
       { id: 'png', label: 'Exportar PNG', icon: <ImageDown size={16} />, run: () => void files.exportPNG() },
     ],
-    trash: () => setTrashOpen(true),
+    trash: page.openTrash,
   });
 
   useEffect(() => controller.receiveRemote(canvasSnapshot(canvas), canvas.version), [controller, canvas]);
@@ -81,7 +71,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
       </PageFrame>
     );
   const projectId = state.snapshot.projectId;
-  const title = state.snapshot.title === UNTITLED ? '' : state.snapshot.title;
+  const { title } = page;
   return (
     <PageFrame
       fill
@@ -94,37 +84,27 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
           files={{ ...files, exportPNG: () => void files.exportPNG() }}
           onRetry={() => void controller.flush()}
           onImport={openImport}
-          onTrash={() => setTrashOpen(true)}
+          onTrash={page.openTrash}
         />
       }
       bands={
         <SaveBanners
+          {...page.banners}
           className="editor-banners editor-banners--wide"
-          state={state}
           noun="Este desenho"
           trashed={Boolean(canvas.deletedAt)}
           projectId={canvas.projectId}
-          canCopy={hasActiveProject}
-          copying={actions.copying}
           onDownloadRecovery={files.downloadRecovery}
-          onReload={() => setReloadOpen(true)}
-          onSaveCopy={() => void actions.saveCopy()}
-          onRetry={() => void controller.flush()}
           onExport={files.exportEditable}
         />
       }
     >
-      <input
-        ref={fileInput}
-        type="file"
-        className="sr-only"
+      <HiddenFileInput
+        inputRef={fileInput}
         accept=".excalidraw,application/vnd.excalidraw+json,application/json"
-        aria-label="Importar arquivo Excalidraw"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = '';
-          if (file) void files.importDrawing(file);
-        }}
+        label="Importar arquivo Excalidraw"
+        onFile={(file) => void files.importDrawing(file)}
+        tabbable
       />
       <div className="drawing__top">
         <h1 className="sr-only" tabIndex={-1}>
@@ -136,7 +116,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
           value={title}
           maxLength={300}
           placeholder={UNTITLED}
-          onChange={(event) => controller.change({ ...controller.getState().snapshot, title: event.target.value })}
+          onChange={(event) => page.change({ title: event.target.value })}
         />
       </div>
       <DrawingCanvas
@@ -154,18 +134,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
         }}
         menu={{ onImport: openImport, onExport: files.exportEditable, onExportPNG: () => void files.exportPNG() }}
       />
-      <TrashItemDialog
-        type="drawing"
-        open={trashOpen}
-        pending={actions.trashing}
-        onClose={() => setTrashOpen(false)}
-        onConfirm={() => void actions.moveToTrash().then((moved) => moved && setTrashOpen(false))}
-      />
-      <ReloadDialog
-        open={reloadOpen}
-        onClose={() => setReloadOpen(false)}
-        onConfirm={() => void actions.reloadRemote().then((loaded) => loaded && setReloadOpen(false))}
-      />
+      <ItemEditorDialogs {...page.dialogs} />
     </PageFrame>
   );
 }
