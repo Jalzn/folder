@@ -109,3 +109,16 @@ test('W5.7b: an archived project’s drawing opens to read only, with the band, 
   await page.waitForTimeout(2500);
   expect(saves).toEqual([]);
 });
+test('W5.7c: the drawing’s hidden file field stays out of the Tab order', async ({ page }) => {
+  await login(page);
+  const { projectId, id } = await drawingInProject(page, `Tab do desenho ${Date.now()}`);
+  await page.goto(`/projetos/${projectId}/desenhos/${id}`);
+  const field = page.getByLabel('Importar arquivo Excalidraw');
+  await expect(field).toHaveAttribute('tabindex', '-1');
+  // From the title, Shift+Tab walks back through the bands and the bar without stopping on the field.
+  await page.getByRole('textbox', { name: 'Título do desenho' }).focus();
+  for (let step = 0; step < 12; step += 1) {
+    await page.keyboard.press('Shift+Tab');
+    expect(await field.evaluate((input) => input === document.activeElement)).toBe(false);
+  }
+});

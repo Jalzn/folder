@@ -111,7 +111,6 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
         accept=".excalidraw,application/vnd.excalidraw+json,application/json"
         label="Importar arquivo Excalidraw"
         onFile={(file) => void files.importDrawing(file)}
-        tabbable
       />
       <div className="drawing__top">
         <h1 className="sr-only" tabIndex={-1}>
