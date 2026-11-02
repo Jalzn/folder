@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useState } from 'react';
-import { api, errorCode, queryClient } from '../lib/api';
+import { api, isSessionError, queryClient } from '../lib/api';
 import { keys } from '../lib/queries';
+import { onSessionEvents } from '../lib/session-events';
 import { Dialog, ErrorNotice, Logo, Spinner } from '../ui';
 import { LoginForm, LoginScreen, type Owner } from './LoginScreen';
-
-const signedOut = (error: unknown) => ['UNAUTHENTICATED', 'UNAUTHORIZED'].includes(errorCode(error) ?? '');
 
 /**
  * The session: the login screen while signed out, and, when the session expires mid-work, a dialog that
@@ -26,27 +25,25 @@ export function AuthGate({ children }: { children: (owner: Owner) => ReactNode }
       setExpired(false);
     }
   }, [session.data]);
-  useEffect(() => {
-    const expire = () => setExpired(true);
-    const logout = () => {
-      setOwner(null);
-      setExpired(false);
-      queryClient.clear();
-      void queryClient.invalidateQueries({ queryKey: keys.session });
-    };
-    window.addEventListener('tinyfold:session-expired', expire);
-    window.addEventListener('tinyfold:logout', logout);
-    return () => {
-      window.removeEventListener('tinyfold:session-expired', expire);
-      window.removeEventListener('tinyfold:logout', logout);
-    };
-  }, []);
+  useEffect(
+    () =>
+      onSessionEvents({
+        expired: () => setExpired(true),
+        signedOut: () => {
+          setOwner(null);
+          setExpired(false);
+          queryClient.clear();
+          void queryClient.invalidateQueries({ queryKey: keys.session });
+        },
+      }),
+    [],
+  );
   function signedIn(value: Owner) {
     setOwner(value);
     setExpired(false);
     void queryClient.invalidateQueries();
   }
-  if (!owner && (session.isPending || (session.error && !signedOut(session.error) && !expired)))
+  if (!owner && (session.isPending || (session.error && !isSessionError(session.error) && !expired)))
     return (
       <div className="auth-loading">
         <Logo />

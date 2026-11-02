@@ -10,10 +10,12 @@ export function errorCode(error: unknown): string | undefined {
   return value.data?.code ?? value.code;
 }
 
+/** The session ended: the server's UNAUTHENTICATED, which travels as an oRPC UNAUTHORIZED with a 401. */
+export const isSessionError = (error: unknown) => ['UNAUTHENTICATED', 'UNAUTHORIZED'].includes(errorCode(error) ?? '');
+
 export function errorMessage(error: unknown): string {
   const code = errorCode(error);
-  if (code === 'UNAUTHENTICATED' || code === 'UNAUTHORIZED')
-    return 'Sua sessão expirou. Entre novamente para continuar.';
+  if (isSessionError(error)) return 'Sua sessão expirou. Entre novamente para continuar.';
   if (code === 'VERSION_CONFLICT' || code === 'CONFLICT')
     return 'Este item mudou em outro dispositivo. Atualizamos os dados; confira e tente novamente.';
   if (error instanceof Error && code && !['INTERNAL_SERVER_ERROR', 'UNKNOWN'].includes(code)) return error.message;

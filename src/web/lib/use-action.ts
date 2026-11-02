@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '../ui';
-import { errorMessage, refreshWorkspace, reportSessionError } from './api';
+import { errorMessage, refreshWorkspace } from './api';
 import { createWriteQueue } from './write-queue';
 
 export interface RunOptions {
@@ -32,7 +32,6 @@ export function useAction() {
         success?.(value);
         return value;
       } catch (error) {
-        reportSessionError(error);
         toast(options.failure ?? errorMessage(error), 'error');
         await refreshWorkspace();
         return undefined;

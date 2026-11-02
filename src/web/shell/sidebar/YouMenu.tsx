@@ -1,8 +1,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Keyboard, KeyRound, LogOut, Monitor, Moon, Sun, SunMoon } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
-import { api, errorMessage, queryClient, reportSessionError } from '../../lib/api';
-import { keys } from '../../lib/queries';
+import { errorMessage } from '../../lib/api';
+import { signOut } from '../../lib/session';
 import { paths } from '../../router/paths';
 import { AlertDialog, Menu, MenuItem, MenuSeparator, MenuTrigger, SubmenuTrigger, useToast } from '../../ui';
 import { useShellActions } from '../shell-ui';
@@ -31,11 +31,8 @@ export function YouMenu({
   async function logout() {
     setBusy(true);
     try {
-      await api.auth.logout();
-      queryClient.removeQueries({ queryKey: keys.all });
-      window.dispatchEvent(new Event('tinyfold:logout'));
+      await signOut();
     } catch (error) {
-      reportSessionError(error);
       toast(errorMessage(error), 'error');
     } finally {
       setBusy(false);

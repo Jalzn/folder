@@ -1,4 +1,4 @@
-import { queryClient, reportSessionError } from '../api';
+import { queryClient } from '../api';
 import { withDraftProject } from '../draft-project';
 import { invalidateNavigation, keys } from '../queries';
 import { registerSave } from '../save-registry';
@@ -67,13 +67,8 @@ export function defineItemSession<
       ...(spec.draftDelayMs ? { draftDelayMs: spec.draftDelayMs } : {}),
       send: async (input) => {
         spec.check?.(input);
-        try {
-          const { projectId: _project, ...save } = input;
-          return await spec.save(save);
-        } catch (error) {
-          reportSessionError(error);
-          throw error;
-        }
+        const { projectId: _project, ...save } = input;
+        return spec.save(save);
       },
       onSaved: (ack, sent) => {
         queryClient.setQueryData<Item>(keys.item(spec.type, item.id), (previous) =>

@@ -1,17 +1,20 @@
 import { createORPCClient } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import type { RouterClient } from '@orpc/server';
-import { QueryCache, QueryClient } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import type { AppRouter } from '@tinyfold/server/router';
-import { errorCode } from './errors';
+import { isSessionError } from './errors';
 import { keys } from './queries/keys';
+import { sessionExpired } from './session-events';
 
-export { errorCode, errorMessage } from './errors';
+export { errorCode, errorMessage, isSessionError } from './errors';
 
+/**
+ * Tells the app the session ended, for a failure that says so. The link below already did, for every 401:
+ * this only repeats it, and goes once the features drop their calls (WF-6).
+ */
 export function reportSessionError(error: unknown) {
-  if (['UNAUTHENTICATED', 'UNAUTHORIZED'].includes(errorCode(error) ?? '')) {
-    window.dispatchEvent(new Event('tinyfold:session-expired'));
-  }
+  if (isSessionError(error)) sessionExpired();
 }
 
 const link = new RPCLink({
@@ -22,14 +25,14 @@ const link = new RPCLink({
       credentials: 'same-origin',
       signal: AbortSignal.any([AbortSignal.timeout(20_000), ...(request.signal ? [request.signal] : [])]),
     });
-    if (response.status === 401) window.dispatchEvent(new Event('tinyfold:session-expired'));
+    // The one place that finds the session ended: the server answers every UNAUTHENTICATED with a 401.
+    if (response.status === 401) sessionExpired();
     return response;
   },
 });
 
 export const api: RouterClient<AppRouter> = createORPCClient(link);
 export const queryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: reportSessionError }),
   defaultOptions: {
     queries: { staleTime: 10_000, refetchOnWindowFocus: true, retry: false },
   },

@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { api, errorMessage, refreshWorkspace, reportSessionError } from '../lib/api';
+import { api, errorMessage, refreshWorkspace } from '../lib/api';
 import { deviceTimeZone, useToday } from '../lib/civil-date';
 import type { Project } from '../lib/types';
 import { useAction } from '../lib/use-action';
@@ -75,7 +75,6 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
       await refreshWorkspace();
       return null;
     } catch (error) {
-      reportSessionError(error);
       return errorMessage(error);
     }
   }, []);
