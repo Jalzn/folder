@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react';
-import { api, errorMessage, queryClient, reportSessionError } from '../../lib/api';
+import { api, errorMessage, queryClient } from '../../lib/api';
 import { Button, TextField, useToast } from '../../ui';
 import { ProfileSection } from './ProfileSection';
 import { sessionsKey } from './SessionsSection';
@@ -22,7 +22,6 @@ export function PasswordSection() {
       toast('Senha alterada. As outras sessões foram encerradas.');
       await queryClient.invalidateQueries({ queryKey: sessionsKey });
     } catch (e) {
-      reportSessionError(e);
       setError(errorMessage(e));
     } finally {
       setBusy(false);

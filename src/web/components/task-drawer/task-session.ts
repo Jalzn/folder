@@ -1,5 +1,5 @@
 import { checklistProgress } from '@tinyfold/workspace/domain';
-import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
+import { api, errorCode, queryClient } from '../../lib/api';
 import { AutosaveController, type SaveInput } from '../../lib/autosave';
 import { draftStorage } from '../../lib/draft-storage';
 import { embedsKey, type ProjectBoard, type TaskList, type TaskWithText, taskQuery } from '../../lib/queries';
@@ -27,19 +27,14 @@ export const taskTextSnapshot = (task: TaskWithText): TaskTextSnapshot => ({
 async function send(input: SaveInput<TaskTextSnapshot>) {
   // A description has the document's limit (decision 8).
   refuseOverLimit(input.description, 'Esta descrição ultrapassou o limite de 1 MB. Divida o texto em mais tarefas.');
-  try {
-    const saved = await api.workspace.saveTaskText({
-      requestId: input.requestId,
-      id: input.id,
-      expectedTextVersion: input.expectedVersion,
-      title: input.title,
-      description: input.description,
-    });
-    return { id: saved.id, version: saved.textVersion, updatedAt: saved.updatedAt };
-  } catch (error) {
-    reportSessionError(error);
-    throw error;
-  }
+  const saved = await api.workspace.saveTaskText({
+    requestId: input.requestId,
+    id: input.id,
+    expectedTextVersion: input.expectedVersion,
+    title: input.title,
+    description: input.description,
+  });
+  return { id: saved.id, version: saved.textVersion, updatedAt: saved.updatedAt };
 }
 
 /** What a saved text changes in the lists: the card's title and its checklist's progress. */

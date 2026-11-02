@@ -4,7 +4,7 @@ import type { DocumentBlock } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
 import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draft-download';
 import { oneAtATime } from '../../components/item-page/one-at-a-time';
-import { api, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
+import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController, Snapshot } from '../../lib/autosave';
 import { downloadFile, fileNameFrom } from '../../lib/download';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
@@ -102,8 +102,6 @@ export function useDocumentFiles(
       );
       void navigate({ href: paths.document(destination.project.id, imported.id) });
     } catch (error) {
-      // A session that expired on the way brings the login back over the page, as the drawing's import.
-      reportSessionError(error);
       toast(errorMessage(error), 'error');
     }
   }

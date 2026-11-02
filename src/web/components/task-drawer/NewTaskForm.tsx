@@ -1,7 +1,7 @@
 import { isOverdue } from '@tinyfold/workspace/domain';
 import { Plus } from 'lucide-react';
 import { type RefObject, useEffect, useId, useRef, useState } from 'react';
-import { api, errorMessage, refreshWorkspace, reportSessionError } from '../../lib/api';
+import { api, errorMessage, refreshWorkspace } from '../../lib/api';
 import { doneAndFirstOpen } from '../../lib/board-order';
 import { useColumns, useLabels, useProjects } from '../../lib/queries';
 import { openEditor } from '../../lib/save-registry';
@@ -121,7 +121,6 @@ export function NewTaskForm({
           : `Tarefa criada em ${column?.name ?? 'o quadro'} · ${project?.name ?? 'o projeto'}.`,
       );
     } catch (failure) {
-      reportSessionError(failure);
       setError(errorMessage(failure));
       await refreshWorkspace();
     } finally {

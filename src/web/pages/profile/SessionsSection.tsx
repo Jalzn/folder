@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Check, Laptop, Smartphone } from 'lucide-react';
 import { useState } from 'react';
-import { api, errorMessage, reportSessionError } from '../../lib/api';
+import { api, errorMessage } from '../../lib/api';
 import { Button, ErrorNotice, Spinner, useToast } from '../../ui';
 import { ProfileSection } from './ProfileSection';
 
@@ -20,7 +20,6 @@ export function SessionsSection() {
       await sessions.refetch();
       toast('Sessão encerrada.');
     } catch (e) {
-      reportSessionError(e);
       toast(errorMessage(e), 'error');
     } finally {
       setBusy(false);

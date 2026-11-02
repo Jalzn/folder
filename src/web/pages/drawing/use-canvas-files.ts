@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { MAX_CANVAS_BYTES } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
 import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draft-download';
-import { api, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
+import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { type CanvasSnapshot, canvasFile, canvasFileName, readCanvasImport } from '../../lib/canvas-autosave';
 import { renderCanvasPng } from '../../lib/canvas-png';
@@ -94,7 +94,6 @@ export function useCanvasFiles(controller: AutosaveController<CanvasSnapshot>, c
       );
       void navigate({ href: paths.drawing(destination.project.id, imported.id) });
     } catch (error) {
-      reportSessionError(error);
       toast(error instanceof Error ? error.message : errorMessage(error), 'error');
     } finally {
       setImporting(false);

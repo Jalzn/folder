@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { api, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
+import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import { taskQuery } from '../../lib/queries';
 import type { Task } from '../../lib/types';
@@ -34,7 +34,6 @@ export function useTaskTextActions(controller: TaskTextController, task: Task) {
       toast('Versão salva carregada.');
       return true;
     } catch (error) {
-      reportSessionError(error);
       toast(errorMessage(error), 'error');
       return false;
     }
@@ -64,7 +63,6 @@ export function useTaskTextActions(controller: TaskTextController, task: Task) {
       drawer.showTask({ id: copy.id, projectId: copy.projectId, title });
       toast(`Cópia criada: ${title}.`);
     } catch (error) {
-      reportSessionError(error);
       if (isFinalRefusal(error)) pending.current = null;
       toast(errorMessage(error), 'error');
     } finally {

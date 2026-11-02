@@ -1,7 +1,7 @@
 import './profile.css';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
-import { api, errorMessage, queryClient, reportSessionError } from '../../lib/api';
+import { api, errorMessage, queryClient } from '../../lib/api';
 import { PageFrame } from '../../shell';
 import { Button, PageHeader, useToast } from '../../ui';
 import { AccessTokensSection } from './AccessTokensSection';
@@ -42,7 +42,6 @@ function LogoutSection() {
       queryClient.removeQueries({ queryKey: ['workspace'] });
       window.dispatchEvent(new Event('tinyfold:logout'));
     } catch (e) {
-      reportSessionError(e);
       toast(errorMessage(e), 'error');
     } finally {
       setBusy(false);

@@ -1,6 +1,6 @@
 import type { AccessToken } from '@tinyfold/auth';
 import { useState } from 'react';
-import { api, errorMessage, reportSessionError } from '../../lib/api';
+import { api, errorMessage } from '../../lib/api';
 import { AlertDialog, useToast } from '../../ui';
 import { reloadAccessTokens } from './access-tokens';
 
@@ -25,7 +25,6 @@ export function RevokeAccessTokenDialog({
       toast('Token revogado.');
       onRevoked();
     } catch (e) {
-      reportSessionError(e);
       toast(errorMessage(e), 'error');
       setBusy(false);
     }

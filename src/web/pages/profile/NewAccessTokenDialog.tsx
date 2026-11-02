@@ -1,6 +1,6 @@
 import { DEFAULT_ACCESS_TOKEN_NAME } from '@tinyfold/auth/domain';
 import { type FormEvent, useRef, useState } from 'react';
-import { api, errorMessage, reportSessionError } from '../../lib/api';
+import { api, errorMessage } from '../../lib/api';
 import { Button, Dialog, DialogActions, TextField } from '../../ui';
 import { reloadAccessTokens } from './access-tokens';
 import { CreatedAccessToken } from './CreatedAccessToken';
@@ -48,7 +48,6 @@ function NewAccessTokenForm({ onCreated, onCancel }: { onCreated: (token: string
       const created = await api.auth.createAccessToken({ name });
       onCreated(created.token);
     } catch (e) {
-      reportSessionError(e);
       setError(errorMessage(e));
       submitting.current = false;
       setBusy(false);

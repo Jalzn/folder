@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
-import { errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
+import { errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
 import type { ItemType } from '../../lib/types';
@@ -70,7 +70,6 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
       toast('Versão salva carregada.');
       return true;
     } catch (error) {
-      reportSessionError(error);
       toast(errorMessage(error), 'error');
       return false;
     }
@@ -134,7 +133,6 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
     } catch (error) {
       // A final refusal, or the item gone: the next copy starts a new request.
       if (isFinalRefusal(error)) pendingCopy.current = null;
-      reportSessionError(error);
       toast(errorMessage(error), 'error');
     } finally {
       setCopying(false);

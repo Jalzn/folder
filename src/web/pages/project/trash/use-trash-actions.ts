@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
-import { errorMessage, queryClient, reportSessionError } from '../../../lib/api';
+import { errorMessage, queryClient } from '../../../lib/api';
 import { type TrashItem, trashQuery } from '../../../lib/queries';
 import { displayTitle, type Project } from '../../../lib/types';
 import { useRequest } from '../../../lib/use-request';
@@ -65,7 +65,6 @@ export function useTrashActions(project: Project) {
     try {
       setPurge({ open: true, value: { item, originated: await hasOriginatedTasks(item) } });
     } catch (error) {
-      reportSessionError(error);
       toast(errorMessage(error), 'error');
     } finally {
       checking.current = false;
