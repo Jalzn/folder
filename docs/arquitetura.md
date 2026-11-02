@@ -1,6 +1,6 @@
 # Tinyfold — Arquitetura
 
-**Estado:** implementada, com operação local validada. A hospedagem pública permanece pendente.
+**Estado:** implementada, com operação local e implantação no Railway validadas. DNS, HTTPS e login em `folder.jalzn.com` foram verificados.
 
 ## Base e módulos
 
@@ -256,6 +256,8 @@ O editor gera a prévia ao abrir um desenho sem prévia atual, ao adotar uma ver
 
 ## Operação
 
-Docker serve SPA e API, executa como usuário sem privilégios e mantém o banco em `/data`. `/health` verifica o processo; `/ready` consulta o banco. O backup usa a API do SQLite, verifica integridade e não substitui arquivos existentes; inclui tokens e prévias de desenho. Restauração cria outro arquivo.
+Docker serve SPA e API e mantém o banco em `/data`. A inicialização ajusta o dono dos volumes montados como `root` e passa a execução do aplicativo para `node`, sem privilégios. `/health` verifica o processo; `/ready` consulta o banco. O backup usa a API do SQLite, verifica integridade e não substitui arquivos existentes; inclui tokens e prévias de desenho. Restauração cria outro arquivo.
 
-Veja [operação](implantacao.md) e [validação](validacao.md). Provedor, domínio, HTTPS público, agendamento e armazenamento externo de backups ainda precisam ser configurados.
+`.railway/railway.ts` descreve uma instância, o volume em `/data` e o domínio `folder.jalzn.com`, usa `/ready` e dá 30 segundos para encerramento. A inicialização recusa o Railway sem a variável de volume apontando para `/data`. As migrações continuam na subida, com o volume montado. No Railway, `BACKUP_DIR=/data/backups` usa o mesmo volume. Os backups nativos exigiram plano Pro na tentativa desta conta; o agendamento e a cópia externa automática dos snapshots continuam pendentes. O subdomínio da Cloudflare usa a origem HTTPS exata de `APP_ORIGIN`.
+
+Veja [operação](implantacao.md), [Railway e Cloudflare](railway.md) e [validação](validacao.md). Serviço, volume, variáveis, DNS e HTTPS estão configurados. Login pelo subdomínio, persistência de sessão entre deploys e snapshot remoto foram verificados. Agendamento e armazenamento externo automático de backups continuam pendentes.

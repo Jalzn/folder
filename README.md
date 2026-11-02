@@ -2,7 +2,7 @@
 
 Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar, sempre dentro de um projeto. Interface Sumário, limpa e tipográfica, em tema claro e escuro, com dados em SQLite no servidor e autenticação por senha.
 
-**Estado:** implementado e validado localmente até a [etapa 11](docs/etapas/11-documento-desenho.md). Hospedagem pública, domínio e destino externo dos backups ainda não estão configurados.
+**Estado:** implementado até a [etapa 11](docs/etapas/11-documento-desenho.md) e implantado no Railway, com SQLite persistente e uma instalação iniciada vazia. Disponível em [folder.jalzn.com](https://folder.jalzn.com), com DNS, HTTPS e login verificados. Snapshot remoto baixado e restauração verificada; backups automáticos externos continuam pendentes. Ver [operação no Railway](docs/railway.md).
 
 ## O que funciona
 
@@ -78,6 +78,7 @@ Se a porta padrão dos testes estiver ocupada, use `E2E_PORT=5172 mise exec -- p
 | [Identidade visual](docs/identidade-visual.md) | Direção escolhida e referência do Claude |
 | [Interface](docs/interface/README.md) | Interface Sumário: especificações, protótipo e o que falta implementar |
 | [Operação](docs/implantacao.md) | Docker, configuração, senha, backups e Claude Code |
+| [Railway e Cloudflare](docs/railway.md) | Primeiro deploy, volume SQLite, subdomínio, HTTPS e backups |
 | [Validação](docs/validacao.md) | Testes executados, Chrome e revisões adversariais |
 | [Etapas](docs/etapas/README.md) | Estado das entregas |
 | [Decisões](docs/decisoes.md) | Histórico de produto e implementação |

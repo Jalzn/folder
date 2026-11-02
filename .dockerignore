@@ -11,3 +11,8 @@ backups
 test-results*
 playwright-report
 coverage
+docs/screens
+src/web/public/excalidraw
+.claude
+.codex
+.DS_Store

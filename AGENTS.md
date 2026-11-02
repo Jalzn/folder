@@ -1,6 +1,6 @@
 # Tinyfold
 
-Minimalist personal workspace centered on projects, with documents, drawings and Kanban. Implemented and validated locally; public hosting is pending.
+Minimalist personal workspace centered on projects, with documents, drawings and Kanban. Implemented and validated locally, deployed on Railway at https://folder.jalzn.com.
 
 Read `docs/produto.md`, `docs/arquitetura.md` and the current stage in `docs/etapas/` before implementation. The local reference is `../orbis`; inspect its implementation before adapting a pattern.
 

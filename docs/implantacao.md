@@ -28,7 +28,7 @@ Se existir proxy, configurar `TRUST_PROXY` somente após conferir o encaminhamen
 - encaminhar `/arquivos/*` ao processo com os cookies e o `If-None-Match`, sem cache próprio: a prévia responde `Cache-Control: private, no-cache` e só sai com a sessão;
 - passar `text/event-stream` em `/mcp` sem buffer. Clientes que negociam uma revisão 2025 do protocolo MCP recebem a resposta como um único evento SSE.
 
-Hospedagem e domínio ainda não foram escolhidos/configurados para Tinyfold.
+O Railway usa a configuração em `.railway/railway.ts`, com volume em `/data` e origem `https://folder.jalzn.com`. A inicialização recusa o Railway sem a variável do volume nesse caminho. O projeto, o serviço, as variáveis, o DNS e o certificado estão configurados; `/ready`, a SPA e o login foram verificados pelo subdomínio. Seguir o [roteiro de Railway e Cloudflare](railway.md), inclusive para os backups no único volume do serviço e sua cópia externa.
 
 Com um arquivo de ambiente de produção já configurado, a imagem pode ser preparada e iniciada assim:
 
@@ -40,13 +40,15 @@ docker run --detach --name tinyfold --restart unless-stopped \
   --mount type=volume,src=tinyfold-backups,dst=/backups tinyfold:local
 ```
 
+A inicialização da imagem ajusta as permissões de `/data` e `/backups` antes de executar o aplicativo como `node`, inclusive quando o volume é montado como `root` pelo Railway. O processo recebe os sinais de encerramento diretamente.
+
 O proxy HTTPS deve encaminhar para essa porta local. O volume de backups desse exemplo está no mesmo host; uma cópia externa continua necessária para proteger contra perda do servidor. `.env.production` não deve entrar no Git.
 
 ## Atualizar para a etapa 11
 
 A versão da etapa 11 não tem migração. Os itens incorporados são blocos do JSON do documento, resolvidos a cada leitura, e `format_version` continua 1, porque todo documento antigo continua válido.
 
-1. **Fazer o backup.** Criar um backup com `mise exec -- pnpm backup:create` e conferir que ele terminou com a verificação de integridade. O banco real ainda está na etapa 07, então esta subida aplica também as migrações das etapas 08 a 10, como descrito em [Atualizar para a etapa 10](#atualizar-para-a-etapa-10), e o backup antes dela continua obrigatório.
+1. **Fazer o backup.** Criar um backup com `mise exec -- pnpm backup:create` e conferir que ele terminou com a verificação de integridade. Uma base ainda na etapa 07 recebe também as migrações das etapas 08 a 10, como descrito em [Atualizar para a etapa 10](#atualizar-para-a-etapa-10). A instalação remota de 2026-11-02 começou vazia, já com as migrações atuais; o banco local não foi importado.
 2. **Subir a versão nova.** Documentos, desenhos e tarefas abrem como estavam, e abrir um documento não o salva. O ensaio com um banco da etapa 10 está na [validação](validacao.md#etapa-11-documento-e-desenho). Um documento só ganha incorporados quando alguém os insere pelo menu `/`, pelo ⌘K ou ao criar uma tarefa de um trecho.
 3. **Recarregar as abas abertas.** Uma aba carregada antes da atualização tem o editor da etapa anterior, que não conhece os blocos novos. Nela, um documento com incorporados não abre até recarregar, e a página de erro em português oferece recarregar.
 4. **Conferir o proxy.** Se existir proxy, ele deve encaminhar `/arquivos/*` como descrito em [Produção](#produção). Sem isso, as figuras dos documentos ficam sem a imagem.

@@ -2,6 +2,68 @@
 
 Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. Nenhuma publicação na nuvem foi realizada.
 
+## Preparação para Railway e Cloudflare
+
+Executada em 2026-11-02, primeiro localmente e depois no Railway. A preparação não altera regras do domínio, migrações nem a interface. O serviço foi implantado com um espaço vazio; DNS, HTTPS e login pelo subdomínio também foram verificados.
+
+| Verificação | Resultado |
+| --- | --- |
+| `mise exec -- pnpm check` | Lint, tipos e limites de dependência passaram; 106 arquivos e 653 testes unitários passaram |
+| `mise exec -- pnpm test:db` | 37 arquivos e 264 testes passaram, com SQLite temporário |
+| `mise exec -- pnpm build` | SPA compilada; aviso já conhecido sobre chunks maiores que 500 kB |
+| `mise exec -- pnpm e2e e2e/app.spec.ts e2e/mcp.spec.ts e2e/drawing-embed.spec.ts` | Recorte de uso, figuras e MCP no Google Chrome desktop e Pixel 7: 20 passaram e 4 foram pulados pelas condições existentes dos testes; a suíte completa não foi concluída nesta preparação |
+| Configuração inicial `railway.json` | Validada contra o schema oficial Draft 2020-12; depois substituída por `.railway/railway.ts`, conforme a recomendação da CLI 5.71.0 |
+| `sh -n infra/docker-entrypoint.sh` e `git diff --check` | Passaram |
+| `docker build --progress=plain -t tinyfold:railway .` | Imagem construída, incluindo a instalação offline a partir do fetch e a cópia das fontes do Excalidraw no build |
+
+**Smoke de produção na imagem Docker:** usou apenas container e volume novos, com nomes aleatórios e remoção ao fim. O volume foi preparado com dono `root` e modo `0700`, como situação de teste para a montagem no Railway. A imagem recebeu `PORT=8080`, diferente do padrão, e `APP_ORIGIN=https://tinyfold.example`:
+
+- A inicialização mudou o dono do volume, o processo PID 1 executou com UID 1000 e o arquivo SQLite também pertenceu ao UID 1000. `/health` e `/ready` responderam 200 na porta injetada.
+- A SPA foi servida numa rota de projeto, com `Cache-Control: no-cache` e CSP com fontes na mesma origem. `/.env` respondeu 404, e a imagem não continha `/app/.env`, `/app/data` nem `/app/backups`.
+- Login com uma origem diferente foi recusado com 403. A origem HTTPS configurada recebeu cookie Secure, HttpOnly e SameSite=Strict. Esse smoke HTTP inspecionou os cabeçalhos e enviou o cookie explicitamente; não substitui a verificação de TLS no domínio público.
+- Foram criados projeto, documento, tarefa, desenho e token MCP. Repetir a criação do documento com o mesmo pedido devolveu o mesmo ID. A inicialização MCP com bearer respondeu 200 e trouxe a versão do protocolo.
+- Backup com a API SQLite e restauração em arquivo novo passaram, com o original aberto. Depois de mudar o documento original, uma escrita com versão antiga foi recusada com 409.
+- O container foi encerrado por `SIGTERM`, saiu com código 0 e foi recriado no mesmo volume, sem `OWNER_PASSWORD`. A sessão e os três tipos de conteúdo permaneceram, incluindo o texto posterior ao backup.
+- Outra inicialização apontou para o arquivo restaurado e leu o texto anterior ao backup. Original, snapshot e restauração responderam `integrity_check=ok`, sem linhas em `foreign_key_check`.
+
+Imagem ensaiada: `tinyfold:railway`, plataforma local `linux/arm64`, digest `sha256:bc889da1209092bdc1a4d1921d8016c3df26bcca49be6e732f973e837e94ddee`. Containers e volume temporários foram removidos; o banco principal não foi aberto.
+
+**Chrome com HTTPS local:** outro container e volume temporários foram servidos por um proxy HTTPS na máquina, com certificado autoassinado aceito pelo contexto de teste. O Google Chrome entrou pela interface, guardou e enviou automaticamente o cookie Secure/HttpOnly/SameSite=Strict e criou um projeto por uma chamada da página na mesma origem. Desktop e Pixel 7 abriram o mesmo projeto com a sessão autenticada, sem erros de página. Certificado, container e volume foram removidos. Esse teste exercita o navegador com HTTPS; a conferência do certificado público está registrada abaixo.
+
+### Implantação no Railway
+
+Projeto `tinyfold` (`f42f84f1-c14a-423e-83d7-f05f9ddd6d54`), serviço `4446962c-9c05-452d-be86-168c5c722891`, ambiente `production`. Volume `tinyfold-volume` em `/data`, região `sfo`. A conta começou vazia, conforme a escolha do usuário, com senha exclusiva em `.env.railway` (local, modo `0600`, ignorado pelo Git e pelo upload).
+
+- `.railway/railway.ts` substituiu o formato legado, com SDK `railway@3.16.0` fixado no lockfile e tipos verificados por `pnpm check`. A nova execução de `check` passou: 653 testes unitários, além de lint, tipos e limites de dependência.
+- O plano IaC mostrou apenas atualizações seguras das configurações do serviço, sem remoção ou mudança do volume. A aplicação terminou com `status=applied`. O modo `variables.managed=false` foi confirmado no retorno da CLI: a configuração não lê nem copia os valores das variáveis para o código.
+- A CLI 5.71.0 ainda mostra propostas para os três campos de reinício/suspensão porque os lê como `null` no grafo do plano. A consulta direta de `serviceInstance` confirmou os valores efetivos: `restartPolicyType=ON_FAILURE`, `restartPolicyMaxRetries=10`, `sleepApplication=false`, `drainingSeconds=30` e `overlapSeconds=0`. O caminho de volume passou a ser conferido pelo entrypoint, sem depender de `requiredMountPath` no IaC.
+- O shell foi ensaiado com `RAILWAY_ENVIRONMENT_ID`: volume ausente ou em outro caminho recusou a subida; `/data` foi aceito. Em execução real, o Railway forneceu `RAILWAY_VOLUME_MOUNT_PATH=/data`; o PID 1 e o arquivo SQLite têm UID 1000.
+- Primeiro deploy `91f4820c-4a95-4ff3-9c7d-73b968b7ee34` e segundo deploy `251fba7a-c771-4902-9941-8d8dff09b3a3` chegaram a `SUCCESS`, com healthcheck `/ready`. Os builds foram executados pelo Railway em Linux amd64.
+- Pelo HTTPS de `tinyfold-production.up.railway.app`, `/ready` respondeu 200. Login com o `Origin` configurado em `folder.jalzn.com` passou e recebeu cookie Secure, HttpOnly e SameSite=Strict. A sessão criada no primeiro deploy continuou válida depois da substituição do container, e a lista de projetos continuou vazia. A origem diferente foi recusada com 403, e a rota de prévia sem sessão respondeu 401. Essas chamadas HTTP não substituem a validação do navegador no subdomínio final.
+- O cliente MCP oficial conectou por HTTPS, listou seis ferramentas e executou `list_projects`. Os tokens temporários de validação foram revogados; a chamada com o token revogado respondeu 401. A sessão de validação foi encerrada, o arquivo local temporário da sessão foi removido e nenhum token de validação ficou ativo. O espaço permaneceu sem projetos.
+- `pnpm backup:create` no serviço criou `/data/backups/tinyfold-2026-11-02T20-49-13-106Z.sqlite`. A ferramenta de arquivos de volume da CLI terminou em timeout na conexão SFTP. O download alternativo por SSH/base64 validou a codificação e o cabeçalho SQLite antes de gravar `backups/tinyfold-2026-11-02T20-49-13-106Z.sqlite`, com 249.856 bytes e modo `0600`.
+- A restauração dessa cópia foi feita em uma pasta temporária nova. Snapshot e restauração retornaram `integrity_check=ok`, `foreign_key_check` vazio e zero projetos. A pasta da restauração foi removida; a cópia externa ficou em `backups/`, fora do Git. O banco local principal não foi aberto.
+- A tentativa de ativar cópias diárias nativas foi recusada pela API: backups nativos e seus agendamentos exigem workspace Pro nesta conta. Nenhum plano foi alterado, e não há agendamento automático configurado.
+- No fim da primeira implantação, `folder.jalzn.com` ainda aguardava DNS e certificado. O usuário cadastrou os registros posteriormente, conforme a conferência abaixo.
+
+### Ativação de folder.jalzn.com
+
+Em 2026-11-02, após o usuário informar um erro 404, as consultas aos dois servidores autoritativos da Cloudflare e aos resolvedores `1.1.1.1` e `8.8.8.8` confirmaram CNAME e TXT corretos. O serviço respondia 200 pelo domínio gerado, mas o domínio próprio ainda estava com `verified=false` e `CERTIFICATE_STATUS_TYPE_VALIDATING_OWNERSHIP`; o TLS apresentava um certificado sem o nome do subdomínio.
+
+A porta `3370` foi reaplicada no cadastro existente. A tentativa de repetir a emissão foi recusada pela CLI porque a validação ainda estava em andamento; o domínio não foi excluído nem recriado. Durante a conferência, o Railway passou a `verified=true`, `CERTIFICATE_STATUS_TYPE_VALID` e estado detalhado `COMPLETE`, sem novo deploy.
+
+Pelo endereço final `https://folder.jalzn.com`, com verificação normal de certificado, `/ready`, `/` e `/entrar` responderam 200, e os scripts JavaScript da SPA foram servidos. Login, cookie Secure/HttpOnly/SameSite=Strict e consulta de sessão passaram com o `Origin` do subdomínio. A sessão usada nessa conferência foi encerrada ao fim. A raiz respondeu com `Cache-Control: no-cache` e a CSP esperada.
+
+### Redefinição da senha após mudar OWNER_PASSWORD
+
+Em 2026-11-02, o usuário mudou `OWNER_PASSWORD` no Railway e o login continuou recusando essa senha. A verificação no serviço confirmou que a variável estava definida e cumpria o tamanho exigido, mas não correspondia ao hash da conta já persistida. Nenhum valor de senha nem hash foi exibido.
+
+O comando existente `src/server/cli/reset-password.ts` foi executado no serviço como `node`, recebendo `NEW_OWNER_PASSWORD` diretamente de `process.env.OWNER_PASSWORD`. A redefinição encerrou as sessões e revogou os tokens de acesso na mesma transação. O login por `https://folder.jalzn.com` com a variável atual passou, assim como a consulta de sessão; a sessão dessa verificação foi encerrada ao fim.
+
+A senha inicial obsoleta foi removida de `.env.railway`. A senha escolhida pelo usuário continua no Railway e não foi copiada para o arquivo local. Nenhuma regra de autenticação foi alterada: `OWNER_PASSWORD` continua exclusivo da criação inicial, e a troca posterior usa Perfil ou o comando de redefinição.
+
+**Pendente:** validar o uso no navegador por dois dispositivos físicos e o encaminhamento real do IP (até lá, `TRUST_PROXY=false`), configurar agendamento e cópia externa automática de backups.
+
 ## Etapa 11: documento e desenho
 
 A etapa foi implementada entre 2026-11-01 e 2026-11-02 por dois subagentes, backend (B1 a B4) e web (W1 a W7), primeiro em worktrees próprias e, a partir dos pontos de integração, em `feat/documento`. Três revisores adversariais examinaram, cada um, dados e MCP; o editor (teclado, acessibilidade e foco); e segurança e qualidade. Os achados passaram por cinco rodadas de correção, todas retestadas pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
