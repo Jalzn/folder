@@ -65,3 +65,16 @@ export function nameKey(name: string): string {
     .replace(/\s+/gu, ' ')
     .trim();
 }
+
+/**
+ * The one of `named` that already has the name, by its key, if any. `except` is the one being
+ * renamed, which may keep its own name in another case.
+ */
+export function nameTakenBy<T extends { id: string; name: string }>(
+  named: readonly T[],
+  name: string,
+  except?: string,
+): T | undefined {
+  const key = nameKey(name);
+  return named.find((item) => item.id !== except && nameKey(item.name) === key);
+}

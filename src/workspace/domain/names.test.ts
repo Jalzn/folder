@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { displayName, nameKey } from './names.js';
+import { displayName, nameKey, nameTakenBy } from './names.js';
 
 describe('names of folders, columns and labels', () => {
   it('stores a name on one line, without what draws nothing', () => {
@@ -19,5 +19,14 @@ describe('names of folders, columns and labels', () => {
     expect(nameKey('A fazer')).toBe('a fazer');
     expect(nameKey('Concluído')).toBe('concluido');
     expect(nameKey('Revisão')).not.toBe(nameKey('Revisões'));
+  });
+  it('finds the one that already has a name by its key, except the one being renamed', () => {
+    const named = [
+      { id: 'a', name: 'Ações' },
+      { id: 'b', name: 'Revisão' },
+    ];
+    expect(nameTakenBy(named, ' acoes ')).toBe(named[0]);
+    expect(nameTakenBy(named, 'AÇÕES', 'a')).toBeUndefined();
+    expect(nameTakenBy(named, 'Revisões')).toBeUndefined();
   });
 });

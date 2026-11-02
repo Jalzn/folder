@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { firstOpenColumn, newColumnPosition } from './columns.js';
+import { columnDeletionBlocker, firstOpenColumn, newColumnPosition } from './columns.js';
 
 describe('columns', () => {
   it('puts a new column before the done column when it is the last, and at the end otherwise', () => {
@@ -18,5 +18,13 @@ describe('columns', () => {
     ];
     expect(firstOpenColumn(columns)?.id).toBe('a');
     expect(firstOpenColumn([{ id: 'c', isDone: true }])).toBeUndefined();
+  });
+  it('keeps the done column and the last open one from being deleted', () => {
+    const done = { isDone: true };
+    const open = { isDone: false };
+    const other = { isDone: false };
+    expect(columnDeletionBlocker(done, [open, other, done])).toBe('done');
+    expect(columnDeletionBlocker(open, [open, done])).toBe('lastOpen');
+    expect(columnDeletionBlocker(open, [open, other, done])).toBeUndefined();
   });
 });

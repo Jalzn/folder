@@ -1,5 +1,5 @@
 import { AppError } from '@tinyfold/core/application';
-import { displayName, nameKey } from '../domain/names.js';
+import { displayName, nameKey, nameTakenBy } from '../domain/names.js';
 
 /** What a name names, as the messages say it: "o nome da pasta". */
 export type NamedThing = 'pasta' | 'coluna' | 'etiqueta';
@@ -29,7 +29,6 @@ export function assertNameFree(
   thing: NamedThing,
   { except, suffix = '' }: { except?: string; suffix?: string } = {},
 ): void {
-  const key = nameKey(name);
-  const taken = named.find((item) => item.id !== except && nameKey(item.name) === key);
+  const taken = nameTakenBy(named, name, except);
   if (taken) throw new AppError('DOMAIN_RULE', `Já existe uma ${thing} ${taken.name}.${suffix}`);
 }

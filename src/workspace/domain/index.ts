@@ -9,6 +9,7 @@ export {
 } from './canvas.js';
 export { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from './canvas-preview.js';
 export { checklistProgress } from './checklist.js';
+export { columnDeletionBlocker } from './columns.js';
 export { documentLead, documentPlainText, RECOVERY_DOCUMENT_LIMITS, readDocumentContent } from './document.js';
 export type { EmbeddedDrawing, EmbeddedItems, EmbeddedTask, EmbedPreview, EmbedProject } from './embed-items.js';
 export { embedResolver } from './embed-resolver.js';
@@ -30,7 +31,7 @@ export type {
   TaskList,
   TaskSource,
 } from './models.js';
-export { displayName, nameKey } from './names.js';
+export { displayName, nameKey, nameTakenBy } from './names.js';
 export { NAV_SORTS, type NavItem, type NavSort } from './navigation.js';
 export { NAVIGATION_LIMITS } from './navigation-limits.js';
 export type { NavFolder, NavTree } from './navigation-tree.js';

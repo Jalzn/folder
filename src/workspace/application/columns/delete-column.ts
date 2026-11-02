@@ -1,5 +1,5 @@
 import { AppError } from '@tinyfold/core/application';
-import { COLUMN_LIMITS } from '../../domain/columns.js';
+import { COLUMN_LIMITS, columnDeletionBlocker } from '../../domain/columns.js';
 import { assertVersion } from '../helpers.js';
 import type { TaskRecord, WorkspaceContext } from '../ports.js';
 import type { DeleteColumnInput } from '../schemas/columns.js';
@@ -25,9 +25,10 @@ export function deleteColumn(ctx: WorkspaceContext, input: DeleteColumnInput) {
   return ctx.write('workspace.deleteColumn', input, async (repo) => {
     const column = await requireActiveColumn(repo, input.id);
     assertVersion(column.version, input.expectedVersion);
-    if (column.isDone) throw new AppError('DOMAIN_RULE', 'Marque outra coluna como conclusão antes.');
     const columns = await repo.activeColumns();
-    if (columns.filter((item) => !item.isDone).length <= 1)
+    const blocker = columnDeletionBlocker(column, columns);
+    if (blocker === 'done') throw new AppError('DOMAIN_RULE', 'Marque outra coluna como conclusão antes.');
+    if (blocker === 'lastOpen')
       throw new AppError('DOMAIN_RULE', 'O quadro precisa de pelo menos uma coluna além da de conclusão.');
     const tasks = await repo.tasksOfColumn(column.id);
     if (input.destinationId === column.id) throw new AppError('VALIDATION', 'Escolha outra coluna como destino.');

@@ -49,3 +49,16 @@ export function newColumnPosition(columns: readonly Pick<Column, 'isDone'>[]): n
 /** The first open column in board order, where a task goes by default and when it is reopened. */
 export const firstOpenColumn = <T extends Pick<Column, 'isDone'>>(columns: readonly T[]): T | undefined =>
   columns.find((column) => !column.isDone);
+
+/**
+ * Why a column cannot be deleted, if it cannot: it is the done column, or the last open one, since
+ * the board keeps one of each. `active` holds the active columns, the column among them.
+ */
+export function columnDeletionBlocker(
+  column: Pick<Column, 'isDone'>,
+  active: readonly Pick<Column, 'isDone'>[],
+): 'done' | 'lastOpen' | undefined {
+  if (column.isDone) return 'done';
+  if (active.filter((item) => !item.isDone).length <= 1) return 'lastOpen';
+  return undefined;
+}
