@@ -15,8 +15,9 @@ export interface EmbedActions {
 
 /**
  * The embeds of one open document, for the blocks its editor draws (docs/etapas/11-documento-desenho.md,
- * `embeds-context.tsx`): the resolver's states by item ID, the figures' numbers by block ID, the document's
- * view context and the actions. Each document page gives its own; nothing lives at module level.
+ * `embeds-context.tsx`): the resolver's states by item ID, the figures' numbers by block ID, the board's
+ * columns, the document's view context and the actions. Each document page gives its own; nothing lives at
+ * module level, and the blocks reach the API through none of it (review Q1).
  */
 export interface EmbedsValue extends EmbedViewContext {
   tasks: ReadonlyMap<string, EmbeddedTask>;
@@ -24,6 +25,8 @@ export interface EmbedsValue extends EmbedViewContext {
   figures: ReadonlyMap<string, number>;
   /** Drawings whose preview the document is making again, or that no preview size can hold. */
   previews: ReadonlyMap<string, 'updating' | 'unavailable'>;
+  /** The board's columns, by ID in their order, for the ring of each card. */
+  columns: readonly string[];
   actions: EmbedActions;
 }
 

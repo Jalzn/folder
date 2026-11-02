@@ -88,6 +88,16 @@ export function setupBlockNoteEditor() {
       opened._tiptapEditor.destroy();
       return doc;
     },
+    /**
+     * The blocks as an editor of `schema` gives them back when it opens them, as JSON, as it saves them: the app's
+     * own document or description schema, with its React blocks, instead of this file's.
+     */
+    reopen(schema: unknown, blocks: DocumentContent): DocumentContent {
+      const opened = BlockNoteEditor.create({ schema: schema as never, initialContent: blocks as never });
+      const result = JSON.parse(JSON.stringify(opened.document)) as DocumentContent;
+      opened._tiptapEditor.destroy();
+      return result;
+    },
     /** Opens the blocks in a new editor, as reopening the document does; both sides must be a valid document. */
     reload(blocks: DocumentContent): DocumentContent {
       readDocumentContent(blocks, {}, { embeds: true });

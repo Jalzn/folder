@@ -1,7 +1,8 @@
 import { useId, useRef } from 'react';
 import { TaskMeta } from '../../components/task/TaskMeta';
-import { useColumns } from '../../lib/queries';
-import { ColumnRing, ProjectMark } from '../../ui';
+// The glyphs by their files: the ui barrel would bring the API client into the blocks (review Q1).
+import { ColumnRing } from '../../ui/glyphs/ColumnRing';
+import { ProjectMark } from '../../ui/glyphs/ProjectMark';
 import { taskEmbedView } from './embed-view';
 import { useEmbedsContext } from './embeds-context';
 import { UnavailableEmbed } from './UnavailableEmbed';
@@ -17,7 +18,6 @@ const SHOWN_LABELS = 3;
  */
 export function TaskEmbed({ taskId, blockId }: { taskId: string; blockId: string }) {
   const embeds = useEmbedsContext();
-  const columns = useColumns().data?.columns ?? [];
   const metaId = useId();
   const pointer = useRef('');
   if (!embeds)
@@ -43,7 +43,8 @@ export function TaskEmbed({ taskId, blockId }: { taskId: string; blockId: string
     );
   if (view.kind === 'unavailable') return <UnavailableEmbed view={view} kind="task" blockId={blockId} />;
   const { task } = view;
-  const index = columns.findIndex((column) => column.id === task.column.id);
+  const { columns } = embeds;
+  const index = columns.indexOf(task.column.id);
   return (
     <button
       type="button"

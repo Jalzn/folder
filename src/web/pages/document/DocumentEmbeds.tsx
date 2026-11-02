@@ -5,6 +5,7 @@ import { EmbedsProvider, type EmbedsValue } from '../../editor/blocks/embeds-con
 import { EmbedPicker } from '../../editor/EmbedPicker';
 import { embedSlashItems } from '../../editor/insert-menu';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
+import { useColumns } from '../../lib/queries';
 import { useDrawerContent } from '../../shell';
 import { useOwnerToday } from '../../shell/AppProvider';
 import { useDocumentEmbeds } from './use-document-embeds';
@@ -57,9 +58,11 @@ export function DocumentEmbeds({
   /** The block the `/` was typed in, which the picker hangs from. */
   const anchor = useRef<HTMLElement | null>(null);
   const openTaskId = content?.mode === 'task' ? content.id : null;
+  const board = useColumns().data?.columns;
+  const columns = useMemo(() => board?.map((column) => column.id) ?? [], [board]);
   const value = useMemo<EmbedsValue>(
-    () => ({ ...states, previews, documentProjectId: projectId, today, openTaskId, readOnly, actions }),
-    [states, previews, projectId, today, openTaskId, readOnly, actions],
+    () => ({ ...states, previews, columns, documentProjectId: projectId, today, openTaskId, readOnly, actions }),
+    [states, previews, columns, projectId, today, openTaskId, readOnly, actions],
   );
   /** The picker on the block of the text cursor, which it hangs from. */
   function openPicker(kind: EmbedKind) {
