@@ -64,7 +64,7 @@ export function useTaskTextActions(controller: TaskTextController, task: Task) {
       toast(`Cópia criada: ${title}.`);
     } catch (error) {
       reportSessionError(error);
-      if (isFinalRefusal(error, { notFound: true })) pending.current = null;
+      if (isFinalRefusal(error)) pending.current = null;
       toast(errorMessage(error), 'error');
     } finally {
       setCopying(false);

@@ -11,12 +11,11 @@ describe('a copy beside an item', () => {
     expect(copyTitle('x'.repeat(400))).toHaveLength(300);
   });
 
-  it('ends its request on a final refusal, and on a missing item only when asked', () => {
+  it('ends its request on a final refusal, and when its target is gone', () => {
     expect(isFinalRefusal(refusal('VALIDATION'))).toBe(true);
     expect(isFinalRefusal(refusal('PAYLOAD_TOO_LARGE'))).toBe(true);
+    expect(isFinalRefusal(refusal('NOT_FOUND'))).toBe(true);
     expect(isFinalRefusal(refusal('CONFLICT'))).toBe(false);
     expect(isFinalRefusal(new Error('rede'))).toBe(false);
-    expect(isFinalRefusal(refusal('NOT_FOUND'))).toBe(false);
-    expect(isFinalRefusal(refusal('NOT_FOUND'), { notFound: true })).toBe(true);
   });
 });

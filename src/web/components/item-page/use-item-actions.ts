@@ -132,7 +132,7 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
       );
       void navigate({ href: paths.item(pending.projectId, item.type, copy.id) });
     } catch (error) {
-      // A final refusal: the next copy starts a new request.
+      // A final refusal, or the item gone: the next copy starts a new request.
       if (isFinalRefusal(error)) pendingCopy.current = null;
       reportSessionError(error);
       toast(errorMessage(error), 'error');
