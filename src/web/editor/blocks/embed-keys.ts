@@ -25,14 +25,43 @@ function open({ editor }: { editor: AnyEditor }) {
   return true;
 }
 
-/** ⌫ and Delete: the block leaves as an edit of the document, which the editor's ⌘Z brings back. */
-function remove({ editor }: { editor: AnyEditor }) {
-  if (!selectedEmbed(editor)) return false;
-  const block = editor.getTextCursorPosition().block;
-  const next = editor.getNextBlock(block) ?? editor.getPrevBlock(block);
-  editor.removeBlocks([block]);
-  if (next) editor.setTextCursorPosition(next, 'start');
-  return true;
+/** What the keys ask of the document: an embed's block out, as "Remover" takes it, with Desfazer. */
+export interface EmbedKeyActions {
+  remove: (blockId: string) => void;
+}
+
+/**
+ * The embed next to a caret at the edge of a text: after its end (`forward`) or before its start, in reading
+ * order; null when the caret is elsewhere or the block beside it is not an embed.
+ */
+function embedBeside({ selection, doc }: EditorState, forward: boolean) {
+  const { $from } = selection;
+  const edge = forward ? $from.parent.content.size : 0;
+  if (!selection.empty || !$from.parent.isTextblock || $from.parentOffset !== edge) return null;
+  const beside = forward ? blockAfter(doc, $from.after()) : blockBefore(doc, $from.before());
+  return beside && EMBED_TYPES.has(beside.type) ? beside : null;
+}
+
+/**
+ * ⌫ and Delete (review M1): never an embed in one key. With the caret at the start of a text after an embed,
+ * ⌫ selects the embed, and Delete does at the end of a text before one; a second ⌫ or Delete takes the
+ * selected embed out with the document's "Remover", whose toast offers Desfazer. An empty line goes as
+ * BlockNote takes it, selecting the embed above, and a heading or a list item first becomes a paragraph.
+ */
+function deletes(forward: boolean, actions: EmbedKeyActions) {
+  return ({ editor }: { editor: AnyEditor }) => {
+    if (selectedEmbed(editor)) {
+      actions.remove(editor.getTextCursorPosition().block.id);
+      return true;
+    }
+    const state = editor.prosemirrorState;
+    const { parent } = state.selection.$from;
+    if (!forward && (parent.type.name !== 'paragraph' || !parent.content.size)) return false;
+    const beside = embedBeside(state, forward);
+    if (!beside) return false;
+    editor.setTextCursorPosition(beside.id);
+    return true;
+  };
 }
 
 /**
@@ -51,13 +80,7 @@ function arrow(forward: boolean, vertical: boolean) {
     if (selectedEmbed(editor)) target = forward ? blockAfter(doc, selection.to) : blockBefore(doc, selection.from);
     else if (selection.toJSON().type === 'gapcursor')
       target = forward ? blockAfter(doc, selection.from) : blockBefore(doc, selection.from);
-    else {
-      const { $from } = selection;
-      const edge = forward ? $from.parent.content.size : 0;
-      if (vertical || !selection.empty || !$from.parent.isTextblock || $from.parentOffset !== edge) return false;
-      const next = forward ? blockAfter(doc, $from.after()) : blockBefore(doc, $from.before());
-      target = next && EMBED_TYPES.has(next.type) ? next : null;
-    }
+    else target = vertical ? null : embedBeside(editor.prosemirrorState, forward);
     if (!target) return false;
     const { id } = target;
     editor.transact((tr) => {
@@ -85,23 +108,25 @@ function lifts({ editor }: { editor: AnyEditor }) {
 }
 
 /**
- * The keys of an embed the arrows selected as a node (docs/etapas/11-documento-desenho.md, "Teclado e Esc"):
- * ↵ opens it as a click would, the card's task in the drawer and the figure's drawing, and does nothing on an
- * unavailable one; ⌫ and Delete remove the block. Never in a field, and the suggestion menus take ↵ first.
- * Tab and ⇧Tab keep blocks out of embeds (`nests`, `lifts`), and the arrows go through them a block at a time.
+ * The keys of a document's embeds (docs/etapas/11-documento-desenho.md, "Teclado e Esc"), one extension per
+ * editor: ↵ on an embed selected as a node opens it as a click would, the card's task in the drawer and the
+ * figure's drawing, and does nothing on an unavailable one; ⌫ and Delete select an embed beside the caret,
+ * then take it out (`deletes`). Never in a field, and the suggestion menus take ↵ first. Tab and ⇧Tab keep
+ * blocks out of embeds (`nests`, `lifts`), and the arrows go through them a block at a time (`arrow`).
  */
-export const EmbedKeysExtension = createExtension(() => ({
-  key: 'embedKeys',
-  prosemirrorPlugins: [embedSelectionHold(embedSelectedIn)],
-  keyboardShortcuts: {
-    Enter: open,
-    Backspace: remove,
-    Delete: remove,
-    Tab: nests,
-    'Shift-Tab': lifts,
-    ArrowDown: arrow(true, true),
-    ArrowUp: arrow(false, true),
-    ArrowRight: arrow(true, false),
-    ArrowLeft: arrow(false, false),
-  },
-}));
+export const createEmbedKeys = (actions: EmbedKeyActions) =>
+  createExtension({
+    key: 'embedKeys',
+    prosemirrorPlugins: [embedSelectionHold(embedSelectedIn)],
+    keyboardShortcuts: {
+      Enter: open,
+      Backspace: deletes(false, actions),
+      Delete: deletes(true, actions),
+      Tab: nests,
+      'Shift-Tab': lifts,
+      ArrowDown: arrow(true, true),
+      ArrowUp: arrow(false, true),
+      ArrowRight: arrow(true, false),
+      ArrowLeft: arrow(false, false),
+    },
+  });

@@ -145,3 +145,40 @@ for (const [name, kinds] of Object.entries(runs))
     expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'])).toEqual(selected);
     expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp'])).toEqual(['[x2]', '[x1]', 'Antes']);
   });
+
+test('⌫ after a card and Delete before one select it first, and the second key takes it out with Desfazer', async ({
+  page,
+}) => {
+  await login(page);
+  const projectId = await createProject(page, `Apagar ao lado ${Date.now()}`);
+  const taskId = await task(page, projectId, 'Card entre parágrafos');
+  const id = await openDocument(page, projectId, [
+    { ...paragraph('Antes'), id: 'antes' },
+    { ...card(taskId), id: 'card' },
+    { ...paragraph('Depois'), id: 'depois' },
+  ]);
+  const toast = page.locator('.toast').filter({ hasText: 'Bloco removido do documento' });
+
+  await clickText(page, 'Depois', 'start');
+  await page.keyboard.press('Backspace');
+  expect(await caret(page)).toBe('[card]');
+  await expect(documentEditor(page)).toContainText('Card entre parágrafos');
+  const removed = nextSave(page);
+  await page.keyboard.press('Backspace');
+  await expect(toast).toBeVisible();
+  await removed;
+  expect((await saved(page, id)).map((block) => block.type)).toEqual(['paragraph', 'paragraph']);
+  await toast.getByRole('button', { name: 'Desfazer' }).click();
+  await expect(documentEditor(page)).toContainText('Card entre parágrafos');
+  await expect
+    .poll(async () => (await saved(page, id)).map((block) => block.type))
+    .toEqual(['paragraph', 'taskEmbed', 'paragraph']);
+
+  await clickText(page, 'Antes', 'end');
+  await page.keyboard.press('Delete');
+  expect(await caret(page)).toBe('[card]');
+  await page.keyboard.press('Delete');
+  await expect(toast).toBeVisible();
+  await expect(documentEditor(page).locator('[data-content-type="taskEmbed"]')).toHaveCount(0);
+  expect(await caret(page)).toBe('Depois');
+});

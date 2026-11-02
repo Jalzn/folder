@@ -23,11 +23,15 @@ export async function openDocumentTasks(page: Page) {
 export const documentEditor = (page: Page) => page.getByTestId('document-content');
 
 /**
- * Clicks a block's text and waits until the editor reads the caret in it: the keys a test presses next come
- * faster than a person's, before ProseMirror takes the selection the click made.
+ * Clicks a block's text, in its middle or at its start or end, and waits until the editor reads the caret in
+ * it: the keys a test presses next come faster than a person's, before ProseMirror takes the selection the
+ * click made.
  */
-export async function clickText(page: Page, text: string) {
-  await documentEditor(page).getByText(text, { exact: true }).click();
+export async function clickText(page: Page, text: string, at: 'middle' | 'start' | 'end' = 'middle') {
+  const line = documentEditor(page).getByText(text, { exact: true });
+  const box = await line.boundingBox();
+  if (at === 'middle' || !box) await line.click();
+  else await line.click({ position: { x: at === 'start' ? 1 : box.width - 1, y: box.height / 2 } });
   await expect
     .poll(() =>
       documentEditor(page).evaluate(
@@ -38,6 +42,22 @@ export async function clickText(page: Page, text: string) {
             }
           ).editor?.state.selection.$from.parent.textContent,
       ),
+    )
+    .toBe(text);
+}
+
+/** Waits until the editor reads `text` as its selection, which ⇧ and the arrows made in the DOM first. */
+export async function expectSelected(page: Page, text: string) {
+  await expect
+    .poll(() =>
+      documentEditor(page).evaluate((element) => {
+        type State = {
+          doc: { textBetween(from: number, to: number): string };
+          selection: { from: number; to: number };
+        };
+        const state = (element as HTMLElement & { editor?: { state: State } }).editor?.state;
+        return state?.doc.textBetween(state.selection.from, state.selection.to);
+      }),
     )
     .toBe(text);
 }

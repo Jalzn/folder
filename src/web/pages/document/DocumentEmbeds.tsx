@@ -9,12 +9,14 @@ import { useDocumentEmbeds } from './use-document-embeds';
 import { useEmbedActions } from './use-embed-actions';
 import { useEmbedPreviews } from './use-embed-preview';
 
-/** What the document's page asks of its embeds: ⌘K's "Incorporar…" and "Incorporar no documento". */
+/** What the document's page asks of its embeds: ⌘K's "Incorporar…", "Incorporar no documento" and ⌫ on one. */
 export interface EmbedCommands {
   /** Opens the picker on the block of the text cursor, as the `/` menu does. */
   openPicker: (kind: EmbedKind) => void;
   /** Puts a task's card right after a block; false when the block is gone. */
   insertTaskAfter: (blockId: string, taskId: string) => boolean;
+  /** "Remover" of an embed's block, with Desfazer, as ⌫ and Delete take a selected embed out. */
+  remove: (blockId: string) => void;
 }
 
 /**
@@ -65,11 +67,12 @@ export function DocumentEmbeds({
       openPicker: (kind) => latest.current.openPicker(kind),
       insertTaskAfter: (blockId, taskId) =>
         Boolean(editor.getBlock(blockId)) && latest.current.insert(blockId, 'task', taskId),
+      remove: (blockId) => actions.remove(blockId),
     };
     return () => {
       commands.current = null;
     };
-  }, [commands, editor]);
+  }, [commands, editor, actions]);
   const slashItems = readOnly ? undefined : embedSlashItems(openPicker);
   /** Esc in the picker: the cursor goes back to the block. */
   function back(blockId: string) {

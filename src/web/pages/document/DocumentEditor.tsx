@@ -43,7 +43,7 @@ export function DocumentEditor({ document }: { document: Document }) {
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   usePageTitle(state.snapshot.title);
   const openOrigin = useRef<(taskId: string) => void>(() => undefined);
-  const editor = useDocumentEditor(controller, document, state, openOrigin);
+  const editor = useDocumentEditor(controller, document, state, openOrigin, embedCommands);
   useOriginMarkers(editor, document.id, openOrigin);
   const anchor = useBlockAnchor(editor);
   const hasActiveProject = useHasActiveProject();
