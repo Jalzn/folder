@@ -1,5 +1,6 @@
 import type { BlockNoteEditor } from '@blocknote/core';
 import type { DefaultReactSuggestionItem } from '@blocknote/react';
+import type { RefObject } from 'react';
 import { BlockEditor } from '../../editor/BlockEditor';
 import { displayTitle } from '../../lib/types';
 import { DocumentTitle } from './DocumentTitle';
@@ -12,6 +13,7 @@ import { DocumentTitle } from './DocumentTitle';
 export function DocumentBody({
   editor,
   title,
+  titleRef,
   theme,
   onTitleChange,
   onChange,
@@ -23,6 +25,8 @@ export function DocumentBody({
   // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
   editor: BlockNoteEditor<any, any, any>;
   title: string;
+  /** The title's field, for the page that gives it the focus. */
+  titleRef: RefObject<HTMLTextAreaElement | null>;
   theme: 'light' | 'dark';
   onTitleChange: (value: string) => void;
   onChange: () => void;
@@ -43,7 +47,13 @@ export function DocumentBody({
       <h1 className="sr-only" tabIndex={-1}>
         {displayTitle(title)}
       </h1>
-      <DocumentTitle value={title} readOnly={readOnly} onChange={onTitleChange} onEnter={enterText} />
+      <DocumentTitle
+        value={title}
+        readOnly={readOnly}
+        titleRef={titleRef}
+        onChange={onTitleChange}
+        onEnter={enterText}
+      />
       <hr className="document__hair" />
       <BlockEditor
         editor={editor}

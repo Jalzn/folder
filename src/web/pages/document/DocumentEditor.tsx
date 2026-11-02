@@ -1,5 +1,5 @@
 import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, Shapes, X } from 'lucide-react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ReloadDialog, SaveBanners, TrashItemDialog, useItemActions } from '../../components/item-page';
 import type { Snapshot } from '../../lib/autosave';
 import { moveThroughController } from '../../lib/editor-move';
@@ -57,6 +57,12 @@ export function DocumentEditor({ document }: { document: Document }) {
   const projectId = state.snapshot.projectId;
   const archived = Boolean(useProject(projectId)?.archivedAt);
   const actions = useItemActions(controller, documentItem(document.id));
+  // A document "Novo documento" just made: its title takes the focus as the page opens.
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  const { newDocumentOpened } = app;
+  useLayoutEffect(() => {
+    if (titleRef.current) newDocumentOpened(document.id, titleRef.current);
+  }, [document.id, newDocumentOpened]);
 
   /**
    * "Criar tarefa" in the ⋯: from the selected excerpt, or else a new task in the document's project; none in
@@ -200,6 +206,7 @@ export function DocumentEditor({ document }: { document: Document }) {
           <DocumentBody
             editor={editor}
             title={title}
+            titleRef={titleRef}
             theme={theme.resolved}
             onTitleChange={(value) => update({ title: value })}
             onChange={() => update({ content: savedContent(editor) })}

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { type RefObject, useLayoutEffect, useRef } from 'react';
 import { UNTITLED } from '../../lib/types';
 
 /**
@@ -8,10 +8,13 @@ import { UNTITLED } from '../../lib/types';
 export function DocumentTitle({
   value,
   readOnly = false,
+  titleRef,
   onChange,
   onEnter,
 }: {
   value: string;
+  /** The field itself, for the page that gives it the focus. */
+  titleRef?: RefObject<HTMLTextAreaElement | null>;
   /** An archived project's document: the title reads, and ↵ still goes into the text. */
   readOnly?: boolean;
   onChange: (value: string) => void;
@@ -39,7 +42,10 @@ export function DocumentTitle({
   }, [value]);
   return (
     <textarea
-      ref={elementRef}
+      ref={(element) => {
+        elementRef.current = element;
+        if (titleRef) titleRef.current = element;
+      }}
       className="document__title"
       aria-label="Título do documento"
       value={value}
