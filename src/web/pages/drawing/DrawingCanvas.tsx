@@ -23,6 +23,7 @@ export function DrawingCanvas({
   onPointerDown,
   onPointerUp,
   menu,
+  readOnly = false,
 }: {
   scene: CanvasScene;
   epoch: number;
@@ -34,6 +35,8 @@ export function DrawingCanvas({
   onPointerDown: () => void;
   onPointerUp: () => void;
   menu: { onImport: () => void; onExport: () => void; onExportPNG: () => void };
+  /** Excalidraw's view mode, with no change reaching the autosave: an archived project's drawing. */
+  readOnly?: boolean;
 }) {
   return (
     <div
@@ -80,7 +83,8 @@ export function DrawingCanvas({
           },
         }}
         validateEmbeddable={false}
-        onChange={changes.onChange}
+        viewModeEnabled={readOnly}
+        {...(readOnly ? {} : { onChange: changes.onChange })}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPaste={changes.onPaste}
@@ -90,8 +94,8 @@ export function DrawingCanvas({
           <MainMenu.Item onSelect={menu.onImport}>Importar desenho</MainMenu.Item>
           <MainMenu.Item onSelect={menu.onExport}>Exportar desenho editável</MainMenu.Item>
           <MainMenu.Item onSelect={menu.onExportPNG}>Exportar PNG</MainMenu.Item>
-          <MainMenu.DefaultItems.ClearCanvas />
-          <MainMenu.DefaultItems.ChangeCanvasBackground />
+          {!readOnly && <MainMenu.DefaultItems.ClearCanvas />}
+          {!readOnly && <MainMenu.DefaultItems.ChangeCanvasBackground />}
           <MainMenu.DefaultItems.Help />
         </MainMenu>
       </Excalidraw>

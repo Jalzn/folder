@@ -9,9 +9,11 @@ import {
   TrashedItem,
   useItemEditor,
 } from '../../components/item-page';
+import { useProject } from '../../lib/queries';
 import { displayTitle, UNTITLED } from '../../lib/types';
 import { FolderLabel, PageFrame, useApp, usePageCommands } from '../../shell';
 import { useTheme } from '../../shell/theme';
+import { Banner } from '../../ui';
 import { canvasItem, canvasSession, canvasSnapshot, type EditableCanvas } from './canvas-session';
 import { DrawingCanvas } from './DrawingCanvas';
 import { DrawingHeader } from './DrawingHeader';
@@ -33,6 +35,8 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const scene = useSceneChanges(controller, state, editor);
   const viewport = useViewport(`tinyfold:canvas-view:${app.owner.installationId}:${canvas.id}`);
   const files = useCanvasFiles(controller, canvas.id, theme.resolved === 'dark');
+  // An archived project's drawing only reads, as its documents and tasks do (decision 2).
+  const archived = Boolean(useProject(state.snapshot.projectId)?.archivedAt);
   // ⌘S saves now and, after a failure, tries again; ⌘K lists the item's actions under "Neste item".
   usePageCommands({
     saveNow: () => void controller.flush(),
@@ -97,7 +101,9 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
           projectId={canvas.projectId}
           onDownloadRecovery={files.downloadRecovery}
           onExport={files.exportEditable}
-        />
+        >
+          {archived && <Banner tone="info">Projeto arquivado: desarquive para editar o desenho.</Banner>}
+        </SaveBanners>
       }
     >
       <HiddenFileInput
@@ -113,6 +119,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
         </h1>
         <input
           className="drawing__title"
+          readOnly={archived}
           aria-label="Título do desenho"
           value={title}
           maxLength={300}
@@ -121,6 +128,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
         />
       </div>
       <DrawingCanvas
+        readOnly={archived}
         scene={state.snapshot.scene}
         epoch={state.remoteEpoch}
         title={state.snapshot.title}

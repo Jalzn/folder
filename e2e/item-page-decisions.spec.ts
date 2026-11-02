@@ -58,3 +58,54 @@ test('W5.7a: a document trashed elsewhere keeps its editor while it holds unsave
   await expect(page.getByText('Este documento está na lixeira')).toBeVisible();
   await expect(editor(page)).toHaveCount(0);
 });
+
+/** An empty drawing made over RPC in a new project, with the project's ID. */
+async function drawingInProject(page: Page, name: string) {
+  const project = await rpc<{ id: string }>(page, 'workspace/createProject', { requestId: crypto.randomUUID(), name });
+  const created = await rpc<{ created?: { id: string }; id?: string }>(page, 'workspace/createCanvas', {
+    requestId: crypto.randomUUID(),
+    projectId: project.id,
+    title: 'Planta',
+  });
+  return { projectId: project.id, id: created.created?.id ?? created.id ?? '' };
+}
+
+test('W5.7b: an archived project’s drawing opens to read only, with the band, and no save goes out', async ({
+  page,
+}) => {
+  await login(page);
+  const { projectId, id } = await drawingInProject(page, `Arquivado com desenho ${Date.now()}`);
+  const project = (await rpc<{ id: string; version: number }[]>(page, 'workspace/listProjects', {})).find(
+    (each) => each.id === projectId,
+  );
+  await rpc(page, 'workspace/updateProject', {
+    id: projectId,
+    expectedVersion: project?.version,
+    archived: true,
+    requestId: crypto.randomUUID(),
+  });
+  const saves: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/rpc/workspace/saveCanvas')) saves.push(request.url());
+  });
+  await page.goto(`/projetos/${projectId}/desenhos/${id}`);
+  await expect(page.getByText('Projeto arquivado: desarquive para editar o desenho.')).toBeVisible();
+  const title = page.getByRole('textbox', { name: 'Título do desenho' });
+  await expect(title).toHaveAttribute('readonly', '');
+  await title.click();
+  await page.keyboard.type(' novo');
+  await expect(title).toHaveValue('Planta');
+
+  // A rectangle drawn with the keyboard's tool and a drag changes nothing.
+  const frame = page.getByTestId('canvas-editor');
+  const box = await frame.boundingBox();
+  if (!box) throw new Error('no canvas');
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await page.keyboard.press('r');
+  await page.mouse.move(box.x + 200, box.y + 200);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 320, box.y + 300, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForTimeout(2500);
+  expect(saves).toEqual([]);
+});
