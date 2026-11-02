@@ -1,16 +1,12 @@
 import { ORPCError, os, ValidationError } from '@orpc/server';
 import { AppError, type ErrorCode, type Owner } from '../application/index.js';
 import { DomainError } from '../domain/index.js';
-import type { Database } from './db.js';
 
 export interface RequestSession {
   owner: Owner;
   sessionId: string;
-  token: string;
 }
 export interface RequestContext {
-  db: Database;
-  now: Date;
   originAllowed: boolean;
   session: RequestSession | undefined;
   client: { ip: string; userAgent: string | undefined };

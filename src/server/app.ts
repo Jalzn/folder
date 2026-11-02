@@ -80,10 +80,8 @@ export function createApp({
     const { matched, response } = await rpc.handle(c.req.raw, {
       prefix: '/rpc',
       context: {
-        db,
-        now,
         originAllowed: c.req.header('origin') === config.appOrigin,
-        session: session ? { owner: session.owner, sessionId: session.sessionId, token: session.token } : undefined,
+        session: session ? { owner: session.owner, sessionId: session.sessionId } : undefined,
         client: { ip: clientIp(c, config.trustProxy), userAgent: c.req.header('user-agent') },
         cookies,
       },
