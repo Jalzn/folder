@@ -2,6 +2,7 @@ import type { BlockNoteEditor } from '@blocknote/core';
 import { useNavigate } from '@tanstack/react-router';
 import type { DocumentBlock } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
+import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draft-download';
 import { oneAtATime } from '../../components/item-page/one-at-a-time';
 import { api, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
 import type { AutosaveController, Snapshot } from '../../lib/autosave';
@@ -110,9 +111,9 @@ export function useDocumentFiles(
   function downloadRecovery() {
     const raw = controller.getState().recoveryData;
     if (!raw) return;
-    downloadFile(new Blob([raw], { type: 'application/json' }), `tinyfold-rascunho-${documentId}.json`);
+    downloadDraft(raw, 'document', documentId);
     controller.recoveryDownloaded();
-    toast('Uma cópia do rascunho foi baixada.');
+    toast(DRAFT_DOWNLOADED);
   }
 
   return { exportMarkdown, importMarkdown, downloadRecovery };

@@ -2,9 +2,10 @@ import { useRef, useState } from 'react';
 import { api, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import { taskQuery } from '../../lib/queries';
-import { displayTitle, type Task } from '../../lib/types';
+import type { Task } from '../../lib/types';
 import { useTaskDrawer } from '../../shell/task-drawer-state';
 import { useToast } from '../../ui';
+import { DRAFT_DOWNLOADED, downloadDraft } from '../item-page/draft-download';
 import { copyTitle, isFinalRefusal } from '../item-page/item-copy';
 import type { TaskTextController } from './task-session';
 import { taskTextSnapshot } from './task-session';
@@ -74,12 +75,9 @@ export function useTaskTextActions(controller: TaskTextController, task: Task) {
   /** A draft that could not open, as a file: the person keeps what they wrote. */
   function downloadRecovery() {
     const data = controller.getState().recoveryData ?? JSON.stringify(controller.getState().snapshot);
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
-    link.download = `${displayTitle(task.title)} — rascunho.json`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    downloadDraft(data, 'task', task.id);
     controller.recoveryDownloaded();
+    toast(DRAFT_DOWNLOADED);
   }
 
   return { copying, reloadRemote, saveCopy, downloadRecovery };

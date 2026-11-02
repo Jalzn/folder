@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { MAX_CANVAS_BYTES } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
+import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draft-download';
 import { api, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { type CanvasSnapshot, canvasFile, canvasFileName, readCanvasImport } from '../../lib/canvas-autosave';
@@ -103,8 +104,9 @@ export function useCanvasFiles(controller: AutosaveController<CanvasSnapshot>, c
   function downloadRecovery() {
     const raw = controller.getState().recoveryData;
     if (!raw) return;
-    downloadFile(new Blob([raw], { type: 'application/json' }), `tinyfold-rascunho-desenho-${canvasId}.json`);
+    downloadDraft(raw, 'drawing', canvasId);
     controller.recoveryDownloaded();
+    toast(DRAFT_DOWNLOADED);
   }
 
   return { exportEditable, exportPNG, exporting, importDrawing, importing, downloadRecovery };
