@@ -1,7 +1,8 @@
 import type { EmbedKind } from '@tinyfold/workspace/domain';
-import { type EditorState, NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
+import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import { embedOf } from './embed-blocks';
+import { isEmbedSelected } from './embed-selection';
 import type { EmbedText } from './embed-text';
 
 /** What copying an embed asks of the document: the item's words and link, and taking the block out on a cut. */
@@ -23,10 +24,10 @@ const htmlOf = ({ link, plain }: EmbedText) =>
  * "Desenho: título" as text, and the link to the item, as the exported file has it, as HTML and Markdown. A cut
  * takes the block out with the document's "Remover", whose toast offers Desfazer.
  */
-export function embedClipboard(selected: (state: EditorState) => boolean, actions: EmbedClipboardActions) {
+export function embedClipboard(actions: EmbedClipboardActions) {
   const write = (view: EditorView, event: ClipboardEvent, cut: boolean) => {
     const { selection, doc } = view.state;
-    if (!selected(view.state) || !event.clipboardData || !(selection instanceof NodeSelection)) return false;
+    if (!isEmbedSelected(view.state) || !event.clipboardData || !(selection instanceof NodeSelection)) return false;
     const embed = embedOf(selection.node);
     if (!embed) return false;
     const text = actions.describe(embed.kind, embed.id);

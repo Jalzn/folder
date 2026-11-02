@@ -15,7 +15,7 @@ import {
 } from '@blocknote/react';
 import { Plus } from 'lucide-react';
 import { cx } from '../lib/cx';
-import { selectedEmbed } from './blocks/embed-keys';
+import { isEmbedSelected } from './blocks/embed-selection';
 
 function CreateTaskButton({ onPress }: { onPress: () => void }) {
   const components = useComponentsContext();
@@ -73,7 +73,7 @@ export function BlockEditor({
         <FormattingToolbarController
           formattingToolbar={() =>
             // An embed selected as a node has no text to format.
-            selectedEmbed(editor) ? null : (
+            isEmbedSelected(editor.prosemirrorState) ? null : (
               <FormattingToolbar>
                 {getFormattingToolbarItems([...blockTypeSelectItems(editor), ...getMathBlockTypeSelectItems(editor)])}
                 {onCreateTask && <CreateTaskButton onPress={onCreateTask} />}

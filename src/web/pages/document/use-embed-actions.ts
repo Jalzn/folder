@@ -2,8 +2,8 @@ import { useNavigate } from '@tanstack/react-router';
 import type { EmbedKind } from '@tinyfold/workspace/domain';
 import { useRef, useState } from 'react';
 import { embedBlock } from '../../editor/blocks/embed-blocks';
-import { holdSelectedEmbed } from '../../editor/blocks/embed-selection-hold';
 import type { EmbedActions } from '../../editor/blocks/embeds-context';
+import { selectEmbedBlock } from '../../editor/blocks/selection-drift';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
 import { api } from '../../lib/api';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
@@ -57,14 +57,9 @@ export function useEmbedActions({
 
   /**
    * Selects an embed's block as a node, held against Chrome's drift until the next key or press: it may have no
-   * text beside it (embed-selection-hold.ts).
+   * text beside it (selection-drift.ts).
    */
-  function selectEmbed(blockId: string) {
-    editor.transact((tr) => {
-      editor.setTextCursorPosition(blockId);
-      holdSelectedEmbed(tr);
-    });
-  }
+  const selectEmbed = (blockId: string) => selectEmbedBlock(editor, blockId);
 
   /** The editor is still on the page: a task created after the document closed does not reach it. */
   const present = () => Boolean(editor.domElement?.isConnected);
