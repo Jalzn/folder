@@ -128,7 +128,9 @@ export function useTaskFields(task: Task | undefined) {
         () => {
           const current = latest.current ?? start;
           const input = { id: current.id, expectedVersion: version(current) };
-          return api.workspace.deleteTask({ ...input, requestId: requests.trash.for(input) });
+          // A lost answer goes once more with the same request, which the server replays, as the card's
+          // trash does (decision 7).
+          return onceMoreIfLost(() => api.workspace.deleteTask({ ...input, requestId: requests.trash.for(input) }));
         },
         () => {
           requests.trash.clear();
