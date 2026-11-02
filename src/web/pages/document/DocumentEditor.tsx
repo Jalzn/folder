@@ -174,11 +174,13 @@ export function DocumentEditor({ document }: { document: Document }) {
         </SaveBanners>
       }
     >
+      {/* "Importar Markdown" in the ⋯ and in ⌘K opens it; out of the Tab order, it has nothing to show (review B11). */}
       <input
         ref={fileInput}
         type="file"
         accept=".md,.markdown,.txt,text/markdown,text/plain"
         className="sr-only"
+        tabIndex={-1}
         aria-label="Importar arquivo Markdown"
         onChange={(event) => {
           const file = event.target.files?.[0];

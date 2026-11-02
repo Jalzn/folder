@@ -72,6 +72,8 @@ test('the bar says when the document was edited, and its ⋯ starts with Criar t
   await page.keyboard.press('Escape');
   // The hint and the button under the text are gone; the editor's placeholder is the hint now.
   await expect(page.getByRole('button', { name: 'Criar tarefa da seleção' })).toHaveCount(0);
+  // The file field "Importar Markdown" opens has nothing to show in the Tab order.
+  await expect(page.getByLabel('Importar arquivo Markdown')).toHaveAttribute('tabindex', '-1');
 });
 
 test('⌘⌥T makes a task of the excerpt selected in the editor, and outside it says how', async ({ page }) => {
