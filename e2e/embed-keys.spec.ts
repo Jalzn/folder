@@ -298,3 +298,33 @@ test('typing on a selected card writes in a new paragraph after it, an accent’
   await cdp.send('Input.insertText', { text: 'á' });
   await expect.poll(lines).toEqual(['Antes', '[card]', 'á', 'X', 'Depois']);
 });
+
+test('after Restaurar pressed with an embed selected, the arrows still go a block at a time', async ({ page }) => {
+  await login(page);
+  const projectId = await createProject(page, `Setas depois de restaurar ${Date.now()}`);
+  const tasks: { id: string; version: number }[] = [];
+  for (const index of [1, 2, 3, 4, 5])
+    tasks.push(
+      await rpc(page, 'workspace/createTask', { requestId: crypto.randomUUID(), projectId, title: `Card ${index}` }),
+    );
+  const trashed = tasks[2] as { id: string; version: number };
+  await rpc(page, 'workspace/deleteTask', {
+    id: trashed.id,
+    expectedVersion: trashed.version,
+    requestId: crypto.randomUUID(),
+  });
+  await openDocument(page, projectId, [
+    { ...paragraph('Antes'), id: 'antes' },
+    ...tasks.map((each, index) => ({ ...card(each.id), id: `x${index + 1}` })),
+    { ...paragraph('Depois'), id: 'depois' },
+  ]);
+
+  // The first card selected with the keys, then the third one restored with the pointer.
+  await clickText(page, 'Antes');
+  await page.keyboard.press('ArrowDown');
+  expect(await caret(page)).toBe('[x1]');
+  await documentEditor(page).getByRole('button', { name: 'Restaurar “Card 3”' }).click();
+  await expect(embedCard(page, 'Card 3')).toBeVisible();
+  expect(await caret(page)).toBe('[x3]');
+  expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'])).toEqual(['[x4]', '[x5]', 'Depois']);
+});
