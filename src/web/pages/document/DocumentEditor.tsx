@@ -14,6 +14,7 @@ import { Banner, IconButton, useToast } from '../../ui';
 import { DocumentBody } from './DocumentBody';
 import { DocumentEmbeds, type EmbedCommands } from './DocumentEmbeds';
 import { DocumentHeader } from './DocumentHeader';
+import { ARCHIVED_NOTE } from './DocumentMenu';
 import { documentController, documentItem } from './document-session';
 import { savedContent, useBlockAnchor, useDocumentEditor } from './use-document-editor';
 import { useDocumentFiles } from './use-document-files';
@@ -57,10 +58,13 @@ export function DocumentEditor({ document }: { document: Document }) {
   const archived = Boolean(useProject(projectId)?.archivedAt);
   const actions = useItemActions(controller, documentItem(document.id));
 
-  /** "Criar tarefa" in the ⋯: from the selected excerpt, or else a new task in the document's project. */
+  /**
+   * "Criar tarefa" in the ⋯: from the selected excerpt, or else a new task in the document's project; none in
+   * an archived project, with or without an excerpt (review M4).
+   */
   function createTask() {
+    if (archived) return toast(ARCHIVED_NOTE, 'error');
     if (selectedText(editor)) return void taskFromSelection.create();
-    if (archived) return toast('Projeto arquivado: desarquive para criar itens.', 'error');
     drawer.newTask(projectId);
   }
   // ⌘S saves now and, after a failure, tries again; ⌘⌥T creates a task from the excerpt selected in the
@@ -68,7 +72,8 @@ export function DocumentEditor({ document }: { document: Document }) {
   usePageCommands({
     saveNow: () => void controller.flush(),
     createTask: () => {
-      if (editor.isFocused() && selectedText(editor)) void taskFromSelection.create();
+      if (archived) toast(ARCHIVED_NOTE, 'error');
+      else if (editor.isFocused() && selectedText(editor)) void taskFromSelection.create();
       else toast(NO_EXCERPT);
     },
     files: [
@@ -131,6 +136,7 @@ export function DocumentEditor({ document }: { document: Document }) {
             projectId,
             selected: Boolean(selection),
             preparing: taskFromSelection.preparing,
+            archived,
             onCreateTask: createTask,
             onExport: () => void files.exportMarkdown(),
             onImport: () => fileInput.current?.click(),
@@ -152,6 +158,7 @@ export function DocumentEditor({ document }: { document: Document }) {
           onRetry={() => void controller.flush()}
           onExport={() => void files.exportMarkdown()}
         >
+          {archived && <Banner tone="info">Projeto arquivado: desarquive para editar o documento.</Banner>}
           {anchor.missing && (
             <Banner
               tone="info"
@@ -197,6 +204,7 @@ export function DocumentEditor({ document }: { document: Document }) {
             onSelectionChange={() => setSelection(selectedText(editor))}
             onCreateTask={() => void taskFromSelection.create()}
             slashItems={slashItems}
+            readOnly={archived}
           />
         )}
       </DocumentEmbeds>

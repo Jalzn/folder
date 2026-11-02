@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { clickText, documentEditor, embedCard } from './support/document.js';
+import { pressCommand } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -209,4 +210,59 @@ test('Restaurar gives the focus to the card it brings back, selected in the edit
   await expect(embedCard(page, 'Tarefa de volta')).toBeVisible();
   await expect(documentEditor(page)).toBeFocused();
   expect(await caret(page)).toBe('[card]');
+});
+
+test('an archived project’s document only reads: no typing, no ⌫ on its embeds, no Criar tarefa, no save', async ({
+  page,
+}) => {
+  await login(page);
+  const projectId = await createProject(page, `Só leitura ${Date.now()}`);
+  const taskId = await task(page, projectId, 'Card guardado');
+  const id = await openDocument(page, projectId, [
+    { ...paragraph('Texto guardado'), id: 'texto' },
+    { ...card(taskId), id: 'card' },
+    { ...paragraph('Depois'), id: 'depois' },
+  ]);
+  const project = (await rpc<{ id: string; version: number }[]>(page, 'workspace/listProjects', {})).find(
+    (each) => each.id === projectId,
+  );
+  await rpc(page, 'workspace/updateProject', {
+    id: projectId,
+    expectedVersion: project?.version,
+    archived: true,
+    requestId: crypto.randomUUID(),
+  });
+  const saves: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/rpc/workspace/saveDocument') saves.push(request.url());
+  });
+  await page.reload();
+  await expect(page.getByText('Projeto arquivado: desarquive para editar o documento.')).toBeVisible();
+  await expect(documentEditor(page)).toHaveAttribute('contenteditable', 'false');
+  await expect(page.getByRole('textbox', { name: 'Título do documento' })).toHaveAttribute('readonly', '');
+
+  // Keys change nothing: the text, the card under it, the title.
+  await documentEditor(page).getByText('Texto guardado', { exact: true }).click({ clickCount: 3 });
+  await page.keyboard.type('X');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Backspace');
+  await page.getByRole('textbox', { name: 'Título do documento' }).click();
+  await page.keyboard.type('Y');
+  await expect(documentEditor(page)).toContainText('Texto guardado');
+  await expect(documentEditor(page).locator('[data-content-type="taskEmbed"]')).toHaveCount(1);
+
+  // Criar tarefa: ⌘⌥T with an excerpt selected says why, and the ⋯ offers it disabled.
+  await documentEditor(page).getByText('Texto guardado', { exact: true }).click({ clickCount: 3 });
+  await pressCommand(page, 'Alt+t');
+  await expect(page.locator('.toast')).toContainText('Projeto arquivado: desarquive para criar itens.');
+  await expect(page.getByRole('region', { name: 'Nova tarefa', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Opções do documento', exact: true }).click();
+  const item = page.getByRole('menu', { name: 'Opções do documento' }).getByRole('menuitem', { name: /^Criar tarefa/ });
+  await expect(item).toBeDisabled();
+  await expect(item).toContainText('Projeto arquivado: desarquive para criar itens');
+  await page.keyboard.press('Escape');
+
+  expect(saves).toEqual([]);
+  expect(textOf((await saved(page, id))[0] as Block)).toBe('Texto guardado');
 });

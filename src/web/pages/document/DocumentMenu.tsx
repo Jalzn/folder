@@ -1,6 +1,9 @@
 import { ArrowDownToLine, ArrowUpFromLine, Plus } from 'lucide-react';
 import { ItemMenu, type ItemMenuAction } from '../../shell';
 
+/** Why an archived project's document makes no task, in the ⋯ and in the toast of ⌘⌥T. */
+export const ARCHIVED_NOTE = 'Projeto arquivado: desarquive para criar itens.';
+
 /** The ⌘⌥T of "Criar tarefa": ⌘⌥T on Apple platforms, Ctrl+Alt+T elsewhere. */
 export const CREATE_TASK_KEYS = ['mod', '⌥', 'T'] as const;
 
@@ -14,6 +17,7 @@ export function DocumentMenu({
   projectId,
   selected,
   preparing,
+  archived,
   onCreateTask,
   onExport,
   onImport,
@@ -24,6 +28,8 @@ export function DocumentMenu({
   /** Whether the editor has a selected excerpt, which "Criar tarefa" takes. */
   selected: boolean;
   preparing: boolean;
+  /** An archived project's document makes no task, with or without an excerpt. */
+  archived: boolean;
   onCreateTask: () => void;
   onExport: () => void;
   onImport: () => void;
@@ -35,9 +41,13 @@ export function DocumentMenu({
       label: 'Criar tarefa',
       icon: <Plus size={16} />,
       shortcut: CREATE_TASK_KEYS,
-      description: selected ? 'A partir do trecho selecionado' : 'Selecione um trecho para criar a partir dele',
+      description: archived
+        ? ARCHIVED_NOTE.slice(0, -1)
+        : selected
+          ? 'A partir do trecho selecionado'
+          : 'Selecione um trecho para criar a partir dele',
       action: onCreateTask,
-      disabled: preparing,
+      disabled: preparing || archived,
     },
     { id: 'export', label: 'Exportar Markdown', icon: <ArrowDownToLine size={16} />, action: onExport },
     {

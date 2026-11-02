@@ -7,10 +7,13 @@ import { UNTITLED } from '../../lib/types';
  */
 export function DocumentTitle({
   value,
+  readOnly = false,
   onChange,
   onEnter,
 }: {
   value: string;
+  /** An archived project's document: the title reads, and ↵ still goes into the text. */
+  readOnly?: boolean;
   onChange: (value: string) => void;
   onEnter: () => void;
 }) {
@@ -43,6 +46,7 @@ export function DocumentTitle({
       rows={1}
       wrap="soft"
       maxLength={300}
+      readOnly={readOnly}
       placeholder={UNTITLED}
       onChange={(event) => onChange(event.target.value.replace(/[\r\n]+/g, ' '))}
       onKeyDown={(event) => {
