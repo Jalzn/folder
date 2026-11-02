@@ -1,4 +1,4 @@
-import { DomainError } from '@tinyfold/core/domain';
+import { DomainError, visibleText } from '@tinyfold/core/domain';
 
 export * from './access-token.js';
 
@@ -33,4 +33,15 @@ export function deviceLabel(userAgent: string | undefined): string {
             ? 'Linux'
             : 'Dispositivo';
   return `${browser} · ${system}`;
+}
+
+/** The owner's name: at most 100 characters (code points), without what draws nothing. */
+export const OWNER_NAME_CHARS = 100;
+
+/**
+ * The owner's name as stored: visible text only (visibleText, the rule of the workspace's names and
+ * titles), cut at OWNER_NAME_CHARS code points so that no emoji is split, and "Você" when nothing is left.
+ */
+export function ownerName(raw: string): string {
+  return visibleText(Array.from(visibleText(raw)).slice(0, OWNER_NAME_CHARS).join('')) || 'Você';
 }

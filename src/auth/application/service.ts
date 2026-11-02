@@ -1,6 +1,6 @@
 import { AppError, type Owner } from '@tinyfold/core/application';
 import { canonicalTimeZone } from '@tinyfold/core/domain';
-import { deviceLabel, renewalIntervalMs, sessionLifetimeMs, validatePassword } from '../domain/index.js';
+import { deviceLabel, ownerName, renewalIntervalMs, sessionLifetimeMs, validatePassword } from '../domain/index.js';
 import type { AuthDependencies, StoredOwner } from './ports.js';
 
 /** Where civil dates hold until the owner has a time zone, or while the stored one is unusable. */
@@ -41,7 +41,7 @@ export function authService(deps: AuthDependencies) {
       const concurrent = await repo.owner();
       if (concurrent) return profile(concurrent);
       const owner: StoredOwner = {
-        name: input.name.trim().slice(0, 100) || 'Você',
+        name: ownerName(input.name),
         installationId: deps.id(),
         passwordHash,
         passwordChangedAt: deps.now().toISOString(),

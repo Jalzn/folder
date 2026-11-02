@@ -50,6 +50,17 @@ describe('owner authentication', () => {
     expect((await auth.authenticate(result.token))?.owner.installationId).toBe(owner.installationId);
     expect((await auth.listSessions(result.sessionId))[0]?.deviceLabel).toBe('Chrome · macOS');
   });
+  it("passes the owner's name through the visible text rule, cut at 100 code points (decision 7)", async () => {
+    const folder = await mkdtemp(join(tmpdir(), 'tinyfold-auth-'));
+    const db = createDatabase(join(folder, 'test.sqlite'));
+    resources.push({ db, folder });
+    await migrate(db, [coreModule, authModule]);
+    const auth = createAuthService(db);
+    // An invisible character first, and an emoji as the 100th code point once it is gone.
+    const name = ` \u{200B}Ana${'a'.repeat(96)}😀 de Souza`;
+    expect((await auth.ensureOwner({ name, password })).name).toBe(`Ana${'a'.repeat(96)}😀`);
+  });
+
   it('renews active sessions and expires inactive sessions', async () => {
     const { auth, advance } = await fixture();
     const result = await auth.login({ password }, { ip: 'test' });
