@@ -1,4 +1,5 @@
 import { matchesAllWords } from '../../lib/highlight';
+import { KEYS } from '../keyboard/keys';
 import type { ThemeChoice } from '../theme';
 
 export type CommandId =
@@ -78,10 +79,10 @@ export function availableCommands(context: CommandContext): Command[] {
       : [];
   const pages: Command[] = project
     ? [
-        { id: 'overview', label: 'Visão geral', keywords: `inicio resumo ${project.name}`, shortcut: ['G', 'V'] },
-        { id: 'board', label: 'Quadro', keywords: `kanban tarefas ${project.name}`, shortcut: ['G', 'Q'] },
+        { id: 'overview', label: 'Visão geral', keywords: `inicio resumo ${project.name}`, shortcut: KEYS.overview },
+        { id: 'board', label: 'Quadro', keywords: `kanban tarefas ${project.name}`, shortcut: KEYS.board },
         { id: 'index', label: 'Índice', keywords: `lista documentos desenhos ${project.name}` },
-        { id: 'trash', label: 'Lixeira', keywords: `excluidos restaurar ${project.name}`, shortcut: ['G', 'L'] },
+        { id: 'trash', label: 'Lixeira', keywords: `excluidos restaurar ${project.name}`, shortcut: KEYS.trash },
         { id: 'completed', label: 'Concluídas do projeto', keywords: `feitas terminadas tarefas ${project.name}` },
         { id: 'labels', label: 'Gerenciar etiquetas…', keywords: 'etiquetas tags cores renomear excluir' },
         ...(context.hasFolders
@@ -96,24 +97,24 @@ export function availableCommands(context: CommandContext): Command[] {
     ...(context.theme === choice ? { detail: 'atual' } : {}),
   }));
   const save: Command[] = context.canSave
-    ? [{ id: 'save', label: 'Salvar agora', keywords: 'gravar', shortcut: ['mod', 'S'] }]
+    ? [{ id: 'save', label: 'Salvar agora', keywords: 'gravar', shortcut: KEYS.save }]
     : [];
   const commands: Command[] = [
     ...creation,
-    { id: 'switch-project', label: 'Trocar de projeto…', keywords: 'seletor abrir projeto', shortcut: ['G', 'P'] },
+    { id: 'switch-project', label: 'Trocar de projeto…', keywords: 'seletor abrir projeto', shortcut: KEYS.switcher },
     ...pages,
     ...themes,
     {
       id: 'toggle-sidebar',
       label: context.sidebarCollapsed ? 'Expandir a lateral' : 'Recolher a lateral',
       keywords: 'barra lateral faixa sidebar',
-      shortcut: ['mod', '\\'],
+      shortcut: KEYS.toggleSidebar,
     },
     { id: 'profile', label: 'Perfil e token', keywords: 'voce conta senha token mcp claude sessoes' },
     { id: 'new-project', label: 'Novo projeto', keywords: 'criar projeto' },
-    { id: 'shortcuts', label: 'Atalhos', keywords: 'teclado teclas ajuda', shortcut: ['?'] },
+    { id: 'shortcuts', label: 'Atalhos', keywords: 'teclado teclas ajuda', shortcut: KEYS.shortcuts },
     ...save,
-    { id: 'back', label: 'Voltar', keywords: 'anterior historico', shortcut: ['mod', '['] },
+    { id: 'back', label: 'Voltar', keywords: 'anterior historico', shortcut: KEYS.back },
   ];
   return context.hasActiveProject ? commands : commands.filter((command) => withoutProject.has(command.id));
 }

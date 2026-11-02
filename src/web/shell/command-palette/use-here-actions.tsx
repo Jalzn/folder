@@ -1,6 +1,7 @@
 import { ArrowRightLeft, FolderInput, Pin, PinOff, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ItemType, Project } from '../../lib/types';
+import { KEYS } from '../keyboard/keys';
 import { usePins } from '../project/use-pins';
 import { useShellActions } from '../shell-ui';
 import type { HereAction } from './palette-sections';
@@ -34,14 +35,14 @@ export function useHereActions({
             id: 'pin',
             label: pinned ? 'Desafixar' : 'Fixar',
             icon: pinned ? <PinOff size={16} /> : <Pin size={16} />,
-            shortcut: ['P'],
+            shortcut: KEYS.pin,
             run: () => void (pinned ? pins.unpin(item.type, item.id) : pins.pin(item.type, item.id)),
           },
           {
             id: 'move-folder',
             label: 'Mover para pasta…',
             icon: <FolderInput size={16} />,
-            shortcut: ['M'],
+            shortcut: KEYS.move,
             run: () => ui.setMoveOpen('folder'),
           },
           {

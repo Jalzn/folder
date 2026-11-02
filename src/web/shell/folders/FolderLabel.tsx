@@ -3,6 +3,7 @@ import { ChevronDown, Folder } from 'lucide-react';
 import { Button as AriaButton } from 'react-aria-components';
 import { useFolders, useProject } from '../../lib/queries';
 import { shortcutLabel, Tooltip, TooltipTrigger } from '../../ui';
+import { KEYS } from '../keyboard/keys';
 import { useShellUi } from '../shell-ui';
 
 /** Where "Mover para pasta…" opens from the page: on the label, when the header shows it. */
@@ -49,7 +50,7 @@ export function FolderLabel({ projectId, folderId }: { projectId: string; folder
       </AriaButton>
       <Tooltip>
         Mover para pasta
-        <span className="tooltip__keys">{shortcutLabel(['M'])}</span>
+        <span className="tooltip__keys">{shortcutLabel(KEYS.move)}</span>
       </Tooltip>
     </TooltipTrigger>
   );

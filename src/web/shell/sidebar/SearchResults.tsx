@@ -9,6 +9,7 @@ import type { SearchResult } from '../../lib/queries';
 import { displayTitle, type ItemType } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { Highlight, Shortcut } from '../../ui';
+import { KEYS } from '../keyboard/keys';
 import { useShellActions } from '../shell-ui';
 
 const icons: Record<ItemType, typeof FileText> = { document: FileText, drawing: Shapes };
@@ -118,7 +119,7 @@ export function SearchResults({
         <Search size={16} />
         <span className="sidebar-row__name">Buscar em todos os projetos</span>
         <span className="sidebar-row__meta">
-          <Shortcut keys={['mod', 'K']} />
+          <Shortcut keys={KEYS.palette} />
         </span>
       </button>
     </div>

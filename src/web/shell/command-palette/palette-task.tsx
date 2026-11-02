@@ -1,4 +1,5 @@
 import { ArrowRight, CircleCheck, Link2, RotateCcw, Trash2 } from 'lucide-react';
+import { KEYS } from '../keyboard/keys';
 import { useDrawerContent, useTaskDrawer } from '../task-drawer-state';
 import type { RunnableHereAction } from './use-here-actions';
 
@@ -18,7 +19,7 @@ export function useTaskHereActions(): RunnableHereAction[] {
       id: 'task-done',
       label: commands.done ? 'Reabrir' : 'Concluir',
       icon: commands.done ? <RotateCcw size={16} /> : <CircleCheck size={16} />,
-      shortcut: ['mod', '↵'],
+      shortcut: KEYS.toggleDone,
       run: commands.toggleDone,
     });
   if (commands.moveToColumn)

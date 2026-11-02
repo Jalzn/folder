@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useFolders, useProjects } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
 import { IconButton, Menu, MenuItem, MenuSeparator, MenuTrigger, ProjectMark, SubmenuTrigger } from '../../ui';
+import { KEYS } from '../keyboard/keys';
 import { useShellActions } from '../shell-ui';
 import { activeProjects } from './project-order';
 import { useMoveItem } from './use-move-item';
@@ -79,7 +80,7 @@ export function ItemMenu({
             key="pin"
             id="pin"
             icon={pinned ? <PinOff size={16} /> : <Pin size={16} />}
-            shortcut={['P']}
+            shortcut={KEYS.pin}
             onAction={() => void (pinned ? pins.unpin(type, id) : pins.pin(type, id))}
           >
             {pinned ? 'Desafixar' : 'Fixar'}
@@ -90,7 +91,7 @@ export function ItemMenu({
             key="move-folder"
             id="move-folder"
             icon={<FolderInput size={16} />}
-            shortcut={['M']}
+            shortcut={KEYS.move}
             description={folder ? `Em ${folder.name}` : 'Na raiz do projeto'}
             onAction={() => ui.setMoveOpen('folder')}
           >

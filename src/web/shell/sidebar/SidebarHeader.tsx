@@ -3,6 +3,7 @@ import { Button as AriaButton } from 'react-aria-components';
 import { useProjects } from '../../lib/queries';
 import type { Project } from '../../lib/types';
 import { IconButton, Logo, ProjectMark } from '../../ui';
+import { KEYS } from '../keyboard/keys';
 import { ProjectSwitcher } from '../project/ProjectSwitcher';
 import { switcherLabel } from '../project/switcher-label';
 import type { SwitcherPlace } from '../shell-ui';
@@ -36,7 +37,7 @@ export function SidebarHeader({
       <IconButton
         className="sidebar-header__collapse"
         label={collapseLabel}
-        shortcut={['mod', '\\']}
+        shortcut={KEYS.toggleSidebar}
         onPress={onCollapse}
       >
         <PanelLeftClose size={16} />

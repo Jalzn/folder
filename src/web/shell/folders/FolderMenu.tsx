@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Ellipsis, FileText, FolderX, Pencil, Plus, Shapes, Trash2 } from 'lucide-react';
 import { IconButton, Menu, MenuItem, MenuSection, MenuSeparator, MenuTrigger } from '../../ui';
+import { KEYS } from '../keyboard/keys';
 
 export type FolderMenuAction = 'rename' | 'up' | 'down' | 'delete' | 'delete-with-items';
 
@@ -58,13 +59,13 @@ export function FolderTools({
           disabledKeys={disabled}
           onAction={(key) => onAction(key as FolderMenuAction)}
         >
-          <MenuItem id="rename" icon={<Pencil size={16} />} shortcut={['F2']}>
+          <MenuItem id="rename" icon={<Pencil size={16} />} shortcut={KEYS.rename}>
             Renomear
           </MenuItem>
-          <MenuItem id="up" icon={<ArrowUp size={16} />} shortcut={['⌥', '↑']}>
+          <MenuItem id="up" icon={<ArrowUp size={16} />} shortcut={KEYS.moveUp}>
             Mover para cima
           </MenuItem>
-          <MenuItem id="down" icon={<ArrowDown size={16} />} shortcut={['⌥', '↓']}>
+          <MenuItem id="down" icon={<ArrowDown size={16} />} shortcut={KEYS.moveDown}>
             Mover para baixo
           </MenuItem>
           <MenuSeparator />

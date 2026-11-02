@@ -2,7 +2,7 @@ import './shortcuts-dialog.css';
 import { Button, Dialog, DialogActions, Shortcut } from '../../ui';
 import { shortcutGroups } from './shortcut-list';
 
-/** "?": every shortcut of this stage, grouped. */
+/** "?": the app's shortcuts, grouped (shortcut-list.ts). */
 export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Dialog title="Atalhos" open={open} onClose={onClose} className="shortcuts-dialog">

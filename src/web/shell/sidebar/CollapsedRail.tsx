@@ -7,6 +7,7 @@ import { useProjects } from '../../lib/queries';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { IconButton, Logo, ProjectMark } from '../../ui';
+import { KEYS } from '../keyboard/keys';
 import { ProjectSwitcher } from '../project/ProjectSwitcher';
 import { switcherLabel } from '../project/switcher-label';
 import { useShellActions } from '../shell-ui';
@@ -56,7 +57,7 @@ export function CollapsedRail({
       />
       <IconButton
         label="Buscar"
-        shortcut={['/']}
+        shortcut={KEYS.search}
         className="rail__button"
         onPress={() => (project ? ui.setOverlay(true, { search: true }) : ui.openPalette())}
       >
@@ -108,7 +109,7 @@ export function CollapsedRail({
           </AriaButton>
         }
       />
-      <IconButton label={expandLabel} shortcut={['mod', '\\']} className="rail__button" onPress={onExpand}>
+      <IconButton label={expandLabel} shortcut={KEYS.toggleSidebar} className="rail__button" onPress={onExpand}>
         <PanelLeftOpen size={16} />
       </IconButton>
     </div>

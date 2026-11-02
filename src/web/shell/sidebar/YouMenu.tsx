@@ -5,6 +5,7 @@ import { errorMessage } from '../../lib/api';
 import { signOut } from '../../lib/session';
 import { paths } from '../../router/paths';
 import { AlertDialog, Menu, MenuItem, MenuSeparator, MenuTrigger, SubmenuTrigger, useToast } from '../../ui';
+import { KEYS } from '../keyboard/keys';
 import { useShellActions } from '../shell-ui';
 import { THEME_CHOICES, type ThemeChoice, themeChoiceLabels, useTheme } from '../theme';
 
@@ -68,7 +69,7 @@ export function YouMenu({
           <MenuItem
             id="shortcuts"
             icon={<Keyboard size={16} />}
-            shortcut={['?']}
+            shortcut={KEYS.shortcuts}
             onAction={() => ui.setShortcutsOpen(true)}
           >
             Atalhos

@@ -3,6 +3,7 @@ import { Button as AriaButton } from 'react-aria-components';
 import { useProjects } from '../lib/queries';
 import type { Project } from '../lib/types';
 import { IconButton, Logo, ProjectMark } from '../ui';
+import { KEYS } from './keyboard/keys';
 import { ProjectSwitcher } from './project/ProjectSwitcher';
 import { switcherLabel } from './project/switcher-label';
 import { useShellActions } from './shell-ui';
@@ -33,7 +34,7 @@ export function TopBar({ project, onMenu }: { project: Project | null; onMenu: (
       <div ref={ui.setTopBarActions} className="top-bar__actions" />
       <IconButton
         label="Buscar e comandar"
-        shortcut={['mod', 'K']}
+        shortcut={KEYS.palette}
         className="top-bar__search"
         onPress={() => ui.openPalette()}
       >
