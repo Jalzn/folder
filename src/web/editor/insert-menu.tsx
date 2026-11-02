@@ -1,30 +1,28 @@
 import type { DefaultReactSuggestionItem } from '@blocknote/react';
+import type { EmbedKind } from '@tinyfold/workspace/domain';
 import { ListTodo, Shapes } from 'lucide-react';
-import { createElement } from 'react';
-
-/** What the "Incorporar" items embed: a task or a drawing. */
-export type EmbedKind = 'task' | 'drawing';
 
 /**
  * The "Incorporar" group of the document's `/` menu (docs/etapas/11-documento-desenho.md, "Menu /"): "Tarefa"
- * and "Desenho", each of which opens the picker. The task's description has no such group.
+ * and "Desenho", each of which opens the picker. "/incorporar" and "/embed" find both (review B8). The task's
+ * description has no such group.
  */
 export function embedSlashItems(openPicker: (kind: EmbedKind) => void): DefaultReactSuggestionItem[] {
   return [
     {
       title: 'Tarefa',
       subtext: 'incorporar',
-      aliases: ['tarefa', 'task', 'card'],
+      aliases: ['tarefa', 'task', 'card', 'incorporar', 'embed'],
       group: 'Incorporar',
-      icon: createElement(ListTodo, { size: 18 }),
+      icon: <ListTodo size={18} />,
       onItemClick: () => openPicker('task'),
     },
     {
       title: 'Desenho',
       subtext: 'incorporar',
-      aliases: ['desenho', 'figura', 'drawing'],
+      aliases: ['desenho', 'figura', 'drawing', 'incorporar', 'embed'],
       group: 'Incorporar',
-      icon: createElement(Shapes, { size: 18 }),
+      icon: <Shapes size={18} />,
       onItemClick: () => openPicker('drawing'),
     },
   ];

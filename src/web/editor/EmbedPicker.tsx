@@ -1,10 +1,10 @@
+import type { EmbedKind } from '@tinyfold/workspace/domain';
 import { Plus } from 'lucide-react';
 import { type RefObject, useEffect, useRef, useState } from 'react';
 import { Menu as AriaMenu, SearchField as AriaSearchField, Autocomplete, Input } from 'react-aria-components';
 import { type SearchResult, useProjects, useSearch } from '../lib/queries';
 import { displayTitle } from '../lib/types';
 import { MenuItem, MenuSection, PopoverSurface, ProjectMark } from '../ui';
-import type { EmbedKind } from './insert-menu';
 
 const NEW = 'new';
 

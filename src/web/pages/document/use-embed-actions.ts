@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
+import type { EmbedKind } from '@tinyfold/workspace/domain';
 import { useRef, useState } from 'react';
 import type { EmbedActions } from '../../editor/blocks/embeds-context';
-import type { EmbedKind } from '../../editor/insert-menu';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
 import { api } from '../../lib/api';
 import { inFolderOrRoot } from '../../lib/folder-fallback';

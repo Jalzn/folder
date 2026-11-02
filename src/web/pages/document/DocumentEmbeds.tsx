@@ -1,8 +1,9 @@
+import type { EmbedKind } from '@tinyfold/workspace/domain';
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { type EmbedText, embedText } from '../../editor/blocks/embed-text';
 import { EmbedsProvider, type EmbedsValue } from '../../editor/blocks/embeds-context';
 import { EmbedPicker } from '../../editor/EmbedPicker';
-import { type EmbedKind, embedSlashItems } from '../../editor/insert-menu';
+import { embedSlashItems } from '../../editor/insert-menu';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
 import { useDrawerContent } from '../../shell';
 import { useOwnerToday } from '../../shell/AppProvider';
