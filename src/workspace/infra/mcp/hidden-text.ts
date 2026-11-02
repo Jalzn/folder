@@ -1,4 +1,4 @@
-import { withoutHidden } from '../../domain/visible-text.js';
+import { withoutHidden } from '@tinyfold/core/domain';
 import type { AgentTool, AgentToolContent } from './types.js';
 
 const withoutHiddenIn = (block: AgentToolContent): AgentToolContent =>

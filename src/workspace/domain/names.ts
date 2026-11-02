@@ -1,4 +1,4 @@
-import { joinsEmoji, visibleText } from './visible-text.js';
+import { joinsEmoji, visibleText } from '@tinyfold/core/domain';
 
 /**
  * The names of folders, columns and labels: short, on one line, and unique by their key.

@@ -5,3 +5,4 @@ export class DomainError extends Error {
   }
 }
 export { addDays, canonicalTimeZone, isCivilDate, isTimeZone, startOfDayIn, todayIn } from './time-zone.js';
+export { joinsEmoji, visibleText, withoutHidden } from './visible-text.js';

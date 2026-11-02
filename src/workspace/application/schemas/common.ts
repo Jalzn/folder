@@ -1,5 +1,5 @@
+import { visibleText } from '@tinyfold/core/domain';
 import { z } from 'zod';
-import { visibleText } from '../../domain/visible-text.js';
 
 /** Fields every aggregate's inputs share. */
 export const id = z.string().uuid();

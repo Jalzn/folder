@@ -1,7 +1,7 @@
+import { visibleText } from '@tinyfold/core/domain';
 import { type EmbedKind, embedOf } from './embeds.js';
 import { inlineMarkdown } from './markdown-inline.js';
 import type { DocumentBlock } from './models.js';
-import { visibleText } from './visible-text.js';
 
 /**
  * How documentToMarkdown writes embeds: `resolve` gives an item's title, and a task's column, or
