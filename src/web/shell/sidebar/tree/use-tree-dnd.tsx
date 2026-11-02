@@ -8,7 +8,7 @@ import type { useExpandedFolders } from './use-expanded-folders';
 
 /** The drag types of the tree: an item, with where it is, or a folder. */
 export const ITEM_DRAG = 'application/x-tinyfold-item';
-export const FOLDER_DRAG = 'application/x-tinyfold-folder';
+const FOLDER_DRAG = 'application/x-tinyfold-folder';
 
 const findRow = (rows: readonly TreeNode[], key: string) =>
   rows.flatMap((row) => (row.kind === 'folder' ? [row, ...row.children] : [row])).find((row) => row.key === key);

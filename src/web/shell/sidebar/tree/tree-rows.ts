@@ -47,7 +47,7 @@ export interface PendingItem {
   folderId: string | null;
 }
 
-export const itemKey = (item: Pick<NavItem, 'type' | 'id'>) => `item:${item.type}:${item.id}`;
+const itemKey = (item: Pick<NavItem, 'type' | 'id'>) => `item:${item.type}:${item.id}`;
 export const folderKey = (id: string) => `folder:${id}`;
 
 const same = (a: Pick<NavItem, 'type' | 'id'>, b: Pick<NavItem, 'type' | 'id'>) => a.type === b.type && a.id === b.id;

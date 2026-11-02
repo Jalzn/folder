@@ -10,7 +10,7 @@ import { useAnnounce } from '../announcer';
 import { deletedText, edgeText, positionText, restoredText, trashedText } from './folder-text';
 
 /** What an undo of a folder's deletion says when it fails, whatever the server said. */
-export const RESTORE_FAILED = 'Não foi possível desfazer a exclusão da pasta.';
+const RESTORE_FAILED = 'Não foi possível desfazer a exclusão da pasta.';
 
 /**
  * Folder writes of the sidebar (docs/etapas/09-pastas.md, "Ações de pasta"), with their toasts and undo. Each

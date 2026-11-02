@@ -1,10 +1,11 @@
 import type { NavFolder, NavItem } from '@tinyfold/workspace/domain';
 import { useEffect, useMemo } from 'react';
+import { itemKey } from '../../../lib/types';
 import { parseProjectPath } from '../../../router/paths';
 import { useSidebarPrefs } from '../use-sidebar-prefs';
 
-/** An item's place in the arrivals: "document:<id>". */
-export const arrivalKey = (item: { type: string; id: string }) => `${item.type}:${item.id}`;
+/** An item's place in the arrivals: "document:<id>", the key the pending saves use too (save-registry). */
+export const arrivalKey = (item: Pick<NavItem, 'type' | 'id'>) => itemKey(item.type, item.id);
 
 /**
  * Per project, the last page the tree took as an arrival: an item's key, or null for any other page. It

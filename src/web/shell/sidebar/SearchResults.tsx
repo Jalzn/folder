@@ -19,7 +19,7 @@ export const itemResults = (results: readonly SearchResult[] | undefined) =>
   (results ?? []).filter((result): result is ItemResult => result.type !== 'task');
 
 /** The folders whose name has every word of the filter, in their order. */
-export function matchingFolders(folders: readonly NavFolder[], query: string) {
+function matchingFolders(folders: readonly NavFolder[], query: string) {
   if (!queryWords(query).length) return [];
   return folders.filter((folder) => matchesAllWords(folder.name, query));
 }

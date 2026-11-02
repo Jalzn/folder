@@ -20,7 +20,7 @@ export const navStorageKey = (installationId: string) => `tinyfold:${installatio
 export const emptyNavState = (): NavState => ({ version: 1, lastProjectId: null, projects: {} });
 
 /** Whether a stored path is an address inside that project. */
-export function belongsToProject(path: string, projectId: string) {
+function belongsToProject(path: string, projectId: string) {
   return parseProjectPath(path)?.projectId === projectId;
 }
 

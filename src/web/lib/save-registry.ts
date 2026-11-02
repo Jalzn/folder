@@ -1,6 +1,6 @@
 import type { SaveStatus } from './autosave';
 import type { Moved } from './editor-move';
-import type { ItemType } from './types';
+import { type ItemType, itemKey } from './types';
 
 /** What the registry needs of an AutosaveController: its status and change notifications. */
 export interface SaveSource {
@@ -15,7 +15,7 @@ let pending: ReadonlySet<string> = new Set();
 /** What an autosave follows: a document's or drawing's content, or a task's text. */
 type SavedType = ItemType | 'task';
 
-const keyOf = (type: SavedType, id: string) => `${type}:${id}`;
+const keyOf = (type: SavedType, id: string) => itemKey(type, id);
 
 function refresh() {
   const next = new Set<string>();

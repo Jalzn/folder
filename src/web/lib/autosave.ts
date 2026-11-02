@@ -46,7 +46,7 @@ export interface DraftStorage {
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
-export function sameSnapshot(a: unknown, b: unknown) {
+function sameSnapshot(a: unknown, b: unknown) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 /**

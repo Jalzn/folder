@@ -2,7 +2,7 @@ import type { LabelColor } from '@tinyfold/workspace/domain';
 import { api, requestId } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import type { LabelSummary } from '../../lib/queries/labels';
-import type { useAction } from '../../lib/use-action';
+import type { WriteRunner } from '../../lib/use-action';
 import { useAnnounce } from '../../shell/announcer';
 import { useUndoableChange } from '../../shell/use-undoable-change';
 import { useToast } from '../../ui';
@@ -22,7 +22,7 @@ import { useCreateLabel } from './use-create-label';
  * screen (user decision 1). Labels are the same for every project. Each intent keeps its request ID for the
  * one retry of a lost answer, the undo's included.
  */
-export function useLabelActions(action: ReturnType<typeof useAction>) {
+export function useLabelActions(action: WriteRunner) {
   const toast = useToast();
   const announce = useAnnounce();
   const createLabel = useCreateLabel(action);

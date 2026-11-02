@@ -18,7 +18,7 @@ export interface PageEvents {
  * text: try again when the network comes back, warn before the page leaves, and save when the tab hides.
  * Returns the removal.
  */
-export function listenInBackground(controller: PooledController, events: PageEvents) {
+function listenInBackground(controller: PooledController, events: PageEvents) {
   const retry = () => {
     if (controller.getState().status === 'error') void controller.flush();
   };

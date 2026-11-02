@@ -1,10 +1,10 @@
 import { errorCode } from '../lib/api';
-import type { useAction } from '../lib/use-action';
+import type { WriteRunner } from '../lib/use-action';
 import { useToast, useWithdrawUndo } from '../ui';
 import { useAnnounce } from './announcer';
 import { useItemChanges } from './item-changes';
 
-type Action = ReturnType<typeof useAction>;
+type Action = WriteRunner;
 
 /** What a change shows once it is done: its toast and, while the toast is on screen, its undo. */
 export interface ChangeToast {
@@ -18,7 +18,7 @@ export interface ChangeToast {
 }
 
 /** What an undo says when a newer change of the same object came first. */
-export const CHANGED_LATER = 'Mudou depois; nada foi desfeito.';
+const CHANGED_LATER = 'Mudou depois; nada foi desfeito.';
 
 /**
  * A change of one object, as `task:<id>` or `column:<id>`, with the toast that offers its undo

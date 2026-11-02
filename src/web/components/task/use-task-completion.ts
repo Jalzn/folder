@@ -4,7 +4,7 @@ import { Refusal } from '../../lib/errors';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import { cachedColumns, cachedTasks } from '../../lib/queries';
 import { displayTitle } from '../../lib/types';
-import type { useAction } from '../../lib/use-action';
+import type { WriteRunner } from '../../lib/use-action';
 import { useUndoableChange } from '../../shell/use-undoable-change';
 import { completedText, reopenedText, TASK_CHANGED } from './task-change-text';
 
@@ -14,7 +14,7 @@ import { completedText, reopenedText, TASK_CHANGED } from './task-change-text';
  * column. Desfazer puts it back in its column, before the task that followed it. The write reads the board as
  * it is when the queue runs it.
  */
-export function useTaskCompletion(action: ReturnType<typeof useAction>) {
+export function useTaskCompletion(action: WriteRunner) {
   const change = useUndoableChange(action);
   /** `undone` runs after a Desfazer, once the board read again. */
   return function toggleDone(id: string, projectId: string, undone?: () => void) {

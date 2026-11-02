@@ -8,7 +8,7 @@ import {
 } from '@tinyfold/workspace/domain';
 
 /** Every side but the last must fit this; the last one may use up to MAX_PREVIEW_BYTES. */
-export const PREVIEW_TARGET_BYTES = 200 * 1024;
+const PREVIEW_TARGET_BYTES = 200 * 1024;
 /** Wait after a confirmed save, so continuous drawing produces one preview. */
 export const PREVIEW_DELAY_MS = 1_500;
 

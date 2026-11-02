@@ -5,7 +5,7 @@ export type CompletedTasksPage = Awaited<ReturnType<typeof api.workspace.listCom
 export type CompletedTask = CompletedTasksPage['items'][number];
 
 /** How many completed tasks a page of Concluídas brings at a time. */
-export const COMPLETED_PAGE_SIZE = 50;
+const COMPLETED_PAGE_SIZE = 50;
 
 export const completedKey = (projectId: string) => ['workspace', 'completed', projectId] as const;
 

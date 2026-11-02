@@ -10,7 +10,7 @@ import { useRequest } from '../../lib/use-request';
 import { paths } from '../../router/paths';
 import { Button, Dialog, DialogActions, ProjectMark, RadioChip, RadioGroup, TextField, useToast } from '../../ui';
 
-export const projectColorLabels: Record<ProjectColor, string> = {
+const projectColorLabels: Record<ProjectColor, string> = {
   violet: 'Violeta',
   ochre: 'Ocre',
   gray: 'Cinza',

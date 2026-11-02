@@ -3,7 +3,7 @@ import { api, requestId } from '../../lib/api';
 import { inBoardOrder } from '../../lib/board-order';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import type { ColumnSummary } from '../../lib/queries';
-import type { useAction } from '../../lib/use-action';
+import type { WriteRunner } from '../../lib/use-action';
 import { useAnnounce } from '../../shell/announcer';
 import { useUndoableChange } from '../../shell/use-undoable-change';
 import { useToast } from '../../ui';
@@ -25,7 +25,7 @@ const DONE_KEY = 'column:done';
  * every project. Each intent keeps its request ID for the one retry of a lost answer; deleting and switching
  * the done column offer Desfazer, unless the server listed only part of the tasks (`complete: false`).
  */
-export function useColumnActions(action: ReturnType<typeof useAction>) {
+export function useColumnActions(action: WriteRunner) {
   const toast = useToast();
   const announce = useAnnounce();
   const change = useUndoableChange(action);

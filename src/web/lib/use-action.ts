@@ -44,3 +44,6 @@ export function useAction() {
   }
   return { busy, run };
 }
+
+/** What useAction returns: one write at a time, with its own queue for each component that calls it. */
+export type WriteRunner = ReturnType<typeof useAction>;

@@ -1,3 +1,4 @@
+import { MAX_PINNED } from '@tinyfold/workspace/domain';
 import { countOf, formatCount } from '../../lib/count';
 
 /** "Pasta “MCP” excluída. 1 item foi para a raiz.", with the pins that did not fit, or "Estava vazia." */
@@ -37,7 +38,7 @@ export const takenText = (name: string) => `Já existe uma pasta ${name}.`;
 export function movedText(folderName: string | null, lostPin: boolean) {
   const place = folderName === null ? 'a raiz do projeto' : folderName;
   if (!lostPin) return `Movido para ${place}.`;
-  const full = folderName === null ? 'a raiz já tem 8 fixados' : 'a pasta já tem 8 fixados';
+  const full = `${folderName === null ? 'a raiz' : 'a pasta'} já tem ${MAX_PINNED} fixados`;
   return `Movido para ${place}, sem fixar: ${full}.`;
 }
 

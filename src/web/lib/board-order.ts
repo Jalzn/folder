@@ -8,7 +8,7 @@ interface Placed {
   position: number;
 }
 
-export const byPosition = (a: Placed, b: Placed) => a.position - b.position || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+const byPosition = (a: Placed, b: Placed) => a.position - b.position || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
 /** Things in board order, without changing the list given. */
 export const inBoardOrder = <T extends Placed>(list: readonly T[]) => [...list].sort(byPosition);

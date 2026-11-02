@@ -2,7 +2,7 @@ import { type RefObject, useRef, useState } from 'react';
 import { useTaskCompletion } from '../../components/task/use-task-completion';
 import { type ColumnSummary, cachedColumns } from '../../lib/queries';
 import type { Task } from '../../lib/types';
-import type { useAction } from '../../lib/use-action';
+import type { WriteRunner } from '../../lib/use-action';
 import { useAnnounce } from '../../shell/announcer';
 import { useDrawerContent, useTaskDrawer } from '../../shell/task-drawer-state';
 import type { ElementRefs } from '../../ui';
@@ -35,7 +35,7 @@ export function useBoardCommands({
   projectId: string;
   view: readonly BoardColumnView[];
   editable: boolean;
-  action: ReturnType<typeof useAction>;
+  action: WriteRunner;
   focus: ReturnType<typeof useBoardFocus>;
   moves: ReturnType<typeof useBoardMoves>;
   cards: ElementRefs<HTMLLIElement>;

@@ -6,7 +6,7 @@ import { onceMoreIfLost } from '../../lib/lost-answer';
 import { usesCommandKey } from '../../lib/platform';
 import { cachedColumns, cachedTasks } from '../../lib/queries';
 import { displayTitle, type Task } from '../../lib/types';
-import type { useAction } from '../../lib/use-action';
+import type { WriteRunner } from '../../lib/use-action';
 import { useAnnounce } from '../../shell/announcer';
 import { useUndoableChange } from '../../shell/use-undoable-change';
 import { arrangeBoard, type BoardColumnView, keyLayout, placeOf } from './board-columns';
@@ -54,7 +54,7 @@ function readBoard(projectId: string, visible: (task: Task) => boolean) {
  */
 export function useBoardMoves(
   projectId: string,
-  action: ReturnType<typeof useAction>,
+  action: WriteRunner,
   hooks: {
     beforeMove: () => void;
     moved: (id: string, columnId: string) => void;
