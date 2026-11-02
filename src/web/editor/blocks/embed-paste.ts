@@ -1,13 +1,11 @@
-import { EMBED_TYPES } from '@tinyfold/workspace/domain';
 import { Fragment, type Node, Slice } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { validEmbed } from '../../lib/sanitize-embeds';
-
-const embedTypes: ReadonlySet<string> = new Set(EMBED_TYPES);
+import { isEmbedType } from './embed-blocks';
 
 /** Whether a node is an embed's content with an ID the server refuses. */
 const forged = (node: Node) =>
-  embedTypes.has(node.type.name) && !validEmbed({ type: node.type.name, props: { ...node.attrs } });
+  isEmbedType(node.type.name) && !validEmbed({ type: node.type.name, props: { ...node.attrs } });
 
 /**
  * The fragment without the blocks of such embeds, at every depth, as sanitizeEmbeds leaves a document: what a

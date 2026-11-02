@@ -3,6 +3,7 @@ import { MathInlineInputRulesExtension } from '@blocknote/math-block';
 import { useCreateBlockNote } from '@blocknote/react';
 import { useEffect, useRef } from 'react';
 import type { DocumentContent } from '../lib/types';
+import { EMBED_CLIPBOARD_MARK } from './blocks/embed-blocks';
 import {
   descriptionSchema,
   documentDictionary,
@@ -10,9 +11,6 @@ import {
   type EditorBlocks,
   type EditorSchemaKind,
 } from './schema';
-
-/** Embed blocks in BlockNote's own clipboard HTML. */
-const EMBED_HTML = /data-content-type="(?:taskEmbed|drawingEmbed)"/;
 
 /**
  * A paste in a task's description, which has no embeds (decision 2): cards and figures copied from a document
@@ -28,7 +26,8 @@ function pasteInDescription({
   defaultPasteHandler: () => boolean | undefined;
 }) {
   const html = event.clipboardData?.getData('text/html');
-  if (!html || !EMBED_HTML.test(event.clipboardData?.getData('blocknote/html') ?? '')) return defaultPasteHandler();
+  if (!html || !EMBED_CLIPBOARD_MARK.test(event.clipboardData?.getData('blocknote/html') ?? ''))
+    return defaultPasteHandler();
   editor.pasteHTML(html);
   return true;
 }

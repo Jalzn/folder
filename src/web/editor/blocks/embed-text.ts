@@ -7,6 +7,7 @@ import {
   embedResolver,
   UNAVAILABLE_EMBED,
 } from '@tinyfold/workspace/domain';
+import { embedBlock } from './embed-blocks';
 
 /**
  * An embed's link outside the app (docs/etapas/11-documento-desenho.md, decision 6): the item's permanent
@@ -45,8 +46,7 @@ export function embedText(
     },
     appEmbedHref(origin),
   );
-  const block: DocumentBlock =
-    kind === 'task' ? { type: 'taskEmbed', props: { taskId: id } } : { type: 'drawingEmbed', props: { canvasId: id } };
+  const block: DocumentBlock = embedBlock(kind, id);
   const markdown = documentToMarkdown([block], { embeds: resolver }).trim();
   const item = resolver.resolve(kind, id);
   if (!item) return { plain: UNAVAILABLE_EMBED.slice(1, -1), markdown, link: null };

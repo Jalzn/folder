@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { EmbedKind } from '@tinyfold/workspace/domain';
 import { useRef, useState } from 'react';
+import { embedBlock } from '../../editor/blocks/embed-blocks';
 import { holdSelectedEmbed } from '../../editor/blocks/embed-selection-hold';
 import type { EmbedActions } from '../../editor/blocks/embeds-context';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
@@ -15,11 +16,6 @@ import { useToast } from '../../ui';
 import { putBackRemoved } from './embed-removal';
 
 type Block = ReturnType<BlockEditorInstance['getBlock']> & {};
-
-const blockOf = (kind: EmbedKind, id: string) =>
-  kind === 'task'
-    ? ({ type: 'taskEmbed', props: { taskId: id } } as const)
-    : ({ type: 'drawingEmbed', props: { canvasId: id } } as const);
 
 /** An empty paragraph, which the `/` leaves behind and an embed takes the place of. */
 const isEmptyParagraph = (block: Block) =>
@@ -78,7 +74,7 @@ export function useEmbedActions({
     if (!present()) return false;
     const reference = (at && editor.getBlock(at)) || editor.document.at(-1);
     if (!reference) return false;
-    const embed = blockOf(kind, id);
+    const embed = embedBlock(kind, id);
     const [inserted] = isEmptyParagraph(reference)
       ? editor.replaceBlocks([reference], [embed]).insertedBlocks
       : editor.insertBlocks([embed], reference, 'after');

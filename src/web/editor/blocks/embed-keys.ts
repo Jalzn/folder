@@ -1,19 +1,18 @@
 import { type BlockNoteEditor, createExtension } from '@blocknote/core';
 import { type EditorState, TextSelection } from '@tiptap/pm/state';
+import { isEmbedType } from './embed-blocks';
 import { type EmbedClipboardActions, embedClipboard } from './embed-clipboard';
 import { embedPaste } from './embed-paste';
 import { type BlockPlace, blockAfter, blockBefore, blockPlaces } from './embed-places';
 import { embedSelectionHold } from './embed-selection-hold';
 import { embedTyping } from './embed-typing';
 
-const EMBED_TYPES = new Set(['taskEmbed', 'drawingEmbed']);
-
 // biome-ignore lint/suspicious/noExplicitAny: the extension serves any schema that has the embeds.
 type AnyEditor = BlockNoteEditor<any, any, any>;
 
 /** Whether the state has an embed selected as a node. */
 const embedSelectedIn = ({ selection }: EditorState) =>
-  'node' in selection && EMBED_TYPES.has((selection.node as { type: { name: string } }).type.name);
+  'node' in selection && isEmbedType((selection.node as { type: { name: string } }).type.name);
 
 /** Whether the arrows selected an embed as a node, the only time these keys are the embed's. */
 export const selectedEmbed = (editor: AnyEditor) => embedSelectedIn(editor.prosemirrorState);
@@ -43,7 +42,7 @@ function embedBeside({ selection, doc }: EditorState, forward: boolean) {
   const edge = forward ? $from.parent.content.size : 0;
   if (!selection.empty || !$from.parent.isTextblock || $from.parentOffset !== edge) return null;
   const beside = forward ? blockAfter(doc, $from.after()) : blockBefore(doc, $from.before());
-  return beside && EMBED_TYPES.has(beside.type) ? beside : null;
+  return beside && isEmbedType(beside.type) ? beside : null;
 }
 
 /**
@@ -127,7 +126,7 @@ function rangeFromEmbed({ selection, doc }: EditorState) {
   if (!(selection instanceof TextSelection) || selection.empty) return null;
   const { anchor, head } = selection;
   const embed = blockPlaces(doc).find((place) => (head > anchor ? place.from : place.to) === anchor);
-  return embed && EMBED_TYPES.has(embed.type) ? embed : null;
+  return embed && isEmbedType(embed.type) ? embed : null;
 }
 
 /**
@@ -206,11 +205,11 @@ function nests({ editor }: { editor: AnyEditor }) {
   if (selectedEmbed(editor)) return true;
   const first = editor.getSelection()?.blocks[0] ?? editor.getTextCursorPosition().block;
   const above = editor.getPrevBlock(first);
-  return Boolean(above && EMBED_TYPES.has(above.type));
+  return Boolean(above && isEmbedType(above.type));
 }
 function lifts({ editor }: { editor: AnyEditor }) {
   if (selectedEmbed(editor)) return true;
-  return Boolean(editor.getSelection()?.blocks.some((block) => EMBED_TYPES.has(block.type)));
+  return Boolean(editor.getSelection()?.blocks.some((block) => isEmbedType(block.type)));
 }
 
 /**

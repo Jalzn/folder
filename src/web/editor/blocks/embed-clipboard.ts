@@ -1,6 +1,7 @@
 import type { EmbedKind } from '@tinyfold/workspace/domain';
 import { type EditorState, NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
+import { embedOf } from './embed-blocks';
 import type { EmbedText } from './embed-text';
 
 /** What copying an embed asks of the document: the item's words and link, and taking the block out on a cut. */
@@ -26,9 +27,9 @@ export function embedClipboard(selected: (state: EditorState) => boolean, action
   const write = (view: EditorView, event: ClipboardEvent, cut: boolean) => {
     const { selection, doc } = view.state;
     if (!selected(view.state) || !event.clipboardData || !(selection instanceof NodeSelection)) return false;
-    const { node } = selection;
-    const kind: EmbedKind = node.type.name === 'taskEmbed' ? 'task' : 'drawing';
-    const text = actions.describe(kind, String(node.attrs.taskId ?? node.attrs.canvasId ?? ''));
+    const embed = embedOf(selection.node);
+    if (!embed) return false;
+    const text = actions.describe(embed.kind, embed.id);
     // The embed's block, the content's parent, as BlockNote copies a block without text.
     const block = NodeSelection.create(doc, selection.from - 1);
     const internal = view.serializeForClipboard(block.content()).dom.innerHTML;

@@ -1,5 +1,6 @@
 import { type DocumentBlock, embedIds, figureNumbers } from '@tinyfold/workspace/domain';
 import { useEffect, useMemo, useState } from 'react';
+import { embedBlock } from '../../editor/blocks/embed-blocks';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
 import { useEmbeds } from '../../lib/queries';
 import type { EmbeddedDrawing, EmbeddedTask } from '../../lib/queries/embeds';
@@ -15,8 +16,8 @@ interface EditorEmbeds {
   signature: string;
 }
 
-const validTask = (taskId: string) => validEmbed({ type: 'taskEmbed', props: { taskId } });
-const validCanvas = (canvasId: string) => validEmbed({ type: 'drawingEmbed', props: { canvasId } });
+const validTask = (taskId: string) => validEmbed(embedBlock('task', taskId));
+const validCanvas = (canvasId: string) => validEmbed(embedBlock('drawing', canvasId));
 
 function readEmbeds(editor: BlockEditorInstance): EditorEmbeds {
   const blocks = editor.document as unknown as DocumentBlock[];
