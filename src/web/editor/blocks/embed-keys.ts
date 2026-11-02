@@ -111,23 +111,65 @@ function arrow(forward: boolean, vertical: boolean) {
   };
 }
 
+/** A selection from `anchor` to the block `to`, the whole of it: to its end going down, from its start going up. */
+function rangeTo(doc: EditorState['doc'], anchor: number, to: BlockPlace, forward: boolean) {
+  const textual = doc.nodeAt(to.from)?.isTextblock ?? false;
+  // A text's own end or start; an embed's edge otherwise.
+  const head = forward ? (textual ? to.to - 1 : to.to) : textual ? to.from + 1 : to.from;
+  return TextSelection.create(doc, anchor, head);
+}
+
 /**
- * ⇧↓ and ⇧↑ on an embed selected as a node (review B-f): a range from the embed to the end of the block after
- * it, or from the start of the block before it, by the editor's state. The browser would extend from where
- * Chrome keeps the DOM's selection, the document's first text for an embed between embeds, far from the
- * embed. At the document's edge the key does nothing.
+ * The embed a range grows from, as ⇧↓ and ⇧↑ made it: its anchor at the embed's start with the head below,
+ * or at its end with the head above. Null for any other selection, a text's own included.
+ */
+function rangeFromEmbed({ selection, doc }: EditorState) {
+  if (!(selection instanceof TextSelection) || selection.empty) return null;
+  const { anchor, head } = selection;
+  const embed = blockPlaces(doc).find((place) => (head > anchor ? place.from : place.to) === anchor);
+  return embed && EMBED_TYPES.has(embed.type) ? embed : null;
+}
+
+/**
+ * ⇧↓ and ⇧↑ from an embed (reviews B-f and B-j), by the editor's state, a block at a time. On an embed selected
+ * as a node: a range from the embed to the end of the block after it, or from the start of the block before
+ * it. On a range that grows from an embed: its head goes a block further down or up, and back on the embed
+ * the embed is selected again. The browser would extend from where Chrome keeps the DOM's selection, the
+ * document's first text for an embed between embeds, or from the text the range ends in, which dropped the
+ * embeds. At the document's edge the key does nothing.
  */
 function extend(forward: boolean) {
   return ({ editor }: { editor: AnyEditor }) => {
-    if (!selectedEmbed(editor)) return false;
-    const { selection, doc } = editor.prosemirrorState;
-    const next = forward ? blockAfter(doc, selection.to) : blockBefore(doc, selection.from);
+    const state = editor.prosemirrorState;
+    const { selection, doc } = state;
+    if (selectedEmbed(editor)) {
+      const next = forward ? blockAfter(doc, selection.to) : blockBefore(doc, selection.from);
+      if (next)
+        editor.transact((tr) => {
+          tr.setSelection(rangeTo(tr.doc, forward ? selection.from : selection.to, next, forward)).scrollIntoView();
+        });
+      return true;
+    }
+    const embed = rangeFromEmbed(state);
+    if (!embed) return false;
+    const { anchor, head } = selection;
+    // The block the head is in, or at the edge of, on the range's side.
+    const places = blockPlaces(doc);
+    const last =
+      head > anchor ? places.findLast((place) => place.from < head) : places.find((place) => place.to > head);
+    if (!last) return true;
+    const next = forward ? blockAfter(doc, last.to) : blockBefore(doc, last.from);
     if (!next) return true;
-    const textual = doc.nodeAt(next.from)?.isTextblock ?? false;
-    // A text's own end or start; an embed's edge otherwise.
-    const head = forward ? (textual ? next.to - 1 : next.to) : textual ? next.from + 1 : next.from;
+    if (next.id === embed.id) {
+      editor.transact((tr) => {
+        editor.setTextCursorPosition(embed.id);
+        tr.scrollIntoView();
+      });
+      return true;
+    }
+    const down = next.from > embed.from;
     editor.transact((tr) => {
-      tr.setSelection(TextSelection.create(tr.doc, forward ? selection.from : selection.to, head)).scrollIntoView();
+      tr.setSelection(rangeTo(tr.doc, down ? embed.from : embed.to, next, down)).scrollIntoView();
     });
     return true;
   };

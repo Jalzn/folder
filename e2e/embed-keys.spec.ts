@@ -45,7 +45,17 @@ const caret = (page: Page) =>
     return selection.toJSON().type === 'gapcursor' ? 'gap' : selection.$from.parent.textContent;
   });
 
-/** Presses each key and reads where the caret went after it. */
+/** What the selection covers: the text, and [e] for each embed. */
+const covered = (page: Page) =>
+  documentEditor(page).evaluate((element) => {
+    type State = {
+      doc: { textBetween(from: number, to: number, block: string, leaf: string): string };
+      selection: { from: number; to: number };
+    };
+    const state = (element as HTMLElement & { editor?: { state: State } }).editor?.state;
+    return state ? state.doc.textBetween(state.selection.from, state.selection.to, '|', '[e]') : null;
+  });
+
 /** Presses each key and reads where the caret went after it, `pause` ms later: a person's pace is 150 ms or more. */
 async function walk(page: Page, keys: string[], pause = 0) {
   const stops: (string | null)[] = [];
@@ -420,16 +430,6 @@ test('⇧↓ and ⇧↑ from an embed take the block beside it, and Page Down st
     ...run,
     { ...paragraph('Depois'), id: 'depois' },
   ]);
-  /** What the selection covers: the text, and [e] for each embed. */
-  const covered = () =>
-    documentEditor(page).evaluate((element) => {
-      type State = {
-        doc: { textBetween(from: number, to: number, block: string, leaf: string): string };
-        selection: { from: number; to: number };
-      };
-      const state = (element as HTMLElement & { editor?: { state: State } }).editor?.state;
-      return state ? state.doc.textBetween(state.selection.from, state.selection.to, '|', '[e]') : null;
-    });
   /** The card `index` selected with ↓ from Antes, on a fresh page, then `key` a moment later. */
   const fromCard = async (index: number, key?: string) => {
     await page.reload();
@@ -445,13 +445,13 @@ test('⇧↓ and ⇧↑ from an embed take the block beside it, and Page Down st
   await fromCard(2);
   expect(await walk(page, ['PageDown', 'PageUp'], 200)).toEqual(['[x2]', '[x2]']);
   await fromCard(2, 'Shift+ArrowUp');
-  expect(await covered()).toBe('[e]|[e]');
+  expect(await covered(page)).toBe('[e]|[e]');
   await fromCard(1, 'Shift+ArrowUp');
-  expect(await covered()).toBe('Antes|[e]');
+  expect(await covered(page)).toBe('Antes|[e]');
   await fromCard(3, 'Shift+ArrowDown');
-  expect(await covered()).toBe('[e]|Depois');
+  expect(await covered(page)).toBe('[e]|Depois');
   await fromCard(2, 'Shift+ArrowDown');
-  expect(await covered()).toBe('[e]|[e]');
+  expect(await covered(page)).toBe('[e]|[e]');
   // A letter then takes the place of what was selected there, not of a line far above.
   const save = nextSave(page);
   await page.keyboard.type('x');
@@ -502,6 +502,28 @@ test('⌘↓ and ⌘↑ from any card of a run, the last one too, go to the docu
     await page.waitForTimeout(200);
     expect(await caret(page)).toBe('Antes');
   }
+});
+
+test('⇧↓ and ⇧↑ grow and shrink a range from an embed a block at a time, at a person’s pace', async ({ page }) => {
+  await openRun(page, 'Faixa');
+  /** Presses the key, then reads what the selection covers, or the card selected as a node. */
+  const step = async (key: string) => {
+    await page.keyboard.press(key);
+    await page.waitForTimeout(200);
+    const at = await caret(page);
+    return at?.startsWith('[') ? at : await covered(page);
+  };
+  await fromCard(page, 2);
+  const down = [];
+  for (const key of ['Shift+ArrowDown', 'Shift+ArrowDown', 'Shift+ArrowDown', 'Shift+ArrowDown'])
+    down.push(await step(key));
+  // At the document's end the range stays.
+  expect(down).toEqual(['[e]|[e]', '[e]|[e]|Depois', '[e]|[e]|Depois|Fim', '[e]|[e]|Depois|Fim']);
+  const up = [];
+  for (const key of Array(6).fill('Shift+ArrowUp')) up.push(await step(key));
+  expect(up).toEqual(['[e]|[e]|Depois', '[e]|[e]', '[x2]', '[e]|[e]', 'Antes|[e]|[e]', 'Antes|[e]|[e]']);
+  expect(await step('Shift+ArrowDown')).toBe('[e]|[e]');
+  expect(await step('Shift+ArrowDown')).toBe('[x2]');
 });
 
 test('⌫ and Delete beside an embed take every letter typed there and select the embed only from the edge', async ({
