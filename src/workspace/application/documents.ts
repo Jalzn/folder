@@ -16,8 +16,9 @@ export function listDocuments(ctx: WorkspaceContext, input: ListDocumentsInput) 
   return ctx.read((repo) => repo.listDocuments(input));
 }
 
+/** Reads a trashed document too, as getCanvas does, so its editor can keep a local draft or save it as a copy. */
 export function getDocument(ctx: WorkspaceContext, input: GetDocumentInput) {
-  return ctx.read((repo) => requireDocument(repo, input.id));
+  return ctx.read((repo) => requireDocument(repo, input.id, true));
 }
 
 /** Answers, as saving does, only the new document's id, version and date, never its title or content. */

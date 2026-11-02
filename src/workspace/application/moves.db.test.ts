@@ -200,7 +200,7 @@ describe('moving items between projects', () => {
     await expect(move({ projectId: from.id, expectedVersion: trashed.version })).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
-    expect(await service.getDocument({ id: document.id }).catch((error) => error.code)).toBe('NOT_FOUND');
+    expect((await service.getDocument({ id: document.id })).deletedAt).toBe(trashed.updatedAt);
     expect((await service.listDocuments({ deleted: true }))[0]).toMatchObject({ projectId: from.id, version: 2 });
   });
 });

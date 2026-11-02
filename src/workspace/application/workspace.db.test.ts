@@ -193,6 +193,31 @@ describe('workspace persistence and adversarial cases', () => {
     expect(mutation.response.length).toBeLessThan(200);
   });
 
+  it('reads a trashed document for its owner, as a drawing, and still refuses to save it (decision 1)', async () => {
+    const document = await service.createDocument({
+      ...request(),
+      projectId: project.id,
+      content: content('Rascunho na lixeira'),
+    });
+    const trashed = await service.deleteDocument({ ...request(), id: document.id, expectedVersion: 1 });
+    expect(await service.getDocument({ id: document.id })).toMatchObject({
+      id: document.id,
+      version: trashed.version,
+      deletedAt: trashed.updatedAt,
+      plainText: 'Rascunho na lixeira',
+    });
+    await expect(
+      service.saveDocument({
+        ...request(),
+        id: document.id,
+        expectedVersion: trashed.version,
+        title: 'Cópia',
+        content: content('Texto novo'),
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect((await service.getDocument({ id: document.id })).plainText).toBe('Rascunho na lixeira');
+  });
+
   it('rejects stale document changes from another database connection', async () => {
     const document = await service.createDocument({
       ...request(),
@@ -334,7 +359,7 @@ describe('workspace persistence and adversarial cases', () => {
       available: false,
       excerpt: 'meu portfólio',
     });
-    await expect(service.getDocument({ id: document.id })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect((await service.getDocument({ id: document.id })).deletedAt).toBe(removed.updatedAt);
     expect(await service.listDocuments({ deleted: true })).toHaveLength(1);
     await service.restoreDocument({ ...request(), id: document.id, expectedVersion: removed.version });
     expect((await service.listTasks({})).tasks[0]?.source?.available).toBe(true);
