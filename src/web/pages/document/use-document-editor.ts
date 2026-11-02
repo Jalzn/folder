@@ -4,8 +4,16 @@ import { createOriginMarkers } from '../../editor/origin-markers';
 import { type BlockEditorInstance, useBlockEditor } from '../../editor/use-block-editor';
 import type { AutosaveController, SaveState } from '../../lib/autosave';
 import { lacksBlockIds } from '../../lib/block-ids';
+import { liftEmbedChildren } from '../../lib/embed-children';
 import type { Document, DocumentContent } from '../../lib/types';
 import { documentSnapshot } from './document-session';
+
+/**
+ * The editor's blocks as the document keeps and saves them: nothing nested under an embed, which the server
+ * refuses (liftEmbedChildren). The keys never nest a block there; this is the net under them.
+ */
+export const savedContent = (editor: BlockEditorInstance) =>
+  liftEmbedChildren(editor.document as unknown as DocumentContent);
 
 /**
  * The BlockNote editor of a document, started from the draft or the saved content, with its origin markers,
@@ -38,7 +46,7 @@ export function useDocumentEditor(
     if (idsChecked.current) return;
     idsChecked.current = true;
     if (lacksBlockIds(document.content))
-      controller.change({ ...controller.getState().snapshot, content: editor.document as unknown as DocumentContent });
+      controller.change({ ...controller.getState().snapshot, content: savedContent(editor) });
   }, [controller, document, editor]);
   return editor;
 }

@@ -1,4 +1,5 @@
 import { RECOVERY_DOCUMENT_LIMITS, readDocumentContent } from '@tinyfold/workspace/domain';
+import { liftEmbedChildren } from './embed-children';
 import type { DocumentContent } from './types';
 
 export interface Snapshot {
@@ -48,7 +49,10 @@ function clone<T>(value: T): T {
 export function sameSnapshot(a: unknown, b: unknown) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
-/** Reads a stored draft; one from before every item had a project may have `projectId: null` (withDraftProject). */
+/**
+ * Reads a stored draft; one from before every item had a project may have `projectId: null` (withDraftProject).
+ * Blocks a Tab once nested under an embed come out after it first, so that draft opens (liftEmbedChildren).
+ */
 export function parseDraft(value: string | null): SavedDraft<Legacy<Snapshot>> | null {
   if (!value) return null;
   try {
@@ -63,7 +67,9 @@ export function parseDraft(value: string | null): SavedDraft<Legacy<Snapshot>> |
       (data.snapshot.projectId !== null && typeof data.snapshot.projectId !== 'string')
     )
       return null;
-    data.snapshot.content = readDocumentContent(data.snapshot.content, RECOVERY_DOCUMENT_LIMITS, { embeds: true });
+    data.snapshot.content = readDocumentContent(liftEmbedChildren(data.snapshot.content), RECOVERY_DOCUMENT_LIMITS, {
+      embeds: true,
+    });
     if (data.recoveryData !== undefined && data.recoveryData !== null && typeof data.recoveryData !== 'string')
       return null;
     if (data.pending) {
@@ -79,7 +85,11 @@ export function parseDraft(value: string | null): SavedDraft<Legacy<Snapshot>> |
         data.pending = null;
       else {
         try {
-          data.pending.content = readDocumentContent(data.pending.content, RECOVERY_DOCUMENT_LIMITS, { embeds: true });
+          data.pending.content = readDocumentContent(
+            liftEmbedChildren(data.pending.content),
+            RECOVERY_DOCUMENT_LIMITS,
+            { embeds: true },
+          );
         } catch {
           data.pending = null;
         }

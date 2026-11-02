@@ -5,7 +5,7 @@ import type { Snapshot } from '../../lib/autosave';
 import { moveThroughController } from '../../lib/editor-move';
 import { useHasActiveProject, useProject } from '../../lib/queries';
 import { registerOpenEditor } from '../../lib/save-registry';
-import { type Document, type DocumentContent, UNTITLED } from '../../lib/types';
+import { type Document, UNTITLED } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
 import { usePageTitle } from '../../lib/use-page-title';
 import { FolderLabel, PageFrame, useApp, usePageCommands, useTaskDrawer } from '../../shell';
@@ -15,7 +15,7 @@ import { DocumentBody } from './DocumentBody';
 import { DocumentEmbeds, type EmbedCommands } from './DocumentEmbeds';
 import { DocumentHeader } from './DocumentHeader';
 import { documentController, documentItem } from './document-session';
-import { useBlockAnchor, useDocumentEditor } from './use-document-editor';
+import { savedContent, useBlockAnchor, useDocumentEditor } from './use-document-editor';
 import { useDocumentFiles } from './use-document-files';
 import { useOriginMarkers } from './use-origin-markers';
 import { NO_EXCERPT, selectedText, useTaskFromSelection } from './use-task-from-selection';
@@ -193,7 +193,7 @@ export function DocumentEditor({ document }: { document: Document }) {
             title={title}
             theme={theme.resolved}
             onTitleChange={(value) => update({ title: value })}
-            onChange={() => update({ content: editor.document as unknown as DocumentContent })}
+            onChange={() => update({ content: savedContent(editor) })}
             onSelectionChange={() => setSelection(selectedText(editor))}
             onCreateTask={() => void taskFromSelection.create()}
             slashItems={slashItems}

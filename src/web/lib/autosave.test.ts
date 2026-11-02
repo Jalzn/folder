@@ -221,6 +221,19 @@ describe('document autosave', () => {
     expect(controller.getState().recoveryData).toBe(raw);
     expect(controller.getState().snapshot).toEqual(initial);
   });
+  it('opens a draft a Tab nested under a card, with the nested text after the card', () => {
+    const card = { id: 'c', type: 'taskEmbed', props: { taskId: '0b4f2a4e-8f8c-4a5e-9d55-1f2a3b4c5d6e' } };
+    const typed = { id: 'p', type: 'paragraph', props: {}, content: [{ type: 'text', text: 'Depois', styles: {} }] };
+    const nested = { ...changed, content: [{ ...card, children: [{ ...typed, children: [] }] }] };
+    const pending = { ...nested, id: 'doc', expectedVersion: 1, requestId: 'old-id' };
+    const restored = parseDraft(JSON.stringify({ format: 1, baseVersion: 1, snapshot: nested, pending }));
+    const lifted = [
+      { ...card, children: [] },
+      { ...typed, children: [] },
+    ];
+    expect(restored?.snapshot.content).toEqual(lifted);
+    expect(restored?.pending?.content).toEqual(lifted);
+  });
   it('recovers an oversized valid draft so it can be shortened or exported', () => {
     const large = { ...changed, content: [{ type: 'paragraph', content: 'x'.repeat(1024 * 1024 + 100) }] };
     const restored = parseDraft(JSON.stringify({ format: 1, baseVersion: 1, snapshot: large, pending: null }));

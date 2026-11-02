@@ -22,6 +22,26 @@ export async function openDocumentTasks(page: Page) {
 /** The document's content area. */
 export const documentEditor = (page: Page) => page.getByTestId('document-content');
 
+/**
+ * Clicks a block's text and waits until the editor reads the caret in it: the keys a test presses next come
+ * faster than a person's, before ProseMirror takes the selection the click made.
+ */
+export async function clickText(page: Page, text: string) {
+  await documentEditor(page).getByText(text, { exact: true }).click();
+  await expect
+    .poll(() =>
+      documentEditor(page).evaluate(
+        (element) =>
+          (
+            element as HTMLElement & {
+              editor?: { state: { selection: { $from: { parent: { textContent: string } } } } };
+            }
+          ).editor?.state.selection.$from.parent.textContent,
+      ),
+    )
+    .toBe(text);
+}
+
 /** An embedded task's card, by its title. */
 export const embedCard = (page: Page, title: string) =>
   documentEditor(page).getByRole('button', { name: new RegExp(`^Tarefa: ${escapeRegExp(title)},`) });

@@ -23,9 +23,26 @@ function remove({ editor }: { editor: AnyEditor }) {
 }
 
 /**
+ * Tab and ⇧Tab never put a block under an embed, nor take one out and hand it the blocks below as children:
+ * the server refuses an embed with blocks inside. Tab does nothing when the block above the first one selected
+ * is an embed, and neither key moves an embed; elsewhere they nest and lift as always.
+ */
+function nests({ editor }: { editor: AnyEditor }) {
+  if (selectedEmbed(editor)) return true;
+  const first = editor.getSelection()?.blocks[0] ?? editor.getTextCursorPosition().block;
+  const above = editor.getPrevBlock(first);
+  return Boolean(above && EMBED_TYPES.has(above.type));
+}
+function lifts({ editor }: { editor: AnyEditor }) {
+  if (selectedEmbed(editor)) return true;
+  return Boolean(editor.getSelection()?.blocks.some((block) => EMBED_TYPES.has(block.type)));
+}
+
+/**
  * The keys of an embed the arrows selected as a node (docs/etapas/11-documento-desenho.md, "Teclado e Esc"):
  * ↵ opens it as a click would, the card's task in the drawer and the figure's drawing, and does nothing on an
  * unavailable one; ⌫ and Delete remove the block. Never in a field, and the suggestion menus take ↵ first.
+ * Tab and ⇧Tab keep blocks out of embeds (`nests`, `lifts`).
  */
 export const EmbedKeysExtension = createExtension({
   key: 'embedKeys',
@@ -40,5 +57,7 @@ export const EmbedKeysExtension = createExtension({
     },
     Backspace: remove,
     Delete: remove,
+    Tab: nests,
+    'Shift-Tab': lifts,
   },
 });
