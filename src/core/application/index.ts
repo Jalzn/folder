@@ -18,6 +18,12 @@ export class AppError extends Error {
   }
 }
 
+/**
+ * An input schema's issue that carries a domain rule's sentence, already written for the person: the
+ * RPC answers a validation error with it instead of the generic text.
+ */
+export const domainIssue = (message: string) => ({ code: 'custom' as const, message, params: { domainMessage: true } });
+
 export interface Owner {
   name: string;
   installationId: string;

@@ -27,6 +27,13 @@ function toORPCError(error: AppError) {
   const [code, status] = statuses[error.code];
   return new ORPCError(code, { status, message: error.message, data: { code: error.code } });
 }
+/** The first domain sentence the input schema carried (domainIssue), or the generic text. */
+function validationMessage(error: ValidationError): string {
+  const domain = error.issues.find(
+    (issue) => (issue as { params?: { domainMessage?: unknown } }).params?.domainMessage === true,
+  );
+  return domain?.message ?? 'Revise os dados enviados e tente de novo.';
+}
 const base = os.$context<RequestContext>();
 export const pub = base.use(async ({ context, next }) => {
   if (!context.originAllowed)
@@ -37,7 +44,7 @@ export const pub = base.use(async ({ context, next }) => {
     if (error instanceof AppError) throw toORPCError(error);
     if (error instanceof DomainError) throw toORPCError(new AppError('DOMAIN_RULE', error.message));
     if (error instanceof ORPCError && error.cause instanceof ValidationError)
-      throw toORPCError(new AppError('VALIDATION', 'Revise os dados enviados e tente de novo.'));
+      throw toORPCError(new AppError('VALIDATION', validationMessage(error.cause)));
     throw error;
   }
 });

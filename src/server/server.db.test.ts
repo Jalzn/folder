@@ -222,6 +222,35 @@ describe('server boundaries', () => {
     ]);
   });
 
+  it("answers a validation error with the domain's sentence when the input has one, and the generic text otherwise", async () => {
+    const { browser } = await fixture();
+    const { client } = browser();
+    await client.auth.login({ password });
+    const project = await newProject(client);
+    const embed = { id: 'e', type: 'taskEmbed', props: { taskId: randomUUID() }, content: [], children: [] };
+    await expect(
+      client.workspace.createDocument({ requestId: randomUUID(), projectId: project.id, content: [embed] }),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'Um item incorporado não tem texto.',
+      data: { code: 'VALIDATION' },
+    });
+    await expect(
+      client.workspace.createCanvas({
+        requestId: randomUUID(),
+        projectId: project.id,
+        scene: { elements: [{ id: 'bad', type: 'image' }] },
+      }),
+    ).rejects.toMatchObject({ status: 400, message: 'A cena do desenho é inválida.' });
+    await expect(client.workspace.createDocument({ requestId: randomUUID(), projectId: 'x' })).rejects.toMatchObject({
+      status: 400,
+      message: 'Revise os dados enviados e tente de novo.',
+      data: { code: 'VALIDATION' },
+    });
+    await expect(
+      client.workspace.createTask({ requestId: randomUUID(), title: 'Sem projeto', projectId: null }),
+    ).rejects.toMatchObject({ status: 400, message: 'Revise os dados enviados e tente de novo.' });
+  });
   it('saves a document above the old 64KiB limit and rejects excessive request size', async () => {
     const { browser, app } = await fixture();
     const { client } = browser();

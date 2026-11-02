@@ -1,3 +1,4 @@
+import { domainIssue } from '@tinyfold/core/application';
 import { z } from 'zod';
 import { type DocumentContentOptions, readDocumentContent } from '../../domain/document.js';
 import { edit, id, request, visible } from './common.js';
@@ -10,7 +11,7 @@ const blockContent = (options: DocumentContentOptions) =>
     try {
       return readDocumentContent(value, {}, options);
     } catch (error) {
-      ctx.addIssue({ code: 'custom', message: error instanceof Error ? error.message : 'Documento inválido.' });
+      ctx.addIssue(domainIssue(error instanceof Error ? error.message : 'Documento inválido.'));
       return z.NEVER;
     }
   });

@@ -1,3 +1,4 @@
+import { domainIssue } from '@tinyfold/core/application';
 import { z } from 'zod';
 import { readCanvasScene } from '../../domain/canvas.js';
 import { edit, id, request, version, visible } from './common.js';
@@ -8,7 +9,7 @@ const scene = z.unknown().transform((value, ctx) => {
   try {
     return readCanvasScene(value);
   } catch (error) {
-    ctx.addIssue({ code: 'custom', message: error instanceof Error ? error.message : 'Desenho inválido.' });
+    ctx.addIssue(domainIssue(error instanceof Error ? error.message : 'Desenho inválido.'));
     return z.NEVER;
   }
 });
