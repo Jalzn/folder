@@ -140,6 +140,31 @@ test('"Incorporar no documento" puts the card under the paragraph, and only whil
   await expect(toast(page)).toContainText('Tarefa criada em A fazer');
 });
 
+test('with the focus on "Incorporar no documento", P does nothing and ⌥↑ steps the drawer, as elsewhere in it', async ({
+  page,
+}) => {
+  await login(page);
+  await createProject(page, `Checkbox da gaveta ${Date.now()}`);
+  await writeDocument(page, ['Comprar tinta.']);
+  await documentEditor(page).getByText('Comprar tinta.', { exact: true }).click({ clickCount: 3 });
+  await createTaskFromSelection(page);
+  const form = newTaskDrawer(page);
+  const embedBox = form.getByRole('checkbox', { name: 'Incorporar no documento' });
+  await embedBox.focus();
+  const pins: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/rpc/workspace/pinItem') pins.push(request.url());
+  });
+  // A checkbox only takes a press: the drawer's keys work there. P would otherwise pin the document behind.
+  await page.keyboard.press('p');
+  const before = (await form.boundingBox())?.height ?? 0;
+  await page.keyboard.press('Alt+ArrowUp');
+  await expect.poll(async () => (await form.boundingBox())?.height ?? 0).toBeGreaterThan(before);
+  await expect(embedBox).toBeFocused();
+  await expect(embedBox).toBeChecked();
+  expect(pins).toEqual([]);
+});
+
 test('the marker of a word in mid-sentence stays out of the Tab order, and the hover redraws without breaking', async ({
   page,
 }) => {

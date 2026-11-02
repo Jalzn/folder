@@ -2,6 +2,7 @@ import './drawer.css';
 import { type KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usesCommandKey } from '../../lib/platform';
 import { useApp } from '../../shell/AppProvider';
+import { isTextTarget } from '../../shell/keyboard/guards';
 import { useShellActions } from '../../shell/shell-ui';
 import { type DrawerContent, useTaskDrawer } from '../../shell/task-drawer-state';
 import { DrawerHandle } from './DrawerHandle';
@@ -19,9 +20,6 @@ function inCodeBlock(target: EventTarget) {
   const element = node instanceof Element ? node : node?.parentElement;
   return Boolean(element?.closest('[data-content-type="codeBlock"]'));
 }
-
-const editable = (target: EventTarget) =>
-  target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select'));
 
 /**
  * The task drawer (docs/etapas/10-quadro-tarefa.md, "Gaveta da tarefa"): a region below the page, which it
@@ -108,13 +106,13 @@ export function TaskDrawer({
     // Keys of its popovers, rendered outside it, as the labels' picker, stay theirs.
     const plain = !event.altKey && !event.metaKey && !event.ctrlKey;
     const inside = event.target instanceof Node && region.current?.contains(event.target);
-    if (plain && event.key.toLowerCase() === 'p' && inside && !editable(event.target)) {
+    if (plain && event.key.toLowerCase() === 'p' && inside && !isTextTarget(event.target)) {
       event.preventDefault();
       return;
     }
     if (!event.altKey || event.metaKey || event.ctrlKey || narrow) return;
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
-    if (editable(event.target)) return;
+    if (isTextTarget(event.target)) return;
     event.preventDefault();
     const next = nextPreset(share, event.key === 'ArrowUp' ? 1 : -1);
     if (next === null)

@@ -11,6 +11,7 @@ import { paths } from '../../router/paths';
 import { PageFrame, useTaskDrawer } from '../../shell';
 import { useApp, useOwnerToday } from '../../shell/AppProvider';
 import { useAnnounce } from '../../shell/announcer';
+import { isTextTarget } from '../../shell/keyboard/guards';
 import { usePageCommands } from '../../shell/page-commands';
 import { useShellActions, useShellUi } from '../../shell/shell-ui';
 import {
@@ -32,9 +33,6 @@ import { LabelFilterMenu } from './LabelFilterMenu';
 import { boardFocusOf } from './use-board-keyboard';
 
 const NO_LABELS: readonly string[] = [];
-
-const editable = (target: EventTarget) =>
-  target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select'));
 
 /**
  * `/projetos/$projectId/quadro`: the project's board (`projectBoard`), with "+ Nova tarefa" and the board's ⋯ in
@@ -123,7 +121,7 @@ export function BoardPage() {
   function keyDown(event: KeyboardEvent<HTMLDivElement>) {
     // F opens the filter from anywhere on the board outside fields and menus.
     const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
-    if (!plain || event.key.toLowerCase() !== 'f' || editable(event.target) || event.defaultPrevented) return;
+    if (!plain || event.key.toLowerCase() !== 'f' || isTextTarget(event.target) || event.defaultPrevented) return;
     if (!(event.target instanceof Node && event.currentTarget.contains(event.target))) return;
     event.preventDefault();
     setFilterOpen(true);

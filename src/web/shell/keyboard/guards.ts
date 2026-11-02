@@ -33,6 +33,12 @@ export function describeTarget(target: EventTarget | null): KeyTarget {
   };
 }
 
+/**
+ * Whether a key's target takes typed text, so the key is its own: the one rule for the shell, the board and the
+ * drawer. A checkbox, a radio or a button only takes a press, and leaves the page's keys working.
+ */
+export const isTextTarget = (target: EventTarget | null) => describeTarget(target).editable;
+
 /** A key that belongs to an IME composition: it confirms or cancels what is being composed. */
 export const isComposing = (event: { isComposing: boolean; keyCode: number }) =>
   event.isComposing || event.keyCode === 229;

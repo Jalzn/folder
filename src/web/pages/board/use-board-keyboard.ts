@@ -1,12 +1,11 @@
 import type { KeyboardEvent } from 'react';
 import { usesCommandKey } from '../../lib/platform';
+import { isTextTarget } from '../../shell/keyboard/guards';
 import { type BoardFocus, type BoardKeyAction, type BoardLayout, boardKey, type KeyPress } from './board-keys';
 
 /** Marks a card's title button and a column's name, the board's two kinds of focus. */
 export const CARD_ATTRIBUTE = 'data-board-card';
 export const COLUMN_ATTRIBUTE = 'data-board-column';
-
-const editable = (target: HTMLElement) => target.isContentEditable || target.matches('input, textarea, select');
 
 /** What the focus is on, from the focused element: a card's title or a column's name. */
 export function boardFocusOf(target: EventTarget | null): BoardFocus | null {
@@ -28,7 +27,7 @@ export function useBoardKeyboard(
   act: (action: BoardKeyAction, focus: BoardFocus, press: KeyPress) => void,
 ) {
   return (event: KeyboardEvent<HTMLElement>) => {
-    if (event.nativeEvent.isComposing || !(event.target instanceof HTMLElement) || editable(event.target)) return;
+    if (event.nativeEvent.isComposing || !(event.target instanceof HTMLElement) || isTextTarget(event.target)) return;
     const focus = boardFocusOf(event.target);
     if (!focus) return;
     const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
