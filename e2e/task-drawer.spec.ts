@@ -165,16 +165,23 @@ test('⌘↵ in the label picker or the calendar completes nothing', async ({ pa
   await createProject(page, `Atalho nos popovers ${Date.now()}`);
   await newTask(page, 'Escolher etiqueta');
   await openDrawer(page, 'Escolher etiqueta');
+  // ⌘↵ in a popover of the drawer is that popover's ↵ (docs/etapas/10-quadro-tarefa.md, Desvios).
+  const labels = page.getByRole('searchbox', { name: 'Buscar ou criar etiqueta' });
   await openTask(page).getByRole('button', { name: 'Adicionar etiqueta', exact: true }).click();
-  await expect(page.getByRole('searchbox', { name: 'Buscar ou criar etiqueta' })).toBeFocused();
+  await expect(labels).toBeFocused();
+  // With nothing typed, the picker's ↵ makes no label, and the picker stays until Esc.
   await pressCommand(page, 'Enter');
   await page.keyboard.press('Escape');
-  await openTask(page)
-    .getByRole('button', { name: /^Prazo:/ })
-    .click();
-  await expect(page.getByRole('dialog', { name: 'Prazo' }).getByRole('grid')).toBeVisible();
+  await expect(labels).toBeHidden();
+  const due = openTask(page).getByRole('button', { name: /^Prazo:/ });
+  const calendar = page.getByRole('dialog', { name: 'Prazo' });
+  await due.click();
+  await expect(calendar.getByRole('grid')).toBeVisible();
+  // The calendar's ↵ chooses the focused day, today, and closes it: there is no Esc to press after it, which
+  // would close the drawer once the calendar is gone.
   await pressCommand(page, 'Enter');
-  await page.keyboard.press('Escape');
+  await expect(calendar).toBeHidden();
+  await expect(due).not.toContainText('Sem prazo');
   await expect(toast(page)).not.toContainText('Concluída');
   await expect(openTask(page).getByRole('button', { name: 'Concluir', exact: true })).toBeVisible();
 });
