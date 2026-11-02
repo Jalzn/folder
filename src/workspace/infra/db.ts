@@ -106,7 +106,7 @@ export interface FolderRow {
   id: string;
   project_id: string;
   name: string;
-  /** folderNameKey(name), unique among the project's active folders. */
+  /** nameKey(name), unique among the project's active folders. */
   name_key: string;
   position: number;
   version: number;

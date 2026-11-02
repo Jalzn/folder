@@ -11,6 +11,6 @@ export function reorder(ids: readonly string[], id: string, beforeId: string | n
 }
 
 /** Where a restored folder or column goes back: the position it had, or the end when fewer remain. */
-export function restoredPosition(position: number, activeFolders: number): number {
-  return Math.min(Math.max(position, 0), activeFolders);
+export function restoredPosition(position: number, activeCount: number): number {
+  return Math.min(Math.max(position, 0), activeCount);
 }

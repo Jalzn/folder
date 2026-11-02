@@ -1,5 +1,5 @@
 import { AppError } from '@tinyfold/core/application';
-import { folderOrder } from '../../domain/folders.js';
+import { reorder } from '../../domain/order.js';
 import type { WorkspaceContext } from '../ports.js';
 import type { MoveFolderInput } from '../schemas/folders.js';
 import { renumberFolders, requireActiveFolder, requireProjectForFolders } from './folder-rules.js';
@@ -14,7 +14,7 @@ export function moveFolder(ctx: WorkspaceContext, input: MoveFolderInput) {
     await requireProjectForFolders(repo, folder.projectId);
     if (input.beforeFolderId === folder.id) throw new AppError('VALIDATION', 'Escolha outra pasta como referência.');
     const folders = await repo.activeFolders(folder.projectId);
-    const order = folderOrder(
+    const order = reorder(
       folders.map((item) => item.id),
       folder.id,
       input.beforeFolderId,

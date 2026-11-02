@@ -38,7 +38,7 @@ export async function placeIn(repo: WorkspaceRepository, projectId: string, colu
 }
 
 /** The top of one project's column, after moving the others down one. */
-export async function topPosition(repo: WorkspaceRepository, projectId: string, columnId: string, taskId: string) {
+async function topPosition(repo: WorkspaceRepository, projectId: string, columnId: string, taskId: string) {
   const others = (await repo.tasksInColumn(projectId, columnId)).filter((task) => task.id !== taskId);
   for (const [index, task] of others.entries())
     if (task.position !== index + 1) await repo.setTaskPosition(task.id, index + 1);

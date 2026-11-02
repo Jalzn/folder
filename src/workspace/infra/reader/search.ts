@@ -4,9 +4,10 @@ import type { SearchHit, SearchQuery, WorkspaceReader } from '../../application/
 import { excerptAround } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import type { WorkspaceTables } from '../db.js';
+import { itemTable } from '../item-tables.js';
 import { type ExcerptType, excerptWindows } from './excerpt-windows.js';
 import { folderColumns, folderReference } from './folders.js';
-import { searchableItems, type TextType, titleLengthInSearchText } from './searchable.js';
+import { type TextType, titleLengthInSearchText } from './searchable.js';
 import { projectColumns, projectReference } from './shared.js';
 
 type SearchReads = Pick<WorkspaceReader, 'searchItems'>;
@@ -32,7 +33,7 @@ export function searchReads(db: Kysely<WorkspaceTables>): SearchReads {
     );
     const titleRank = missingFromTitle.length ? sql<number>`${sql.join(missingFromTitle, sql` + `)}` : sql<number>`0`;
     let select = db
-      .selectFrom(searchableItems(db, type))
+      .selectFrom(itemTable(db, type))
       .innerJoin('workspace_projects as project', 'project.id', 'item.project_id')
       .leftJoin('workspace_folders as folder', 'folder.id', 'item.folder_id')
       .select(['item.id', 'item.title', 'item.updated_at', 'item.pinned_at', titleRank.as('title_rank')])

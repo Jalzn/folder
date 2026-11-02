@@ -2,7 +2,7 @@ import { AppError } from '@tinyfold/core/application';
 import { DomainError } from '@tinyfold/core/domain';
 import type { AgentTool, AgentToolResult } from './types.js';
 
-export const toolError = (message: string): AgentToolResult => ({
+const toolError = (message: string): AgentToolResult => ({
   content: [{ type: 'text', text: message }],
   isError: true,
 });

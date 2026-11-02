@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { createDatabase, type Database } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { folderNameKey } from '../domain/folders.js';
+import { nameKey } from '../domain/names.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
 import { legacyRows, migrateWorkspaceTo } from '../testing/legacy-workspace.js';
@@ -43,7 +43,7 @@ async function folder(projectId: string, name: string, deletedAt: string | null 
   const id = randomUUID();
   const now = '2026-10-31T12:00:00.000Z';
   await sql`insert into workspace_folders (id, project_id, name, name_key, position, version, created_at, updated_at, deleted_at)
-    values (${id}, ${projectId}, ${name}, ${folderNameKey(name)}, 0, 1, ${now}, ${now}, ${deletedAt})`.execute(db);
+    values (${id}, ${projectId}, ${name}, ${nameKey(name)}, 0, 1, ${now}, ${now}, ${deletedAt})`.execute(db);
   return id;
 }
 

@@ -43,7 +43,7 @@ export function restoreColumn(ctx: WorkspaceContext, input: RestoreColumnInput) 
         ...task,
         columnId: column.id,
         position: listed.position,
-        completedAt: restoredColumn.isDone ? (listed.completedAt ?? now) : null,
+        completedAt: null,
         version: task.version + 1,
       };
       await repo.saveTaskFields(back, task.version);

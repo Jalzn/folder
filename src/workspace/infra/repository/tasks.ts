@@ -9,7 +9,7 @@ import { documentModel, taskFieldsRow, taskModel, taskRow, taskTextRow } from '.
 import { expectUpdated } from './versioned-update.js';
 
 /** The active labels of each task, in alphabetical order: links to deleted labels stay hidden. */
-export async function activeLabelIds(db: Kysely<WorkspaceTables>, taskIds: readonly string[]) {
+async function activeLabelIds(db: Kysely<WorkspaceTables>, taskIds: readonly string[]) {
   const byTask = new Map<string, string[]>();
   if (!taskIds.length) return byTask;
   const rows = await db
@@ -24,7 +24,7 @@ export async function activeLabelIds(db: Kysely<WorkspaceTables>, taskIds: reado
 }
 
 /** A stored task as lists show it, without its description. */
-export function taskSummary(task: TaskRecord, extra: Pick<Task, 'labelIds' | 'source'>): Task {
+function taskSummary(task: TaskRecord, extra: Pick<Task, 'labelIds' | 'source'>): Task {
   return {
     id: task.id,
     title: task.title,

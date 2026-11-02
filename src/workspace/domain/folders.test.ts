@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { folderName, folderNameKey, folderOrder, restoredPosition } from './folders.js';
+import { folderName, folderNameKey } from './folders.js';
+import { reorder, restoredPosition } from './order.js';
 
 describe('folders', () => {
   it('collapses the spaces of a name, line breaks included, and trims it', () => {
@@ -99,12 +100,12 @@ describe('folders', () => {
 
   it('orders a folder before another, at the end, and refuses unknown or identical ids', () => {
     const ids = ['a', 'b', 'c', 'd'];
-    expect(folderOrder(ids, 'd', 'a')).toEqual(['d', 'a', 'b', 'c']);
-    expect(folderOrder(ids, 'a', 'c')).toEqual(['b', 'a', 'c', 'd']);
-    expect(folderOrder(ids, 'b', null)).toEqual(['a', 'c', 'd', 'b']);
-    expect(folderOrder(ids, 'x', 'a')).toBeUndefined();
-    expect(folderOrder(ids, 'a', 'x')).toBeUndefined();
-    expect(folderOrder(ids, 'a', 'a')).toBeUndefined();
+    expect(reorder(ids, 'd', 'a')).toEqual(['d', 'a', 'b', 'c']);
+    expect(reorder(ids, 'a', 'c')).toEqual(['b', 'a', 'c', 'd']);
+    expect(reorder(ids, 'b', null)).toEqual(['a', 'c', 'd', 'b']);
+    expect(reorder(ids, 'x', 'a')).toBeUndefined();
+    expect(reorder(ids, 'a', 'x')).toBeUndefined();
+    expect(reorder(ids, 'a', 'a')).toBeUndefined();
   });
 
   it('restores a folder at its position, or at the end when fewer remain', () => {

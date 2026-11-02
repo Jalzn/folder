@@ -24,7 +24,7 @@ export function fitItems<T>(items: readonly T[], render: (shown: readonly T[]) =
 }
 
 /** User text placed in a header line: a line break inside it could forge more header lines. */
-export const singleLine = (text: string) => text.replace(/\s+/gu, ' ').trim();
+const singleLine = (text: string) => text.replace(/\s+/gu, ' ').trim();
 
 /** The project's name on one line, flagged when archived. */
 export const projectName = (reference: ProjectReference): string =>

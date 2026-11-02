@@ -10,4 +10,3 @@ export function createRouter(db: Database, auth: AuthService, accessTokens: Acce
   };
 }
 export type AppRouter = ReturnType<typeof createRouter>;
-export type Router = AppRouter;

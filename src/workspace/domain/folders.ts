@@ -1,5 +1,4 @@
 import { displayName, nameKey } from './names.js';
-import { reorder, restoredPosition } from './order.js';
 
 /** Bounds of folders: the name, the active folders of a project, and the items a restore takes back. */
 export const FOLDER_LIMITS = {
@@ -25,14 +24,8 @@ export interface Folder {
   deletedAt: string | null;
 }
 
-/** A folder's name as stored: see displayName. */
+/** A folder's name as stored: see displayName. The web's folder field still reads it by this name. */
 export const folderName = displayName;
 
-/** What makes two names the same folder: see nameKey. */
+/** What makes two names the same folder: see nameKey. The web's folder field still reads it by this name. */
 export const folderNameKey = nameKey;
-
-/** The order of folder IDs with one moved: see reorder. */
-export const folderOrder = reorder;
-
-/** Where a restored folder goes back: see restoredPosition. */
-export { restoredPosition };
