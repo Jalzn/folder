@@ -14,9 +14,7 @@ import {
   useSourceInlineContentPreviewPopup,
 } from '@blocknote/react';
 import { useEffect, useId, useState } from 'react';
-// By their files: the ui barrel would bring the API client into the editor's schema (review Q1).
-import { Button } from '../ui/Button';
-import { Dialog, DialogActions } from '../ui/Dialog';
+import { Button, Dialog, DialogActions } from '../ui';
 import './inline-math.css';
 
 type InlineMathProps = ReactCustomInlineContentRenderProps<MathInlineContentConfig, StyleSchema>;

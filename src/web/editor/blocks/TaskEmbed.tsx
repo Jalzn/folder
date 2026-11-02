@@ -1,8 +1,6 @@
 import { useId, useRef } from 'react';
 import { TaskMeta } from '../../components/task/TaskMeta';
-// The glyphs by their files: the ui barrel would bring the API client into the blocks (review Q1).
-import { ColumnRing } from '../../ui/glyphs/ColumnRing';
-import { ProjectMark } from '../../ui/glyphs/ProjectMark';
+import { ColumnRing, ProjectMark } from '../../ui';
 import { taskEmbedView } from './embed-view';
 import { useEmbedsContext } from './embeds-context';
 import { UnavailableEmbed } from './UnavailableEmbed';

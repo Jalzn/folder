@@ -1,6 +1,5 @@
 import { Ban } from 'lucide-react';
-// By its file: the ui barrel would bring the API client into the blocks (review Q1).
-import { Button } from '../../ui/Button';
+import { Button } from '../../ui';
 import type { UnavailableView } from './embed-view';
 import { useEmbedsContext } from './embeds-context';
 
