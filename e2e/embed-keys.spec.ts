@@ -266,3 +266,35 @@ test('an archived project’s document only reads: no typing, no ⌫ on its embe
   expect(saves).toEqual([]);
   expect(textOf((await saved(page, id))[0] as Block)).toBe('Texto guardado');
 });
+
+test('typing on a selected card writes in a new paragraph after it, an accent’s composition too', async ({ page }) => {
+  await login(page);
+  const projectId = await createProject(page, `Digitar no card ${Date.now()}`);
+  const taskId = await task(page, projectId, 'Card selecionado');
+  const id = await openDocument(page, projectId, [
+    { ...paragraph('Antes'), id: 'antes' },
+    { ...card(taskId), id: 'card' },
+    { ...paragraph('Depois'), id: 'depois' },
+  ]);
+  const lines = async () =>
+    (await saved(page, id)).map((block) => (block.type === 'taskEmbed' ? '[card]' : textOf(block)));
+
+  await clickText(page, 'Antes');
+  await page.keyboard.press('ArrowDown');
+  expect(await caret(page)).toBe('[card]');
+  await page.keyboard.type('X');
+  expect(await caret(page)).toBe('X');
+  await expect.poll(lines).toEqual(['Antes', '[card]', 'X', 'Depois']);
+
+  // An accent on the card selected again, as a dead key composes it: the key goes down, the composition
+  // shows "´", and "a" commits "á".
+  await page.keyboard.press('ArrowUp');
+  expect(await caret(page)).toBe('[card]');
+  const cdp = await page.context().newCDPSession(page);
+  const dead = { key: 'Dead', code: 'BracketLeft', windowsVirtualKeyCode: 229 };
+  await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...dead });
+  await cdp.send('Input.imeSetComposition', { text: '´', selectionStart: 1, selectionEnd: 1 });
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', ...dead });
+  await cdp.send('Input.insertText', { text: 'á' });
+  await expect.poll(lines).toEqual(['Antes', '[card]', 'á', 'X', 'Depois']);
+});

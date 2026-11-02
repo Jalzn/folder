@@ -3,6 +3,7 @@ import type { EditorState } from '@tiptap/pm/state';
 import { type EmbedClipboardActions, embedClipboard } from './embed-clipboard';
 import { type BlockPlace, blockAfter, blockBefore } from './embed-places';
 import { embedSelectionHold } from './embed-selection-hold';
+import { embedTyping } from './embed-typing';
 
 const EMBED_TYPES = new Set(['taskEmbed', 'drawingEmbed']);
 
@@ -115,12 +116,19 @@ function lifts({ editor }: { editor: AnyEditor }) {
  * figure's drawing, and does nothing on an unavailable one; ⌫ and Delete select an embed beside the caret,
  * then take it out (`deletes`). Never in a field, and the suggestion menus take ↵ first. Tab and ⇧Tab keep
  * blocks out of embeds (`nests`, `lifts`), and the arrows go through them a block at a time (`arrow`). ⌘C
- * and ⌘X copy a selected embed as its block and as its link (embed-clipboard.ts).
+ * and ⌘X copy a selected embed as its block and as its link (embed-clipboard.ts), and typing on one writes
+ * in a new paragraph after it (embed-typing.ts).
  */
 export const createEmbedKeys = (actions: EmbedKeyActions) =>
-  createExtension({
+  createExtension(({ editor }: { editor: AnyEditor }) => ({
     key: 'embedKeys',
-    prosemirrorPlugins: [embedSelectionHold(embedSelectedIn), embedClipboard(embedSelectedIn, actions)],
+    // Before BlockNote's keys of a selected node, which swallow a typed letter.
+    runsBefore: ['nodeSelectionKeyboard'],
+    prosemirrorPlugins: [
+      embedSelectionHold(embedSelectedIn),
+      embedClipboard(embedSelectedIn, actions),
+      embedTyping(editor, embedSelectedIn),
+    ],
     keyboardShortcuts: {
       Enter: open,
       Backspace: deletes(false, actions),
@@ -132,4 +140,4 @@ export const createEmbedKeys = (actions: EmbedKeyActions) =>
       ArrowRight: arrow(true, false),
       ArrowLeft: arrow(false, false),
     },
-  });
+  }))();
