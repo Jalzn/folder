@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { clickText, documentEditor } from './support/document.js';
+import { clickText, documentEditor, embedCard } from './support/document.js';
 import { createProject } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -181,4 +181,32 @@ test('⌫ after a card and Delete before one select it first, and the second key
   await expect(toast).toBeVisible();
   await expect(documentEditor(page).locator('[data-content-type="taskEmbed"]')).toHaveCount(0);
   expect(await caret(page)).toBe('Depois');
+});
+
+test('Restaurar gives the focus to the card it brings back, selected in the editor', async ({ page }) => {
+  await login(page);
+  const projectId = await createProject(page, `Restaurar e foco ${Date.now()}`);
+  const trashed = await rpc<{ id: string; version: number }>(page, 'workspace/createTask', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: 'Tarefa de volta',
+  });
+  await rpc(page, 'workspace/deleteTask', {
+    id: trashed.id,
+    expectedVersion: trashed.version,
+    requestId: crypto.randomUUID(),
+  });
+  await openDocument(page, projectId, [
+    { ...paragraph('Antes'), id: 'antes' },
+    { ...card(trashed.id), id: 'card' },
+    { ...paragraph('Depois'), id: 'depois' },
+  ]);
+
+  await documentEditor(page)
+    .getByRole('button', { name: /^Restaurar/ })
+    .focus();
+  await page.keyboard.press('Enter');
+  await expect(embedCard(page, 'Tarefa de volta')).toBeVisible();
+  await expect(documentEditor(page)).toBeFocused();
+  expect(await caret(page)).toBe('[card]');
 });

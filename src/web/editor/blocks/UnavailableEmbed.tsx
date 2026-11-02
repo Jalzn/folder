@@ -24,7 +24,7 @@ export function UnavailableEmbed({
       <Ban size={16} aria-hidden="true" />
       <span className="embed-missing__text">{view.text}</span>
       {embeds && restore && (
-        <Button size="sm" variant="ghost" onPress={() => embeds.actions.restore(kind, restore)}>
+        <Button size="sm" variant="ghost" onPress={() => embeds.actions.restore(kind, restore, blockId)}>
           Restaurar
         </Button>
       )}

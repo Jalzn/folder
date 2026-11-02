@@ -96,11 +96,17 @@ export function useEmbedActions({
   const current: EmbedActions = {
     openTask: (task) => drawer.openTask({ id: task.id, projectId: task.project.id, title: task.title }),
     openDrawing: (drawing) => void navigate({ href: paths.drawing(drawing.project.id, drawing.id) }),
-    restore: (kind, item) => {
+    restore: (kind, item, blockId) => {
       const input = { id: item.id, expectedVersion: item.version };
       const requestId = restoreRequest.for({ kind, ...input });
+      // The button goes with the box it was in: the focus goes to the block, selected as the card or figure
+      // it becomes (review M2), never to the page.
       const restored = (open: () => void) => {
         restoreRequest.clear();
+        if (present() && editor.getBlock(blockId)) {
+          editor.setTextCursorPosition(blockId);
+          editor.focus();
+        }
         toast(`“${item.title}” restaurado.`, { action: { label: 'Abrir', onAction: open } });
       };
       if (kind === 'task')
@@ -151,7 +157,7 @@ export function useEmbedActions({
   const [actions] = useState<EmbedActions>(() => ({
     openTask: (task) => latest.current.openTask(task),
     openDrawing: (drawing) => latest.current.openDrawing(drawing),
-    restore: (kind, item) => latest.current.restore(kind, item),
+    restore: (kind, item, blockId) => latest.current.restore(kind, item, blockId),
     remove: (blockId) => latest.current.remove(blockId),
   }));
   return { actions, insert, newTask, newDrawing };

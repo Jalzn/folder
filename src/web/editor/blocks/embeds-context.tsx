@@ -6,8 +6,8 @@ import type { EmbedViewContext } from './embed-view';
 export interface EmbedActions {
   openTask: (task: LiveTask) => void;
   openDrawing: (drawing: LiveDrawing) => void;
-  /** Restaurar of an embed in the trash, at the version the resolver read. */
-  restore: (kind: 'task' | 'drawing', item: { id: string; title: string; version: number }) => void;
+  /** Restaurar of an embed in the trash, at the version the resolver read; the block then takes the focus. */
+  restore: (kind: 'task' | 'drawing', item: { id: string; title: string; version: number }, blockId: string) => void;
   /** Remover: the block leaves the document, with Desfazer. */
   remove: (blockId: string) => void;
 }
