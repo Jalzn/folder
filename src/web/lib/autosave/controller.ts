@@ -127,10 +127,12 @@ export class AutosaveController<T> {
   change(snapshot: T) {
     if (this.equal(snapshot, this.state.snapshot)) return;
     const blocked = ['error', 'conflict'].includes(this.state.status);
+    // A refusal for good was of the text sent: an edited text is a new request, worth sending.
     this.emit({
       snapshot: clone(snapshot),
       status: blocked ? this.state.status : this.inFlight ? 'saving' : 'dirty',
       recovered: false,
+      refused: false,
     });
     if (this.options.draftDelayMs) {
       this.draftTimer ??= setTimeout(() => this.persist(), this.options.draftDelayMs);

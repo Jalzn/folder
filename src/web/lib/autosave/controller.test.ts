@@ -259,4 +259,20 @@ describe('document autosave', () => {
     expect(await controller.flush()).toBe(true);
     expect(controller.getState()).toMatchObject({ status: 'saved', refused: false });
   });
+  it('sends an edited text after a refusal for good, as a new request', async () => {
+    const calls: SaveInput<Snapshot>[] = [];
+    const { controller } = setup(async (input) => {
+      calls.push(input);
+      if (calls.length === 1) throw Object.assign(new Error('inválido'), { code: 'VALIDATION' });
+      return { id: input.id, version: input.expectedVersion + 1, updatedAt: 'now' };
+    });
+    controller.change(changed);
+    expect(await controller.flush()).toBe(false);
+    controller.change({ ...changed, title: 'Corrigida' });
+    // Still a failure on screen, but no longer the refused text: hiding the tab may send it (watchPage).
+    expect(controller.getState()).toMatchObject({ status: 'error', refused: false });
+    expect(await controller.flush()).toBe(true);
+    expect(calls[1]?.title).toBe('Corrigida');
+    expect(calls[1]?.requestId).not.toBe(calls[0]?.requestId);
+  });
 });
