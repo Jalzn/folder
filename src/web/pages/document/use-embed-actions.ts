@@ -108,7 +108,12 @@ export function useEmbedActions({
   }
 
   const current: EmbedActions = {
-    openTask: (task) => drawer.openTask({ id: task.id, projectId: task.project.id, title: task.title }),
+    openTask: (task, tapped) => {
+      // On a touch screen, the focus going back to the editor when the drawer closes would bring up the
+      // on-screen keyboard: from a tap, the editor lets it go first, and it goes to the page instead.
+      if (tapped) editor.domElement?.blur();
+      drawer.openTask({ id: task.id, projectId: task.project.id, title: task.title });
+    },
     openDrawing: (drawing) => void navigate({ href: paths.drawing(drawing.project.id, drawing.id) }),
     restore: (kind, item, blockId) => {
       const input = { id: item.id, expectedVersion: item.version };
@@ -172,7 +177,7 @@ export function useEmbedActions({
   const latest = useRef(current);
   latest.current = current;
   const [actions] = useState<EmbedActions>(() => ({
-    openTask: (task) => latest.current.openTask(task),
+    openTask: (task, tapped) => latest.current.openTask(task, tapped),
     openDrawing: (drawing) => latest.current.openDrawing(drawing),
     restore: (kind, item, blockId) => latest.current.restore(kind, item, blockId),
     remove: (blockId) => latest.current.remove(blockId),

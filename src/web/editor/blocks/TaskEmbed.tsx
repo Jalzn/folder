@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import { TaskMeta } from '../../components/task/TaskMeta';
 import { useColumns } from '../../lib/queries';
 import { ColumnRing, ProjectMark } from '../../ui';
@@ -19,6 +19,7 @@ export function TaskEmbed({ taskId, blockId }: { taskId: string; blockId: string
   const embeds = useEmbedsContext();
   const columns = useColumns().data?.columns ?? [];
   const metaId = useId();
+  const pointer = useRef('');
   if (!embeds)
     return (
       <UnavailableEmbed
@@ -52,7 +53,13 @@ export function TaskEmbed({ taskId, blockId }: { taskId: string; blockId: string
       data-done={view.done || undefined}
       aria-label={view.label}
       aria-describedby={metaId}
-      onClick={() => embeds.actions.openTask(task)}
+      onPointerDown={(event) => {
+        pointer.current = event.pointerType;
+      }}
+      onClick={() => {
+        embeds.actions.openTask(task, pointer.current === 'touch');
+        pointer.current = '';
+      }}
     >
       <span className="embed-card__line">
         <ColumnRing index={Math.max(0, index)} count={Math.max(columns.length, 1)} isDone={view.done} />

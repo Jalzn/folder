@@ -175,6 +175,9 @@ test('on a phone the embeds take the width: a tap opens the card in the drawer, 
   await card.tap();
   await expect(drawer(page)).toBeVisible();
   await drawer(page).getByRole('button', { name: 'Fechar a gaveta', exact: true }).tap();
+  // The focus does not go back to the editor, which would bring up the on-screen keyboard.
+  await expect(drawer(page)).toHaveCount(0);
+  await expect(content).not.toBeFocused();
   await content.getByRole('link', { name: /^Figura 1: Figura no celular\./ }).tap();
   await expect(page).toHaveURL(new RegExp(`/projetos/${projectId}/desenhos/${drawing.id}$`));
 });

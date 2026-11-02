@@ -4,7 +4,8 @@ import type { EmbedViewContext } from './embed-view';
 
 /** What an embed can do from its block: open its item, put it back from the trash, or leave the document. */
 export interface EmbedActions {
-  openTask: (task: LiveTask) => void;
+  /** Opens the card's task in the drawer; from a tap, the editor lets the focus go first (review B10). */
+  openTask: (task: LiveTask, tapped?: boolean) => void;
   openDrawing: (drawing: LiveDrawing) => void;
   /** Restaurar of an embed in the trash, at the version the resolver read; the block then takes the focus. */
   restore: (kind: 'task' | 'drawing', item: { id: string; title: string; version: number }, blockId: string) => void;
