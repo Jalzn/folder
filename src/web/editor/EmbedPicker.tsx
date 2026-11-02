@@ -56,6 +56,8 @@ export function EmbedPicker({
 }) {
   const [text, setText] = useState('');
   const list = useRef<HTMLDivElement>(null);
+  /** Whether the arrows moved the mark since the text last changed: the list may mark an item on its own. */
+  const arrowed = useRef(false);
   const type = kind === 'task' ? 'task' : 'drawing';
   const own = useSearch({ query: text, types: [type], projectId, limit: 20 });
   const all = useSearch({ query: text, types: [type], limit: 20 });
@@ -82,22 +84,29 @@ export function EmbedPicker({
       aria-label={say.label}
     >
       {/* No filter: the search already matched every word, and the list shows what it answered. */}
-      <Autocomplete inputValue={text} onInputChange={setText}>
+      <Autocomplete
+        inputValue={text}
+        onInputChange={(value) => {
+          arrowed.current = false;
+          setText(value);
+        }}
+      >
         <AriaSearchField aria-label={say.label} className="embed-picker__filter" autoFocus>
           <Input
             className="embed-picker__input"
             placeholder={kind === 'task' ? 'Buscar tarefa' : 'Buscar desenho'}
             onKeyDownCapture={(event) => {
-              // ↵ with text typed and no item marked by the arrows embeds the item of that title, or else is
-              // "Nova tarefa…" or "Novo desenho", titled with the text (review M6); with an item marked, the list
-              // takes it. Read before the list acts on the key: the mark is on the list's item at once, the
-              // field's aria-activedescendant later.
+              if (event.key === 'ArrowDown' || event.key === 'ArrowUp') arrowed.current = true;
+              // ↵ with text typed and no item the arrows marked embeds the item of that title, the document's
+              // project's first, even when the list marked "Nova tarefa…" on its own; or else is "Nova tarefa…"
+              // or "Novo desenho", titled with the text (review M6). With an item marked, the list takes it. Read
+              // before the list acts on the key: the mark is on the list's item at once, the field's
+              // aria-activedescendant later.
               if (event.key !== 'Enter' || event.nativeEvent.isComposing || !text.trim()) return;
-              if (
+              const marked =
                 list.current?.querySelector('[data-focused]') ||
-                event.currentTarget.getAttribute('aria-activedescendant')
-              )
-                return;
+                event.currentTarget.getAttribute('aria-activedescendant');
+              if (marked && (arrowed.current || !exact)) return;
               event.preventDefault();
               event.stopPropagation();
               if (exact) onPick(exact);

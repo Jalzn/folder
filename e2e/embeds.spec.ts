@@ -134,6 +134,29 @@ test('↵ after typing an existing task’s title in the picker embeds that task
   expect(found.items).toHaveLength(1);
 });
 
+test('↵ on a title both the document’s project and another one have embeds the document’s project’s task', async ({
+  page,
+}) => {
+  await login(page);
+  const word = `dupla${Date.now().toString(36)}`;
+  const elsewhere = await createProject(page, `Outro com o título ${Date.now()}`);
+  await rpcTask(page, elsewhere, `Revisão ${word}`);
+  const projectId = await createProject(page, `Título nos dois ${Date.now()}`);
+  await rpcTask(page, projectId, `Revisão ${word}`);
+  await writeDocument(page, 'Revisões.');
+  const picker = await slash(page, 'tarefa');
+  await page.keyboard.type(`Revisão ${word}`);
+  await expect(picker.getByRole('menuitem').filter({ hasText: `Revisão ${word}` })).toHaveCount(2);
+  await page.waitForTimeout(400);
+  await page.keyboard.press('Enter');
+  const card = embedCard(page, `Revisão ${word}`);
+  await expect(card).toBeVisible();
+  await expect(card.locator('.project-mark')).toHaveCount(0);
+  await expect(newTaskDrawer(page)).toHaveCount(0);
+  const found = await rpc<{ items: unknown[] }>(page, 'workspace/search', { query: word, types: ['task'] });
+  expect(found.items).toHaveLength(2);
+});
+
 test('the arrows select a card: ↵ opens it, ⌫ removes it and the editor’s ⌘Z brings it back', async ({ page }) => {
   await login(page);
   const here = await createProject(page, `Teclas do card ${Date.now()}`);
