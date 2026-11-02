@@ -350,3 +350,51 @@ test('⌘C on a card copies its words and its link, and a paste in a description
   await page.keyboard.press('ControlOrMeta+v');
   await expect(description.getByRole('link', { name: 'Tarefa: Card copiado (A fazer)' })).toHaveAttribute('href', link);
 });
+
+test('a pasted embed with an ID the server refuses never lands, and the document saves with its cards', async ({
+  page,
+}) => {
+  await login(page);
+  const projectId = await createProject(page, `Colar forjado ${Date.now()}`);
+  const task = await rpcTask(page, projectId, 'Card legítimo');
+  const { id } = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: 'Colar',
+    content: [
+      { type: 'paragraph', content: [{ type: 'text', text: 'Linha antes', styles: {} }] },
+      { type: 'taskEmbed', props: { taskId: task.id } },
+      { type: 'paragraph', content: [{ type: 'text', text: 'Linha depois', styles: {} }] },
+    ],
+  });
+  await page.goto(`/projetos/${projectId}/documentos/${id}`);
+  await expect(embedCard(page, 'Card legítimo')).toBeVisible();
+  // Another page the person copied from put BlockNote's own format on the clipboard, with an ID nobody issued.
+  await page.evaluate(() =>
+    document.addEventListener(
+      'copy',
+      (event) => {
+        const forged = '<div data-content-type="taskEmbed" data-task-id="NOT-A-UUID"></div><p>Colado</p>';
+        event.clipboardData?.setData('blocknote/html', forged);
+        event.clipboardData?.setData('text/plain', 'Colado');
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      },
+      { capture: true, once: true },
+    ),
+  );
+  await clickText(page, 'Linha depois', 'end');
+  await page.keyboard.press('ControlOrMeta+c');
+  const saved = page.waitForResponse(
+    (response) => answers(response, 'workspace/saveDocument') && response.status() === 200,
+  );
+  await page.keyboard.press('ControlOrMeta+v');
+  await saved;
+  await expect(documentEditor(page)).toContainText('Colado');
+  await expect(documentEditor(page).locator('[data-content-type="taskEmbed"]')).toHaveCount(1);
+  await expect(embedCard(page, 'Card legítimo')).toBeVisible();
+  const content = (
+    await rpc<{ content: { type: string; props?: { taskId?: string } }[] }>(page, 'workspace/getDocument', { id })
+  ).content;
+  expect(content.filter((block) => block.type === 'taskEmbed').map((block) => block.props?.taskId)).toEqual([task.id]);
+});
