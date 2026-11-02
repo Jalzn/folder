@@ -17,6 +17,8 @@ const paths: Path[] = ['o menu Novo', 'N', '⌘K'];
 
 const titleField = (page: Page) => page.getByRole('textbox', { name: 'Título do documento' });
 
+type Block = { content?: { text?: string }[] };
+
 /** An open document, "Antigo", to make the new one from. */
 async function openOld(page: Page) {
   const projectId = await createProject(page, `Criação ${Date.now()}`);
@@ -28,7 +30,7 @@ async function openOld(page: Page) {
   });
   await page.goto(`/projetos/${projectId}/documentos/${old.id}`);
   await expect(titleField(page)).toHaveValue('Antigo');
-  return old;
+  return { ...old, projectId };
 }
 
 /**
@@ -73,6 +75,36 @@ for (const [platform, userAgent] of [
         // Nothing takes it afterwards, as the page settles.
         await page.waitForTimeout(500);
         await expect(titleField(page)).toBeFocused();
+      });
+
+      test(`by ${path}, what is typed at once goes to the new title, never to the page being left`, async ({
+        page,
+      }) => {
+        await login(page);
+        const old = await openOld(page);
+        // The document takes a moment to be made, as on a slow network: the old page stays meanwhile.
+        await page.route('**/rpc/workspace/createDocument', async (route) => {
+          await new Promise((resolve) => setTimeout(resolve, 400));
+          await route.continue();
+        });
+        await askForNew(page, path);
+        // At machine speed, while the old page is still the one shown: a mistake taken back with ⌫, too.
+        await page.keyboard.type('Plano da semx');
+        await page.keyboard.press('Backspace');
+        await page.keyboard.type('ana de maio');
+        await expect(page).not.toHaveURL(new RegExp(old.id));
+        await expect(titleField(page)).toHaveValue('Plano da semana de maio');
+        await expect(titleField(page)).toBeFocused();
+        // The old document is as it was, at its version, and no shortcut ran on its page.
+        const kept = await rpc<{ title: string; version: number; content: Block[] }>(page, 'workspace/getDocument', {
+          id: old.id,
+        });
+        expect(kept.version).toBe(old.version);
+        expect(kept.title).toBe('Antigo');
+        expect(kept.content.map((block) => block.content?.map((part) => part.text).join(''))).toEqual(['Texto antigo']);
+        expect(
+          (await rpc<{ folders: unknown[] }>(page, 'workspace/listFolders', { projectId: old.projectId })).folders,
+        ).toEqual([]);
       });
     }
   });

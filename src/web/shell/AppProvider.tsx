@@ -6,7 +6,8 @@ import type { Project } from '../lib/types';
 import { useAction } from '../lib/use-action';
 import { useRequest } from '../lib/use-request';
 import { paths } from '../router/paths';
-import { pageFocus, returnFocus } from '../ui';
+import { focusPageTitle, pageFocus, returnFocus } from '../ui';
+import { type HeldTyping, type HeldTypingTarget, holdTyping } from './held-typing';
 import type { Owner } from './LoginScreen';
 import { ProjectDialog } from './project/ProjectDialog';
 
@@ -25,11 +26,16 @@ interface AppContextValue {
   /** Creates a document in the project, or in one of its folders, and opens it with the focus on its title. */
   newDocument: (projectId: string, folderId?: string) => Promise<void>;
   /**
+   * Starts holding what is typed for the next `newDocument` (holdTyping) before it is called, as the ⌘K palette
+   * runs its command a frame after it closes.
+   */
+  holdForNewDocument: () => void;
+  /**
    * The page of a document calls it with its title as it opens: the title of the one `newDocument` just made
    * takes the focus, whichever path asked for it (the Novo menu, N or ⌘K), as the menu or the palette gives
-   * the focus back to the page being left.
+   * the focus back to the page being left, and what was typed while it was on its way (holdTyping).
    */
-  newDocumentOpened: (documentId: string, title: HTMLTextAreaElement) => void;
+  newDocumentOpened: (documentId: string, target: HeldTypingTarget) => void;
   /** Creates a drawing in the project, or in one of its folders, and opens it. */
   newCanvas: (projectId: string, folderId?: string) => Promise<void>;
   /** Opens "Novo projeto", or "Renomear projeto" for a project. */
@@ -39,6 +45,9 @@ interface AppContextValue {
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
+
+/** How long the keys wait for a new document's page before they are let go, as when it never opens. */
+const HOLD_MS = 15_000;
 
 export function useApp() {
   const value = useContext(AppContext);
@@ -83,23 +92,57 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
     focusBefore.current = pageFocus();
   }, []);
 
-  /** The document `newDocument` made, until its page opens (newDocumentOpened). */
-  const madeDocument = useRef<string | null>(null);
+  /** The field off screen that holds the keys while a new document is on its way (holdTyping). */
+  const holdField = useRef<HTMLTextAreaElement>(null);
+  /** The document `newDocument` is making, with the keys held for it, until its page opens. */
+  const making = useRef<{ documentId: string | null; held: HeldTyping | null; timer: number } | null>(null);
+  /** Lets the keys go, typed text and all, when the new document's page will not open. */
+  const letGo = useCallback(() => {
+    const current = making.current;
+    making.current = null;
+    if (!current) return;
+    clearTimeout(current.timer);
+    current.held?.cancel();
+    focusPageTitle();
+  }, []);
+  // From the request until the new title has the focus, the keys wait for it: the page shown meanwhile is the
+  // one being left, and its title, its text or its shortcuts would take them.
+  const holdForNewDocument = useCallback(() => {
+    if (making.current) return;
+    making.current = {
+      documentId: null,
+      held: holdField.current ? holdTyping(holdField.current) : null,
+      timer: window.setTimeout(letGo, HOLD_MS),
+    };
+  }, [letGo]);
+  /** A document being made: a second ask meanwhile does nothing, and the keys stay held for the first. */
+  const creatingDocument = useRef(false);
   async function newDocument(projectId: string, folderId?: string) {
+    if (creatingDocument.current) return;
+    creatingDocument.current = true;
+    holdForNewDocument();
     const input = { projectId, ...(folderId ? { folderId } : {}) };
-    await documentAction.run(
-      () => api.workspace.createDocument({ ...input, requestId: documentRequest.for(input) }),
-      (document) => {
-        documentRequest.clear();
-        madeDocument.current = document.id;
-        void navigate({ href: paths.document(projectId, document.id) });
-      },
-    );
+    try {
+      const made = await documentAction.run(
+        () => api.workspace.createDocument({ ...input, requestId: documentRequest.for(input) }),
+        (document) => {
+          documentRequest.clear();
+          if (making.current) making.current.documentId = document.id;
+          void navigate({ href: paths.document(projectId, document.id) });
+        },
+      );
+      if (!made) letGo();
+    } finally {
+      creatingDocument.current = false;
+    }
   }
-  const newDocumentOpened = useCallback((documentId: string, title: HTMLTextAreaElement) => {
-    if (madeDocument.current !== documentId) return;
-    madeDocument.current = null;
-    title.focus({ preventScroll: true });
+  const newDocumentOpened = useCallback((documentId: string, target: HeldTypingTarget) => {
+    const current = making.current;
+    if (!current || current.documentId !== documentId) return;
+    making.current = null;
+    clearTimeout(current.timer);
+    if (current.held) current.held.release(target);
+    else target.title.focus({ preventScroll: true });
   }, []);
   async function newCanvas(projectId: string, folderId?: string) {
     const input = { projectId, ...(folderId ? { folderId } : {}) };
@@ -116,6 +159,7 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
     timeZone,
     setTimeZone,
     newDocument,
+    holdForNewDocument,
     newDocumentOpened,
     newCanvas,
     openProjectDialog: (project) => {
@@ -128,6 +172,14 @@ export function AppProvider({ owner, children }: { owner: Owner; children: React
   return (
     <AppContext.Provider value={value}>
       {children}
+      {/* holdTyping's field: off screen and out of the Tab order, it only has the focus while a document opens. */}
+      <textarea
+        ref={holdField}
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Abrindo o novo documento"
+        data-holds-typing=""
+      />
       {projectDialog && (
         <ProjectDialog
           project={projectDialog.project}

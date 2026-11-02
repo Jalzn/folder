@@ -5,6 +5,7 @@ import { Menu as AriaMenu, Autocomplete, Dialog, Input, Modal, ModalOverlay, Tex
 import { inBoardOrder } from '../../lib/board-order';
 import { useColumns } from '../../lib/queries';
 import { Kbd, MenuSection } from '../../ui';
+import { useApp } from '../AppProvider';
 import { type SwitcherPlace, useShellUi } from '../shell-ui';
 import { availableCommands } from './commands';
 import { PaletteRow } from './PaletteRow';
@@ -49,6 +50,7 @@ export function CommandPalette(props: PaletteProps) {
 /** The field and the sections (palette-sections.ts), each row run after the palette closes. */
 function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & { initial: string }) {
   const ui = useShellUi();
+  const app = useApp();
   const { context, project, projects, item, pinned } = usePaletteContext();
   const [query, setQuery] = useState(initial);
   const { results, searching, folders } = usePaletteData(query);
@@ -74,6 +76,9 @@ function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & {
   function choose(key: string) {
     const row = rows.get(key);
     if (!row) return;
+    // What is typed from now on waits for the new document's title, not for the page the palette gives the focus
+    // back to before the action runs.
+    if (row.action.kind === 'command' && row.action.id === 'new-document') app.holdForNewDocument();
     // The palette closes first, so what the action opens gets the focus.
     ui.closePalette();
     requestAnimationFrame(() => run(row.action));

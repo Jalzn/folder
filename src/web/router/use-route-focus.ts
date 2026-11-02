@@ -21,8 +21,11 @@ export function useRouteFocus(announce: (text: string) => void) {
       pageTitle,
       (heading) => {
         const active = document.activeElement;
+        // The field that holds the keys while a new document opens keeps them until its title takes them.
         const placed =
-          active && active !== document.body && (active.closest('main') || active.closest('[role="dialog"]'));
+          active &&
+          active !== document.body &&
+          (active.closest('main') || active.closest('[role="dialog"]') || active.closest('[data-holds-typing]'));
         if (!placed) heading.focus({ preventScroll: true });
         latest.current(heading.textContent ?? document.title);
       },
