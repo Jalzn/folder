@@ -1,7 +1,9 @@
 import type { BlockNoteEditor } from '@blocknote/core';
 import { useNavigate } from '@tanstack/react-router';
 import type { DocumentBlock } from '@tinyfold/workspace/domain';
-import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
+import { useState } from 'react';
+import { oneAtATime } from '../../components/item-page/one-at-a-time';
+import { api, errorMessage, queryClient, refreshWorkspace, reportSessionError } from '../../lib/api';
 import type { AutosaveController, Snapshot } from '../../lib/autosave';
 import { downloadFile, fileNameFrom } from '../../lib/download';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
@@ -31,6 +33,8 @@ export function useDocumentFiles(
   const navigate = useNavigate();
   const importRequest = useRequest();
   const findDestination = useCopyDestination();
+  // One import at a time, as the drawing's (decision 7).
+  const [importOnce] = useState(oneAtATime);
 
   async function exportMarkdown() {
     try {
@@ -52,10 +56,16 @@ export function useDocumentFiles(
   }
 
   async function importMarkdown(file: File) {
-    if (file.size > MAX_IMPORT_BYTES) {
-      toast('Escolha um arquivo Markdown de até 1 MB.', 'error');
-      return;
-    }
+    await importOnce(async () => {
+      if (file.size > MAX_IMPORT_BYTES) {
+        toast('Escolha um arquivo Markdown de até 1 MB.', 'error');
+        return;
+      }
+      await importAsDocument(file);
+    });
+  }
+
+  async function importAsDocument(file: File) {
     try {
       const own = controller.getState().snapshot.projectId;
       const { destination, projects } = await findDestination(own);
@@ -91,6 +101,8 @@ export function useDocumentFiles(
       );
       void navigate({ href: paths.document(destination.project.id, imported.id) });
     } catch (error) {
+      // A session that expired on the way brings the login back over the page, as the drawing's import.
+      reportSessionError(error);
       toast(errorMessage(error), 'error');
     }
   }
