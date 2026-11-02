@@ -375,14 +375,6 @@ test('from a selected embed, keys the embed keys leave alone and a selection set
       element.ownerDocument.getSelection()?.collapse(text, 3);
     });
   await expect.poll(() => caret(page)).toBe('Linha 4');
-  // Shift+↓ and Shift+↑ leave the card for a range, as the browser does: from where Chrome keeps the DOM's
-  // selection, which for a card between two cards is the document's first text.
-  for (const key of ['Shift+ArrowDown', 'Shift+ArrowUp']) {
-    await page.reload();
-    await selectMiddle();
-    await page.keyboard.press(key);
-    await expect.poll(() => caret(page)).not.toBe('[x2]');
-  }
 });
 
 test('⌫ right after a jump to the line start still selects the card first', async ({ page }) => {
@@ -426,4 +418,65 @@ test('the arrows walk a document of text, figures and cards at a person’s pace
   await clickText(page, 'Fim', 'start');
   expect(await walk(page, Array(4).fill('ArrowLeft'), 200)).toEqual(['[f2]', '[t2]', '[t1]', 'Meio']);
   expect(await walk(page, Array(4).fill('ArrowRight'), 200)).toEqual(['[t1]', '[t2]', '[f2]', 'Fim']);
+});
+
+test('⇧↓ and ⇧↑ from an embed take the block beside it, and Page Down stays, at a person’s pace', async ({ page }) => {
+  await login(page);
+  const projectId = await createProject(page, `Shift e página ${Date.now()}`);
+  const run: Block[] = [];
+  for (const index of [1, 2, 3]) run.push({ ...card(await task(page, projectId, `Card ${index}`)), id: `x${index}` });
+  const above = Array.from({ length: 20 }, (_, index) => ({
+    ...paragraph(`Linha ${index + 1} acima.`),
+    id: `a${index}`,
+  }));
+  const id = await openDocument(page, projectId, [
+    ...above,
+    { ...paragraph('Antes'), id: 'antes' },
+    ...run,
+    { ...paragraph('Depois'), id: 'depois' },
+  ]);
+  /** What the selection covers: the text, and [e] for each embed. */
+  const covered = () =>
+    documentEditor(page).evaluate((element) => {
+      type State = {
+        doc: { textBetween(from: number, to: number, block: string, leaf: string): string };
+        selection: { from: number; to: number };
+      };
+      const state = (element as HTMLElement & { editor?: { state: State } }).editor?.state;
+      return state ? state.doc.textBetween(state.selection.from, state.selection.to, '|', '[e]') : null;
+    });
+  /** The card `index` selected with ↓ from Antes, on a fresh page, then `key` a moment later. */
+  const fromCard = async (index: number, key?: string) => {
+    await page.reload();
+    await clickText(page, 'Antes', 'end');
+    const walked = await walk(page, Array(index).fill('ArrowDown'), 200);
+    expect(walked.at(-1)).toBe(`[x${index}]`);
+    if (!key) return;
+    await page.keyboard.press(key);
+    await page.waitForTimeout(200);
+  };
+
+  // The middle card, between two cards, is the one Chrome's drift took to the first line.
+  await fromCard(2);
+  expect(await walk(page, ['PageDown', 'PageUp'], 200)).toEqual(['[x2]', '[x2]']);
+  await fromCard(2, 'Shift+ArrowUp');
+  expect(await covered()).toBe('[e]|[e]');
+  await fromCard(1, 'Shift+ArrowUp');
+  expect(await covered()).toBe('Antes|[e]');
+  await fromCard(3, 'Shift+ArrowDown');
+  expect(await covered()).toBe('[e]|Depois');
+  await fromCard(2, 'Shift+ArrowDown');
+  expect(await covered()).toBe('[e]|[e]');
+  // A letter then takes the place of what was selected there, not of a line far above.
+  const save = nextSave(page);
+  await page.keyboard.type('x');
+  await save;
+  const blocks = await saved(page, id);
+  expect(blocks.slice(0, 20).map((block) => textOf(block))).toEqual(above.map((block) => textOf(block)));
+  expect(blocks.slice(20).map((block) => (block.type === 'taskEmbed' ? '[card]' : textOf(block)))).toEqual([
+    'Antes',
+    '[card]',
+    'x',
+    'Depois',
+  ]);
 });

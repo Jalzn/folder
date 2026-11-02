@@ -17,8 +17,21 @@ function readFromDom(view: EditorView, tr: Transaction) {
   }
 }
 
-/** The keys the embed keys act on: the plain arrows, ↵, ⌫ and Delete. */
-const HANDLED = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Backspace', 'Delete']);
+/** The keys the embed keys act on: the plain arrows, ↵, ⌫, Delete, Page Up and Page Down. */
+const HANDLED = new Set([
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'Enter',
+  'Backspace',
+  'Delete',
+  'PageUp',
+  'PageDown',
+]);
+/** The keys the embed keys act on with ⇧: ⇧↑ and ⇧↓, which extend from the embed. */
+const HANDLED_WITH_SHIFT = new Set(['ArrowUp', 'ArrowDown']);
+
 /**
  * How long the hold outlasts the key: Chrome's selectionchange for the drift can come after the next frame,
  * so a frame alone let it through.
@@ -26,7 +39,11 @@ const HANDLED = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Ent
 const AFTER_KEYUP_MS = 80;
 
 const handled = (event: KeyboardEvent) =>
-  HANDLED.has(event.key) && !event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey && !event.isComposing;
+  !event.metaKey &&
+  !event.ctrlKey &&
+  !event.altKey &&
+  !event.isComposing &&
+  (event.shiftKey ? HANDLED_WITH_SHIFT : HANDLED).has(event.key);
 
 const holdKey = new PluginKey('embedSelectionHold');
 
@@ -52,8 +69,8 @@ function driftsTo(tr: Transaction) {
  * ProseMirror reads that, the second time before any plugin sees the key, and the caret jumped to the top. With
  * an embed selected as a node, a change of the selection alone that ProseMirror read from the DOM is refused,
  * and the editor's selection goes back to the DOM:
- * - any such change, from the keydown of a plain arrow, ↵, ⌫ or Delete until a moment after its keyup
- *   (`inKey`);
+ * - any such change, from the keydown of a key the embed keys act on (a plain arrow, ↵, ⌫, Delete, Page Up
+ *   or Down, ⇧↑ or ⇧↓) until a moment after its keyup (`inKey`);
  * - one to the document's first place for text, the drift's place, after such a key or after the embed
  *   actions selected the embed themselves (holdSelectedEmbed), until another key or a press of the pointer
  *   (`sticky`).
@@ -77,6 +94,9 @@ export function embedSelectionHold(selected: (state: EditorState) => boolean) {
     props: {
       handleDOMEvents: {
         keydown: (current, event) => {
+          // ⇧ going down before its key leaves the hold as it is: that key decides, as ⇧↓ is the embed keys'.
+          // ⌘, Ctrl and ⌥ let go of it at once, before the native keys they make.
+          if (event.key === 'Shift') return false;
           key += 1;
           inKey = handled(event);
           sticky = inKey;

@@ -1,5 +1,5 @@
 import { type BlockNoteEditor, createExtension } from '@blocknote/core';
-import type { EditorState } from '@tiptap/pm/state';
+import { type EditorState, TextSelection } from '@tiptap/pm/state';
 import { type EmbedClipboardActions, embedClipboard } from './embed-clipboard';
 import { embedPaste } from './embed-paste';
 import { type BlockPlace, blockAfter, blockBefore } from './embed-places';
@@ -106,6 +106,31 @@ function arrow(forward: boolean, vertical: boolean) {
 }
 
 /**
+ * ⇧↓ and ⇧↑ on an embed selected as a node (review B-f): a range from the embed to the end of the block after
+ * it, or from the start of the block before it, by the editor's state. The browser would extend from where
+ * Chrome keeps the DOM's selection, the document's first text for an embed between embeds, far from the
+ * embed. At the document's edge the key does nothing.
+ */
+function extend(forward: boolean) {
+  return ({ editor }: { editor: AnyEditor }) => {
+    if (!selectedEmbed(editor)) return false;
+    const { selection, doc } = editor.prosemirrorState;
+    const next = forward ? blockAfter(doc, selection.to) : blockBefore(doc, selection.from);
+    if (!next) return true;
+    const textual = doc.nodeAt(next.from)?.isTextblock ?? false;
+    // A text's own end or start; an embed's edge otherwise.
+    const head = forward ? (textual ? next.to - 1 : next.to) : textual ? next.from + 1 : next.from;
+    editor.transact((tr) => {
+      tr.setSelection(TextSelection.create(tr.doc, forward ? selection.from : selection.to, head)).scrollIntoView();
+    });
+    return true;
+  };
+}
+
+/** Page Up and Page Down on an embed selected as a node do nothing: Chrome would page from the document's top. */
+const stays = ({ editor }: { editor: AnyEditor }) => selectedEmbed(editor);
+
+/**
  * Tab and ⇧Tab never put a block under an embed, nor take one out and hand it the blocks below as children:
  * the server refuses an embed with blocks inside. Tab does nothing when the block above the first one selected
  * is an embed, and neither key moves an embed; elsewhere they nest and lift as always.
@@ -152,5 +177,9 @@ export const createEmbedKeys = (actions: EmbedKeyActions) =>
       ArrowUp: arrow(false, true),
       ArrowRight: arrow(true, false),
       ArrowLeft: arrow(false, false),
+      'Shift-ArrowDown': extend(true),
+      'Shift-ArrowUp': extend(false),
+      PageDown: stays,
+      PageUp: stays,
     },
   }))();
