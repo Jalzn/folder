@@ -14,12 +14,45 @@ const paragraph = (text: string): Block => ({
   content: text ? [{ type: 'text', text, styles: {} }] : [],
 });
 const card = (taskId: string): Block => ({ type: 'taskEmbed', props: { taskId } });
+const figure = (canvasId: string): Block => ({ type: 'drawingEmbed', props: { canvasId } });
 const textOf = (block: Block) =>
   Array.isArray(block.content) ? block.content.map((each: { text?: string }) => each.text ?? '').join('') : '';
 
 /** A task of the project, made over RPC. */
 const task = async (page: Page, projectId: string, title: string) =>
   (await rpc<{ id: string }>(page, 'workspace/createTask', { requestId: crypto.randomUUID(), projectId, title })).id;
+
+/** A drawing of the project, made over RPC. */
+const drawing = async (page: Page, projectId: string, title: string) =>
+  (await rpc<{ id: string }>(page, 'workspace/createCanvas', { requestId: crypto.randomUUID(), projectId, title })).id;
+
+/**
+ * Where the editor's caret is: "[id]" for the block selected as a node, "gap" for ProseMirror's gap cursor,
+ * else the text of the block it is in.
+ */
+const caret = (page: Page) =>
+  documentEditor(page).evaluate((element) => {
+    type Selection = {
+      node?: unknown;
+      toJSON(): { type: string };
+      $from: { parent: { attrs: { id?: string }; textContent: string } };
+    };
+    const selection = (element as HTMLElement & { editor?: { state: { selection: Selection } } }).editor?.state
+      .selection;
+    if (!selection) return null;
+    if (selection.node) return `[${selection.$from.parent.attrs.id}]`;
+    return selection.toJSON().type === 'gapcursor' ? 'gap' : selection.$from.parent.textContent;
+  });
+
+/** Presses each key and reads where the caret went after it. */
+async function walk(page: Page, keys: string[]) {
+  const stops: (string | null)[] = [];
+  for (const key of keys) {
+    await page.keyboard.press(key);
+    stops.push(await caret(page));
+  }
+  return stops;
+}
 
 /** A document with these blocks, made over RPC as the editor saves them, and opened. */
 async function openDocument(page: Page, projectId: string, blocks: Block[]) {
@@ -69,3 +102,46 @@ test('Tab under a card leaves the line where it was, so the document saves and o
   await expect(documentEditor(page)).toContainText('recuado');
   await expect(page.getByText(/não pôde ser aberto/)).toHaveCount(0);
 });
+
+const runs = {
+  'three cards': ['task', 'task', 'task'],
+  'two cards and a figure': ['task', 'task', 'drawing'],
+  'three figures': ['drawing', 'drawing', 'drawing'],
+} as const;
+
+for (const [name, kinds] of Object.entries(runs))
+  test(`↓ and ↑ go through ${name} in a row a block at a time, at the start, the middle and the end`, async ({
+    page,
+  }) => {
+    await login(page);
+    const projectId = await createProject(page, `Setas ${Date.now()}`);
+    const run: Block[] = [];
+    for (const [index, kind] of kinds.entries()) {
+      const title = `Item ${index + 1}`;
+      const block =
+        kind === 'task' ? card(await task(page, projectId, title)) : figure(await drawing(page, projectId, title));
+      run.push({ ...block, id: `x${index + 1}` });
+    }
+    const before = { ...paragraph('Antes'), id: 'antes' };
+    const after = { ...paragraph('Depois'), id: 'depois' };
+    const selected = ['[x1]', '[x2]', '[x3]'];
+
+    // In the middle: down through each one to the text below, then back up, and ← → at the text's edge.
+    await openDocument(page, projectId, [before, ...run, after]);
+    await clickText(page, 'Antes');
+    expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown'])).toEqual([...selected, 'Depois']);
+    expect(await walk(page, ['ArrowLeft', 'ArrowRight'])).toEqual(['[x3]', 'Depois']);
+    expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp', 'ArrowUp'])).toEqual([...selected.toReversed(), 'Antes']);
+
+    // At the start of the document: up from the text below to the first one, and down again.
+    await openDocument(page, projectId, [...run, after]);
+    await clickText(page, 'Depois');
+    expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp'])).toEqual(selected.toReversed());
+    expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'])).toEqual(['[x2]', '[x3]', 'Depois']);
+
+    // At the end: down from the text above to the last one, and up again.
+    await openDocument(page, projectId, [before, ...run]);
+    await clickText(page, 'Antes');
+    expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'])).toEqual(selected);
+    expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp'])).toEqual(['[x2]', '[x1]', 'Antes']);
+  });

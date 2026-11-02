@@ -1,15 +1,28 @@
 import { type BlockNoteEditor, createExtension } from '@blocknote/core';
+import type { EditorState } from '@tiptap/pm/state';
+import { type BlockPlace, blockAfter, blockBefore } from './embed-places';
+import { embedSelectionHold } from './embed-selection-hold';
 
 const EMBED_TYPES = new Set(['taskEmbed', 'drawingEmbed']);
 
 // biome-ignore lint/suspicious/noExplicitAny: the extension serves any schema that has the embeds.
 type AnyEditor = BlockNoteEditor<any, any, any>;
 
+/** Whether the state has an embed selected as a node. */
+const embedSelectedIn = ({ selection }: EditorState) =>
+  'node' in selection && EMBED_TYPES.has((selection.node as { type: { name: string } }).type.name);
+
 /** Whether the arrows selected an embed as a node, the only time these keys are the embed's. */
-export function selectedEmbed(editor: AnyEditor) {
+export const selectedEmbed = (editor: AnyEditor) => embedSelectedIn(editor.prosemirrorState);
+
+/** ↵: what a click on the embed does, the card's drawer or the figure's drawing. */
+function open({ editor }: { editor: AnyEditor }) {
+  if (!selectedEmbed(editor)) return false;
   const selection = editor.prosemirrorState.selection;
-  if (!('node' in selection)) return false;
-  return EMBED_TYPES.has((selection.node as { type: { name: string } }).type.name);
+  const dom = editor.prosemirrorView?.nodeDOM(selection.from);
+  const target = dom instanceof HTMLElement ? dom.querySelector<HTMLElement>('.embed-card, .embed-figure') : null;
+  target?.click();
+  return true;
 }
 
 /** ⌫ and Delete: the block leaves as an edit of the document, which the editor's ⌘Z brings back. */
@@ -20,6 +33,39 @@ function remove({ editor }: { editor: AnyEditor }) {
   editor.removeBlocks([block]);
   if (next) editor.setTextCursorPosition(next, 'start');
   return true;
+}
+
+/**
+ * The arrows through embeds (review A2), a block at a time by the editor's API and never through ProseMirror's
+ * gap cursor, whose invisible stops sent ↓ back to the top of the document and made ↑ skip embeds: from an embed
+ * selected as a node, or a gap cursor, the next block in reading order (↓ →) or the one before (↑ ←), an embed
+ * selected as a node and a text with the caret at its start or end. ← at the start of a text and → at its end
+ * select the embed next to it. Up and down from a text stay ProseMirror's, which selects the embed next to it.
+ * At the document's edge, nothing to go to, ProseMirror's own way stays: it makes room to write there.
+ */
+function arrow(forward: boolean, vertical: boolean) {
+  return ({ editor, event }: { editor: AnyEditor; event: KeyboardEvent }) => {
+    if (event.isComposing) return false;
+    const { selection, doc } = editor.prosemirrorState;
+    let target: BlockPlace | null;
+    if (selectedEmbed(editor)) target = forward ? blockAfter(doc, selection.to) : blockBefore(doc, selection.from);
+    else if (selection.toJSON().type === 'gapcursor')
+      target = forward ? blockAfter(doc, selection.from) : blockBefore(doc, selection.from);
+    else {
+      const { $from } = selection;
+      const edge = forward ? $from.parent.content.size : 0;
+      if (vertical || !selection.empty || !$from.parent.isTextblock || $from.parentOffset !== edge) return false;
+      const next = forward ? blockAfter(doc, $from.after()) : blockBefore(doc, $from.before());
+      target = next && EMBED_TYPES.has(next.type) ? next : null;
+    }
+    if (!target) return false;
+    const { id } = target;
+    editor.transact((tr) => {
+      editor.setTextCursorPosition(id, forward ? 'start' : 'end');
+      tr.scrollIntoView();
+    });
+    return true;
+  };
 }
 
 /**
@@ -42,22 +88,20 @@ function lifts({ editor }: { editor: AnyEditor }) {
  * The keys of an embed the arrows selected as a node (docs/etapas/11-documento-desenho.md, "Teclado e Esc"):
  * ↵ opens it as a click would, the card's task in the drawer and the figure's drawing, and does nothing on an
  * unavailable one; ⌫ and Delete remove the block. Never in a field, and the suggestion menus take ↵ first.
- * Tab and ⇧Tab keep blocks out of embeds (`nests`, `lifts`).
+ * Tab and ⇧Tab keep blocks out of embeds (`nests`, `lifts`), and the arrows go through them a block at a time.
  */
-export const EmbedKeysExtension = createExtension({
+export const EmbedKeysExtension = createExtension(() => ({
   key: 'embedKeys',
+  prosemirrorPlugins: [embedSelectionHold(embedSelectedIn)],
   keyboardShortcuts: {
-    Enter: ({ editor }) => {
-      if (!selectedEmbed(editor)) return false;
-      const selection = editor.prosemirrorState.selection;
-      const dom = editor.prosemirrorView?.nodeDOM(selection.from);
-      const target = dom instanceof HTMLElement ? dom.querySelector<HTMLElement>('.embed-card, .embed-figure') : null;
-      target?.click();
-      return true;
-    },
+    Enter: open,
     Backspace: remove,
     Delete: remove,
     Tab: nests,
     'Shift-Tab': lifts,
+    ArrowDown: arrow(true, true),
+    ArrowUp: arrow(false, true),
+    ArrowRight: arrow(true, false),
+    ArrowLeft: arrow(false, false),
   },
-});
+}));

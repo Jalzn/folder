@@ -12,7 +12,7 @@ import { TaskEmbed } from './TaskEmbed';
 export const createTaskEmbedSpec = createReactBlockSpec(
   { type: 'taskEmbed', propSchema: { taskId: { default: '' } }, content: 'none' },
   { render: ({ block }) => <TaskEmbed taskId={block.props.taskId} blockId={block.id} /> },
-  [EmbedKeysExtension],
+  [EmbedKeysExtension()],
 );
 
 export const createDrawingEmbedSpec = createReactBlockSpec(
