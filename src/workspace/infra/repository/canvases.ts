@@ -1,4 +1,5 @@
 import { type Database, tables } from '@tinyfold/core/infra';
+import { sql } from 'kysely';
 import type { CanvasRepository } from '../../application/ports.js';
 import type { WorkspaceTables } from '../db.js';
 import { canvasModel, canvasRow, canvasSummary } from './mappers.js';
@@ -14,7 +15,8 @@ export function canvasRepository(connection: Database): CanvasRepository {
           'id',
           'project_id',
           'title',
-          'plain_text',
+          // The summary: SQLite counts code points, so an emoji is never cut in half.
+          sql<string>`substr(plain_text, 1, 280)`.as('plain_text'),
           'format_version',
           'version',
           'created_at',
@@ -25,10 +27,7 @@ export function canvasRepository(connection: Database): CanvasRepository {
         ])
         .where('deleted_at', 'is', null);
       if (input.projectId) query = query.where('project_id', '=', input.projectId);
-      return (await query.orderBy('updated_at', 'desc').orderBy('id').execute()).map((row) => ({
-        ...canvasSummary(row),
-        plainText: row.plain_text.slice(0, 280),
-      }));
+      return (await query.orderBy('updated_at', 'desc').orderBy('id').execute()).map(canvasSummary);
     },
     async findCanvas(id) {
       const row = await db.selectFrom('workspace_canvases').selectAll().where('id', '=', id).executeTakeFirst();

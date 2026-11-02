@@ -233,6 +233,13 @@ describe('workspace persistence and adversarial cases', () => {
     ]);
   });
 
+  it('cuts the summary of a listed document at 280 code points, never inside an emoji (decision 7)', async () => {
+    const text = `${'a'.repeat(279)}😀 e mais texto`;
+    const document = await service.createDocument({ ...request(), projectId: project.id, content: content(text) });
+    const [listed] = await service.listDocuments({ projectId: project.id });
+    expect(listed).toMatchObject({ id: document.id, plainText: `${'a'.repeat(279)}😀` });
+  });
+
   it('rejects stale document changes from another database connection', async () => {
     const document = await service.createDocument({
       ...request(),

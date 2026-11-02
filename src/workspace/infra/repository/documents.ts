@@ -1,4 +1,5 @@
 import { type Database, tables } from '@tinyfold/core/infra';
+import { sql } from 'kysely';
 import type { DocumentRepository } from '../../application/ports.js';
 import type { WorkspaceTables } from '../db.js';
 import { documentModel, documentRow, documentSummary } from './mappers.js';
@@ -14,7 +15,8 @@ export function documentRepository(connection: Database): DocumentRepository {
           'id',
           'project_id',
           'title',
-          'plain_text',
+          // The summary: SQLite counts code points, so an emoji is never cut in half.
+          sql<string>`substr(plain_text, 1, 280)`.as('plain_text'),
           'format_version',
           'version',
           'created_at',
@@ -25,10 +27,7 @@ export function documentRepository(connection: Database): DocumentRepository {
         ])
         .where('deleted_at', 'is', null);
       if (input.projectId) query = query.where('project_id', '=', input.projectId);
-      return (await query.orderBy('updated_at', 'desc').orderBy('id').execute()).map((row) => ({
-        ...documentSummary(row),
-        plainText: row.plain_text.slice(0, 280),
-      }));
+      return (await query.orderBy('updated_at', 'desc').orderBy('id').execute()).map(documentSummary);
     },
     async findDocument(id) {
       const row = await db.selectFrom('workspace_documents').selectAll().where('id', '=', id).executeTakeFirst();
