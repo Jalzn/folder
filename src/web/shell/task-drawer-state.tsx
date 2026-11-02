@@ -1,5 +1,6 @@
 import { createContext, type ReactNode, useContext, useMemo, useRef, useState } from 'react';
 import type { Task } from '../lib/types';
+import { useLatest } from '../lib/use-latest';
 import { pageFocus, returnFocus } from '../ui';
 
 /** Where a task created from a document's selection came from. */
@@ -79,8 +80,7 @@ export const useDrawerContent = () => useContext(ContentContext);
  */
 export function TaskDrawerProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<DrawerContent | null>(null);
-  const current = useRef<DrawerContent | null>(null);
-  current.current = content;
+  const current = useLatest(content);
   const openedFrom = useRef<HTMLElement | null>(null);
   const guard = useRef<(() => boolean) | null>(null);
   const keys = useRef(0);

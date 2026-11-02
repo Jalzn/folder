@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { useLatest } from '../../lib/use-latest';
 import { useShellActions } from '../shell-ui';
 import { createChords } from './chords';
 import { acceptsPlainKey, describeTarget, isComposing } from './guards';
@@ -41,8 +42,7 @@ function leaveField(field: EventTarget | null) {
  */
 export function useShortcuts(actions: Actions) {
   const { layers } = useShellActions();
-  const latest = useRef(actions);
-  latest.current = actions;
+  const latest = useLatest(actions);
   useEffect(() => {
     chords.reset();
     const onKeyDown = (event: KeyboardEvent) => {

@@ -24,7 +24,11 @@
     "rules": {
       "preset": "recommended",
       "correctness": {
-        "noPlaywrightMissingAwait": "error"
+        "noPlaywrightMissingAwait": "error",
+        "useExhaustiveDependencies": {
+          "level": "error",
+          "options": { "hooks": [{ "name": "useLatest", "stableResult": true }] }
+        }
       },
       "suspicious": {
         "noPlaywrightWaitForTimeout": "warn"

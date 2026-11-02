@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { useLatest } from '../lib/use-latest';
 import { type PageCommands, useShellActions } from './shell-ui';
 
 /** A page offers ⌘S, ⌘⌥T and its palette actions while it is mounted; the shell reads the latest ones. */
 export function usePageCommands(commands: PageCommands) {
   const { page } = useShellActions();
-  const latest = useRef(commands);
-  latest.current = commands;
+  const latest = useLatest(commands);
   useEffect(() => {
     const current: PageCommands = {
       saveNow: () => latest.current.saveNow?.(),
