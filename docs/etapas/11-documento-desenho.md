@@ -1,6 +1,6 @@
 # Etapa 11 — Documento e desenho
 
-**Estado:** concluída localmente em 2026-11-02, nas entregas B1 a B4 (backend) e W1 a W7 (web). Seguiram-se três revisões adversariais (dados e MCP; editor, com teclado, acessibilidade e foco; segurança e qualidade), cinco rodadas de correção (as quatro primeiras retestadas pelo próprio revisor) e a validação no Chrome real contra o protótipo, com o ensaio de atualização de um banco da etapa 10. As verificações executadas estão em [validação](../validacao.md#etapa-11-documento-e-desenho).
+**Estado:** concluída localmente em 2026-11-02, nas entregas B1 a B4 (backend) e W1 a W7 (web). Seguiram-se três revisões adversariais (dados e MCP; editor, com teclado, acessibilidade e foco; segurança e qualidade), cinco rodadas de correção (todas retestadas pelo próprio revisor) e a validação no Chrome real contra o protótipo, com o ensaio de atualização de um banco da etapa 10. As verificações executadas estão em [validação](../validacao.md#etapa-11-documento-e-desenho).
 
 As seções a partir de "Referências e precedência" são o plano aprovado, detalhado em 2026-11-01 a partir do escopo inicial de 2026-10-31. O que mudou na implementação está em [Resultado](#resultado) e [Desvios do plano](#desvios-do-plano); a descrição do que existe está em [arquitetura](../arquitetura.md#documento-e-incorporados) e no [README do workspace](../../src/workspace/README.md#incorporados).
 

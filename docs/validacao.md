@@ -4,7 +4,7 @@ Validação local a partir de 29 de outubro de 2026. A primeira versão foi impl
 
 ## Etapa 11: documento e desenho
 
-A etapa foi implementada entre 2026-11-01 e 2026-11-02 por dois subagentes, backend (B1 a B4) e web (W1 a W7), primeiro em worktrees próprias e, a partir dos pontos de integração, em `feat/documento`. Três revisores adversariais examinaram, cada um, dados e MCP; o editor (teclado, acessibilidade e foco); e segurança e qualidade. Os achados passaram por cinco rodadas de correção; as quatro primeiras foram retestadas pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
+A etapa foi implementada entre 2026-11-01 e 2026-11-02 por dois subagentes, backend (B1 a B4) e web (W1 a W7), primeiro em worktrees próprias e, a partir dos pontos de integração, em `feat/documento`. Três revisores adversariais examinaram, cada um, dados e MCP; o editor (teclado, acessibilidade e foco); e segurança e qualidade. Os achados passaram por cinco rodadas de correção, todas retestadas pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
 
 | Verificação | Resultado, em `959a8cc` |
 | --- | --- |
@@ -165,7 +165,7 @@ Corrigidos e retestados:
   - **R1:** a proteção da seleção prendia ⌘↓, Home, End, ⇧↓ e as seleções de um leitor de tela.
   - **B-f:** ⇧↑, ⇧↓ e Page Down agiam a partir do primeiro texto.
 
-  O terceiro reteste, em `20e7835` e com 150 a 600 ms entre as teclas, não achou regressão nem nada de severidade média ou maior. O quarto reteste, em `0db610f`, confirmou a correção B-f e achou B-i e B-j, corrigidos na quinta rodada com o ⌫ achado na validação (`983a5d7`, `d369832`, `959a8cc`), que ainda espera o reteste.
+  O terceiro reteste, em `20e7835` e com 150 a 600 ms entre as teclas, não achou regressão nem nada de severidade média ou maior. O quarto reteste, em `0db610f`, confirmou a correção B-f e achou B-i e B-j, corrigidos na quinta rodada com o ⌫ achado na validação (`983a5d7`, `d369832`, `959a8cc`). O quinto reteste, em `8200e19`, confirmou as três correções, sem regressão e sem achado novo.
 - **Segurança e qualidade** (`7e6de9e`, `f4d5ff4`, `d3cebc3`, `e12ac46`, `d366e3c`, `1ab1572`, `e9b5f1d`, `06a5061`, `473024a`, `7bdbebd`, `20e7835`). Os achados:
   - **Duplicações:** a exportação da web resolvia os incorporados com uma cópia do resolvedor do servidor, e o menu `/` repetia o tipo dos incorporados.
   - **Regras:** a rota da prévia conferia o ID pela regra dos incorporados.
