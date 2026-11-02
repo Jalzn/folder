@@ -1,6 +1,6 @@
 import { api, queryClient } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/lost-answer';
-import { canvasQuery, documentQuery } from '../../lib/queries';
+import { keys, patchItemPlace } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
 
 /**
@@ -18,10 +18,7 @@ export async function moveToFolder(
   requestId: string,
 ) {
   const moved = await onceMoreIfLost(() => api.workspace.moveItem({ type, id, projectId, folderId, requestId }));
-  await queryClient.refetchQueries({ queryKey: ['workspace', 'navigation', projectId], type: 'active' });
-  const key = type === 'document' ? documentQuery(id).queryKey : canvasQuery(id).queryKey;
-  queryClient.setQueryData(key, (item: { folderId: string | null; pinnedAt: string | null } | undefined) =>
-    item ? { ...item, folderId: moved.folderId, pinnedAt: moved.pinnedAt } : item,
-  );
+  await queryClient.refetchQueries({ queryKey: keys.navigation(projectId), type: 'active' });
+  patchItemPlace(type, id, moved);
   return moved;
 }

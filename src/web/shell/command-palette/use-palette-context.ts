@@ -1,6 +1,5 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useLocation } from '@tanstack/react-router';
-import { useFolders } from '../../lib/queries';
+import { isItemPinned, useFolders } from '../../lib/queries';
 import { parseProjectPath } from '../../router/paths';
 import { activeProjects } from '../project/project-order';
 import { useCurrentProject } from '../project/use-current-project';
@@ -15,19 +14,10 @@ export function usePaletteContext() {
   const ui = useShellActions();
   const theme = useTheme();
   const prefs = useSidebarPrefs();
-  const queryClient = useQueryClient();
   const folders = useFolders(project?.id ?? null);
   const pathname = useLocation({ select: (location) => location.pathname });
   const item = parseProjectPath(pathname)?.item ?? null;
-  const pinned = item
-    ? Boolean(
-        queryClient.getQueryData<{ pinnedAt: string | null }>([
-          'workspace',
-          item.type === 'document' ? 'document' : 'canvas',
-          item.id,
-        ])?.pinnedAt,
-      )
-    : false;
+  const pinned = item ? isItemPinned(item.type, item.id) : false;
   const context: CommandContext = {
     project: project ? { name: project.name, archived: Boolean(project.archivedAt) } : null,
     hasActiveProject: activeProjects(projects).length > 0,

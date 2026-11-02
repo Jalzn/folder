@@ -1,4 +1,5 @@
 export { boardKey, type ProjectBoard, useProjectBoard } from './board';
+export { invalidateNavigation, isItemPinned, patchItemPlace } from './cache';
 export { type CanvasListOptions, canvasQuery, useCanvas, useCanvases } from './canvases';
 export { type ColumnSummary, cachedColumns, columnsQuery, useColumns } from './columns';
 export { type CompletedTask, completedKey, useCompletedTasks } from './completed';
@@ -14,8 +15,10 @@ export {
   useEmbeds,
 } from './embeds';
 export { type FolderSummary, foldersQuery, useAllFolders, useFolders } from './folders';
+export { itemQuery } from './items';
+export { keys } from './keys';
 export { type LabelSummary, labelsQuery, useLabels } from './labels';
-export { invalidateNavigation, useProjectNavigation } from './navigation';
+export { useProjectNavigation } from './navigation';
 export { type ProjectOverview, useProjectOverview } from './overview';
 export { projectsQuery, useHasActiveProject, useProject, useProjects } from './projects';
 export { type SearchInput, type SearchResult, useSearch } from './search';

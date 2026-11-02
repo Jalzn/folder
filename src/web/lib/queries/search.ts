@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api } from '../api';
 import { useDebouncedValue } from '../use-debounced-value';
+import { keys } from './keys';
 
 export type SearchInput = Parameters<typeof api.workspace.search>[0];
 export type SearchResult = Awaited<ReturnType<typeof api.workspace.search>>['items'][number];
@@ -13,7 +14,7 @@ export type SearchResult = Awaited<ReturnType<typeof api.workspace.search>>['ite
 export function useSearch({ query: typed, ...input }: Omit<SearchInput, 'query'> & { query: string }, enabled = true) {
   const query = useDebouncedValue(typed.trim(), 120);
   const search = useQuery({
-    queryKey: ['workspace', 'search', { ...input, query }],
+    queryKey: keys.search({ ...input, query }),
     queryFn: () => api.workspace.search({ ...input, ...(query ? { query } : {}) }),
     enabled,
     placeholderData: keepPreviousData,

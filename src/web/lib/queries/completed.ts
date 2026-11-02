@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { api } from '../api';
+import { keys } from './keys';
 
 export type CompletedTasksPage = Awaited<ReturnType<typeof api.workspace.listCompletedTasks>>;
 export type CompletedTask = CompletedTasksPage['items'][number];
@@ -7,7 +8,7 @@ export type CompletedTask = CompletedTasksPage['items'][number];
 /** How many completed tasks a page of Concluídas brings at a time. */
 const COMPLETED_PAGE_SIZE = 50;
 
-export const completedKey = (projectId: string) => ['workspace', 'completed', projectId] as const;
+export const completedKey = (projectId: string) => keys.completed(projectId);
 
 /**
  * A project's completed tasks (docs/etapas/10-quadro-tarefa.md, "Concluídas"): the most recently completed

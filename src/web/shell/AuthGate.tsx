@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useState } from 'react';
 import { api, errorCode, queryClient } from '../lib/api';
+import { keys } from '../lib/queries';
 import { Dialog, ErrorNotice, Logo, Spinner } from '../ui';
 import { LoginForm, LoginScreen, type Owner } from './LoginScreen';
 
@@ -12,7 +13,7 @@ const signedOut = (error: unknown) => ['UNAUTHENTICATED', 'UNAUTHORIZED'].includ
  */
 export function AuthGate({ children }: { children: (owner: Owner) => ReactNode }) {
   const session = useQuery({
-    queryKey: ['session'],
+    queryKey: keys.session,
     queryFn: () => api.auth.session(),
     retry: false,
     staleTime: 60_000,
@@ -31,7 +32,7 @@ export function AuthGate({ children }: { children: (owner: Owner) => ReactNode }
       setOwner(null);
       setExpired(false);
       queryClient.clear();
-      void queryClient.invalidateQueries({ queryKey: ['session'] });
+      void queryClient.invalidateQueries({ queryKey: keys.session });
     };
     window.addEventListener('tinyfold:session-expired', expire);
     window.addEventListener('tinyfold:logout', logout);

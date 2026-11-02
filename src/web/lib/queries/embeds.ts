@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { EmbeddedDrawing, EmbeddedTask } from '@tinyfold/workspace/domain';
 import { api } from '../api';
+import { keys } from './keys';
 
 /** The states of embedded items, as the domain declares them and resolveEmbeds answers. */
 export type {
@@ -14,7 +15,7 @@ export type LiveTask = Extract<EmbeddedTask, { state: 'live' }>;
 export type LiveDrawing = Extract<EmbeddedDrawing, { state: 'live' }>;
 
 /** Every embeds query: the writes that change what an embed shows refresh them (decision 11). */
-export const embedsKey = ['workspace', 'embeds'] as const;
+export const embedsKey = keys.embeds();
 
 /**
  * The states of a document's embeds, in one read (docs/etapas/11-documento-desenho.md, decision 11): the IDs
@@ -25,7 +26,7 @@ export function useEmbeds(documentId: string, ids: { taskIds: readonly string[];
   const taskIds = [...ids.taskIds].sort();
   const canvasIds = [...ids.canvasIds].sort();
   return useQuery({
-    queryKey: [...embedsKey, documentId, taskIds, canvasIds],
+    queryKey: keys.embeds(documentId, { taskIds, canvasIds }),
     queryFn: () => api.workspace.resolveEmbeds({ taskIds, canvasIds }),
     enabled: taskIds.length + canvasIds.length > 0,
     placeholderData: keepPreviousData,

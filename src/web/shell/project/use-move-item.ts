@@ -1,5 +1,5 @@
 import { api, errorCode, queryClient, requestId } from '../../lib/api';
-import { useProjects } from '../../lib/queries';
+import { keys, useProjects } from '../../lib/queries';
 import { displayTitle, type ItemType } from '../../lib/types';
 import { useAction } from '../../lib/use-action';
 import { useRequest } from '../../lib/use-request';
@@ -43,7 +43,7 @@ export function useMoveItem() {
       return false;
     }
     request.clear();
-    void queryClient.invalidateQueries({ queryKey: ['workspace', type === 'document' ? 'document' : 'canvas', id] });
+    void queryClient.invalidateQueries({ queryKey: keys.item(type, id) });
     const destination = projects.find((project) => project.id === to)?.name ?? 'outro projeto';
     const source = projects.find((project) => project.id === from)?.name ?? 'o projeto de origem';
     const intoFolder = requestId();

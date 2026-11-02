@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
+import { keys } from './keys';
 
 export type ProjectBoard = Awaited<ReturnType<typeof api.workspace.projectBoard>>;
 
-export const boardKey = (projectId: string) => ['workspace', 'board', projectId] as const;
+export const boardKey = (projectId: string) => keys.board(projectId);
 
 /**
  * A project's board (docs/etapas/10-quadro-tarefa.md, "Dados"): its live tasks in board order, the done column's

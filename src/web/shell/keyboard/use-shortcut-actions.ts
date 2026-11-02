@@ -1,5 +1,5 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from '@tanstack/react-router';
+import { isItemPinned } from '../../lib/queries';
 import type { Project } from '../../lib/types';
 import { parseProjectPath, paths } from '../../router/paths';
 import { useToast, useUndoLatest } from '../../ui';
@@ -43,7 +43,6 @@ export function useShortcutActions(layout: ShortcutLayout) {
   const navigate = useNavigate();
   const toast = useToast();
   const undo = useUndoLatest();
-  const queryClient = useQueryClient();
   const pins = usePins();
   const pathname = useLocation({ select: (location) => location.pathname });
   const { project } = layout;
@@ -77,12 +76,7 @@ export function useShortcutActions(layout: ShortcutLayout) {
   function pinCurrent() {
     if (!project) return ui.announce(noProjectText(layout.projects));
     if (!item) return;
-    const cached = queryClient.getQueryData<{ pinnedAt: string | null }>([
-      'workspace',
-      item.type === 'document' ? 'document' : 'canvas',
-      item.id,
-    ]);
-    if (cached?.pinnedAt) void pins.unpin(item.type, item.id);
+    if (isItemPinned(item.type, item.id)) void pins.unpin(item.type, item.id);
     else void pins.pin(item.type, item.id);
   }
   function moveCurrent() {

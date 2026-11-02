@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { api } from '../api';
+import { keys } from './keys';
 
 export interface CanvasListOptions {
   projectId?: string;
@@ -7,14 +8,12 @@ export interface CanvasListOptions {
   deleted?: boolean;
 }
 
-export const canvasQuery = (id: string) => ({
-  queryKey: ['workspace', 'canvas', id] as const,
-  queryFn: () => api.workspace.getCanvas({ id }),
-});
+export const canvasQuery = (id: string) =>
+  queryOptions({ queryKey: keys.canvas(id), queryFn: () => api.workspace.getCanvas({ id }) });
 
 export function useCanvases(options: CanvasListOptions = {}) {
   return useQuery({
-    queryKey: ['workspace', 'canvases', options],
+    queryKey: keys.canvases(options),
     queryFn: () => api.workspace.listCanvases(options),
   });
 }

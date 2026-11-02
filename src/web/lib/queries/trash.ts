@@ -1,11 +1,12 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { api } from '../api';
+import { keys } from './keys';
 
 export type TrashItem = Awaited<ReturnType<typeof api.workspace.listTrash>>['items'][number];
 
 export const trashQuery = (projectId: string) =>
   queryOptions({
-    queryKey: ['workspace', 'trash', projectId] as const,
+    queryKey: keys.trash(projectId),
     queryFn: () => api.workspace.listTrash({ projectId }),
   });
 

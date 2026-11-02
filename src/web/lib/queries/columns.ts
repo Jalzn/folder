@@ -1,9 +1,10 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { api, queryClient } from '../api';
+import { keys } from './keys';
 
 /** The board's columns, the same for every project, with the done column marked. */
 export const columnsQuery = queryOptions({
-  queryKey: ['workspace', 'columns'] as const,
+  queryKey: keys.columns,
   queryFn: () => api.workspace.listColumns({}),
 });
 

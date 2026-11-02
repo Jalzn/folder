@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { api } from '../api';
+import { keys } from './keys';
 
 export interface DocumentListOptions {
   projectId?: string;
@@ -7,14 +8,12 @@ export interface DocumentListOptions {
   deleted?: boolean;
 }
 
-export const documentQuery = (id: string) => ({
-  queryKey: ['workspace', 'document', id] as const,
-  queryFn: () => api.workspace.getDocument({ id }),
-});
+export const documentQuery = (id: string) =>
+  queryOptions({ queryKey: keys.document(id), queryFn: () => api.workspace.getDocument({ id }) });
 
 export function useDocuments(options: DocumentListOptions = {}) {
   return useQuery({
-    queryKey: ['workspace', 'documents', options],
+    queryKey: keys.documents(options),
     queryFn: () => api.workspace.listDocuments(options),
   });
 }

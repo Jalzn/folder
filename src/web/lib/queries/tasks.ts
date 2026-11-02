@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api, queryClient } from '../api';
 import { boardKey, type ProjectBoard } from './board';
+import { keys } from './keys';
 
 export interface TaskListOptions {
   projectId?: string;
@@ -9,7 +10,7 @@ export interface TaskListOptions {
 
 export type TaskList = Awaited<ReturnType<typeof api.workspace.listTasks>>;
 
-export const tasksKey = (options: TaskListOptions = {}) => ['workspace', 'tasks', options] as const;
+export const tasksKey = (options: TaskListOptions = {}) => keys.tasks(options);
 
 export function useTasks(options: TaskListOptions = {}) {
   return useQuery({ queryKey: tasksKey(options), queryFn: () => api.workspace.listTasks(options) });

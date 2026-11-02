@@ -4,6 +4,7 @@ import type { RouterClient } from '@orpc/server';
 import { QueryCache, QueryClient } from '@tanstack/react-query';
 import type { AppRouter } from '@tinyfold/server/router';
 import { errorCode } from './errors';
+import { keys } from './queries/keys';
 
 export { errorCode, errorMessage } from './errors';
 
@@ -34,4 +35,4 @@ export const queryClient = new QueryClient({
   },
 });
 export const requestId = () => crypto.randomUUID();
-export const refreshWorkspace = () => queryClient.invalidateQueries({ queryKey: ['workspace'] });
+export const refreshWorkspace = () => queryClient.invalidateQueries({ queryKey: keys.all });
