@@ -20,7 +20,8 @@ export const previewSrc = (drawing: LiveDrawing) =>
 /**
  * A drawing embedded in a document: a link to its page, so the middle click and ⌘-click open another tab,
  * with the stored preview in a frame and "Figura n — título" under it; "Abrir ↗" shows on hover and focus.
- * A drawing in the trash or gone shows the unavailable box.
+ * Neither the link nor the image drags: the browser would drop their text into the document (review M5), and
+ * the block moves by its handle. A drawing in the trash or gone shows the unavailable box.
  */
 export function DrawingEmbed({ canvasId, blockId }: { canvasId: string; blockId: string }) {
   const embeds = useEmbedsContext();
@@ -52,6 +53,7 @@ export function DrawingEmbed({ canvasId, blockId }: { canvasId: string; blockId:
       to={paths.drawing(drawing.project.id, drawing.id)}
       className="embed-figure"
       contentEditable={false}
+      draggable={false}
       aria-label={view.label}
       onClick={(event) => {
         // A plain click goes through the document's own way, which keeps the editor's state in order.
@@ -67,7 +69,9 @@ export function DrawingEmbed({ canvasId, blockId }: { canvasId: string; blockId:
           <span className="embed-figure__note">Imagem indisponível. Abra o desenho para ver.</span>
         ) : (
           <>
-            {src && <img src={src} alt="" width={drawing.preview?.width} height={drawing.preview?.height} />}
+            {src && (
+              <img src={src} alt="" draggable={false} width={drawing.preview?.width} height={drawing.preview?.height} />
+            )}
             {updating && <span className="embed-figure__note">Atualizando a imagem…</span>}
           </>
         )}

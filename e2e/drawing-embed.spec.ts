@@ -119,3 +119,41 @@ test('the figure turns with the dark theme, and a middle click opens the drawing
   // The document stays where it was.
   await expect(figure).toBeVisible();
 });
+
+test('dragging the figure drops none of its text into the document', async ({ page }) => {
+  await login(page);
+  const projectId = await createProject(page, `Arrastar a figura ${Date.now()}`);
+  const drawing = await rpcDrawing(page, projectId, 'Figura arrastada');
+  const { id } = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+    requestId: crypto.randomUUID(),
+    projectId,
+    title: 'Arrastar',
+    content: [
+      { type: 'paragraph', content: [{ type: 'text', text: 'Topo', styles: {} }] },
+      { type: 'drawingEmbed', props: { canvasId: drawing.id } },
+    ],
+  });
+  await page.goto(`/projetos/${projectId}/documentos/${id}`);
+  const figure = embedFigure(page, 'Figura arrastada');
+  await expect(figure).toBeVisible();
+
+  // The press in the middle of the figure, the drop at the end of "Topo".
+  const from = await figure.boundingBox();
+  const to = await documentEditor(page).getByText('Topo', { exact: true }).boundingBox();
+  if (!from || !to) throw new Error('The figure or the text has no box.');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width - 2, to.y + to.height / 2, { steps: 12 });
+  await page.mouse.up();
+
+  await expect(documentEditor(page).locator('[data-content-type="paragraph"]').first()).toHaveText('Topo');
+  await expect(documentEditor(page).locator('[data-content-type="drawingEmbed"]')).toHaveCount(1);
+  await page.waitForTimeout(1500);
+  const saved = await rpc<{ content: { type: string; content?: { text?: string }[] }[] }>(
+    page,
+    'workspace/getDocument',
+    { id },
+  );
+  expect(saved.content.map((block) => block.type)).toEqual(['paragraph', 'drawingEmbed']);
+  expect(saved.content[0]?.content?.map((each) => each.text).join('')).toBe('Topo');
+});
