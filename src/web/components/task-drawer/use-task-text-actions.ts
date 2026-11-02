@@ -45,7 +45,7 @@ export function useTaskTextActions(controller: TaskTextController, task: Task) {
     try {
       pending.current ??= { requestId: crypto.randomUUID(), text: structuredClone(controller.getState().snapshot) };
       const { requestId, text } = pending.current;
-      const title = copyTitle(text.title.trim());
+      const title = copyTitle(text.title);
       const input = {
         requestId,
         title,

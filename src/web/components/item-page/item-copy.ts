@@ -1,8 +1,11 @@
 import { errorCode } from '../../lib/errors';
 import { displayTitle } from '../../lib/types';
 
-/** "<título> — cópia", the title of a copy that saves a draft beside its item, within the 300 characters. */
-export const copyTitle = (title: string) => `${displayTitle(title)} — cópia`.slice(0, 300);
+/**
+ * "<título> — cópia", the title of a copy that saves a draft beside its item: without the spaces at the
+ * title's ends (decision 7), within the 300 characters.
+ */
+export const copyTitle = (title: string) => `${displayTitle(title.trim())} — cópia`.slice(0, 300);
 
 /**
  * Refusals that a retry with the same request would only repeat, the target gone included: a copy of a

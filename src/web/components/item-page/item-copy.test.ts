@@ -5,8 +5,10 @@ import { copyTitle, isFinalRefusal } from './item-copy';
 const refusal = (code: string) => Object.assign(new Error(code), { code, data: { code } });
 
 describe('a copy beside an item', () => {
-  it('is titled "<título> — cópia", untitled as "Sem título", within 300 characters', () => {
+  it('is titled "<título> — cópia" without the title’s outer spaces, untitled as "Sem título", within 300 characters', () => {
     expect(copyTitle('Plano')).toBe('Plano — cópia');
+    expect(copyTitle('  Plano da semana \n')).toBe('Plano da semana — cópia');
+    expect(copyTitle('   ')).toBe('Sem título — cópia');
     expect(copyTitle('')).toBe('Sem título — cópia');
     expect(copyTitle('x'.repeat(400))).toHaveLength(300);
   });
