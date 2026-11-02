@@ -383,3 +383,22 @@ test('from a selected embed, keys the embed keys leave alone and a selection set
   await page.keyboard.press('Shift+ArrowDown');
   await expect.poll(async () => ((await selected()) ?? '').length).toBeGreaterThan(0);
 });
+
+test('⌫ right after a jump to the line start still selects the card first', async ({ page }) => {
+  await login(page);
+  const projectId = await createProject(page, `Teclas rápidas ${Date.now()}`);
+  const taskId = await task(page, projectId, 'Card na corrida');
+  await openDocument(page, projectId, [
+    { ...paragraph('Antes'), id: 'antes' },
+    { ...card(taskId), id: 'card' },
+    { ...paragraph('Depois do card'), id: 'depois' },
+  ]);
+  await clickText(page, 'Depois do card');
+  // The two keys with no pause, faster than ProseMirror hears of the first.
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+ArrowLeft' : 'Home');
+  await page.keyboard.press('Backspace');
+  expect(await caret(page)).toBe('[card]');
+  await expect(documentEditor(page)).toContainText('Card na corrida');
+  await expect(documentEditor(page).getByText('Depois do card', { exact: true })).toBeVisible();
+  await expect(page.locator('.toast').filter({ hasText: 'Bloco removido' })).toHaveCount(0);
+});

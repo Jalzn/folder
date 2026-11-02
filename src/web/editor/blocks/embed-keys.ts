@@ -47,6 +47,15 @@ function embedBeside({ selection, doc }: EditorState, forward: boolean) {
 }
 
 /**
+ * Takes in the DOM's selection before a key decides on the caret: a ⌘← pressed right before ⌫ has moved it,
+ * but ProseMirror reads it only at the selectionchange still to come, and the deletion that runs after this
+ * key reads the DOM (review, fast-key race). ProseMirror's observer has no public way to do it.
+ */
+function readDomSelection(editor: AnyEditor) {
+  (editor.prosemirrorView as unknown as { domObserver?: { flush(): void } } | undefined)?.domObserver?.flush();
+}
+
+/**
  * ⌫ and Delete (review M1): never an embed in one key. With the caret at the start of a text after an embed,
  * ⌫ selects the embed, and Delete does at the end of a text before one; a second ⌫ or Delete takes the
  * selected embed out with the document's "Remover", whose toast offers Desfazer. An empty line goes as
@@ -54,6 +63,7 @@ function embedBeside({ selection, doc }: EditorState, forward: boolean) {
  */
 function deletes(forward: boolean, actions: EmbedKeyActions) {
   return ({ editor }: { editor: AnyEditor }) => {
+    readDomSelection(editor);
     if (selectedEmbed(editor)) {
       actions.remove(editor.getTextCursorPosition().block.id);
       return true;
