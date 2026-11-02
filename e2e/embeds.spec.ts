@@ -35,6 +35,37 @@ async function rpcTask(page: Page, projectId: string, title: string) {
   });
 }
 
+type Box = { left: number; right: number; top: number; bottom: number };
+
+/** The picker's box, the line of the block the editor's caret is in, and the editor's column. */
+const pickerPlace = (page: Page) =>
+  documentEditor(page).evaluate((element) => {
+    const box = (each: Element | null | undefined): Box | null => {
+      const rect = each?.getBoundingClientRect();
+      return rect ? { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom } : null;
+    };
+    type From = { depth: number; node(depth: number): { attrs: { id?: string } } };
+    const $from = (element as HTMLElement & { editor?: { state: { selection: { $from: From } } } }).editor?.state
+      .selection.$from;
+    const id = $from?.node($from.depth - 1).attrs.id;
+    const line = id ? element.querySelector(`[data-id="${id}"] .bn-block-content`) : null;
+    return { picker: box(element.ownerDocument.querySelector('.embed-picker')), line: box(line), column: box(element) };
+  });
+
+/**
+ * The picker hangs from the line it was opened on: inside the editor's column, and right under the line, or
+ * right over it when there is no room below. Never at the window's corner.
+ */
+async function expectPickerAtLine(page: Page) {
+  const { picker, line, column } = await pickerPlace(page);
+  if (!picker || !line || !column) throw new Error(`No picker, line or column: ${JSON.stringify({ picker, line })}`);
+  expect(picker.left).toBeGreaterThanOrEqual(column.left - 1);
+  expect(picker.right).toBeLessThanOrEqual(column.right + 1);
+  const below = picker.top - line.bottom;
+  const above = line.top - picker.bottom;
+  expect(Math.min(Math.abs(below - 6), Math.abs(above - 6))).toBeLessThanOrEqual(4);
+}
+
 /** A new document with one line typed and saved; the caret stays at its end. */
 async function writeDocument(page: Page, line: string) {
   await newDocument(page);
@@ -266,6 +297,7 @@ test('⌘K offers "Incorporar tarefa…" in the document, which opens the picker
   await page.keyboard.press('Enter');
   const picker = page.getByRole('menu', { name: 'Incorporar tarefa' });
   await expect(page.getByRole('searchbox', { name: 'Incorporar tarefa' })).toBeFocused();
+  await expectPickerAtLine(page);
   await pickEmbed(page, picker, 'fechadura', 'Trocar a fechadura');
   await expect(embedCard(page, 'Trocar a fechadura')).toBeVisible();
   await expectSavedEmbeds(page, 1);
@@ -439,3 +471,27 @@ test('a pasted embed with an ID the server refuses never lands, and the document
   ).content;
   expect(content.filter((block) => block.type === 'taskEmbed').map((block) => block.props?.taskId)).toEqual([task.id]);
 });
+
+for (const word of ['tarefa', 'desenho'] as const) {
+  test(`/${word} on a new document’s last line opens the picker right under that line, in the editor’s column`, async ({
+    page,
+  }) => {
+    await login(page);
+    await createProject(page, `Lugar do seletor ${Date.now()}`);
+    await newDocument(page);
+    await page.getByRole('textbox', { name: 'Título do documento' }).click();
+    await page.keyboard.type('Visão Geral');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('## Objetivo');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('Um parágrafo antes da última linha.');
+    // The new last line, where the `/` goes; the picker's list loads after it opens and places it again.
+    await slash(page, word);
+    await expect(page.locator('.embed-picker')).not.toContainText('Buscando…');
+    await expectPickerAtLine(page);
+    // The list's answer to a letter typed places the picker again, from the line as the editor draws it then.
+    await page.keyboard.type('x');
+    await expect(page.locator('.embed-picker')).not.toContainText('Buscando…');
+    await expectPickerAtLine(page);
+  });
+}

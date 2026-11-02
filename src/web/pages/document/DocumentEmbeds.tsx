@@ -28,6 +28,25 @@ export interface EmbedCommands {
 }
 
 /**
+ * What the picker hangs from: the line of a block as the editor draws it now, or else the editor itself. React
+ * Aria reads it at each placement, as the picker's list loads and the window changes, and an element kept from
+ * when the `/` was typed may be gone by then: when the editor's view is made anew, as a hot update of the dev
+ * server makes it, every block is a new element. A detached element measures 0 × 0, and the picker went to the
+ * window's top-left corner (found after the merge of stage 11). Null only with no editor on the page.
+ */
+function pickerAnchor(editor: BlockEditorInstance, blockId: string | null): HTMLElement | null {
+  let root: HTMLElement | undefined;
+  try {
+    root = editor.domElement;
+  } catch {
+    return null;
+  }
+  if (!root?.isConnected) return null;
+  const line = blockId ? root.querySelector<HTMLElement>(`[data-id="${CSS.escape(blockId)}"] .bn-block-content`) : null;
+  return line?.isConnected ? line : root;
+}
+
+/**
  * A document's embeds around its editor (docs/etapas/11-documento-desenho.md, "Interface"): the provider the
  * blocks read their states and actions from, the "Incorporar" items of the `/` menu and the picker they open.
  * `children` gets the slash items, none in a document that only reads.
@@ -55,8 +74,16 @@ export function DocumentEmbeds({
   const content = useDrawerContent();
   const today = useOwnerToday();
   const [picker, setPicker] = useState<{ kind: EmbedKind; blockId: string } | null>(null);
-  /** The block the `/` was typed in, which the picker hangs from. */
-  const anchor = useRef<HTMLElement | null>(null);
+  /** The block the picker was opened on, which it hangs from (pickerAnchor), found again at each read. */
+  const pickerBlock = useRef<string | null>(null);
+  const anchor = useMemo<RefObject<HTMLElement | null>>(
+    () => ({
+      get current() {
+        return pickerAnchor(editor, pickerBlock.current);
+      },
+    }),
+    [editor],
+  );
   const openTaskId = content?.mode === 'task' ? content.id : null;
   const board = useColumns().data?.columns;
   const columns = useMemo(() => board?.map((column) => column.id) ?? [], [board]);
@@ -64,10 +91,11 @@ export function DocumentEmbeds({
     () => ({ ...states, previews, columns, documentProjectId: projectId, today, openTaskId, readOnly, actions }),
     [states, previews, columns, projectId, today, openTaskId, readOnly, actions],
   );
-  /** The picker on the block of the text cursor, which it hangs from. */
+  /** The picker on the block of the text cursor, which it hangs from; nothing with no editor on the page. */
   function openPicker(kind: EmbedKind) {
     const block = editor.getTextCursorPosition().block;
-    anchor.current = editor.domElement?.querySelector<HTMLElement>(`[data-id="${CSS.escape(block.id)}"]`) ?? null;
+    if (!pickerAnchor(editor, block.id)) return;
+    pickerBlock.current = block.id;
     setPicker({ kind, blockId: block.id });
   }
   const latest = useRef({ openPicker, insert, states });
