@@ -6,12 +6,12 @@ Validação local a partir de 29 de outubro de 2026. A primeira versão foi impl
 
 A etapa foi implementada entre 2026-11-01 e 2026-11-02 por dois subagentes, backend (B1 a B4) e web (W1 a W7), primeiro em worktrees próprias e, a partir dos pontos de integração, em `feat/documento`. Três revisores adversariais examinaram, cada um, dados e MCP; o editor (teclado, acessibilidade e foco); e segurança e qualidade. Os achados passaram por cinco rodadas de correção, todas retestadas pelo próprio revisor. Os bancos usados são temporários, criados na pasta temporária do sistema; `data/tinyfold.sqlite` não foi aberto, e as portas 3370 e 5170 não foram usadas.
 
-| Verificação | Resultado, em `959a8cc` |
+| Verificação | Resultado, em `576ce85` |
 | --- | --- |
-| `mise exec -- pnpm check` | Biome; tipos de todos os pacotes, dos E2E e dos scripts; dependency-cruiser sem violações em 866 módulos; 648 testes unitários em 105 arquivos, com tokens, contraste e paridade com `tokens.py` |
+| `mise exec -- pnpm check` | Biome; tipos de todos os pacotes, dos E2E e dos scripts; dependency-cruiser sem violações em 869 módulos; 653 testes unitários em 106 arquivos, com tokens, contraste e paridade com `tokens.py` |
 | `mise exec -- pnpm test:db` | 264 testes em 37 arquivos, com SQLite temporário |
 | `mise exec -- pnpm build` | Bundle de produção aprovado |
-| `E2E_PORT=5191 mise exec -- pnpm e2e` | 200 aprovados e 116 pulados, em 158 testes por perfil (desktop e Pixel 7). No celular, pulam os testes que precisam do desktop: o teclado do editor e dos incorporados, o hover, o arrastar, a faixa e as larguras. No desktop, pulam os que são só do celular |
+| `E2E_PORT=5191 mise exec -- pnpm e2e` | 214 aprovados e 130 pulados, em 172 testes por perfil (desktop e Pixel 7). No celular, pulam os testes que precisam do desktop: o teclado do editor e dos incorporados, o hover, o arrastar, a faixa e as larguras. No desktop, pulam os que são só do celular |
 
 Os testes de unidade e de banco cobrem, além do que já existia:
 
@@ -173,6 +173,15 @@ Corrigidos e retestados:
   - **ProseMirror:** nada garantia uma cópia só, nem o `domObserver.flush` privado.
   - **Colagem forjada:** um `blocknote/html` com um ID inválido derrubava todo salvamento e deixava todos os cards em "Carregando…". Depois da correção, a colagem ainda perdia o que o incorporado forjado continha.
   - **Importações:** `ErrorNotice` levava o cliente HTTP ao barril da UI.
+
+### Depois da fusão
+
+O usuário testou o aplicativo fundido num banco temporário, e as correções seguintes passaram pelos quatro comandos numa worktree de rascunho, com o E2E em 5191:
+
+- **`35e4a57`, âncora do seletor:** o seletor abriu no canto da janela num teste do usuário; a âncora passou a ser lida a cada posicionamento. O gatilho no uso real não foi reproduzido no build de produção nem no `dev`, com o roteiro do usuário e o seletor aberto por 10 s; uma atualização a quente reproduz o sintoma, e a leitura a cada vez o cobre.
+- **`af53c16`, foco no título novo:** pelo menu Novo, por N e pelo ⌘K, com os agentes de usuário do Windows e do Mac, o título do documento novo recebe o foco e o mantém (`e2e/new-document.spec.ts`).
+- **`54d00cc`, teclas seguradas:** com o servidor demorando 400 ms, o que se digita à velocidade da máquina pelos três caminhos vai inteiro para o título novo, e o documento deixado mantém versão, título e texto, sem pasta criada; quatro repetições e cinco sob carga passaram.
+- **`576ce85`, E2E instável:** "⌘↵ in the label picker or the calendar completes nothing" apertava Esc depois de o calendário fechar com o ⌘↵; o teste espera o calendário fechado e passou dez vezes sob carga, onde o antigo falhou as dez.
 
 ### Aceitos
 
