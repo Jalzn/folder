@@ -5,6 +5,8 @@ import type { EmbeddedDrawing, EmbeddedTask, EmbedProject, LiveDrawing, LiveTask
 export interface UnavailableView {
   kind: 'unavailable';
   text: string;
+  /** What Restaurar and Remover name (review B5): "“título”" in the trash, "a tarefa excluída" when gone. */
+  subject: string;
   restore: { id: string; title: string; version: number } | null;
   remove: boolean;
 }
@@ -51,9 +53,18 @@ const otherOf = (project: EmbedProject, documentProjectId: string) =>
   project.id === documentProjectId ? null : project;
 
 /** Restaurar and Remover of an unavailable embed: none in a document that only reads. */
-function unavailable(text: string, restore: UnavailableView['restore'], readOnly: boolean): UnavailableView {
-  return { kind: 'unavailable', text, restore: readOnly ? null : restore, remove: !readOnly };
+function unavailable(
+  text: string,
+  subject: string,
+  restore: UnavailableView['restore'],
+  readOnly: boolean,
+): UnavailableView {
+  return { kind: 'unavailable', text, subject, restore: readOnly ? null : restore, remove: !readOnly };
 }
+
+/** The other project, as the card's and the figure's names end: ", em Projeto", with "(arquivado)". */
+const inProject = (project: EmbedProject | null) =>
+  project ? `, em ${project.name}${project.archived ? ' (arquivado)' : ''}` : '';
 
 /**
  * An embedded task's block (the prototype's `embedInner`): the card of a live task, with "aberta abaixo"
@@ -64,15 +75,17 @@ export function taskEmbedView(state: EmbeddedTask | undefined, context: EmbedVie
   if (state.state === 'trashed')
     return unavailable(
       `Na lixeira: ${state.title}`,
+      `“${state.title}”`,
       { id: state.id, title: state.title, version: state.version },
       context.readOnly,
     );
-  if (state.state === 'missing') return unavailable('Esta tarefa foi excluída.', null, context.readOnly);
+  if (state.state === 'missing')
+    return unavailable('Esta tarefa foi excluída.', 'a tarefa excluída', null, context.readOnly);
   const done = state.column.isDone;
   const open = context.openTaskId === state.id;
   const otherProject = otherOf(state.project, context.documentProjectId);
   const status = done ? 'Concluída' : state.column.name;
-  const where = otherProject ? `, em ${otherProject.name}${otherProject.archived ? ' (arquivado)' : ''}` : '';
+  const where = inProject(otherProject);
   return {
     kind: 'card',
     task: state,
@@ -95,10 +108,12 @@ export function drawingEmbedView(
   if (state.state === 'trashed')
     return unavailable(
       `Na lixeira: ${state.title}`,
+      `“${state.title}”`,
       { id: state.id, title: state.title, version: state.version },
       context.readOnly,
     );
-  if (state.state === 'missing') return unavailable('Este desenho foi excluído.', null, context.readOnly);
+  if (state.state === 'missing')
+    return unavailable('Este desenho foi excluído.', 'o desenho excluído', null, context.readOnly);
   const otherProject = otherOf(state.project, context.documentProjectId);
   return {
     kind: 'figure',
@@ -106,6 +121,7 @@ export function drawingEmbedView(
     number,
     otherProject,
     caption: `Figura ${number} — ${state.title}${otherProject ? ` · ${otherProject.name}` : ''}`,
-    label: `Figura ${number}: ${state.title}. Versão atual, somente leitura. Abrir no editor`,
+    // The other project as the visible caption has it (review B6).
+    label: `Figura ${number}: ${state.title}${inProject(otherProject)}. Versão atual, somente leitura. Abrir no editor`,
   };
 }

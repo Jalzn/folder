@@ -175,12 +175,12 @@ test('an embedded task in the trash offers Restaurar; one deleted for good, Remo
   const missing = documentEditor(page).locator('.embed-missing');
   await expect(missing.first()).toContainText('Na lixeira: Esboçar tela de boas-vindas');
   await expect(missing.last()).toContainText('Esta tarefa foi excluída.');
-  await missing.first().getByRole('button', { name: 'Restaurar', exact: true }).click();
+  await missing.first().getByRole('button', { name: 'Restaurar “Esboçar tela de boas-vindas”', exact: true }).click();
   await expect(toast(page)).toContainText('“Esboçar tela de boas-vindas” restaurado.');
   await expect(embedCard(page, 'Esboçar tela de boas-vindas')).toBeVisible();
   expect((await rpc<{ deletedAt: string | null }>(page, 'workspace/getTask', { id: trashed.id })).deletedAt).toBeNull();
 
-  await missing.getByRole('button', { name: 'Remover', exact: true }).click();
+  await missing.getByRole('button', { name: 'Remover a tarefa excluída', exact: true }).click();
   await expect(toast(page)).toContainText('Bloco removido do documento. O texto ao redor ficou como estava.');
   await expect(missing).toHaveCount(0);
   await expectSavedEmbeds(page, 1);

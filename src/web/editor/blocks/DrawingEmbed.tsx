@@ -28,7 +28,13 @@ export function DrawingEmbed({ canvasId, blockId }: { canvasId: string; blockId:
   if (!embeds)
     return (
       <UnavailableEmbed
-        view={{ kind: 'unavailable', text: 'Desenho incorporado', restore: null, remove: false }}
+        view={{
+          kind: 'unavailable',
+          text: 'Desenho incorporado',
+          subject: 'o desenho incorporado',
+          restore: null,
+          remove: false,
+        }}
         kind="drawing"
         blockId={blockId}
       />

@@ -171,7 +171,7 @@ test('on a phone the embeds take the width: a tap opens the card in the drawer, 
   await expect(missing).toContainText('Na lixeira: Na lixeira do celular');
   expect((await missing.boundingBox())?.width ?? 0).toBeGreaterThan(width - 4);
   // Restaurar and Remover show without a pointer to hover.
-  await expect(content.getByRole('button', { name: 'Restaurar', exact: true })).toBeVisible();
+  await expect(content.getByRole('button', { name: 'Restaurar “Na lixeira do celular”', exact: true })).toBeVisible();
   await card.tap();
   await expect(drawer(page)).toBeVisible();
   await drawer(page).getByRole('button', { name: 'Fechar a gaveta', exact: true }).tap();

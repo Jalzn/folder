@@ -66,12 +66,14 @@ describe('taskEmbedView', () => {
     expect(taskEmbedView(trashed, context)).toEqual({
       kind: 'unavailable',
       text: 'Na lixeira: Esboçar tela',
+      subject: '“Esboçar tela”',
       restore: { id: 't1', title: 'Esboçar tela', version: 4 },
       remove: true,
     });
     expect(taskEmbedView({ state: 'missing', id: 't1' }, context)).toEqual({
       kind: 'unavailable',
       text: 'Esta tarefa foi excluída.',
+      subject: 'a tarefa excluída',
       restore: null,
       remove: true,
     });
@@ -88,6 +90,8 @@ describe('drawingEmbedView', () => {
     });
     expect(drawingEmbedView(liveDrawing({ project: other }), 1, context)).toMatchObject({
       caption: 'Figura 1 — Navegação com projeto no centro · Reforma do escritório',
+      label:
+        'Figura 1: Navegação com projeto no centro, em Reforma do escritório (arquivado). Versão atual, somente leitura. Abrir no editor',
     });
   });
 
@@ -97,6 +101,7 @@ describe('drawingEmbedView', () => {
     ).toMatchObject({ kind: 'unavailable', text: 'Na lixeira: Fluxo do autosave', remove: true });
     expect(drawingEmbedView({ state: 'missing', id: 'd1' }, 1, context)).toMatchObject({
       text: 'Este desenho foi excluído.',
+      subject: 'o desenho excluído',
       restore: null,
     });
   });

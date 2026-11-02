@@ -22,7 +22,13 @@ export function TaskEmbed({ taskId, blockId }: { taskId: string; blockId: string
   if (!embeds)
     return (
       <UnavailableEmbed
-        view={{ kind: 'unavailable', text: 'Tarefa incorporada', restore: null, remove: false }}
+        view={{
+          kind: 'unavailable',
+          text: 'Tarefa incorporada',
+          subject: 'a tarefa incorporada',
+          restore: null,
+          remove: false,
+        }}
         kind="task"
         blockId={blockId}
       />
