@@ -1,25 +1,18 @@
 import { type Canvas, type CanvasScene, canvasPlainText, readCanvasScene } from '@tinyfold/workspace/domain';
 import type { ItemAdapter } from '../../components/item-page';
-import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
-import { AutosaveController, type SaveInput } from '../../lib/autosave';
+import { api, queryClient } from '../../lib/api';
+import { defineItemSession, type ItemSession } from '../../lib/autosave/item-session';
 import { type CanvasSnapshot, canvasDraftStorage, parseCanvasDraft, withCleanLinks } from '../../lib/canvas-autosave';
 import { renderCanvasPng } from '../../lib/canvas-png';
 import { CanvasPreviewUploader } from '../../lib/canvas-preview';
-import { withDraftProject } from '../../lib/draft-project';
-import { canvasQuery, embedsKey, invalidateNavigation } from '../../lib/queries';
-import { registerSave } from '../../lib/save-registry';
+import { canvasQuery, embedsKey, keys } from '../../lib/queries';
 import { displayTitle } from '../../lib/types';
 
 /** The canvas as getCanvas returns it, including whether the stored PNG preview shows its scene. */
 export type EditableCanvas = Awaited<ReturnType<typeof api.workspace.getCanvas>>;
 
 /** Saving and preview uploads outlive the editor, so leaving right after an edit loses nothing. */
-export interface CanvasSession {
-  controller: AutosaveController<CanvasSnapshot>;
-  previews: CanvasPreviewUploader;
-}
-
-const sessions = new Map<string, CanvasSession>();
+export type CanvasSession = ItemSession<CanvasSnapshot, { previews: CanvasPreviewUploader }>;
 
 export const canvasSnapshot = (canvas: Canvas): CanvasSnapshot => ({
   title: canvas.title,
@@ -56,78 +49,51 @@ export const sceneRevision = (scene: CanvasScene) =>
     )
     .join('|')}`;
 
-async function send(input: SaveInput<CanvasSnapshot>) {
-  try {
-    readCanvasScene(input.scene);
-  } catch (error) {
-    throw Object.assign(error instanceof Error ? error : new Error('Desenho inválido.'), { code: 'VALIDATION' });
-  }
-  try {
-    // A save never moves the item: moving goes through moveItem, so the project stays out of it.
-    const { projectId: _project, ...save } = input;
-    return await api.workspace.saveCanvas(save);
-  } catch (error) {
-    reportSessionError(error);
-    throw error;
-  }
-}
-
 /** The drawing's autosave and preview uploads, one per installation and drawing for the life of the tab. */
-export function canvasSession(canvas: EditableCanvas, installationId: string): CanvasSession {
-  const identity = `${installationId}:${canvas.id}`;
-  let session = sessions.get(identity);
-  if (session) return session;
-  const previews = new CanvasPreviewUploader({
-    id: canvas.id,
-    previewVersion: canvas.previewVersion,
-    // A light rendering with background, whatever the editor theme.
-    render: (scene, maxSide) => renderCanvasPng(scene, { maxSide, darkMode: false }),
-    upload: async (input) => {
-      const ack = await api.workspace.saveCanvasPreview(input);
-      void queryClient.invalidateQueries({ queryKey: embedsKey });
-      return ack;
-    },
-    ready: () => controller.getState().status === 'saved',
-  });
-  const controller: AutosaveController<CanvasSnapshot> = new AutosaveController<CanvasSnapshot>({
-    id: canvas.id,
-    snapshot: canvasSnapshot(canvas),
-    version: canvas.version,
-    storage: canvasDraftStorage(installationId, canvas.id),
-    readDraft: (raw) => withDraftProject(parseCanvasDraft(raw), canvas.projectId),
-    equal: (left, right) =>
-      left.title === right.title &&
-      left.projectId === right.projectId &&
-      sceneRevision(left.scene) === sceneRevision(right.scene),
-    draftDelayMs: 100,
-    idFactory: () => crypto.randomUUID(),
-    classifyError: errorCode,
-    send,
-    onSaved: (ack, sent) => {
-      queryClient.setQueryData<EditableCanvas>(['workspace', 'canvas', canvas.id], (previous) => {
-        if (previous && previous.version > ack.version) return previous;
-        const base = previous ?? canvas;
-        return {
-          ...base,
-          ...sent,
-          title: displayTitle(sent.title.trim()),
-          plainText: canvasPlainText(sent.scene),
-          version: ack.version,
-          updatedAt: ack.updatedAt,
-          // The stored preview still shows the scene only if this save left the scene alone.
-          previewCurrent: base.previewCurrent && sceneRevision(base.scene) === sceneRevision(sent.scene),
-        };
-      });
-      void queryClient.invalidateQueries({ queryKey: ['workspace', 'canvases'] });
-      // A document that embeds the drawing shows its new title and, once the preview is up, the new image.
-      void queryClient.invalidateQueries({ queryKey: embedsKey });
-      invalidateNavigation();
-      previews.request(ack.version, sent.scene);
-    },
-    onAdopted: (adopted, version) => previews.request(version, adopted.scene),
-  });
-  session = { controller, previews };
-  sessions.set(identity, session);
-  registerSave('drawing', canvas.id, controller);
-  return session;
-}
+export const canvasSession = defineItemSession<CanvasSnapshot, EditableCanvas, { previews: CanvasPreviewUploader }>({
+  type: 'drawing',
+  snapshot: canvasSnapshot,
+  storage: canvasDraftStorage,
+  readDraft: parseCanvasDraft,
+  check: (input) => {
+    try {
+      readCanvasScene(input.scene);
+    } catch (error) {
+      throw Object.assign(error instanceof Error ? error : new Error('Desenho inválido.'), { code: 'VALIDATION' });
+    }
+  },
+  save: (input) => api.workspace.saveCanvas(input),
+  saved: (previous, sent, ack) => ({
+    ...previous,
+    ...sent,
+    title: displayTitle(sent.title.trim()),
+    plainText: canvasPlainText(sent.scene),
+    version: ack.version,
+    updatedAt: ack.updatedAt,
+    // The stored preview still shows the scene only if this save left the scene alone.
+    previewCurrent: previous.previewCurrent && sceneRevision(previous.scene) === sceneRevision(sent.scene),
+  }),
+  // A document that embeds the drawing shows its new title and, once the preview is up, the new image.
+  invalidate: [keys.canvases(), embedsKey],
+  equal: (left, right) =>
+    left.title === right.title &&
+    left.projectId === right.projectId &&
+    sceneRevision(left.scene) === sceneRevision(right.scene),
+  draftDelayMs: 100,
+  extra: (canvas, controller) => ({
+    previews: new CanvasPreviewUploader({
+      id: canvas.id,
+      previewVersion: canvas.previewVersion,
+      // A light rendering with background, whatever the editor theme.
+      render: (scene, maxSide) => renderCanvasPng(scene, { maxSide, darkMode: false }),
+      upload: async (input) => {
+        const ack = await api.workspace.saveCanvasPreview(input);
+        void queryClient.invalidateQueries({ queryKey: embedsKey });
+        return ack;
+      },
+      ready: () => controller().getState().status === 'saved',
+    }),
+  }),
+  afterSave: ({ previews }, ack, sent) => previews.request(ack.version, sent.scene),
+  onAdopted: ({ previews }, adopted, version) => previews.request(version, adopted.scene),
+});

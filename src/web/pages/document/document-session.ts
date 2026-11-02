@@ -1,14 +1,11 @@
 import type { ItemAdapter } from '../../components/item-page';
-import { api, errorCode, queryClient, reportSessionError } from '../../lib/api';
-import { AutosaveController, parseDraft, type SaveInput, type Snapshot } from '../../lib/autosave';
-import { withDraftProject } from '../../lib/draft-project';
+import { api } from '../../lib/api';
+import { parseDraft, type Snapshot } from '../../lib/autosave';
+import { defineItemSession } from '../../lib/autosave/item-session';
 import { draftStorage } from '../../lib/draft-storage';
-import { documentQuery, invalidateNavigation } from '../../lib/queries';
-import { registerSave } from '../../lib/save-registry';
+import { documentQuery, keys } from '../../lib/queries';
 import { refuseOverLimit } from '../../lib/text-limit';
 import { type Document, displayTitle } from '../../lib/types';
-
-const controllers = new Map<string, AutosaveController<Snapshot>>();
 
 export function documentSnapshot(document: Document): Snapshot {
   return { title: document.title, projectId: document.projectId, content: document.content };
@@ -32,57 +29,30 @@ export const documentItem = (id: string): ItemAdapter<Snapshot, Document> => ({
   remove: (input) => api.workspace.deleteDocument(input),
 });
 
-async function send(input: SaveInput<Snapshot>) {
-  refuseOverLimit(
-    input.content,
-    'Este documento ultrapassou o limite de 1 MB. Exporte uma cópia e divida o conteúdo em mais documentos.',
-  );
-  try {
-    // A save never moves the item: moving goes through moveItem, so the project stays out of it.
-    const { projectId: _project, ...save } = input;
-    return await api.workspace.saveDocument(save);
-  } catch (error) {
-    reportSessionError(error);
-    throw error;
-  }
-}
-
 /**
  * The document's autosave, one per installation and document for the life of the tab: saving outlives the
  * editor, so leaving right after an edit loses nothing.
  */
-export function documentController(document: Document, installationId: string) {
-  const identity = `${installationId}:${document.id}`;
-  let controller = controllers.get(identity);
-  if (!controller) {
-    controller = new AutosaveController<Snapshot>({
-      id: document.id,
-      snapshot: documentSnapshot(document),
-      version: document.version,
-      storage: draftStorage(identity),
-      readDraft: (raw) => withDraftProject(parseDraft(raw), document.projectId),
-      idFactory: () => crypto.randomUUID(),
-      classifyError: errorCode,
-      send,
-      onSaved: (ack, sent) => {
-        queryClient.setQueryData<Document>(['workspace', 'document', document.id], (previous) =>
-          previous && previous.version > ack.version
-            ? previous
-            : {
-                ...(previous ?? document),
-                ...sent,
-                title: displayTitle(sent.title.trim()),
-                version: ack.version,
-                updatedAt: ack.updatedAt,
-              },
-        );
-        void queryClient.invalidateQueries({ queryKey: ['workspace', 'documents'] });
-        void queryClient.invalidateQueries({ queryKey: ['workspace', 'tasks'] });
-        invalidateNavigation();
-      },
-    });
-    controllers.set(identity, controller);
-    registerSave('document', document.id, controller);
-  }
-  return controller;
-}
+const documentSession = defineItemSession<Snapshot, Document>({
+  type: 'document',
+  snapshot: documentSnapshot,
+  storage: (installationId, id) => draftStorage(`${installationId}:${id}`),
+  readDraft: parseDraft,
+  check: (input) =>
+    refuseOverLimit(
+      input.content,
+      'Este documento ultrapassou o limite de 1 MB. Exporte uma cópia e divida o conteúdo em mais documentos.',
+    ),
+  save: (input) => api.workspace.saveDocument(input),
+  saved: (previous, sent, ack) => ({
+    ...previous,
+    ...sent,
+    title: displayTitle(sent.title.trim()),
+    version: ack.version,
+    updatedAt: ack.updatedAt,
+  }),
+  invalidate: [keys.documents(), keys.tasks()],
+});
+
+export const documentController = (document: Document, installationId: string) =>
+  documentSession(document, installationId).controller;
