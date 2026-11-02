@@ -1,4 +1,4 @@
-import type { EmbedKind } from '@tinyfold/workspace/domain';
+import { type EmbedKind, nameKey } from '@tinyfold/workspace/domain';
 import { Plus } from 'lucide-react';
 import { type RefObject, useEffect, useRef, useState } from 'react';
 import { Menu as AriaMenu, SearchField as AriaSearchField, Autocomplete, Input } from 'react-aria-components';
@@ -68,6 +68,10 @@ export function EmbedPicker({
     if (answered) setItems(pickerItems(own.data?.items ?? [], all.data?.items ?? [], projectId));
   }, [answered, own.data, all.data, projectId]);
   const say = words[kind];
+  // The item whose title is the text typed, by the key names compare with: ↵ embeds it instead of making a
+  // second one with the same title (review, picker), and its row shows the ↵.
+  const typed = nameKey(text);
+  const exact = typed ? (items.find((item) => nameKey(displayTitle(item.title)) === typed) ?? null) : null;
   return (
     <PopoverSurface
       triggerRef={triggerRef}
@@ -84,9 +88,10 @@ export function EmbedPicker({
             className="embed-picker__input"
             placeholder={kind === 'task' ? 'Buscar tarefa' : 'Buscar desenho'}
             onKeyDownCapture={(event) => {
-              // ↵ with text typed and no item marked by the arrows is "Nova tarefa…" or "Novo desenho", titled
-              // with that text (review M6); with an item marked, the list takes it. Read before the list acts
-              // on the key: the mark is on the list's item at once, the field's aria-activedescendant later.
+              // ↵ with text typed and no item marked by the arrows embeds the item of that title, or else is
+              // "Nova tarefa…" or "Novo desenho", titled with the text (review M6); with an item marked, the list
+              // takes it. Read before the list acts on the key: the mark is on the list's item at once, the
+              // field's aria-activedescendant later.
               if (event.key !== 'Enter' || event.nativeEvent.isComposing || !text.trim()) return;
               if (
                 list.current?.querySelector('[data-focused]') ||
@@ -95,7 +100,8 @@ export function EmbedPicker({
                 return;
               event.preventDefault();
               event.stopPropagation();
-              onNew(text.trim());
+              if (exact) onPick(exact);
+              else onNew(text.trim());
             }}
           />
         </AriaSearchField>
@@ -124,6 +130,7 @@ export function EmbedPicker({
                     key={item.id}
                     id={item.id}
                     textValue={displayTitle(item.title)}
+                    {...(item === exact ? { shortcut: ['↵'] } : {})}
                     detail={
                       project ? (
                         <span className="embed-picker__project">

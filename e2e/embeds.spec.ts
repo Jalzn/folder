@@ -116,6 +116,24 @@ test('↵ after typing in the picker opens "Nova tarefa…" with the typed text 
   await expect(title).toHaveValue(typed);
 });
 
+test('↵ after typing an existing task’s title in the picker embeds that task, with no second one', async ({ page }) => {
+  await login(page);
+  const projectId = await createProject(page, `Título exato ${Date.now()}`);
+  const word = `cerca${Date.now().toString(36)}`;
+  await rpcTask(page, projectId, `Pintar a ${word} da Ação`);
+  await writeDocument(page, 'Reforma do quintal.');
+  const picker = await slash(page, 'tarefa');
+  // Case and accents aside, as names compare.
+  await page.keyboard.type(`pintar a ${word.toUpperCase()} da acao`);
+  const row = picker.getByRole('menuitem').filter({ hasText: `Pintar a ${word} da Ação` });
+  await expect(row).toContainText('↵');
+  await page.keyboard.press('Enter');
+  await expect(embedCard(page, `Pintar a ${word} da Ação`)).toBeVisible();
+  await expect(newTaskDrawer(page)).toHaveCount(0);
+  const found = await rpc<{ items: unknown[] }>(page, 'workspace/search', { query: word, types: ['task'] });
+  expect(found.items).toHaveLength(1);
+});
+
 test('the arrows select a card: ↵ opens it, ⌫ removes it and the editor’s ⌘Z brings it back', async ({ page }) => {
   await login(page);
   const here = await createProject(page, `Teclas do card ${Date.now()}`);
