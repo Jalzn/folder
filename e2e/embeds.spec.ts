@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 import { drawer, drawerOf, newTaskDrawer } from './support/board.js';
 import { clickText, documentEditor, editorUndo, embedCard, embedFigure, pickEmbed, slash } from './support/document.js';
+import { toast } from './support/feedback.js';
 import { newDocument } from './support/items.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject, currentProjectId } from './support/navigation.js';
@@ -11,7 +12,6 @@ import { login } from './support/session.js';
 test.skip(({ isMobile }) => isMobile, 'Desktop: the keys and the drawer below the document.');
 
 type Block = { id: string; type: string; props?: Record<string, unknown> };
-const toast = (page: Page) => page.locator('.toast');
 
 /** The document's id, from its address. */
 const documentIdOf = (page: Page) => new URL(page.url()).pathname.split('/').at(-1) ?? '';

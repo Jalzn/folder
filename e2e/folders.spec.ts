@@ -1,4 +1,5 @@
 import { expect, type Page, type Request, test } from '@playwright/test';
+import { toast } from './support/feedback.js';
 import {
   createFolder,
   folderRow,
@@ -18,7 +19,6 @@ test.skip(({ isMobile }) => isMobile, 'Desktop: the sidebar is fixed beside the 
 
 /** The shell's live region, where moves and the tree's changes are announced. */
 const live = (page: Page) => page.locator('p.sr-only[aria-live="polite"]');
-const toast = (page: Page) => page.locator('.toast');
 
 /** A fresh project for the test, so the tree holds only what it creates. */
 async function freshProject(page: Page, name: string) {

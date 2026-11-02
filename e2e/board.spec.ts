@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { card, cardMenu, closeDrawer, column, createInDrawer, drawer, openDrawer } from './support/board.js';
+import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject, openBoard, showSidebar } from './support/navigation.js';
@@ -36,7 +37,6 @@ test.afterEach(async ({ page }, info) => {
 
 /** The shell's live region, where the board's moves are announced. */
 const live = (page: Page) => page.locator('p.sr-only[aria-live="polite"]');
-const toast = (page: Page) => page.locator('.toast');
 /** A column's name, the button whose ↵ renames it. */
 const columnName = (page: Page, name: string) => column(page, name).locator('.board-column__name');
 /** The card's title, the button that takes the board's focus. */

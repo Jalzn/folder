@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { toast } from './support/feedback.js';
 import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
@@ -6,7 +7,6 @@ import { login } from './support/session.js';
 // Dragging is a pointer on a desktop; a phone moves through M or the menus (narrow.spec.ts).
 test.skip(({ isMobile }) => isMobile, 'Desktop only: a phone has no drag in the tree.');
 
-const toast = (page: Page) => page.locator('.toast');
 const folderNames = (page: Page) =>
   itemsTree(page)
     .getByRole('row', { name: /, pasta, / })
@@ -76,7 +76,7 @@ test('an item takes a folder’s whole row, and a folder on the middle of anothe
   await sampleProject(page);
   // Near the top edge of a folder row, an item still goes into it.
   await drag(page, treeRow(page, 'Solto'), folderRow(page, 'Primeira'), { y: 0.1 });
-  await expect(page.locator('.toast')).toContainText('Movido para Primeira.');
+  await expect(toast(page)).toContainText('Movido para Primeira.');
   await expect(folderRow(page, 'Primeira')).toHaveAttribute('aria-label', /, 1 item$/);
   // A folder on the middle of another folder neither nests nor reorders.
   await drag(page, folderRow(page, 'Segunda'), folderRow(page, 'Primeira'));

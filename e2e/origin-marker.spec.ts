@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer } from './support/board.js';
 import { clickText, createTaskFromSelection, documentEditor, embedCard, expectSelected } from './support/document.js';
+import { toast } from './support/feedback.js';
 import { newDocument } from './support/items.js';
 import { createProject } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
@@ -9,7 +10,6 @@ import { login } from './support/session.js';
 // The markers need a pointer to hover and a desktop drawer; the phone reaches the tasks by "Tarefas".
 test.skip(({ isMobile }) => isMobile, 'Desktop: hover and the drawer below the document.');
 
-const toast = (page: Page) => page.locator('.toast');
 /** The text the hovered marker's underline covers: the CSS highlight "origin-excerpt", or null without one. */
 const underlined = (page: Page) =>
   page.evaluate(() => {

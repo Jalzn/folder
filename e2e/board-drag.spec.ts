@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 import { column } from './support/board.js';
+import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
 import { createProject, openBoard } from './support/navigation.js';
 import { login } from './support/session.js';
@@ -73,7 +74,7 @@ test('cards drag between cards, to another column and to its end; a drop off the
   if (!done) throw new Error('Concluído is not on screen.');
   await drag(page, card('Segunda'), { x: done.x + 60, y: done.y + 60 });
   await page.mouse.up();
-  await expect(page.locator('.toast')).toContainText('Concluída: Segunda.');
-  await page.locator('.toast').getByRole('button', { name: 'Desfazer' }).click();
+  await expect(toast(page)).toContainText('Concluída: Segunda.');
+  await toast(page).getByRole('button', { name: 'Desfazer' }).click();
   await expect(titles(todo)).toHaveText(['Segunda']);
 });

@@ -1,7 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer } from './support/board.js';
-import { createTaskFromSelection, openDocumentTasks, pickEmbed, slash } from './support/document.js';
+import {
+  createTaskFromSelection,
+  documentEditor as editor,
+  openDocumentTasks,
+  pickEmbed,
+  slash,
+} from './support/document.js';
+import { toast } from './support/feedback.js';
 import { newDocument } from './support/items.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject, currentProjectId } from './support/navigation.js';
@@ -10,9 +17,6 @@ import { login } from './support/session.js';
 
 // The bar's keys and its popover need a desktop; narrow.spec.ts covers the phone's bar.
 test.skip(({ isMobile }) => isMobile, 'Desktop: the page bar keeps its actions.');
-
-const editor = (page: Page) => page.getByTestId('document-content');
-const toast = (page: Page) => page.locator('.toast');
 
 /** A new document with a title and one paragraph per line, typed with real keys and saved. */
 async function writeDocument(page: Page, title: string, lines: string[]) {

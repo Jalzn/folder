@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { toast } from './support/feedback.js';
 import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
@@ -8,8 +9,6 @@ import { login } from './support/session.js';
 // Failures around folders (sec-quality.md S2, S3 and S4): a copy whose folder went, an undo the server
 // refuses, and an undo pressed while another folder write is on its way. Desktop: the fixed sidebar.
 test.skip(({ isMobile }) => isMobile, 'Desktop: the fixed sidebar.');
-
-const toast = (page: Page) => page.locator('.toast');
 
 /** The folder's version, as the tree has it, for a write by RPC. */
 async function folderVersion(page: Page, projectId: string, folderId: string) {

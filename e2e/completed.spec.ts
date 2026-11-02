@@ -1,10 +1,10 @@
 import { expect, type Page, test } from '@playwright/test';
 import { cardMenu, column } from './support/board.js';
+import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
 import { createProject } from './support/navigation.js';
 import { login } from './support/session.js';
 
-const toast = (page: Page) => page.locator('.toast');
 const summary = (page: Page) => page.getByRole('main').locator('.page-header__description');
 
 test('Concluídas groups the completed tasks by month and reopens one, with Desfazer', async ({ page }) => {

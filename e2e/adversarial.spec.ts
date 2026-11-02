@@ -1,12 +1,10 @@
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer, openDrawer } from './support/board.js';
-import { createTaskFromSelection, openDocumentTasks } from './support/document.js';
+import { createTaskFromSelection, documentEditor as editor, openDocumentTasks } from './support/document.js';
 import { moveToTrash, newDocument, restoreFromTrash } from './support/items.js';
 import { openBoard, overviewAddress } from './support/navigation.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
-
-const editor = (page: Page) => page.getByTestId('document-content');
 
 async function writeAndSave(page: Page, text: string) {
   const saved = page.waitForResponse(
