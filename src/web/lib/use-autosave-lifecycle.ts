@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { AutosaveController } from './autosave';
+import { type AutosaveController, watchPage } from './autosave';
 
 const settled = (status: string) => ['saved', 'error', 'conflict'].includes(status);
 
@@ -14,28 +14,10 @@ export function useAutosaveLifecycle<T>(controller: AutosaveController<T>, { per
     const keep = () => {
       if (persistDraft) controller.persistDraft();
     };
-    const retry = () => {
-      if (controller.getState().status === 'error') void controller.flush();
-    };
-    const beforeLeave = (event: BeforeUnloadEvent) => {
-      if (controller.getState().status === 'saved') return;
-      keep();
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    const hidden = () => {
-      keep();
-      if (document.visibilityState === 'hidden' && !['error', 'conflict'].includes(controller.getState().status))
-        void controller.flush();
-    };
-    window.addEventListener('online', retry);
-    window.addEventListener('beforeunload', beforeLeave);
-    document.addEventListener('visibilitychange', hidden);
+    const stop = watchPage(controller, { window, document }, { keep, retryOnHide: false });
     if (controller.getState().recovered && controller.getState().status !== 'conflict') void controller.flush();
     return () => {
-      window.removeEventListener('online', retry);
-      window.removeEventListener('beforeunload', beforeLeave);
-      document.removeEventListener('visibilitychange', hidden);
+      stop();
       if (controller.getState().status !== 'saved') keep();
       if (!settled(controller.getState().status)) void controller.flush();
     };

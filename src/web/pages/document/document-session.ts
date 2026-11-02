@@ -8,7 +8,7 @@ import { registerSave } from '../../lib/save-registry';
 import { refuseOverLimit } from '../../lib/text-limit';
 import { type Document, displayTitle } from '../../lib/types';
 
-const controllers = new Map<string, AutosaveController>();
+const controllers = new Map<string, AutosaveController<Snapshot>>();
 
 export function documentSnapshot(document: Document): Snapshot {
   return { title: document.title, projectId: document.projectId, content: document.content };
@@ -32,7 +32,7 @@ export const documentItem = (id: string): ItemAdapter<Snapshot, Document> => ({
   remove: (input) => api.workspace.deleteDocument(input),
 });
 
-async function send(input: SaveInput) {
+async function send(input: SaveInput<Snapshot>) {
   refuseOverLimit(
     input.content,
     'Este documento ultrapassou o limite de 1 MB. Exporte uma cópia e divida o conteúdo em mais documentos.',
@@ -55,7 +55,7 @@ export function documentController(document: Document, installationId: string) {
   const identity = `${installationId}:${document.id}`;
   let controller = controllers.get(identity);
   if (!controller) {
-    controller = new AutosaveController({
+    controller = new AutosaveController<Snapshot>({
       id: document.id,
       snapshot: documentSnapshot(document),
       version: document.version,

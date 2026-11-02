@@ -1,6 +1,6 @@
 import type { BlockNoteEditor } from '@blocknote/core';
 import { useState } from 'react';
-import type { AutosaveController } from '../../lib/autosave';
+import type { AutosaveController, Snapshot } from '../../lib/autosave';
 import { type Document, displayTitle } from '../../lib/types';
 import { useTaskDrawer } from '../../shell';
 import { useToast } from '../../ui';
@@ -22,7 +22,7 @@ export function selectedText(editor: BlockNoteEditor<any, any, any>) {
 export function useTaskFromSelection(
   // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
   editor: BlockNoteEditor<any, any, any>,
-  controller: AutosaveController,
+  controller: AutosaveController<Snapshot>,
   document: Document,
 ) {
   const drawer = useTaskDrawer();

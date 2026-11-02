@@ -1,45 +1,12 @@
-import type { SaveStatus } from './autosave';
+import { type PageEvents, type SaveStatus, watchPage } from './autosave';
+
+export type { PageEvents };
 
 /** What the pool needs of an autosave: its status, its changes, and a save now. */
 export interface PooledController {
   getState(): { status: SaveStatus };
   subscribe(listener: () => void): () => void;
   flush(): Promise<boolean>;
-}
-
-/** Where the page tells of the network, of leaving and of hiding: the window and the document. */
-export interface PageEvents {
-  window: Pick<EventTarget, 'addEventListener' | 'removeEventListener'>;
-  document: Pick<EventTarget, 'addEventListener' | 'removeEventListener'> & { visibilityState?: string };
-}
-
-/**
- * What an editor does for its autosave while it is open, done for a session that outlived it with unsaved
- * text: try again when the network comes back, warn before the page leaves, and save when the tab hides.
- * Returns the removal.
- */
-function listenInBackground(controller: PooledController, events: PageEvents) {
-  const retry = () => {
-    if (controller.getState().status === 'error') void controller.flush();
-  };
-  const beforeLeave = (event: Event) => {
-    if (controller.getState().status === 'saved') return;
-    event.preventDefault();
-    (event as BeforeUnloadEvent).returnValue = '';
-  };
-  const hidden = () => {
-    const { status } = controller.getState();
-    if (events.document.visibilityState === 'hidden' && status !== 'conflict' && status !== 'saved')
-      void controller.flush();
-  };
-  events.window.addEventListener('online', retry);
-  events.window.addEventListener('beforeunload', beforeLeave);
-  events.document.addEventListener('visibilitychange', hidden);
-  return () => {
-    events.window.removeEventListener('online', retry);
-    events.window.removeEventListener('beforeunload', beforeLeave);
-    events.document.removeEventListener('visibilitychange', hidden);
-  };
 }
 
 /**
@@ -89,7 +56,8 @@ export function createSessionPool<C extends PooledController>({
           return true;
         };
         if (drop()) return;
-        session.background = listenInBackground(session.controller, events());
+        // What an open editor does for its autosave, done for a session that outlived it with unsaved text.
+        session.background = watchPage(session.controller, events(), { retryOnHide: true });
         const stop = session.controller.subscribe(() => {
           if (drop()) stop();
         });

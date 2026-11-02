@@ -4,7 +4,7 @@ import { createEmbedKeys, type EmbedKeyActions } from '../../editor/blocks/embed
 import { embedText } from '../../editor/blocks/embed-text';
 import { createOriginMarkers } from '../../editor/origin-markers';
 import { type BlockEditorInstance, useBlockEditor } from '../../editor/use-block-editor';
-import type { AutosaveController, SaveState } from '../../lib/autosave';
+import type { AutosaveController, SaveState, Snapshot } from '../../lib/autosave';
 import { lacksBlockIds } from '../../lib/block-ids';
 import { sanitizeEmbeds } from '../../lib/sanitize-embeds';
 import type { Document, DocumentContent } from '../../lib/types';
@@ -24,9 +24,9 @@ export const savedContent = (editor: BlockEditorInstance) =>
  * save) replaces the blocks.
  */
 export function useDocumentEditor(
-  controller: AutosaveController,
+  controller: AutosaveController<Snapshot>,
   document: Document,
-  state: SaveState,
+  state: SaveState<Snapshot>,
   openOrigin: RefObject<(taskId: string) => void>,
   embedActions: RefObject<EmbedKeyActions | null>,
 ) {

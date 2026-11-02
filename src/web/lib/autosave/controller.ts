@@ -1,47 +1,18 @@
-import { RECOVERY_DOCUMENT_LIMITS, readDocumentContent } from '@tinyfold/workspace/domain';
-import { sanitizeEmbeds } from './sanitize-embeds';
-import type { DocumentContent } from './types';
+import { errorCode } from '../errors';
+import type { DraftStorage, SaveAck, SavedDraft, SaveInput, SaveState } from './types';
 
-export interface Snapshot {
-  title: string;
-  projectId: string;
-  content: DocumentContent;
-}
-export type SaveInput<T = Snapshot> = T & {
-  id: string;
-  requestId: string;
-  expectedVersion: number;
-};
-export interface SaveAck {
-  id: string;
-  version: number;
-  updatedAt: string;
-}
-export type SaveStatus = 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
-/** A snapshot as a draft from before every item had a project may hold it: with `projectId: null`. */
-export type Legacy<T extends { projectId: string }> = Omit<T, 'projectId'> & { projectId: string | null };
-export interface SavedDraft<T = Snapshot> {
-  format: 1;
-  baseVersion: number;
-  snapshot: T;
-  pending: SaveInput<T> | null;
-  recoveryData?: string | null;
-}
-export interface SaveState<T = Snapshot> {
-  snapshot: T;
-  version: number;
-  status: SaveStatus;
-  error: unknown;
-  storageFailed: boolean;
-  recovered: boolean;
-  remoteEpoch: number;
-  recoveryData: string | null;
-}
-export interface DraftStorage {
-  read(): string | null;
-  write(value: string): void;
-  remove(): void;
-}
+/** How long the autosave waits after the last change before it sends. */
+export const SEND_DELAY_MS = 650;
+/** The codes of a version conflict, which no retry fixes: the person chooses. */
+export const CONFLICT_CODES: readonly string[] = ['VERSION_CONFLICT', 'CONFLICT'];
+/** The codes of a refusal that a resend would only repeat: the request is dropped, and a new edit makes another. */
+export const DEFINITIVE_REFUSALS: readonly string[] = [
+  'VALIDATION',
+  'DOMAIN_RULE',
+  'BAD_REQUEST',
+  'PAYLOAD_TOO_LARGE',
+  'REFUSED',
+];
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -49,59 +20,8 @@ function clone<T>(value: T): T {
 function sameSnapshot(a: unknown, b: unknown) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
-/**
- * Reads a stored draft; one from before every item had a project may have `projectId: null` (withDraftProject).
- * Blocks a Tab once nested under an embed come out after it first, and an embed with an ID the server
- * refuses goes, so that draft opens (sanitizeEmbeds).
- */
-export function parseDraft(value: string | null): SavedDraft<Legacy<Snapshot>> | null {
-  if (!value) return null;
-  try {
-    const data = JSON.parse(value) as SavedDraft<Legacy<Snapshot>>;
-    if (
-      data.format !== 1 ||
-      !Number.isInteger(data.baseVersion) ||
-      data.baseVersion < 1 ||
-      !Array.isArray(data.snapshot?.content) ||
-      typeof data.snapshot.title !== 'string' ||
-      data.snapshot.title.length > 300 ||
-      (data.snapshot.projectId !== null && typeof data.snapshot.projectId !== 'string')
-    )
-      return null;
-    data.snapshot.content = readDocumentContent(sanitizeEmbeds(data.snapshot.content), RECOVERY_DOCUMENT_LIMITS, {
-      embeds: true,
-    });
-    if (data.recoveryData !== undefined && data.recoveryData !== null && typeof data.recoveryData !== 'string')
-      return null;
-    if (data.pending) {
-      if (
-        typeof data.pending.id !== 'string' ||
-        typeof data.pending.requestId !== 'string' ||
-        !Number.isInteger(data.pending.expectedVersion) ||
-        data.pending.expectedVersion < 1 ||
-        typeof data.pending.title !== 'string' ||
-        data.pending.title.length > 300 ||
-        (data.pending.projectId !== null && typeof data.pending.projectId !== 'string')
-      )
-        data.pending = null;
-      else {
-        try {
-          data.pending.content = readDocumentContent(sanitizeEmbeds(data.pending.content), RECOVERY_DOCUMENT_LIMITS, {
-            embeds: true,
-          });
-        } catch {
-          data.pending = null;
-        }
-      }
-    }
-    return data;
-  } catch {
-    return null;
-  }
-}
-
 /** One immutable request is retried until acknowledged; newer edits stay in the draft. */
-export class AutosaveController<T = Snapshot> {
+export class AutosaveController<T> {
   private state: SaveState<T>;
   private pending: SaveInput<T> | null = null;
   private savedSnapshot: T;
@@ -118,11 +38,14 @@ export class AutosaveController<T = Snapshot> {
       version: number;
       storage: DraftStorage;
       send: (input: SaveInput<T>) => Promise<SaveAck>;
-      readDraft?: (value: string | null) => SavedDraft<T> | null;
+      /** The stored draft's format: the document's (parseDraft), the drawing's or the task text's. */
+      readDraft: (value: string | null) => SavedDraft<T> | null;
       equal?: (left: T, right: T) => boolean;
       draftDelayMs?: number;
-      idFactory: () => string;
-      classifyError: (error: unknown) => string | undefined;
+      /** The request IDs, crypto.randomUUID by default. */
+      idFactory?: () => string;
+      /** A failure's code, errorCode by default. */
+      classifyError?: (error: unknown) => string | undefined;
       /** The request was acknowledged; `snapshot` is what that version holds. */
       onSaved?: (ack: SaveAck, snapshot: T) => void;
       /** The editor took over a newer version saved elsewhere, without local changes to keep. */
@@ -136,9 +59,7 @@ export class AutosaveController<T = Snapshot> {
     let rawDraft: string | null = null;
     try {
       rawDraft = options.storage.read();
-      draft = options.readDraft
-        ? options.readDraft(rawDraft)
-        : (parseDraft(rawDraft) as unknown as SavedDraft<T> | null);
+      draft = options.readDraft(rawDraft);
     } catch {
       storageFailed = true;
     }
@@ -197,7 +118,7 @@ export class AutosaveController<T = Snapshot> {
   }
   private schedule() {
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => void this.flush(), 650);
+    this.timer = setTimeout(() => void this.flush(), SEND_DELAY_MS);
   }
   persistDraft() {
     if (this.state.status !== 'saved' || this.state.recoveryData) this.persist();
@@ -230,7 +151,7 @@ export class AutosaveController<T = Snapshot> {
       ...clone(this.state.snapshot),
       id: this.options.id,
       expectedVersion: this.state.version,
-      requestId: this.options.idFactory(),
+      requestId: (this.options.idFactory ?? (() => crypto.randomUUID()))(),
     };
     const sent = this.pending;
     this.persist();
@@ -275,14 +196,13 @@ export class AutosaveController<T = Snapshot> {
         if (adopted) this.options.onAdopted?.(clone(this.remote.snapshot), this.remote.version);
         return this.state.status !== 'conflict';
       } catch (error) {
-        const code = this.options.classifyError(error);
-        if (code === 'VERSION_CONFLICT' || code === 'CONFLICT') {
+        const code = (this.options.classifyError ?? errorCode)(error);
+        if (CONFLICT_CODES.includes(code ?? '')) {
           this.pending = null;
           this.emit({ status: 'conflict', error });
         } else {
           // Validation is a definitive refusal. A corrected document gets a new request.
-          if (['VALIDATION', 'DOMAIN_RULE', 'BAD_REQUEST', 'PAYLOAD_TOO_LARGE', 'REFUSED'].includes(code ?? ''))
-            this.pending = null;
+          if (DEFINITIVE_REFUSALS.includes(code ?? '')) this.pending = null;
           this.emit({ status: 'error', error });
         }
         this.persist();

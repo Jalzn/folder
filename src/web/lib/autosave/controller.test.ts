@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AutosaveController, parseDraft, type SaveAck, type SaveInput, type Snapshot } from './autosave';
+import { AutosaveController, parseDraft, type SaveAck, type SavedDraft, type SaveInput, type Snapshot } from '.';
+
+/** The document's draft format, as the controller read a draft before it took the reader as an option. */
+const readDraft = (raw: string | null) => parseDraft(raw) as SavedDraft<Snapshot> | null;
 
 const initial: Snapshot = { title: 'Ideia', projectId: 'p', content: [] };
 const changed = { ...initial, title: 'Nova ideia' };
 function setup(
-  send: (input: SaveInput) => Promise<{ id: string; version: number; updatedAt: string }>,
+  send: (input: SaveInput<Snapshot>) => Promise<{ id: string; version: number; updatedAt: string }>,
   stored: string | null = null,
   remoteVersion = 1,
   hooks: {
@@ -17,6 +20,7 @@ function setup(
   const controller = new AutosaveController({
     id: 'doc',
     snapshot: initial,
+    readDraft,
     version: remoteVersion,
     send,
     idFactory: () => `id-${++next}`,
@@ -37,7 +41,7 @@ function setup(
 
 describe('document autosave', () => {
   it('reuses the exact request after a lost response, then sends newer edits', async () => {
-    const calls: SaveInput[] = [];
+    const calls: SaveInput<Snapshot>[] = [];
     const { controller } = setup(async (input) => {
       calls.push(input);
       if (calls.length === 1) throw new Error('response lost');
@@ -55,7 +59,7 @@ describe('document autosave', () => {
     expect(controller.getState().status).toBe('saved');
   });
   it('relocates after saving pending edits, takes the moved version and project, then saves later edits', async () => {
-    const calls: SaveInput[] = [];
+    const calls: SaveInput<Snapshot>[] = [];
     let release: (() => void) | undefined;
     const { controller } = setup(async (input) => {
       calls.push(input);
@@ -116,7 +120,7 @@ describe('document autosave', () => {
   });
   it('serializes edits made while a save is in flight', async () => {
     let finish!: (value: { id: string; version: number; updatedAt: string }) => void;
-    const calls: SaveInput[] = [];
+    const calls: SaveInput<Snapshot>[] = [];
     const { controller } = setup((input) => {
       calls.push(input);
       return calls.length === 1
@@ -183,6 +187,7 @@ describe('document autosave', () => {
       id: 'doc',
       version: 1,
       snapshot: initial,
+      readDraft,
       send: async () => ({ id: 'doc', version: 2, updatedAt: 'now' }),
       idFactory: () => 'id',
       classifyError: () => undefined,

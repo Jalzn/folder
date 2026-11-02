@@ -2,7 +2,7 @@ import type { BlockNoteEditor } from '@blocknote/core';
 import { useNavigate } from '@tanstack/react-router';
 import type { DocumentBlock } from '@tinyfold/workspace/domain';
 import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
-import type { AutosaveController } from '../../lib/autosave';
+import type { AutosaveController, Snapshot } from '../../lib/autosave';
 import { downloadFile, fileNameFrom } from '../../lib/download';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
 import { importMarkdownWithMath } from '../../lib/markdown';
@@ -24,7 +24,7 @@ const MAX_IMPORT_BYTES = 1_048_576;
 export function useDocumentFiles(
   // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
   editor: BlockNoteEditor<any, any, any>,
-  controller: AutosaveController,
+  controller: AutosaveController<Snapshot>,
   documentId: string,
 ) {
   const toast = useToast();
