@@ -16,7 +16,7 @@ export interface ItemMenuAction {
   disabled?: boolean;
   /** A note under the label, such as where "Criar tarefa" takes the task from. */
   description?: string;
-  /** Keys of the action's shortcut, such as `['mod', '⌥', 'T']`. */
+  /** Keys of the action's shortcut, such as `['mod', 'alt', 'T']`. */
   shortcut?: readonly string[];
 }
 

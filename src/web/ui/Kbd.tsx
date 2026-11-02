@@ -1,13 +1,15 @@
 import './kbd.css';
-import { keyLabel } from '../lib/platform';
+import { isModifierKey, keyLabel, usesCommandKey } from '../lib/platform';
 
-const modifiers = new Set(['mod', '⇧', '⌥']);
-
-/** The shortcut as it reads on a key cap and in a tooltip: "⌘K", "⇧F6", "G P". */
+/**
+ * The shortcut as it reads on a key cap and in a tooltip: "⌘K", "⌘⌥T", "⇧F6" on Apple platforms, "Ctrl+K",
+ * "Ctrl+Alt+T", "Shift+F6" elsewhere (review B9); a sequence as "G P".
+ */
 export function shortcutLabel(keys: readonly string[]) {
+  const joined = usesCommandKey() ? '' : '+';
   return keys.reduce((label, key, index) => {
     const previous = keys[index - 1];
-    const separator = index === 0 || (previous && modifiers.has(previous)) ? '' : ' ';
+    const separator = index === 0 ? '' : previous && isModifierKey(previous) ? joined : ' ';
     return `${label}${separator}${keyLabel(key)}`;
   }, '');
 }

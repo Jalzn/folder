@@ -5,7 +5,7 @@ import { ItemMenu, type ItemMenuAction } from '../../shell';
 export const ARCHIVED_NOTE = 'Projeto arquivado: desarquive para criar itens.';
 
 /** The ⌘⌥T of "Criar tarefa": ⌘⌥T on Apple platforms, Ctrl+Alt+T elsewhere. */
-export const CREATE_TASK_KEYS = ['mod', '⌥', 'T'] as const;
+export const CREATE_TASK_KEYS = ['mod', 'alt', 'T'] as const;
 
 /**
  * The document's ⋯ (docs/etapas/11-documento-desenho.md, "Página do documento"): "Criar tarefa" (⌘⌥T), which
