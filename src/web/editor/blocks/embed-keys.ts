@@ -2,7 +2,7 @@ import { type BlockNoteEditor, createExtension } from '@blocknote/core';
 import { type EditorState, TextSelection } from '@tiptap/pm/state';
 import { type EmbedClipboardActions, embedClipboard } from './embed-clipboard';
 import { embedPaste } from './embed-paste';
-import { type BlockPlace, blockAfter, blockBefore } from './embed-places';
+import { type BlockPlace, blockAfter, blockBefore, blockPlaces } from './embed-places';
 import { embedSelectionHold } from './embed-selection-hold';
 import { embedTyping } from './embed-typing';
 
@@ -133,6 +133,25 @@ function extend(forward: boolean) {
   };
 }
 
+/**
+ * ⌘↓ and ⌘↑ (Ctrl+End and Ctrl+Home off Apple platforms) on an embed selected as a node (review B-i): the end
+ * of the document's last block or the start of its first, by the editor's API. Chrome's own move started from
+ * where it keeps the DOM's selection, and from the last embed of a run it went nowhere.
+ */
+function toEdge(forward: boolean) {
+  return ({ editor }: { editor: AnyEditor }) => {
+    if (!selectedEmbed(editor)) return false;
+    const places = blockPlaces(editor.prosemirrorState.doc);
+    const target = forward ? places.at(-1) : places[0];
+    if (!target) return false;
+    editor.transact((tr) => {
+      editor.setTextCursorPosition(target.id, forward ? 'end' : 'start');
+      tr.scrollIntoView();
+    });
+    return true;
+  };
+}
+
 /** Page Up and Page Down on an embed selected as a node do nothing: Chrome would page from the document's top. */
 const stays = ({ editor }: { editor: AnyEditor }) => selectedEmbed(editor);
 
@@ -187,5 +206,9 @@ export const createEmbedKeys = (actions: EmbedKeyActions) =>
       'Shift-ArrowUp': extend(false),
       PageDown: stays,
       PageUp: stays,
+      'Meta-ArrowDown': toEdge(true),
+      'Meta-ArrowUp': toEdge(false),
+      'Ctrl-End': toEdge(true),
+      'Ctrl-Home': toEdge(false),
     },
   }))();

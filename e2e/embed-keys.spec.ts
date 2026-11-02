@@ -341,33 +341,18 @@ test('after Restaurar pressed with an embed selected, the arrows still go a bloc
   expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'], 200)).toEqual(['[x4]', '[x5]', 'Depois']);
 });
 
-test('from a selected embed, keys the embed keys leave alone and a selection set in the page move it as always', async ({
+test('from a selected embed, a selection a screen reader or the page’s search sets in the DOM moves it as always', async ({
   page,
 }) => {
   await login(page);
-  const projectId = await createProject(page, `Outras teclas ${Date.now()}`);
+  const projectId = await createProject(page, `Seleção no DOM ${Date.now()}`);
   const run: Block[] = [];
   for (const index of [1, 2, 3]) run.push({ ...card(await task(page, projectId, `Card ${index}`)), id: `x${index}` });
   const lines = [1, 2, 3, 4, 5].map((index) => ({ ...paragraph(`Linha ${index}`), id: `l${index}` }));
   await openDocument(page, projectId, [{ ...paragraph('Antes'), id: 'antes' }, ...run, ...lines]);
-  const apple = process.platform === 'darwin';
-  /** The middle card selected with the keys at a person's pace, a moment after they went up. */
-  const selectMiddle = async () => {
-    await clickText(page, 'Antes', 'end');
-    expect(await walk(page, ['ArrowDown', 'ArrowDown'], 200)).toEqual(['[x1]', '[x2]']);
-  };
-  // Each from a fresh page: after ⌘↑ or a selection set in the DOM, Chrome on a Mac takes the next click as one
-  // that extends the selection.
-  await selectMiddle();
-  await page.keyboard.press(apple ? 'Meta+ArrowDown' : 'Control+End');
-  await expect.poll(() => caret(page)).toBe('Linha 5');
-  await page.reload();
-  await selectMiddle();
-  await page.keyboard.press(apple ? 'Meta+ArrowUp' : 'Control+Home');
-  await expect.poll(() => caret(page)).toBe('Antes');
-  // A selection a screen reader or the page's search puts in the DOM.
-  await page.reload();
-  await selectMiddle();
+  // The middle card selected with the keys at a person's pace, a moment after they went up.
+  await clickText(page, 'Antes', 'end');
+  expect(await walk(page, ['ArrowDown', 'ArrowDown'], 200)).toEqual(['[x1]', '[x2]']);
   await documentEditor(page)
     .getByText('Linha 4', { exact: true })
     .evaluate((element) => {
@@ -479,6 +464,44 @@ test('⇧↓ and ⇧↑ from an embed take the block beside it, and Page Down st
     'x',
     'Depois',
   ]);
+});
+
+/** A run of three cards between texts: Antes, x1 to x3, Depois and Fim. */
+async function openRun(page: Page, name: string) {
+  await login(page);
+  const projectId = await createProject(page, `${name} ${Date.now()}`);
+  const run: Block[] = [];
+  for (const index of [1, 2, 3]) run.push({ ...card(await task(page, projectId, `Card ${index}`)), id: `x${index}` });
+  return openDocument(page, projectId, [
+    { ...paragraph('Antes'), id: 'antes' },
+    ...run,
+    { ...paragraph('Depois'), id: 'depois' },
+    { ...paragraph('Fim'), id: 'fim' },
+  ]);
+}
+
+/** The card `index` of the run selected with ↓ from Antes, at a person's pace, on a fresh page. */
+async function fromCard(page: Page, index: number) {
+  await page.reload();
+  await clickText(page, 'Antes', 'end');
+  const walked = await walk(page, Array(index).fill('ArrowDown'), 200);
+  expect(walked.at(-1)).toBe(`[x${index}]`);
+}
+
+test('⌘↓ and ⌘↑ from any card of a run, the last one too, go to the document’s end and start', async ({ page }) => {
+  await openRun(page, 'Fim e começo');
+  // ⌘ on a Mac, as ProseMirror reads the machine's platform; Ctrl+End and Ctrl+Home elsewhere.
+  const apple = process.platform === 'darwin';
+  for (const index of [1, 2, 3]) {
+    await fromCard(page, index);
+    await page.keyboard.press(apple ? 'Meta+ArrowDown' : 'Control+End');
+    await page.waitForTimeout(200);
+    expect(await caret(page)).toBe('Fim');
+    await fromCard(page, index);
+    await page.keyboard.press(apple ? 'Meta+ArrowUp' : 'Control+Home');
+    await page.waitForTimeout(200);
+    expect(await caret(page)).toBe('Antes');
+  }
 });
 
 test('⌫ and Delete beside an embed take every letter typed there and select the embed only from the edge', async ({

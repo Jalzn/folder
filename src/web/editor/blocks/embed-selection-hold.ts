@@ -31,6 +31,9 @@ const HANDLED = new Set([
 ]);
 /** The keys the embed keys act on with ⇧: ⇧↑ and ⇧↓, which extend from the embed. */
 const HANDLED_WITH_SHIFT = new Set(['ArrowUp', 'ArrowDown']);
+/** With ⌘ (Apple platforms) and with Ctrl (elsewhere), the keys that go to the document's end or start. */
+const HANDLED_WITH_META = new Set(['ArrowUp', 'ArrowDown']);
+const HANDLED_WITH_CTRL = new Set(['Home', 'End']);
 
 /**
  * How long the hold outlasts the key: Chrome's selectionchange for the drift can come after the next frame,
@@ -38,12 +41,16 @@ const HANDLED_WITH_SHIFT = new Set(['ArrowUp', 'ArrowDown']);
  */
 const AFTER_KEYUP_MS = 80;
 
-const handled = (event: KeyboardEvent) =>
-  !event.metaKey &&
-  !event.ctrlKey &&
-  !event.altKey &&
-  !event.isComposing &&
-  (event.shiftKey ? HANDLED_WITH_SHIFT : HANDLED).has(event.key);
+function handled(event: KeyboardEvent) {
+  if (event.altKey || event.isComposing) return false;
+  if (event.metaKey || event.ctrlKey)
+    return (
+      !event.shiftKey &&
+      event.metaKey !== event.ctrlKey &&
+      (event.metaKey ? HANDLED_WITH_META : HANDLED_WITH_CTRL).has(event.key)
+    );
+  return (event.shiftKey ? HANDLED_WITH_SHIFT : HANDLED).has(event.key);
+}
 
 const holdKey = new PluginKey('embedSelectionHold');
 
@@ -70,12 +77,12 @@ function driftsTo(tr: Transaction) {
  * an embed selected as a node, a change of the selection alone that ProseMirror read from the DOM is refused,
  * and the editor's selection goes back to the DOM:
  * - any such change, from the keydown of a key the embed keys act on (a plain arrow, ↵, ⌫, Delete, Page Up
- *   or Down, ⇧↑ or ⇧↓) until a moment after its keyup (`inKey`);
+ *   or Down, ⇧↑ or ⇧↓, ⌘↑ or ⌘↓, Ctrl+Home or Ctrl+End) until a moment after its keyup (`inKey`);
  * - one to the document's first place for text, the drift's place, after such a key or after the embed
  *   actions selected the embed themselves (holdSelectedEmbed), until another key or a press of the pointer
  *   (`sticky`).
- * Any other change goes through: ⌘↓, Shift+↓, a screen reader or the page's search move the selection as
- * always. Native keys start from where Chrome keeps the DOM's selection, which for such an embed is the
+ * Any other change goes through: a screen reader or the page's search move the selection as always. Native
+ * keys, as Home or ⌥↓, start from where Chrome keeps the DOM's selection, which for such an embed is the
  * document's first text.
  */
 export function embedSelectionHold(selected: (state: EditorState) => boolean) {
