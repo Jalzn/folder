@@ -1,5 +1,6 @@
 // Dependency rules from docs/arquitetura.md ("Regras de dependência").
 // A module is any folder in src/ except server and web.
+// `pnpm deps` cruises src, scripts and e2e.
 
 const { existsSync, readdirSync, readFileSync } = require('node:fs');
 const { join } = require('node:path');
@@ -71,8 +72,46 @@ module.exports = {
       name: 'testing-helpers-stay-in-tests',
       comment: 'testing/ folders hold test helpers that use vitest and fixtures: runtime code never imports them.',
       severity: 'error',
-      from: { path: '^src/', pathNot: ['\\.test\\.tsx?$', '^src/[^/]+/testing/'] },
+      from: { path: '^(src|scripts)/', pathNot: ['\\.test\\.tsx?$', '^src/[^/]+/testing/'] },
       to: { path: '^src/[^/]+/testing/' },
+    },
+    {
+      name: 'scripts-through-entry-points',
+      comment:
+        'Runtime scripts reuse the server composition, but reach a module only through its package entry points and never import web code.',
+      severity: 'error',
+      from: { path: '^scripts/', pathNot: '\\.test\\.tsx?$' },
+      to: { path: '^src/', pathNot: ['^src/server/', ...moduleEntryPoints] },
+    },
+    {
+      name: 'e2e-type-only',
+      comment: 'Browser tests drive the app from outside: from src they import types only, never code.',
+      severity: 'error',
+      from: { path: '^e2e/' },
+      to: { path: '^src/', dependencyTypesNot: ['type-only'] },
+    },
+    {
+      name: 'web-ui-knows-no-app',
+      comment:
+        "web/ui holds the app's primitives: it never imports the shell, components, pages, the editor or the router.",
+      severity: 'error',
+      from: { path: '^src/web/ui/' },
+      to: { path: '^src/web/(shell|components|pages|editor|router)/' },
+    },
+    {
+      name: 'web-nothing-imports-pages',
+      comment: 'Pages sit on top of the web: only the router mounts them, and other pages may reuse them.',
+      severity: 'error',
+      from: { path: '^src/web/', pathNot: '^src/web/(pages|router)/' },
+      to: { path: '^src/web/pages/' },
+    },
+    {
+      name: 'web-lib-is-a-leaf',
+      comment:
+        'web/lib holds helpers and hooks below the interface: it imports no other web layer. A warning until use-action.ts leaves lib (stage 12, W4.22).',
+      severity: 'warn',
+      from: { path: '^src/web/lib/' },
+      to: { path: '^src/web/(ui|shell|components|pages|editor|router)/' },
     },
     {
       name: 'no-circular',
