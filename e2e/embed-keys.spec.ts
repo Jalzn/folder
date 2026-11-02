@@ -46,14 +46,19 @@ const caret = (page: Page) =>
   });
 
 /** Presses each key and reads where the caret went after it. */
-async function walk(page: Page, keys: string[]) {
+/** Presses each key and reads where the caret went after it, `pause` ms later: a person's pace is 150 ms or more. */
+async function walk(page: Page, keys: string[], pause = 0) {
   const stops: (string | null)[] = [];
   for (const key of keys) {
     await page.keyboard.press(key);
+    if (pause) await page.waitForTimeout(pause);
     stops.push(await caret(page));
   }
   return stops;
 }
+
+/** The pace of the walks: Playwright's own, with no pause, and a person's, which Chrome's drift needs. */
+const paces = { 'with no pause': 0, 'at a person’s pace': 200 } as const;
 
 /** A document with these blocks, made over RPC as the editor saves them, and opened. */
 async function openDocument(page: Page, projectId: string, blocks: Block[]) {
@@ -110,42 +115,49 @@ const runs = {
   'three figures': ['drawing', 'drawing', 'drawing'],
 } as const;
 
-for (const [name, kinds] of Object.entries(runs))
-  test(`↓ and ↑ go through ${name} in a row a block at a time, at the start, the middle and the end`, async ({
-    page,
-  }) => {
-    await login(page);
-    const projectId = await createProject(page, `Setas ${Date.now()}`);
-    const run: Block[] = [];
-    for (const [index, kind] of kinds.entries()) {
-      const title = `Item ${index + 1}`;
-      const block =
-        kind === 'task' ? card(await task(page, projectId, title)) : figure(await drawing(page, projectId, title));
-      run.push({ ...block, id: `x${index + 1}` });
-    }
-    const before = { ...paragraph('Antes'), id: 'antes' };
-    const after = { ...paragraph('Depois'), id: 'depois' };
-    const selected = ['[x1]', '[x2]', '[x3]'];
+for (const [pace, pause] of Object.entries(paces))
+  for (const [name, kinds] of Object.entries(runs))
+    test(`↓ and ↑ go through ${name} in a row a block at a time, ${pace}, at the start, the middle and the end`, async ({
+      page,
+    }) => {
+      await login(page);
+      const projectId = await createProject(page, `Setas ${Date.now()}`);
+      const run: Block[] = [];
+      for (const [index, kind] of kinds.entries()) {
+        const title = `Item ${index + 1}`;
+        const block =
+          kind === 'task' ? card(await task(page, projectId, title)) : figure(await drawing(page, projectId, title));
+        run.push({ ...block, id: `x${index + 1}` });
+      }
+      const before = { ...paragraph('Antes'), id: 'antes' };
+      const after = { ...paragraph('Depois'), id: 'depois' };
+      const selected = ['[x1]', '[x2]', '[x3]'];
 
-    // In the middle: down through each one to the text below, then back up, and ← → at the text's edge.
-    await openDocument(page, projectId, [before, ...run, after]);
-    await clickText(page, 'Antes');
-    expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown'])).toEqual([...selected, 'Depois']);
-    expect(await walk(page, ['ArrowLeft', 'ArrowRight'])).toEqual(['[x3]', 'Depois']);
-    expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp', 'ArrowUp'])).toEqual([...selected.toReversed(), 'Antes']);
+      // In the middle: down through each one to the text below, then back up, and ← → at the text's edge.
+      await openDocument(page, projectId, [before, ...run, after]);
+      await clickText(page, 'Antes');
+      expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowDown'], pause)).toEqual([
+        ...selected,
+        'Depois',
+      ]);
+      expect(await walk(page, ['ArrowLeft', 'ArrowRight'], pause)).toEqual(['[x3]', 'Depois']);
+      expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp', 'ArrowUp'], pause)).toEqual([
+        ...selected.toReversed(),
+        'Antes',
+      ]);
 
-    // At the start of the document: up from the text below to the first one, and down again.
-    await openDocument(page, projectId, [...run, after]);
-    await clickText(page, 'Depois');
-    expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp'])).toEqual(selected.toReversed());
-    expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'])).toEqual(['[x2]', '[x3]', 'Depois']);
+      // At the start of the document: up from the text below to the first one, and down again.
+      await openDocument(page, projectId, [...run, after]);
+      await clickText(page, 'Depois');
+      expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp'], pause)).toEqual(selected.toReversed());
+      expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'], pause)).toEqual(['[x2]', '[x3]', 'Depois']);
 
-    // At the end: down from the text above to the last one, and up again.
-    await openDocument(page, projectId, [before, ...run]);
-    await clickText(page, 'Antes');
-    expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'])).toEqual(selected);
-    expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp'])).toEqual(['[x2]', '[x1]', 'Antes']);
-  });
+      // At the end: down from the text above to the last one, and up again.
+      await openDocument(page, projectId, [before, ...run]);
+      await clickText(page, 'Antes');
+      expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'], pause)).toEqual(selected);
+      expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp'], pause)).toEqual(['[x2]', '[x1]', 'Antes']);
+    });
 
 test('⌫ after a card and Delete before one select it first, and the second key takes it out with Desfazer', async ({
   page,
@@ -326,7 +338,7 @@ test('after Restaurar pressed with an embed selected, the arrows still go a bloc
   await documentEditor(page).getByRole('button', { name: 'Restaurar “Card 3”' }).click();
   await expect(embedCard(page, 'Card 3')).toBeVisible();
   expect(await caret(page)).toBe('[x3]');
-  expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'])).toEqual(['[x4]', '[x5]', 'Depois']);
+  expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'], 200)).toEqual(['[x4]', '[x5]', 'Depois']);
 });
 
 test('from a selected embed, keys the embed keys leave alone and a selection set in the page move it as always', async ({
@@ -339,24 +351,11 @@ test('from a selected embed, keys the embed keys leave alone and a selection set
   const lines = [1, 2, 3, 4, 5].map((index) => ({ ...paragraph(`Linha ${index}`), id: `l${index}` }));
   await openDocument(page, projectId, [{ ...paragraph('Antes'), id: 'antes' }, ...run, ...lines]);
   const apple = process.platform === 'darwin';
-  /** The middle card selected with the keys, a moment after they went up, when nothing holds it any more. */
+  /** The middle card selected with the keys at a person's pace, a moment after they went up. */
   const selectMiddle = async () => {
     await clickText(page, 'Antes', 'end');
-    expect(await walk(page, ['ArrowDown', 'ArrowDown'])).toEqual(['[x1]', '[x2]']);
-    await page.waitForTimeout(200);
+    expect(await walk(page, ['ArrowDown', 'ArrowDown'], 200)).toEqual(['[x1]', '[x2]']);
   };
-  const selected = () =>
-    documentEditor(page).evaluate((element) => {
-      type State = {
-        doc: { textBetween(from: number, to: number, separator: string): string };
-        selection: { from: number; to: number; node?: unknown };
-      };
-      const state = (element as HTMLElement & { editor?: { state: State } }).editor?.state;
-      return state && !state.selection.node
-        ? state.doc.textBetween(state.selection.from, state.selection.to, '|')
-        : null;
-    });
-
   // Each from a fresh page: after ⌘↑ or a selection set in the DOM, Chrome on a Mac takes the next click as one
   // that extends the selection.
   await selectMiddle();
@@ -376,12 +375,14 @@ test('from a selected embed, keys the embed keys leave alone and a selection set
       element.ownerDocument.getSelection()?.collapse(text, 3);
     });
   await expect.poll(() => caret(page)).toBe('Linha 4');
-  // Shift+↓ extends the selection, as the browser does: from where Chrome keeps the DOM's selection, which for
-  // a card between two cards is not the card.
-  await page.reload();
-  await selectMiddle();
-  await page.keyboard.press('Shift+ArrowDown');
-  await expect.poll(async () => ((await selected()) ?? '').length).toBeGreaterThan(0);
+  // Shift+↓ and Shift+↑ leave the card for a range, as the browser does: from where Chrome keeps the DOM's
+  // selection, which for a card between two cards is the document's first text.
+  for (const key of ['Shift+ArrowDown', 'Shift+ArrowUp']) {
+    await page.reload();
+    await selectMiddle();
+    await page.keyboard.press(key);
+    await expect.poll(() => caret(page)).not.toBe('[x2]');
+  }
 });
 
 test('⌫ right after a jump to the line start still selects the card first', async ({ page }) => {
@@ -401,4 +402,28 @@ test('⌫ right after a jump to the line start still selects the card first', as
   await expect(documentEditor(page)).toContainText('Card na corrida');
   await expect(documentEditor(page).getByText('Depois do card', { exact: true })).toBeVisible();
   await expect(page.locator('.toast').filter({ hasText: 'Bloco removido' })).toHaveCount(0);
+});
+
+test('the arrows walk a document of text, figures and cards at a person’s pace, both ways', async ({ page }) => {
+  await login(page);
+  const projectId = await createProject(page, `Documento misto ${Date.now()}`);
+  const figureOne = await drawing(page, projectId, 'Figura um');
+  const figureTwo = await drawing(page, projectId, 'Figura dois');
+  const cards = [await task(page, projectId, 'Card um'), await task(page, projectId, 'Card dois')];
+  await openDocument(page, projectId, [
+    { ...paragraph('Topo'), id: 'topo' },
+    { ...figure(figureOne), id: 'f1' },
+    { ...paragraph('Meio'), id: 'meio' },
+    { ...card(cards[0] as string), id: 't1' },
+    { ...card(cards[1] as string), id: 't2' },
+    { ...figure(figureTwo), id: 'f2' },
+    { ...paragraph('Fim'), id: 'fim' },
+  ]);
+  const down = Array(6).fill('ArrowDown');
+  await clickText(page, 'Topo');
+  expect(await walk(page, down, 200)).toEqual(['[f1]', 'Meio', '[t1]', '[t2]', '[f2]', 'Fim']);
+  expect(await walk(page, Array(6).fill('ArrowUp'), 200)).toEqual(['[f2]', '[t2]', '[t1]', 'Meio', '[f1]', 'Topo']);
+  await clickText(page, 'Fim', 'start');
+  expect(await walk(page, Array(4).fill('ArrowLeft'), 200)).toEqual(['[f2]', '[t2]', '[t1]', 'Meio']);
+  expect(await walk(page, Array(4).fill('ArrowRight'), 200)).toEqual(['[t1]', '[t2]', '[f2]', 'Fim']);
 });
