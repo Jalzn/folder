@@ -4,7 +4,7 @@ export type { PageEvents };
 
 /** What the pool needs of an autosave: its status, its changes, and a save now. */
 export interface PooledController {
-  getState(): { status: SaveStatus };
+  getState(): { status: SaveStatus; refused: boolean };
   subscribe(listener: () => void): () => void;
   flush(): Promise<boolean>;
 }
@@ -57,7 +57,7 @@ export function createSessionPool<C extends PooledController>({
         };
         if (drop()) return;
         // What an open editor does for its autosave, done for a session that outlived it with unsaved text.
-        session.background = watchPage(session.controller, events(), { retryOnHide: true });
+        session.background = watchPage(session.controller, events());
         const stop = session.controller.subscribe(() => {
           if (drop()) stop();
         });

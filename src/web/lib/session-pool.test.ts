@@ -5,7 +5,7 @@ import { createSessionPool, type PageEvents } from './session-pool';
 /** An autosave whose status the test sets; a flush records itself and saves when told to. */
 function fakeController(status: SaveStatus = 'saved') {
   const listeners = new Set<() => void>();
-  const state = { status };
+  const state = { status, refused: false };
   return {
     getState: () => state,
     subscribe: (listener: () => void) => {

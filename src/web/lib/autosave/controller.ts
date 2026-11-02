@@ -77,6 +77,7 @@ export class AutosaveController<T> {
             : 'dirty'
         : 'saved',
       error: null,
+      refused: false,
       storageFailed,
       recovered: hasDraft,
       remoteEpoch: 0,
@@ -155,7 +156,7 @@ export class AutosaveController<T> {
     };
     const sent = this.pending;
     this.persist();
-    this.emit({ status: 'saving', error: null });
+    this.emit({ status: 'saving', error: null, refused: false });
     const work = async () => {
       try {
         const ack = await this.options.send(sent);
@@ -202,8 +203,9 @@ export class AutosaveController<T> {
           this.emit({ status: 'conflict', error });
         } else {
           // Validation is a definitive refusal. A corrected document gets a new request.
-          if (DEFINITIVE_REFUSALS.includes(code ?? '')) this.pending = null;
-          this.emit({ status: 'error', error });
+          const refused = DEFINITIVE_REFUSALS.includes(code ?? '');
+          if (refused) this.pending = null;
+          this.emit({ status: 'error', error, refused });
         }
         this.persist();
         return false;

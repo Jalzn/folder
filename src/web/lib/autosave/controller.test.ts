@@ -244,4 +244,19 @@ describe('document autosave', () => {
     const restored = parseDraft(JSON.stringify({ format: 1, baseVersion: 1, snapshot: large, pending: null }));
     expect(restored?.snapshot.content).toEqual(large.content);
   });
+  it('tells a refusal for good from a failure worth retrying, until the next attempt', async () => {
+    const failures = [{ code: 'VALIDATION' }, new Error('offline')];
+    const { controller } = setup(async (input) => {
+      const failure = failures.shift();
+      if (failure) throw failure;
+      return { id: input.id, version: input.expectedVersion + 1, updatedAt: 'now' };
+    });
+    controller.change(changed);
+    expect(await controller.flush()).toBe(false);
+    expect(controller.getState()).toMatchObject({ status: 'error', refused: true });
+    expect(await controller.flush()).toBe(false);
+    expect(controller.getState()).toMatchObject({ status: 'error', refused: false });
+    expect(await controller.flush()).toBe(true);
+    expect(controller.getState()).toMatchObject({ status: 'saved', refused: false });
+  });
 });

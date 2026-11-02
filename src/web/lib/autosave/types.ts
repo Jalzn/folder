@@ -24,6 +24,8 @@ export interface SaveState<T> {
   version: number;
   status: SaveStatus;
   error: unknown;
+  /** The last save was refused for good (DEFINITIVE_REFUSALS): sending it again would only repeat the refusal. */
+  refused: boolean;
   storageFailed: boolean;
   recovered: boolean;
   remoteEpoch: number;
