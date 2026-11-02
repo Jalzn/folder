@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, type Page, test } from '@playwright/test';
+import { serverEnv } from './support/server.js';
 
 // The sample of `pnpm seed:sample`, opened in the real editors: neither the document editor nor
 // Excalidraw changes what the seed wrote, so opening saves nothing (stage 11, decision 16). The
@@ -23,17 +24,7 @@ test.beforeAll(async () => {
   const env = { ...process.env, DATABASE_PATH: join(directory, 'tinyfold.sqlite') };
   execFileSync('pnpm', ['exec', 'tsx', 'scripts/seed-sample.ts'], { env, stdio: 'ignore' });
   server = spawn('pnpm', ['exec', 'tsx', 'src/server/main.ts'], {
-    env: {
-      ...env,
-      OWNER_PASSWORD: password,
-      OWNER_NAME: 'Você',
-      APP_ORIGIN: base,
-      PORT: String(port),
-      HOST: '127.0.0.1',
-      WEB_DIR: 'src/web/dist',
-      COOKIE_SECURE: 'false',
-      NODE_ENV: 'test',
-    },
+    env: { ...env, ...serverEnv({ port, databasePath: env.DATABASE_PATH, password }) },
     stdio: 'ignore',
     detached: true,
   });

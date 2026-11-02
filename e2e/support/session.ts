@@ -1,9 +1,9 @@
 import { type Cookie, expect, type Page } from '@playwright/test';
 import { projectAddress } from './navigation.js';
 import { rpc } from './rpc.js';
+import { E2E_PASSWORD } from './server.js';
 
-/** OWNER_PASSWORD of the server started by playwright.config.ts. */
-export const E2E_PASSWORD = 'tinyfold-e2e-passphrase';
+export { E2E_PASSWORD };
 
 let saved: Cookie[] | undefined;
 

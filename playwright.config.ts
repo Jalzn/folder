@@ -1,13 +1,14 @@
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import { runDataDirectory, serverEnv } from './e2e/support/server.js';
 
-const data = mkdtempSync(join(tmpdir(), 'tinyfold-e2e-'));
 const port = Number(process.env.E2E_PORT ?? 5171);
 const origin = `http://localhost:${port}`;
 export default defineConfig({
   testDir: './e2e',
+  // Refuses a web bundle older than its code; removes the run's database afterwards.
+  globalSetup: './e2e/global-setup.ts',
+  globalTeardown: './e2e/global-teardown.ts',
   // A test.only left behind would make CI run one test and pass.
   forbidOnly: Boolean(process.env.CI),
   fullyParallel: false,
@@ -31,16 +32,6 @@ export default defineConfig({
     command: 'pnpm exec tsx src/server/main.ts',
     url: `${origin}/ready`,
     reuseExistingServer: false,
-    env: {
-      DATABASE_PATH: join(data, 'tinyfold.sqlite'),
-      OWNER_PASSWORD: 'tinyfold-e2e-passphrase',
-      OWNER_NAME: 'Você',
-      APP_ORIGIN: origin,
-      PORT: String(port),
-      HOST: '127.0.0.1',
-      WEB_DIR: 'src/web/dist',
-      COOKIE_SECURE: 'false',
-      NODE_ENV: 'test',
-    },
+    env: serverEnv({ port, databasePath: join(runDataDirectory(), 'tinyfold.sqlite') }),
   },
 });
