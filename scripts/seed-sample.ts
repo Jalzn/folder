@@ -25,115 +25,21 @@ import { addDays, todayIn } from '../src/core/domain/index.js';
 import { createDatabase, type Database, migrate } from '../src/core/infra/index.js';
 import { readConfig } from '../src/server/config.js';
 import { modules } from '../src/server/modules.js';
-import type { CanvasScene, DocumentBlock, JsonValue, LabelColor } from '../src/workspace/domain/index.js';
+import type { CanvasScene, DocumentBlock, LabelColor } from '../src/workspace/domain/index.js';
 import { createWorkspaceService, type WorkspaceService } from '../src/workspace/index.js';
-import { flow } from './sample-scenes.js';
+import {
+  loadDocument,
+  loadScene,
+  SAMPLE_DESCRIPTIONS,
+  SAMPLE_DOCUMENTS,
+  sampleScenes,
+  TOKEN_BLOCK,
+  TOKEN_EXCERPT,
+  visionDocument,
+} from './sample-content.js';
 import { assertSeedTarget, temporaryRoots } from './seed-target.js';
 
 const request = () => ({ requestId: randomUUID() });
-
-const text = (value: string): JsonValue => [{ type: 'text', text: value, styles: {} }];
-/**
- * A block as BlockNote saves it: an id of its own, default props and children included, so opening
- * it changes nothing. Without an id, the editor would make one up each time it opens the document,
- * and a task from a selection in a document nobody has edited yet would point at a block the server
- * does not have.
- */
-const block = (type: string, value: string, props: Record<string, JsonValue> = {}): DocumentBlock & { id: string } => ({
-  id: randomUUID(),
-  type,
-  props: { backgroundColor: 'default', textColor: 'default', textAlignment: 'left', ...props },
-  content: text(value),
-  children: [],
-});
-const paragraph = (value: string) => block('paragraph', value);
-const heading = (value: string, level = 2) => block('heading', value, { level });
-const bullet = (value: string) => block('bulletListItem', value);
-const check = (value: string, checked = false) => block('checkListItem', value, { checked });
-const line = paragraph;
-const item = check;
-/** An embed as the document editor saves it: only the item's ID, no text, no blocks inside. */
-const taskEmbed = (taskId: string): DocumentBlock => ({
-  id: randomUUID(),
-  type: 'taskEmbed',
-  props: { taskId },
-  children: [],
-});
-const drawingEmbed = (canvasId: string): DocumentBlock => ({
-  id: randomUUID(),
-  type: 'drawingEmbed',
-  props: { canvasId },
-  children: [],
-});
-
-/** The paragraph of "MCP somente leitura" that "Gerar token pessoal no Perfil" was created from. */
-const TOKEN_BLOCK = paragraph(
-  'Gerar token pessoal no Perfil, mostrado uma única vez, com o comando pronto para copiar.',
-);
-export const TOKEN_EXCERPT = 'Gerar token pessoal no Perfil';
-
-/** The documents of the sample, by title, as the editor saves them, but for the embeds of the vision. */
-export const SAMPLE_DOCUMENTS = {
-  'Ideias soltas': [
-    paragraph('Anotar aqui o que ainda não tem projeto.'),
-    bullet('Um diário de leituras com trechos favoritos.'),
-    bullet('Organizar as fotos da viagem por cidade.'),
-  ],
-  'Orçamento e fornecedores': [
-    heading('Orçamento'),
-    paragraph('Teto de R$ 8.000 para marcenaria, pintura e iluminação.'),
-    heading('Fornecedores'),
-    bullet('Marcenaria Silva: armário e prateleiras sob medida.'),
-    bullet('Loja de iluminação do centro: luminária de mesa e pendente.'),
-  ],
-  'Lista de compras': [
-    check('Tinta acrílica fosca, 18 litros', true),
-    check('Fita crepe e lona'),
-    check('Luminária de mesa'),
-  ],
-  'MCP somente leitura': [
-    paragraph('O Claude Code consulta documentos, desenhos e tarefas por MCP, sem escrever nada.'),
-    TOKEN_BLOCK,
-    paragraph('Cada resposta cabe em 45.000 caracteres; documentos longos vêm em páginas.'),
-  ],
-  'Notas de arquitetura': [
-    heading('Módulos'),
-    paragraph('core, auth, workspace, server e web, cada um com domínio, aplicação e infraestrutura.'),
-    heading('Persistência'),
-    paragraph('SQLite no servidor, com migrações numeradas e escritas idempotentes.'),
-  ],
-  Portfólio: [paragraph('Projetos de 2024 e um texto curto de apresentação.')],
-} satisfies Record<string, DocumentBlock[]>;
-
-/**
- * "Visão do produto", as the brief and the prototype have it: the drawing "Navegação com projeto no
- * centro" after the navigation, then the task "Gerar token pessoal no Perfil" and the deleted one,
- * "Revisar textos do onboarding", which waits in the trash.
- */
-export function visionDocument(ids: { navigation: string; token: string; onboarding: string }): DocumentBlock[] {
-  return [
-    heading('Por que existe', 1),
-    paragraph(
-      'Um espaço pessoal e minimalista para conduzir projetos, com escrita, desenho e tarefas no mesmo lugar, ' +
-        'sem o excesso de Notion, Excalidraw e Trello.',
-    ),
-    heading('Princípios'),
-    bullet('O projeto é o centro.'),
-    bullet('Cada ferramenta faz menos que a original.'),
-    bullet('Ligações vivem nos documentos.'),
-    bullet('Nada se perde.'),
-    heading('Navegação'),
-    paragraph(
-      'O projeto fica no centro. Cada projeto tem um sumário na barra lateral, e o que é avulso mora no projeto Geral.',
-    ),
-    drawingEmbed(ids.navigation),
-    heading('Acesso pelo Claude Code'),
-    paragraph('Um servidor MCP somente leitura deixa o Claude Code consultar documentos, desenhos e tarefas.'),
-    taskEmbed(ids.token),
-    taskEmbed(ids.onboarding),
-    paragraph('Próximo passo: gerar token pessoal no Perfil para o Claude Code ler o Tinyfold.'),
-  ];
-}
 
 /** The brief's labels, in the prototype's colors. */
 const LABELS = [
@@ -149,42 +55,6 @@ type LabelName = (typeof LABELS)[number][0];
 
 /** The board's columns by the brief's names; Revisão is created by the seed. */
 type ColumnName = 'A fazer' | 'Em andamento' | 'Revisão' | 'Concluído';
-
-/**
- * The descriptions of the prototype's tasks, as the editor saves them: checklists of 2/5, 3/3 and
- * 1/3. Tasks the prototype leaves without text keep an empty description.
- */
-export const SAMPLE_DESCRIPTIONS = {
-  'Configurar backup externo': [line('Cópia diária do banco para fora do servidor, com restauração testada.')],
-  'Expor documentos em Markdown pelo MCP': [
-    line('Ler um documento em Markdown. Tarefas e desenhos incorporados aparecem como referências.'),
-  ],
-  'Renderizar desenho incorporado no documento': [
-    line('Mostrar a versão atual, somente leitura. Clicar abre o editor do desenho.'),
-  ],
-  'Gerar token pessoal no Perfil': [
-    line('Token somente leitura para o MCP. Guardar só o hash do valor.'),
-    item('Tabela de tokens com hash', true),
-    item('Gerar valor e mostrar uma vez', true),
-    item('Botão de copiar'),
-    item('Revogar token'),
-    item('Registrar último uso'),
-  ],
-  'Colunas configuráveis no quadro': [
-    line('Um único conjunto de colunas para todo o espaço.'),
-    item('Criar e renomear colunas', true),
-    item('Reordenar colunas', true),
-    item('Excluir com destino das tarefas', true),
-  ],
-  'Corrigir foco ao fechar diálogo': [line('O foco volta para o botão que abriu o diálogo.')],
-  'Pedir orçamento do marceneiro': [line('Estante e mesa sob medida.')],
-  'Escolher luminária': [
-    line('Luz para a mesa perto da janela.'),
-    item('Medir a altura da mesa', true),
-    item('Comparar modelos'),
-    item('Comprar'),
-  ],
-} satisfies Record<string, DocumentBlock[]>;
 
 /** The prototype's old completed tasks, which `--grande` adds twice over. */
 const OLD_DONE = [
@@ -264,7 +134,7 @@ async function loadBigProject(
       projectId,
       folderId: documentFolder(number),
       title: `Documento de carga ${pad(number)}`,
-      content: [paragraph('Conteúdo de carga para testar a barra lateral com muitos itens.')],
+      content: loadDocument(),
     });
   for (let number = 1; number <= 13; number++)
     await workspace.createCanvas({
@@ -272,7 +142,7 @@ async function loadBigProject(
       projectId,
       folderId: drawingFolder(number),
       title: `Desenho de carga ${pad(number)}`,
-      scene: flow(['Etapa A', 'Etapa B', 'Etapa C']),
+      scene: loadScene(),
     });
 }
 
@@ -324,6 +194,7 @@ async function seed({ workspace, at, today }: Writers, { grande }: { grande: boo
       projectId,
     });
 
+  const scenes = sampleScenes();
   const tinyfold = await project('Tinyfold', 'violet');
   const reforma = await project('Reforma do escritório', 'ochre');
   const geral = await project('Geral', 'gray');
@@ -340,16 +211,12 @@ async function seed({ workspace, at, today }: Writers, { grande }: { grande: boo
   } else tinyfoldFolders = await folders(workspace, tinyfold.id, ['MCP', 'Arquitetura']);
 
   await document(geral.id, 'Ideias soltas', SAMPLE_DOCUMENTS['Ideias soltas']);
-  await drawing(geral.id, 'Rabisco de logo', flow(['Dobra', 'Folha', 'Marca'], 'Três ideias para o logo'));
+  await drawing(geral.id, 'Rabisco de logo', scenes['Rabisco de logo']);
   await task(geral.id, 'Renovar domínio', { column: 'A fazer', due: 16 });
 
   await document(reforma.id, 'Orçamento e fornecedores', SAMPLE_DOCUMENTS['Orçamento e fornecedores'], compras.Compras);
   await document(reforma.id, 'Lista de compras', SAMPLE_DOCUMENTS['Lista de compras'], compras.Compras);
-  const planta = await drawing(
-    reforma.id,
-    'Planta do escritório',
-    flow(['Porta', 'Mesa', 'Janela'], 'Planta baixa, sem escala'),
-  );
+  const planta = await drawing(reforma.id, 'Planta do escritório', scenes['Planta do escritório']);
   for (const [title, sample] of [
     ['Pedir orçamento do marceneiro', { column: 'A fazer', due: 4, labels: ['fornecedores'] }],
     ['Pintar parede', { column: 'A fazer' }],
@@ -370,16 +237,11 @@ async function seed({ workspace, at, today }: Writers, { grande }: { grande: boo
     SAMPLE_DOCUMENTS['Notas de arquitetura'],
     tinyfoldFolders.Arquitetura,
   );
-  await drawing(
-    tinyfold.id,
-    'Fluxo do autosave',
-    flow(['Editor', 'Rascunho local', 'Servidor'], 'Uma chamada em voo por documento'),
-    tinyfoldFolders.Arquitetura,
-  );
+  await drawing(tinyfold.id, 'Fluxo do autosave', scenes['Fluxo do autosave'], tinyfoldFolders.Arquitetura);
   const navigation = await drawing(
     tinyfold.id,
     'Navegação com projeto no centro',
-    flow(['Seletor', 'Projeto', 'Item']),
+    scenes['Navegação com projeto no centro'],
   );
   if (grande)
     for (const [index, title] of [...OLD_DONE, ...OLD_DONE.map((name) => `${name} (revisão)`)].entries())
