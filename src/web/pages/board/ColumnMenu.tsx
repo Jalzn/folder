@@ -1,4 +1,5 @@
 import { ArrowLeft, ArrowRight, CircleCheck, Ellipsis, Pencil, Trash2 } from 'lucide-react';
+import { KEYS } from '../../shell/keyboard';
 import { IconButton, Menu, MenuItem, MenuSeparator, MenuTrigger } from '../../ui';
 
 export type ColumnCommand = 'rename' | 'left' | 'right' | 'done' | 'delete';
@@ -42,13 +43,13 @@ export function ColumnMenu({
         disabledKeys={disabled}
         onAction={(key) => onCommand(key as ColumnCommand)}
       >
-        <MenuItem id="rename" icon={<Pencil size={16} />} shortcut={['↵']}>
+        <MenuItem id="rename" icon={<Pencil size={16} />} shortcut={KEYS.activate}>
           Renomear
         </MenuItem>
-        <MenuItem id="left" icon={<ArrowLeft size={16} />} shortcut={['⇧', '←']}>
+        <MenuItem id="left" icon={<ArrowLeft size={16} />} shortcut={KEYS.shiftLeft}>
           Mover para a esquerda
         </MenuItem>
-        <MenuItem id="right" icon={<ArrowRight size={16} />} shortcut={['⇧', '→']}>
+        <MenuItem id="right" icon={<ArrowRight size={16} />} shortcut={KEYS.shiftRight}>
           Mover para a direita
         </MenuItem>
         <MenuItem id="done" icon={<CircleCheck size={16} />}>

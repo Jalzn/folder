@@ -1,14 +1,12 @@
 import { useSearch } from '@tanstack/react-router';
-import { type RefObject, useEffect, useRef, useState } from 'react';
-import { createEmbedKeys, type EmbedKeyActions } from '../../editor/blocks/embed-keys';
-import { embedText } from '../../editor/blocks/embed-text';
-import { createOriginMarkers } from '../../editor/origin-markers';
+import { useEffect, useRef, useState } from 'react';
 import { type BlockEditorInstance, useBlockEditor } from '../../editor/use-block-editor';
 import type { AutosaveController, SaveState, Snapshot } from '../../lib/autosave';
 import { lacksBlockIds } from '../../lib/files/block-ids';
 import { sanitizeEmbeds } from '../../lib/files/sanitize-embeds';
 import type { Document, DocumentContent } from '../../lib/types';
 import { documentSnapshot } from './document-session';
+import type { useDocumentCallbacks } from './use-document-callbacks';
 
 /**
  * The editor's blocks as the document keeps and saves them: nothing nested under an embed, and no embed with
@@ -17,27 +15,13 @@ import { documentSnapshot } from './document-session';
 export const savedContent = (editor: BlockEditorInstance) =>
   sanitizeEmbeds(editor.document as unknown as DocumentContent);
 
-/**
- * The BlockNote editor of a document, started from the draft or the saved content, with its origin markers,
- * which open their task through `openOrigin`, and the keys of its embeds, which take one out and copy one
- * through `embedActions` once the page has them. A newer version taken from elsewhere (a reload or an adopted remote
- * save) replaces the blocks.
- */
+/** Starts from local or saved content; remote epochs replace the blocks. Callbacks live in useDocumentCallbacks. */
 export function useDocumentEditor(
   controller: AutosaveController<Snapshot>,
   document: Document,
   state: SaveState<Snapshot>,
-  openOrigin: RefObject<(taskId: string) => void>,
-  embedActions: RefObject<EmbedKeyActions | null>,
+  extensions: ReturnType<typeof useDocumentCallbacks>['extensions'],
 ) {
-  const [extensions] = useState(() => [
-    createOriginMarkers((taskId) => openOrigin.current(taskId)),
-    createEmbedKeys({
-      remove: (blockId) => embedActions.current?.remove(blockId),
-      describe: (kind, id) =>
-        embedActions.current?.describe(kind, id) ?? embedText(kind, id, undefined, window.location.origin),
-    }),
-  ]);
   const editor = useBlockEditor({
     extensions,
     schema: 'document',

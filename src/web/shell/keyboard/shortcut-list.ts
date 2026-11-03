@@ -37,7 +37,7 @@ export const shortcutGroups: ShortcutGroup[] = [
       { label: 'Percorrer as linhas', alternatives: [['↑'], ['↓']] },
       { label: 'Primeira e última linha', alternatives: [['Home'], ['End']] },
       { label: 'Recolher ou expandir a pasta; ir ao primeiro item ou à pasta', alternatives: [['←'], ['→']] },
-      { label: 'Abrir o item; numa pasta, abrir ou fechar', alternatives: [['↵']] },
+      { label: 'Abrir o item; numa pasta, abrir ou fechar', alternatives: [KEYS.activate] },
       { label: 'Ir ao item que começa com as letras digitadas', alternatives: [['a–z']] },
       { label: 'Renomear a pasta', alternatives: [KEYS.rename] },
       {
@@ -54,14 +54,9 @@ export const shortcutGroups: ShortcutGroup[] = [
       { label: 'Card ou coluna vizinha', alternatives: [['↑'], ['↓'], ['←'], ['→']] },
       {
         label: 'Mover o card; no nome, mover a coluna',
-        alternatives: [
-          ['⇧', '↑'],
-          ['⇧', '↓'],
-          ['⇧', '←'],
-          ['⇧', '→'],
-        ],
+        alternatives: [['⇧', '↑'], ['⇧', '↓'], KEYS.shiftLeft, KEYS.shiftRight],
       },
-      { label: 'Abrir a tarefa; no nome, renomear a coluna', alternatives: [['↵']] },
+      { label: 'Abrir a tarefa; no nome, renomear a coluna', alternatives: [KEYS.activate] },
       { label: 'Mover o card para outra coluna', alternatives: [KEYS.move] },
       { label: 'Concluir ou reabrir', alternatives: [KEYS.toggleDone] },
       { label: 'Menu do card ou da coluna', alternatives: [KEYS.menu] },

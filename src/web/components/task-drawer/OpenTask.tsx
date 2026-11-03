@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { type RefObject, useEffect } from 'react';
 import { useColumns, useProject, useTask, useTasks } from '../../lib/queries';
 import { displayTitle } from '../../lib/types';
+import { KEYS } from '../../shell/keyboard';
 import { type DrawerContent, useTaskDrawer } from '../../shell/state';
 import { IconButton, Spinner } from '../../ui';
 import { TrashedItem } from '../item-page';
@@ -58,7 +59,7 @@ export function OpenTask({
       <header className="task-drawer__head">
         <h2 className="task-drawer__title task-drawer__title--static">{shown}</h2>
         <div className="task-drawer__actions">
-          <IconButton label="Fechar a gaveta" shortcut={['Esc']} onPress={() => drawer.close()}>
+          <IconButton label="Fechar a gaveta" shortcut={KEYS.close} onPress={() => drawer.close()}>
             <X size={16} />
           </IconButton>
         </div>

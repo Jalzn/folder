@@ -37,8 +37,7 @@ export function LabelNameField({
   useEffect(() => {
     const field = input.current;
     if (!field) return;
-    // From Renomear, the ⋯ menu keeps the dialog inert until it has closed, which refuses autoFocus: the field
-    // takes the focus once it can.
+    // Wait until the closing menu releases inertness.
     const take = () => {
       if (document.activeElement !== field) field.focus();
       return document.activeElement === field ? field : null;

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
 import { inBoardOrder } from '../../lib/board-order';
 import type { ColumnSummary } from '../../lib/queries';
+import { KEYS } from '../../shell/keyboard';
 import {
   Button,
   ColumnRing,
@@ -135,7 +136,7 @@ export function TaskDrawerHeader({
             )}
           </Menu>
         </MenuTrigger>
-        <IconButton label="Fechar a gaveta" shortcut={['Esc']} onPress={onClose}>
+        <IconButton label="Fechar a gaveta" shortcut={KEYS.close} onPress={onClose}>
           <X size={16} />
         </IconButton>
       </div>

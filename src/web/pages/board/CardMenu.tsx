@@ -1,5 +1,6 @@
 import { ArrowRight, CircleCheck, Ellipsis, PanelBottomOpen, RotateCcw, Trash2 } from 'lucide-react';
 import type { ColumnSummary } from '../../lib/queries';
+import { KEYS } from '../../shell/keyboard';
 import { IconButton, Menu, MenuItem, MenuSeparator, MenuTrigger, SubmenuTrigger } from '../../ui';
 import { type MoveChoice, moveChoice, moveTaskSections } from './MoveTaskMenu';
 
@@ -45,11 +46,11 @@ export function CardMenu({
           else if (key === 'trash') onTrash();
         }}
       >
-        <MenuItem id="open" icon={<PanelBottomOpen size={16} />} shortcut={['↵']}>
+        <MenuItem id="open" icon={<PanelBottomOpen size={16} />} shortcut={KEYS.activate}>
           Abrir
         </MenuItem>
         <SubmenuTrigger>
-          <MenuItem id="move" icon={<ArrowRight size={16} />} shortcut={['M']}>
+          <MenuItem id="move" icon={<ArrowRight size={16} />} shortcut={KEYS.move}>
             Mover para
           </MenuItem>
           <Menu
@@ -63,7 +64,11 @@ export function CardMenu({
             {moveTaskSections(columns, columnId)}
           </Menu>
         </SubmenuTrigger>
-        <MenuItem id="toggle" icon={done ? <RotateCcw size={16} /> : <CircleCheck size={16} />} shortcut={['mod', '↵']}>
+        <MenuItem
+          id="toggle"
+          icon={done ? <RotateCcw size={16} /> : <CircleCheck size={16} />}
+          shortcut={KEYS.toggleDone}
+        >
           {done ? 'Reabrir' : 'Concluir'}
         </MenuItem>
         <MenuSeparator />

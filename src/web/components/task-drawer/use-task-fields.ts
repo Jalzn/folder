@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { queryClient, requestId } from '../../lib/api';
 import { followingTask } from '../../lib/board-order';
 import { cachedTasks, keys, type TaskWithText } from '../../lib/queries';
+import { useLatest } from '../../lib/react/use-latest';
 import type { Task } from '../../lib/types';
 import { useRequest } from '../../lib/writes/use-request';
 import { useTaskDrawer } from '../../shell/state';
@@ -27,8 +28,7 @@ export function useTaskFields(task: Task | undefined) {
   const change = useUndoableChange(action);
   const createLabel = useCreateLabel(action);
   const requests = { column: useRequest(), due: useRequest(), labels: useRequest(), trash: useRequest() };
-  const latest = useRef(task);
-  latest.current = task;
+  const latest = useLatest(task);
   // The version each write left, ahead of the list that the next render brings.
   const acked = useRef<{ id: string; version: number } | null>(null);
   const version = (current: Task) =>

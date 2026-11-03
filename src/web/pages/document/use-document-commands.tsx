@@ -40,8 +40,6 @@ export function useDocumentCommands({
     if (selectedText(editor)) return void taskFromSelection.create();
     drawer.newTask(projectId);
   }
-  // ⌘S saves now and, after a failure, tries again; ⌘⌥T creates a task from the excerpt selected in the
-  // editor; ⌘K lists the item's actions under "Neste item".
   usePageCommands({
     saveNow: () => void controller.flush(),
     createTask: () => {
@@ -50,8 +48,7 @@ export function useDocumentCommands({
       else toast(NO_EXCERPT);
     },
     files: [
-      // ⌘K's "Neste item" (docs/etapas/11-documento-desenho.md, W4): the excerpt's task and the embeds, which
-      // a document of an archived project does not offer.
+      // Archived documents omit creation and embedding commands (stage 11, W4).
       ...(archived
         ? []
         : [

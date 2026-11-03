@@ -1,3 +1,4 @@
+import { KEYS } from '../shell/keyboard';
 import './embed-picker.css';
 import { type EmbedKind, nameKey } from '@tinyfold/workspace/domain';
 import { Plus } from 'lucide-react';
@@ -62,16 +63,14 @@ export function EmbedPicker({
   const own = useSearch({ query: text, types: [type], projectId, limit: 20 });
   const all = useSearch({ query: text, types: [type], limit: 20 });
   const projects = useProjects(true).data ?? [];
-  // The list changes once per text, when both searches answered it: an arrow already pressed stays where it
-  // went, instead of the list moving under it as the second answer comes.
+  // Publish only after both searches answer the same text, preserving keyboard focus.
   const answered = own.answers !== null && own.answers === all.answers;
   const [items, setItems] = useState<SearchResult[]>([]);
   useEffect(() => {
     if (answered) setItems(pickerItems(own.data?.items ?? [], all.data?.items ?? [], projectId));
   }, [answered, own.data, all.data, projectId]);
   const say = words[kind];
-  // The item whose title is the text typed, by the key names compare with: ↵ embeds it instead of making a
-  // second one with the same title (review, picker), and its row shows the ↵.
+  // Enter prefers an exact title over creating a duplicate (review, picker).
   const typed = nameKey(text);
   const exact = typed ? (items.find((item) => nameKey(displayTitle(item.title)) === typed) ?? null) : null;
   return (
@@ -139,7 +138,7 @@ export function EmbedPicker({
                   key={item.id}
                   id={item.id}
                   textValue={displayTitle(item.title)}
-                  {...(item === exact ? { shortcut: ['↵'] } : {})}
+                  {...(item === exact ? { shortcut: KEYS.activate } : {})}
                   detail={
                     project ? (
                       <span className="embed-picker__project">

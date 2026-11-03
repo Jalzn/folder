@@ -5,6 +5,7 @@ import { type OpenEditor, registerOpenEditor } from '../../lib/autosave/save-reg
 import { useAutosaveLifecycle } from '../../lib/autosave/use-autosave-lifecycle';
 import { useHasActiveProject } from '../../lib/queries';
 import { useConfirmation } from '../../lib/react/use-confirmation';
+import { useLatest } from '../../lib/react/use-latest';
 import { usePageTitle } from '../../lib/react/use-page-title';
 import { editableTitle } from '../../lib/types';
 import type { ItemEditorDialogsProps } from './ItemEditorDialogs';
@@ -37,8 +38,7 @@ export function useItemEditor<Snapshot extends ItemSnapshot, Item extends { vers
   /** Keep the draft in storage when the page hides, as the drawing does. */
   persistDraft?: boolean;
 }) {
-  const latestOpen = useRef(openEditor);
-  latestOpen.current = openEditor;
+  const latestOpen = useLatest(openEditor);
   useEffect(
     () =>
       registerOpenEditor(item.type, item.id, {

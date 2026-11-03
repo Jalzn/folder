@@ -1,29 +1,23 @@
 import { type RefObject, useEffect, useId, useRef, useState } from 'react';
-import { api, errorMessage, refreshWorkspace } from '../../lib/api';
-import { openEditor } from '../../lib/autosave/save-registry';
 import { doneAndFirstOpen } from '../../lib/board-order';
 import { useColumns, useLabels, useProjects } from '../../lib/queries';
 import { useCommandSlot } from '../../lib/react/use-command-slot';
 import { useStableHandlers } from '../../lib/react/use-stable-handlers';
-import { useRequest } from '../../lib/writes/use-request';
 import { useOwnerToday } from '../../shell';
 import { type DrawerContent, useTaskDrawer } from '../../shell/state';
 import { useAction } from '../../shell/writes';
-import { useToast } from '../../ui';
 import { useCreateLabel } from '../labels';
 import { type DrawerCommands, EMPTY_DRAWER_COMMANDS } from './drawer-commands';
-
 import { useNewTaskGuard } from './use-new-task-guard';
+import { useTaskCreation } from './use-task-creation';
 export function useNewTaskDraft(
   content: Extract<DrawerContent, { mode: 'new' }>,
   commands: RefObject<DrawerCommands>,
   onLabel: (label: string) => void,
 ) {
   const drawer = useTaskDrawer();
-  const toast = useToast();
   const createLabel = useCreateLabel(useAction());
   const projects = useProjects(true).data ?? [];
-  const request = useRequest();
   const errorId = useId();
   const field = useRef<HTMLTextAreaElement>(null);
   const initialTitle = content.title ?? '';
@@ -38,16 +32,8 @@ export function useNewTaskDraft(
   const labels = useLabels().data ?? [];
   const [dueOn, setDue] = useState<string | null>(null);
   const [labelIds, setLabels] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const project = projects.find((each) => each.id === projectId);
-  // "Incorporar no documento" (docs/etapas/11-documento-desenho.md, decision 15): only while the excerpt's
-  // document is open in this tab, whose editor puts the card in; checked to begin with.
-  const sourceDocument = content.source?.documentId;
-  const embedHost = () => (sourceDocument ? openEditor('document', sourceDocument)?.insertEmbedAfter : undefined);
-  const canEmbed = Boolean(content.embedAfter && embedHost());
-  const [embed, setEmbed] = useState(true);
   const dirty =
     title !== initialTitle ||
     projectId !== content.projectId ||
@@ -57,51 +43,13 @@ export function useNewTaskDraft(
   useEffect(() => onLabel('Nova tarefa'), [onLabel]);
   useNewTaskGuard(dirty, () => setDiscarding(true));
 
-  async function create() {
-    if (busy) return;
-    const name = title.trim();
-    if (!name) {
-      setError('Dê um título à tarefa.');
-      field.current?.focus();
-      return;
-    }
-    const source = content.source && {
-      documentId: content.source.documentId,
-      excerpt: content.source.excerpt,
-      ...(content.source.blockId === undefined ? {} : { blockId: content.source.blockId }),
-      ...(content.source.expectedVersion === undefined ? {} : { expectedVersion: content.source.expectedVersion }),
-    };
-    const input = {
-      title: name,
-      projectId,
-      ...(chosenColumn ? { columnId: chosenColumn } : {}),
-      ...(dueOn ? { dueOn } : {}),
-      ...(labelIds.length ? { labelIds } : {}),
-      ...(source ? { source } : {}),
-    };
-    setBusy(true);
-    setError(null);
-    try {
-      const created = await api.workspace.createTask({ ...input, requestId: request.for(input) });
-      request.clear();
-      await refreshWorkspace();
-      drawer.showTask({ id: created.id, projectId: created.projectId, title: name });
-      content.onCreated?.({ id: created.id, projectId: created.projectId });
-      // The document may have closed meanwhile: then the task stays without its card.
-      const insert = canEmbed && embed && content.embedAfter ? embedHost() : undefined;
-      const embedded = Boolean(insert && content.embedAfter && insert(content.embedAfter, created.id));
-      toast(
-        embedded
-          ? 'Tarefa criada. O card entrou abaixo do parágrafo.'
-          : `Tarefa criada em ${column?.name ?? 'o quadro'} · ${project?.name ?? 'o projeto'}.`,
-      );
-    } catch (failure) {
-      setError(errorMessage(failure));
-      await refreshWorkspace();
-    } finally {
-      setBusy(false);
-    }
-  }
+  const { create, busy, error, setError, canEmbed, embed, setEmbed } = useTaskCreation({
+    content,
+    draft: { title, projectId, chosenColumn, dueOn, labelIds },
+    columnName: column?.name,
+    projectName: project?.name,
+    field,
+  });
   const primary = useStableHandlers<DrawerCommands>({ primary: () => void create() });
   useCommandSlot(commands, primary, EMPTY_DRAWER_COMMANDS);
   /** A label made from the picker goes on the new task at once; the task itself waits for Criar. */

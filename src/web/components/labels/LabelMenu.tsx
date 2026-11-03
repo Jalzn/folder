@@ -1,5 +1,6 @@
 import { LABEL_COLORS, type LabelColor } from '@tinyfold/workspace/domain';
 import { Ellipsis, Pencil, Trash2 } from 'lucide-react';
+import { KEYS } from '../../shell/keyboard';
 import { IconButton, Menu, MenuItem, MenuSection, MenuSeparator, MenuTrigger, SubmenuTrigger } from '../../ui';
 import { LabelSquare } from './LabelSquare';
 import { labelColorNames } from './label-colors';
@@ -38,7 +39,7 @@ export function LabelMenu({
           if (key === 'rename' || key === 'delete') onCommand(key);
         }}
       >
-        <MenuItem id="rename" icon={<Pencil size={16} />} shortcut={['↵']}>
+        <MenuItem id="rename" icon={<Pencil size={16} />} shortcut={KEYS.activate}>
           Renomear
         </MenuItem>
         <SubmenuTrigger>

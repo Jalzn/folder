@@ -31,8 +31,7 @@ export function ColumnNameField({
   useEffect(() => {
     const field = input.current;
     if (!field) return;
-    // From the ⋯ menu's Renomear, the page stays inert until the menu has closed, which refuses autoFocus:
-    // the field takes the focus once it can.
+    // Wait until the closing menu releases inertness.
     const take = () => {
       if (document.activeElement !== field) field.focus();
       return document.activeElement === field ? field : null;

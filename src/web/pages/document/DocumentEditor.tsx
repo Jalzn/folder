@@ -14,9 +14,10 @@ import { FolderLabel, PageFrame, useApp } from '../../shell';
 import { useTheme } from '../../shell/theme';
 import { Banner, IconButton } from '../../ui';
 import { DocumentBody } from './DocumentBody';
-import { DocumentEmbeds, type EmbedCommands } from './DocumentEmbeds';
+import { DocumentEmbeds } from './DocumentEmbeds';
 import { DocumentHeader } from './DocumentHeader';
 import { documentController, documentItem } from './document-session';
+import { useDocumentCallbacks } from './use-document-callbacks';
 import { useDocumentCommands } from './use-document-commands';
 import { savedContent, useBlockAnchor, useDocumentEditor } from './use-document-editor';
 import { useDocumentFiles } from './use-document-files';
@@ -24,17 +25,11 @@ import { useNewDocument } from './use-new-document';
 import { useOriginMarkers } from './use-origin-markers';
 import { selectedText, useTaskFromSelection } from './use-task-from-selection';
 
-/**
- * An open document, or, in the trash with nothing local to keep, the way to the trash. The session reads what
- * this device keeps of the document, so it decides; only the editor's page registers its commands, its tab
- * title and the editor.
- */
+/** Keep a trashed document editable only while its session holds local text (decision 1). */
 export function DocumentEditor({ document }: { document: Document }) {
   const app = useApp();
   const [controller] = useState(() => documentController(document, app.owner.installationId));
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
-  // In the trash with nothing local to keep, the page only leads to the trash; with local text, the editor stays
-  // with the trashed band and the copy, as the drawing's (decision 1).
   if (onlyTrashNotice(document.deletedAt, state))
     return (
       <PageFrame>
@@ -48,10 +43,7 @@ export function DocumentEditor({ document }: { document: Document }) {
   return <OpenDocument document={document} controller={controller} />;
 }
 
-/**
- * The document's editor: the page bar with its folder, the save state, "Tarefas · n" and the ⋯; the bands, which
- * stay in view; and the column with the title and the content.
- */
+/** Owns the active editor session and its page commands. */
 function OpenDocument({
   document,
   controller,
@@ -60,18 +52,18 @@ function OpenDocument({
   controller: ReturnType<typeof documentController>;
 }) {
   const theme = useTheme();
-  const embedCommands = useRef<EmbedCommands | null>(null);
+  const callbacks = useDocumentCallbacks();
+  const { embedCommands, openOrigin } = callbacks;
   const page = useItemEditor({
     controller,
     item: documentItem(document.id),
     trashed: Boolean(document.deletedAt),
     openEditor: {
-      insertEmbedAfter: (blockId, taskId) => embedCommands.current?.insertTaskAfter(blockId, taskId) ?? false,
+      insertEmbedAfter: callbacks.insertEmbedAfter,
     },
   });
   const { state, fileInput } = page;
-  const openOrigin = useRef<(taskId: string) => void>(() => undefined);
-  const editor = useDocumentEditor(controller, document, state, openOrigin, embedCommands);
+  const editor = useDocumentEditor(controller, document, state, callbacks.extensions);
   useOriginMarkers(editor, document.id, openOrigin);
   const anchor = useBlockAnchor(editor);
   const [selection, setSelection] = useState('');
