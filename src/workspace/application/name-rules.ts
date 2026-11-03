@@ -1,5 +1,5 @@
-import { AppError } from '@tinyfold/core/application';
 import { displayName, nameKey, nameTakenBy } from '../domain/names.js';
+import { workspaceErrors } from './errors.js';
 
 /** What a name names, as the messages say it: "o nome da pasta". */
 export type NamedThing = 'pasta' | 'coluna' | 'etiqueta';
@@ -11,11 +11,9 @@ export type NamedThing = 'pasta' | 'coluna' | 'etiqueta';
  */
 export function readName(raw: string, thing: NamedThing, maxChars: number): string {
   const name = displayName(raw);
-  if (/\p{Cc}/u.test(name))
-    throw new AppError('VALIDATION', `Use só letras, números, espaços e símbolos no nome da ${thing}.`);
-  if (!name || !nameKey(name)) throw new AppError('VALIDATION', `Dê um nome à ${thing}.`);
-  if (Array.from(name).length > maxChars)
-    throw new AppError('VALIDATION', `Use até ${maxChars} caracteres no nome da ${thing}.`);
+  if (/\p{Cc}/u.test(name)) throw workspaceErrors.invalidNameCharacters(thing);
+  if (!name || !nameKey(name)) throw workspaceErrors.nameRequired(thing);
+  if (Array.from(name).length > maxChars) throw workspaceErrors.nameTooLong(thing, maxChars);
   return name;
 }
 
@@ -30,5 +28,5 @@ export function assertNameFree(
   { except, suffix = '' }: { except?: string; suffix?: string } = {},
 ): void {
   const taken = nameTakenBy(named, name, except);
-  if (taken) throw new AppError('DOMAIN_RULE', `Já existe uma ${thing} ${taken.name}.${suffix}`);
+  if (taken) throw workspaceErrors.nameTaken(thing, taken.name, suffix);
 }

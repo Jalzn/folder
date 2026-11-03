@@ -1,19 +1,10 @@
 import type { ReadingContext } from '../../application/reading/ports.js';
-import { type DrawingImage, readDrawing } from '../../application/reading/read-drawing.js';
+import { readDrawing } from '../../application/reading/read-drawing.js';
 import { ReadDrawingInput } from '../../application/reading/schemas.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { formatCanvasOutline } from './format-outline.js';
+import { drawingHeader } from './headers.js';
 import { type AgentToolContent, defineTool, readOnlyAnnotations } from './types.js';
-
-function imageLine(image: DrawingImage, version: number, withStructure: boolean): string {
-  if (image.state === 'empty') return 'Imagem: o desenho está vazio';
-  if (image.state === 'missing') return 'Imagem: indisponível. Abra o desenho no Tinyfold para gerá-la';
-  const size = `${image.width}×${image.height} px`;
-  // A rename or a trip to the trash bumps the version without changing what the image shows.
-  if (image.current) return `Imagem: versão ${version} (atual), ${size}`;
-  const note = withStructure ? '. A estrutura abaixo está atualizada' : '';
-  return `Imagem: versão ${image.sceneVersion}, ${size}; a cena atual é a ${version}${note}`;
-}
 
 export const readDrawingTool = (reading: ReadingContext) =>
   defineTool({
@@ -28,14 +19,7 @@ export const readDrawingTool = (reading: ReadingContext) =>
     annotations: readOnlyAnnotations,
     async handler(input) {
       const { drawing, image, outline } = await readDrawing(reading, input);
-      // Names are quoted: a "·" inside one could otherwise pass for another field.
-      const project = `Projeto ${JSON.stringify(drawing.projectName)}${drawing.projectArchived ? ' (arquivado)' : ''}`;
-      const folder = drawing.folder ? `Pasta ${JSON.stringify(drawing.folder.name)}` : 'Sem pasta';
-      const header = [
-        `Desenho ${JSON.stringify(drawing.title)} · ${project} · ${folder} · versão ${drawing.version} · atualizado em ${drawing.updatedAt} · ID ${drawing.id}`,
-      ];
-      if (image) header.push(imageLine(image, drawing.version, outline !== null));
-      const head = header.join('\n');
+      const head = drawingHeader({ drawing, image, outline });
       // The outline gets what the header leaves of the result, up to its own limit.
       const room = Math.min(READING_LIMITS.outline.maxChars, READING_LIMITS.toolTextChars - head.length - 2);
       const text = [head, ...(outline ? [formatCanvasOutline(outline, room)] : [])].join('\n\n');

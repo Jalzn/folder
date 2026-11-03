@@ -1,4 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
+import { MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas-preview.js';
+import { MAX_PINNED } from '../domain/project.js';
+import { TASK_LIMITS } from '../domain/tasks.js';
 
 /** The application owns these codes and messages; schemas keep their marked validation messages. */
 export const workspaceErrors = {
@@ -57,4 +60,24 @@ export const workspaceErrors = {
   itemNotTrashed: () => new AppError('DOMAIN_RULE', 'Mova o item para a lixeira antes de excluir de vez.'),
   versionConflict: () =>
     new AppError('VERSION_CONFLICT', 'Este item mudou em outro dispositivo. Atualize os dados antes de continuar.'),
+
+  invalidNameCharacters: (thing: string) =>
+    new AppError('VALIDATION', `Use só letras, números, espaços e símbolos no nome da ${thing}.`),
+  nameRequired: (thing: string) => new AppError('VALIDATION', `Dê um nome à ${thing}.`),
+  nameTooLong: (thing: string, maxChars: number) =>
+    new AppError('VALIDATION', `Use até ${maxChars} caracteres no nome da ${thing}.`),
+  nameTaken: (thing: string, name: string, suffix: string) =>
+    new AppError('DOMAIN_RULE', `Já existe uma ${thing} ${name}.${suffix}`),
+  sourceChanged: () =>
+    new AppError('VERSION_CONFLICT', 'O trecho de origem mudou. Salve o documento e selecione o trecho novamente.'),
+  previewTooLarge: () =>
+    new AppError(
+      'VALIDATION',
+      `A prévia passa de ${MAX_PREVIEW_SIDE.toLocaleString('pt-BR')} px no lado maior ou de ${MAX_PREVIEW_BYTES / 1024} KiB.`,
+    ),
+  pinLimit: (scope: string) =>
+    new AppError('DOMAIN_RULE', `Máximo de ${MAX_PINNED} fixados ${scope}. Desafixe um item antes.`),
+  taskLabelLimit: () => new AppError('VALIDATION', `Use até ${TASK_LIMITS.labels} etiquetas numa tarefa.`),
+  namedReferenceMissing: (missing: string, name: string, listed: string, all: string) =>
+    new AppError('NOT_FOUND', `${missing}: ${name}. ${listed}: ${all}.`),
 };

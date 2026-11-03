@@ -2,7 +2,7 @@ import type { ReadingContext } from '../../application/reading/ports.js';
 import { readDocument } from '../../application/reading/read-document.js';
 import { ReadDocumentInput } from '../../application/reading/schemas.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import { documentHeader } from './format.js';
+import { documentHeader } from './headers.js';
 import { pagedMarkdownResult } from './paged-result.js';
 import { defineTool, readOnlyAnnotations } from './types.js';
 

@@ -1,4 +1,3 @@
-import { AppError } from '@tinyfold/core/application';
 import { checklistProgress } from '../../domain/checklist.js';
 import type { Column } from '../../domain/columns.js';
 import { documentPlainText, withBlockIds } from '../../domain/document.js';
@@ -58,8 +57,7 @@ export const completionIn = (column: Column, task: Pick<TaskRecord, 'completedAt
 /** The labels a task takes: each active, at most TASK_LIMITS.labels, repeats counted once. */
 export async function requireTaskLabels(repo: WorkspaceRepository, labelIds: readonly string[]): Promise<string[]> {
   const ids = [...new Set(labelIds)];
-  if (ids.length > TASK_LIMITS.labels)
-    throw new AppError('VALIDATION', `Use até ${TASK_LIMITS.labels} etiquetas numa tarefa.`);
+  if (ids.length > TASK_LIMITS.labels) throw workspaceErrors.taskLabelLimit();
   const found = await repo.findLabels(ids);
   if (found.length !== ids.length || found.some((label) => label.deletedAt)) throw workspaceErrors.labelMissing();
   return ids;

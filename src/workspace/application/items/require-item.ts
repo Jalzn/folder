@@ -1,8 +1,8 @@
-import { AppError } from '@tinyfold/core/application';
 import type { FiledItemType } from '../../domain/items.js';
+import { workspaceErrors } from '../errors.js';
 import type { FolderRepository } from '../ports/folders.js';
 
-const missingItem = { document: 'O documento não está disponível.', drawing: 'O desenho não está disponível.' };
+const missingItem = { document: workspaceErrors.documentMissing, drawing: workspaceErrors.drawingMissing };
 export async function requireItem(
   repo: Pick<FolderRepository, 'findItem'>,
   type: FiledItemType,
@@ -10,7 +10,7 @@ export async function requireItem(
   includeDeleted = false,
 ) {
   const item = await repo.findItem(type, id);
-  if (!item || (!includeDeleted && item.deletedAt)) throw new AppError('NOT_FOUND', missingItem[type]);
+  if (!item || (!includeDeleted && item.deletedAt)) throw missingItem[type]();
   return item;
 }
 export const requireLiveItem = (repo: Pick<FolderRepository, 'findItem'>, type: FiledItemType, id: string) =>

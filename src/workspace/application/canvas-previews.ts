@@ -1,6 +1,5 @@
-import { AppError } from '@tinyfold/core/application';
 import { isCanvasId } from '../domain/canvas.js';
-import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas-preview.js';
+import { exceedsPreviewLimits, MAX_PREVIEW_BYTES } from '../domain/canvas-preview.js';
 import { hasValidRowFilters, readPngInfo } from '../domain/png.js';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
 import { workspaceErrors } from './errors.js';
@@ -49,10 +48,7 @@ export async function saveCanvasPreview(
   imageData: PngImageData,
   input: SaveCanvasPreviewInput,
 ): Promise<CanvasPreviewAck> {
-  const tooLarge = new AppError(
-    'VALIDATION',
-    `A prévia passa de ${MAX_PREVIEW_SIDE.toLocaleString('pt-BR')} px no lado maior ou de ${MAX_PREVIEW_BYTES / 1024} KiB.`,
-  );
+  const tooLarge = workspaceErrors.previewTooLarge();
   // Cheapest checks first: the size, the container, the sides, and only then the image data.
   if (input.png.byteLength > MAX_PREVIEW_BYTES) throw tooLarge;
   const notPng = workspaceErrors.previewMustBePng();

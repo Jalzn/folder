@@ -1,5 +1,5 @@
-import { AppError } from '@tinyfold/core/application';
 import { MAX_PINNED } from '../../domain/project.js';
+import { workspaceErrors } from '../errors.js';
 import type { FolderRepository } from '../ports/folders.js';
 import type { PinRepository } from '../ports/pins.js';
 
@@ -21,5 +21,5 @@ export async function assertRoomForPin(
   if ((await repo.pinnedInScope(item.projectId, item.folderId)) < MAX_PINNED) return;
   const folder = item.folderId ? await repo.findFolder(item.folderId) : undefined;
   const scope = folder ? `em ${folder.name}` : 'na raiz do projeto';
-  throw new AppError('DOMAIN_RULE', `Máximo de ${MAX_PINNED} fixados ${scope}. Desafixe um item antes.`);
+  throw workspaceErrors.pinLimit(scope);
 }

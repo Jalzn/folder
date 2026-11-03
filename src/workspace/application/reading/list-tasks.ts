@@ -1,4 +1,3 @@
-import { AppError } from '@tinyfold/core/application';
 import { boardKey } from '../../domain/list-order.js';
 import { nameKey } from '../../domain/names.js';
 import { boardCursor, readBoardCursor } from '../../domain/paging.js';
@@ -25,7 +24,7 @@ function idsByName(
     const id = byKey.get(nameKey(name));
     if (id) return id;
     const all = known.length ? known.map((item) => item.name).join(', ') : 'nenhuma';
-    throw new AppError('NOT_FOUND', `${missing}: ${name}. ${listed}: ${all}.`);
+    throw workspaceErrors.namedReferenceMissing(missing, name, listed, all);
   });
 }
 

@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { TaskForReading } from '../../application/reading/read-models.js';
 import type { CanvasOutline } from '../../domain/canvas-outline.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import { compactJson, documentHeader, fitItems, taskHeader } from './format.js';
+import { compactJson, fitItems } from './format.js';
 import { formatCanvasOutline } from './format-outline.js';
+import { documentHeader, taskHeader } from './headers.js';
 
 const outline: CanvasOutline = {
   total: 7,

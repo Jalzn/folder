@@ -1,14 +1,9 @@
 import { READING_LIMITS } from '../../domain/reading-limits.js';
+import { codePointPrefix } from './text-cut.js';
 import type { AgentTool, AgentToolContent, AgentToolResult } from './types.js';
 
 const ceiling = READING_LIMITS.toolTextChars;
 const cutNote = `\n\n… resposta cortada em ${ceiling.toLocaleString('pt-BR')} caracteres.`;
-
-/** The first `count` UTF-16 units of `text`, one fewer where the cut would split a surrogate pair. */
-function codePointPrefix(text: string, count: number): string {
-  const code = text.charCodeAt(count - 1);
-  return text.slice(0, code >= 0xd800 && code <= 0xdbff ? count - 1 : count);
-}
 
 /**
  * Keeps the text blocks of a result within READING_LIMITS.toolTextChars together, cutting the one

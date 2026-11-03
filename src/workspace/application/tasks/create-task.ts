@@ -1,4 +1,3 @@
-import { AppError } from '@tinyfold/core/application';
 import { firstOpenColumn } from '../../domain/columns.js';
 import type { TaskAck } from '../../domain/task-models.js';
 import { excerptPresent } from '../../domain/task-source.js';
@@ -26,11 +25,7 @@ export function createTask(ctx: WorkspaceContext, input: CreateTaskInput): Promi
       // A task from an excerpt joins the document's project unless the input names another one.
       projectId ??= document.projectId;
       const blockId = input.source.blockId ?? null;
-      if (!excerptPresent(document, blockId, input.source.excerpt))
-        throw new AppError(
-          'VERSION_CONFLICT',
-          'O trecho de origem mudou. Salve o documento e selecione o trecho novamente.',
-        );
+      if (!excerptPresent(document, blockId, input.source.excerpt)) throw workspaceErrors.sourceChanged();
       source = {
         taskId: id,
         documentId: document.id,
