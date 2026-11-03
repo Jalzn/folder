@@ -1,5 +1,5 @@
 import type { IsoInstant } from '@tinyfold/core/domain';
-import type { Canvas, CanvasSummary } from '../../domain/canvas.js';
+import type { Canvas, CanvasSummary } from '../../domain/canvas/index.js';
 import type { ItemListQuery } from './documents.js';
 
 export interface CanvasRepository {

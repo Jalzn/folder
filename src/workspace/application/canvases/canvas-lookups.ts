@@ -1,4 +1,4 @@
-import type { Canvas } from '../../domain/canvas.js';
+import type { Canvas } from '../../domain/canvas/index.js';
 import { workspaceErrors } from '../errors.js';
 import type { WorkspaceRepository } from '../ports/context.js';
 

@@ -4,7 +4,7 @@ import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../../domain/columns.js';
 import type { DocumentBlock } from '../../domain/document-models.js';
-import { documentToMarkdown } from '../../domain/markdown.js';
+import { documentToMarkdown } from '../../domain/markdown/index.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { paragraph, request, useAgentTools } from '../../testing/agent-tools.js';
 import { loadStage09Fixture } from '../../testing/legacy-workspace.js';

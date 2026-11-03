@@ -1,10 +1,10 @@
-import type { DocumentBlock } from './document-models.js';
-import { isEmbedType } from './embeds.js';
-import type { JsonValue } from './json.js';
-import { type EmbedResolver, embedLine } from './markdown-embeds.js';
-import { fenceFor } from './markdown-fence.js';
-import { inlineMarkdown } from './markdown-inline.js';
-import { displayMathLines } from './markdown-math.js';
+import type { DocumentBlock } from '../document-models.js';
+import { isEmbedType } from '../embeds.js';
+import type { JsonValue } from '../json.js';
+import { type EmbedResolver, embedLine } from './embeds.js';
+import { fenceFor } from './fence.js';
+import { inlineMarkdown } from './inline.js';
+import { displayMathLines } from './math.js';
 
 /**
  * Serializes the persisted BlockNote subset (see readDocumentContent) to CommonMark with GFM task

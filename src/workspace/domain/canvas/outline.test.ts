@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { drawingFixture, shape } from '../testing/canvas-scenes.js';
-import type { CanvasScene } from './canvas.js';
-import { outlineCanvasScene } from './canvas-outline.js';
+import { drawingFixture, shape } from '../../testing/canvas-scenes.js';
+import type { CanvasScene } from './index.js';
+import { outlineCanvasScene } from './outline.js';
 
 /** The fixture plus a labeled box outside the frame, a loose line and a deleted element. */
 function scene(): CanvasScene {

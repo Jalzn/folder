@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pageMarkdown } from './markdown-pages.js';
+import { pageMarkdown } from './pages.js';
 
 function pagesOf(markdown: string, maxChars: number): string[] {
   const pages = [pageMarkdown(markdown, 0, maxChars)];

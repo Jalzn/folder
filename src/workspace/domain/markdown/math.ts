@@ -1,4 +1,4 @@
-import { fenceFor } from './markdown-fence.js';
+import { fenceFor } from './fence.js';
 
 /**
  * Markdown fences for LaTeX, shared by the server serializer and the web `.md` export.

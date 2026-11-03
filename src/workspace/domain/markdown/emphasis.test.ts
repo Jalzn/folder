@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { planEmphasis } from './markdown-emphasis.js';
-import type { Inline, Mark } from './markdown-items.js';
+import { planEmphasis } from './emphasis.js';
+import type { Inline, Mark } from './items.js';
 
 const text = (value: string, ...marks: Mark[]): Inline => ({ kind: 'text', text: value, marks, code: false });
 const link = (...content: Inline[]): Inline => ({ kind: 'link', href: 'https://a.b', content });

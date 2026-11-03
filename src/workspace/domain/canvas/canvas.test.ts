@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { drawingFixture, shape } from '../testing/canvas-scenes.js';
+import { drawingFixture, shape } from '../../testing/canvas-scenes.js';
 import {
   canvasPlainText,
   compactCanvasScene,
@@ -8,7 +8,7 @@ import {
   MAX_CANVAS_BYTES,
   RECOVERY_CANVAS_LIMITS,
   readCanvasScene,
-} from './canvas.js';
+} from './index.js';
 
 describe('canvas scene contract', () => {
   it('round trips text, groups, frames, bound arrows and pressure-sensitive freehand without losing properties', () => {

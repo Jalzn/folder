@@ -1,6 +1,6 @@
 import type { EmbeddedItems } from './embed-items.js';
 import type { EmbedKind } from './embeds.js';
-import type { EmbedResolver } from './markdown-embeds.js';
+import type { EmbedResolver } from './markdown/embeds.js';
 
 /**
  * The serializer's view of resolved embeds (see documentToMarkdown): a live task's title and column,

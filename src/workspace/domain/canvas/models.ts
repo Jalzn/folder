@@ -1,6 +1,6 @@
 import type { IsoInstant } from '@tinyfold/core/domain';
-import type { FiledItem, ItemAck } from './items.js';
-import type { JsonValue } from './json.js';
+import type { FiledItem, ItemAck } from '../items.js';
+import type { JsonValue } from '../json.js';
 
 /**
  * The IDs the server gives drawings (randomUUID): lowercase UUIDs of the RFC 9562 layout, the only

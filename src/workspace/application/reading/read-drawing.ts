@@ -1,5 +1,5 @@
-import { outlineCanvasScene } from '../../domain/canvas-outline.js';
-import { previewShowsScene } from '../../domain/canvas-preview.js';
+import { outlineCanvasScene } from '../../domain/canvas/outline.js';
+import { previewShowsScene } from '../../domain/canvas/preview.js';
 import { workspaceErrors } from '../errors.js';
 import type { ReadingContext } from './ports.js';
 import type { StoredPreview } from './read-models.js';

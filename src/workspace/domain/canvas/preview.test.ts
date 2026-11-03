@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { drawingFixture } from '../testing/canvas-scenes.js';
-import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE, previewShowsScene } from './canvas-preview.js';
+import { drawingFixture } from '../../testing/canvas-scenes.js';
+import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE, previewShowsScene } from './preview.js';
 import { sceneFingerprint } from './scene-fingerprint.js';
 
 describe('preview limits', () => {

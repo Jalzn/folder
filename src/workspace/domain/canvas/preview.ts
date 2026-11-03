@@ -1,4 +1,4 @@
-import type { CanvasScene } from './canvas.js';
+import type { CanvasScene } from './index.js';
 import type { PngInfo } from './png.js';
 import { sceneFingerprint } from './scene-fingerprint.js';
 

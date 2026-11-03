@@ -1,5 +1,5 @@
 import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
-import type { CanvasScene } from '../../domain/canvas.js';
+import type { CanvasScene } from '../../domain/canvas/index.js';
 import type { DocumentBlock } from '../../domain/document-models.js';
 import type { LabelColor } from '../../domain/labels.js';
 import type { BoardKey, ProjectKey, SearchItemType, SearchKey } from '../../domain/paging.js';

@@ -1,4 +1,4 @@
-import { previewShowsScene } from '../../domain/canvas-preview.js';
+import { previewShowsScene } from '../../domain/canvas/preview.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { GetCanvasInput } from '../schemas/canvases.js';
 import { requireCanvas } from './canvas-lookups.js';

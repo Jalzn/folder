@@ -4,7 +4,7 @@ import { coreModule, type Database, migrate } from '@tinyfold/core/infra';
 import { useTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { sceneFingerprint } from '../domain/scene-fingerprint.js';
+import { sceneFingerprint } from '../domain/canvas/scene-fingerprint.js';
 import { createWorkspaceTools } from '../infra/mcp/index.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';

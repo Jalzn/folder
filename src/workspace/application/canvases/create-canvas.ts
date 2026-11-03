@@ -1,4 +1,4 @@
-import { type Canvas, type CanvasAck, canvasPlainText, emptyCanvasScene } from '../../domain/canvas.js';
+import { type Canvas, type CanvasAck, canvasPlainText, emptyCanvasScene } from '../../domain/canvas/index.js';
 import { titleOrUntitled } from '../../domain/text.js';
 import { requireFolderInProject } from '../folders/folder-rules.js';
 import type { WorkspaceContext } from '../ports/context.js';

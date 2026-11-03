@@ -1,5 +1,5 @@
 import { AppError } from '@tinyfold/core/application';
-import { MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas-preview.js';
+import { MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas/preview.js';
 import { MAX_PINNED } from '../domain/project.js';
 import { TASK_LIMITS } from '../domain/tasks.js';
 

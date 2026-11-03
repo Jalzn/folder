@@ -1,12 +1,5 @@
-import {
-  assertElement,
-  assertPoints,
-  bindableTypes,
-  finite,
-  identifier,
-  invalid,
-  textContainers,
-} from './canvas-elements.js';
+import { assertContentJson, boundedLimit, validColor as color, object } from '../content-guards.js';
+import { assertElement, assertPoints, bindableTypes, finite, identifier, invalid, textContainers } from './elements.js';
 import {
   type CanvasElement,
   type CanvasScene,
@@ -14,8 +7,7 @@ import {
   MAX_CANVAS_BYTES,
   MAX_CANVAS_ELEMENTS,
   RECOVERY_CANVAS_LIMITS,
-} from './canvas-models.js';
-import { assertContentJson, boundedLimit, validColor as color, object } from './content-guards.js';
+} from './models.js';
 
 /** The server always uses default limits; only local recovery may use the larger bounded limits. */
 export function readCanvasScene(value: unknown, limits: CanvasSceneLimits = {}): CanvasScene {

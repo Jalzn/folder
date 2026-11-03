@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pngChunk, pngFile, pngFrom, pngHeaderChunk, pngImage } from '../testing/png.js';
+import { pngChunk, pngFile, pngFrom, pngHeaderChunk, pngImage } from '../../testing/png.js';
 import { crc32, hasValidRowFilters, readPngInfo } from './png.js';
 
 const concat = (...parts: Uint8Array[]) => new Uint8Array(parts.flatMap((part) => [...part]));

@@ -1,5 +1,5 @@
-import type { CanvasScene } from './canvas-models.js';
-import { object } from './content-guards.js';
+import { object } from '../content-guards.js';
+import type { CanvasScene } from './models.js';
 
 export {
   type Canvas,
@@ -12,8 +12,8 @@ export {
   MAX_CANVAS_BYTES,
   MAX_CANVAS_ELEMENTS,
   RECOVERY_CANVAS_LIMITS,
-} from './canvas-models.js';
-export { readCanvasScene } from './canvas-validation.js';
+} from './models.js';
+export { readCanvasScene } from './validation.js';
 
 export function emptyCanvasScene(): CanvasScene {
   return { elements: [], appState: { viewBackgroundColor: '#e8ecf2' } };

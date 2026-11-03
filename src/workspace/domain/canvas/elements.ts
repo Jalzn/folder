@@ -1,5 +1,5 @@
-import type { CanvasElement } from './canvas-models.js';
-import { validColor as color, object } from './content-guards.js';
+import { validColor as color, object } from '../content-guards.js';
+import type { CanvasElement } from './models.js';
 
 const elementTypes = new Set(['rectangle', 'diamond', 'ellipse', 'line', 'arrow', 'freedraw', 'text', 'frame']);
 export const textContainers = new Set(['rectangle', 'diamond', 'ellipse', 'arrow']);

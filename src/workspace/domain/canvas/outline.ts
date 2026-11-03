@@ -1,5 +1,5 @@
-import type { CanvasElement, CanvasScene } from './canvas.js';
-import { READING_LIMITS } from './reading-limits.js';
+import { READING_LIMITS } from '../reading-limits.js';
+import type { CanvasElement, CanvasScene } from './index.js';
 
 /**
  * A token-light description of a drawing for agents: what is drawn, where, and what connects to

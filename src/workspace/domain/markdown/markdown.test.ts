@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { DocumentBlock } from './document-models.js';
-import type { JsonValue } from './json.js';
-import { documentToMarkdown } from './markdown.js';
-import type { EmbedResolver } from './markdown-embeds.js';
+import type { DocumentBlock } from '../document-models.js';
+import type { JsonValue } from '../json.js';
+import type { EmbedResolver } from './embeds.js';
+import { documentToMarkdown } from './index.js';
 
 const text = (value: string, styles: Record<string, boolean> = {}) => ({ type: 'text', text: value, styles });
 const block = (type: string, content: JsonValue[] | string, extra: Partial<DocumentBlock> = {}): DocumentBlock => ({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyCanvasScene, readCanvasScene } from './canvas.js';
+import { emptyCanvasScene, readCanvasScene } from './canvas/index.js';
 import { readDocumentContent } from './document.js';
 
 const deep = () => {

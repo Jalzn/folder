@@ -1,7 +1,7 @@
-import { isCanvasId } from '../domain/canvas.js';
-import { exceedsPreviewLimits, MAX_PREVIEW_BYTES } from '../domain/canvas-preview.js';
-import { hasValidRowFilters, readPngInfo } from '../domain/png.js';
-import { sceneFingerprint } from '../domain/scene-fingerprint.js';
+import { isCanvasId } from '../domain/canvas/index.js';
+import { hasValidRowFilters, readPngInfo } from '../domain/canvas/png.js';
+import { exceedsPreviewLimits, MAX_PREVIEW_BYTES } from '../domain/canvas/preview.js';
+import { sceneFingerprint } from '../domain/canvas/scene-fingerprint.js';
 import { workspaceErrors } from './errors.js';
 import type { PngImageData } from './ports/canvases.js';
 import type { WorkspaceContext } from './ports/context.js';

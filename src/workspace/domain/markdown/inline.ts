@@ -1,8 +1,8 @@
-import type { JsonValue } from './json.js';
-import { planEmphasis } from './markdown-emphasis.js';
-import { fenceFor } from './markdown-fence.js';
-import { ESCAPED_ANYWHERE, type Inline, inlineItems, type LineBreaks, type Mark } from './markdown-items.js';
-import { inlineMath, MATH_SEPARATOR, needsMathSeparator } from './markdown-math.js';
+import type { JsonValue } from '../json.js';
+import { planEmphasis } from './emphasis.js';
+import { fenceFor } from './fence.js';
+import { ESCAPED_ANYWHERE, type Inline, inlineItems, type LineBreaks, type Mark } from './items.js';
+import { inlineMath, MATH_SEPARATOR, needsMathSeparator } from './math.js';
 
 /**
  * Inline BlockNote content as Markdown. Line breaks become `\` hard breaks by default; `html`

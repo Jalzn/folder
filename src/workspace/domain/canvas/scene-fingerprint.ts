@@ -1,5 +1,5 @@
-import type { CanvasScene } from './canvas.js';
-import { textFingerprint } from './fingerprint.js';
+import { textFingerprint } from '../fingerprint.js';
+import type { CanvasScene } from './index.js';
 
 /**
  * A short fingerprint of a scene's content. Renaming, moving or trashing a drawing changes its

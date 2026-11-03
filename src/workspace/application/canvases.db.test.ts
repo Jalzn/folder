@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { useTempDatabase } from '@tinyfold/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { emptyCanvasScene } from '../domain/canvas.js';
+import { emptyCanvasScene } from '../domain/canvas/index.js';
 import type { Project } from '../domain/project-models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';

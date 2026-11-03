@@ -1,4 +1,4 @@
-export type { Canvas, CanvasElement, CanvasScene, CanvasSummary } from './canvas.js';
+export type { Canvas, CanvasElement, CanvasScene, CanvasSummary } from './canvas/index.js';
 export {
   canvasPlainText,
   compactCanvasScene,
@@ -6,8 +6,10 @@ export {
   MAX_CANVAS_BYTES,
   RECOVERY_CANVAS_LIMITS,
   readCanvasScene,
-} from './canvas.js';
-export { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from './canvas-preview.js';
+} from './canvas/index.js';
+export { readPngInfo } from './canvas/png.js';
+export { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from './canvas/preview.js';
+export { sceneFingerprint } from './canvas/scene-fingerprint.js';
 export { checklistProgress } from './checklist.js';
 export { columnDeletionBlocker } from './columns.js';
 export { documentLead, documentPlainText, RECOVERY_DOCUMENT_LIMITS, readDocumentContent } from './document.js';
@@ -38,16 +40,14 @@ export {
 } from './items.js';
 export type { JsonValue } from './json.js';
 export { LABEL_COLORS, LABEL_LIMITS, type LabelColor } from './labels.js';
-export { documentToMarkdown } from './markdown.js';
-export { UNAVAILABLE_EMBED } from './markdown-embeds.js';
+export { UNAVAILABLE_EMBED } from './markdown/embeds.js';
+export { documentToMarkdown } from './markdown/index.js';
 export { displayName, nameKey, nameTakenBy } from './names.js';
 export { NAV_SORTS, type NavItem, type NavSort } from './navigation.js';
 export { NAVIGATION_LIMITS } from './navigation-limits.js';
 export type { NavFolder, NavTree } from './navigation-tree.js';
-export { readPngInfo } from './png.js';
 export { defaultProjectColor, MAX_PINNED, PROJECT_COLORS, type ProjectColor, projectInitial } from './project.js';
 export type { Project } from './project-models.js';
-export { sceneFingerprint } from './scene-fingerprint.js';
 export { searchText } from './search-text.js';
 export { isOverdue } from './task-dates.js';
 export type { Task, TaskList, TaskSource } from './task-models.js';

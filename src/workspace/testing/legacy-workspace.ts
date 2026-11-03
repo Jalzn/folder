@@ -12,7 +12,7 @@ import {
   setForeignKeys,
   tables,
 } from '@tinyfold/core/infra';
-import { type CanvasScene, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
+import { type CanvasScene, canvasPlainText, emptyCanvasScene } from '../domain/canvas/index.js';
 import { documentPlainText } from '../domain/document.js';
 import type { DocumentBlock } from '../domain/document-models.js';
 

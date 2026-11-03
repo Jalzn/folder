@@ -1,8 +1,8 @@
 import type { IsoInstant } from '@tinyfold/core/domain';
 import { type Kysely, sql } from 'kysely';
 import type { EmbeddedDrawing, EmbeddedTask, EmbedPreview, EmbedProject } from '../../application/embeds/ports.js';
-import type { CanvasScene } from '../../domain/canvas.js';
-import { previewShowsScene } from '../../domain/canvas-preview.js';
+import type { CanvasScene } from '../../domain/canvas/index.js';
+import { previewShowsScene } from '../../domain/canvas/preview.js';
 import type { WorkspaceTables } from '../sql/tables.js';
 import { taskLabels } from '../sql/task-labels.js';
 import { taskChecklist } from '../sql/task-source.js';

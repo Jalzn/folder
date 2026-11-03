@@ -1,6 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
 import { textFingerprint } from '../../domain/fingerprint.js';
-import { pageMarkdown } from '../../domain/markdown-pages.js';
+import { pageMarkdown } from '../../domain/markdown/pages.js';
 import { documentCursor, type readDocumentCursor } from '../../domain/paging.js';
 export function pagedMarkdown(
   markdown: string,

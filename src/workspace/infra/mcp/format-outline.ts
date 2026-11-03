@@ -6,7 +6,7 @@ import type {
   OutlineEndpoint,
   OutlineNode,
   OutlineNodeKind,
-} from '../../domain/canvas-outline.js';
+} from '../../domain/canvas/outline.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 
 const nodeNames: Record<OutlineNodeKind, string> = {

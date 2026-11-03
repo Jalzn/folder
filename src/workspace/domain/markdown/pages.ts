@@ -1,4 +1,4 @@
-import { pageText, type TextPage } from './paging.js';
+import { pageText, type TextPage } from '../paging.js';
 
 /** A fenced block left open: code with backticks, or a display formula with dollars. */
 interface OpenBlock {

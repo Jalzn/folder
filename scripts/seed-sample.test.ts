@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CanvasElement } from '../src/workspace/domain/canvas.js';
+import type { CanvasElement } from '../src/workspace/domain/canvas/index.js';
 import { checklistProgress } from '../src/workspace/domain/checklist.js';
 import { readDocumentContent } from '../src/workspace/domain/document.js';
 import type { DocumentBlock } from '../src/workspace/domain/document-models.js';

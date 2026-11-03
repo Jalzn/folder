@@ -1,4 +1,4 @@
-import type { CanvasAck } from '../../domain/canvas.js';
+import type { CanvasAck } from '../../domain/canvas/index.js';
 import { trashItem } from '../items/lifecycle.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { DeleteCanvasInput } from '../schemas/canvases.js';

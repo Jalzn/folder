@@ -1,5 +1,5 @@
 import type { TaskRecord } from '../../application/ports/tasks.js';
-import type { Canvas, CanvasSummary } from '../../domain/canvas.js';
+import type { Canvas, CanvasSummary } from '../../domain/canvas/index.js';
 import type { Column } from '../../domain/columns.js';
 import type { Document, DocumentBlock, DocumentSummary } from '../../domain/document-models.js';
 import type { Folder } from '../../domain/folders.js';

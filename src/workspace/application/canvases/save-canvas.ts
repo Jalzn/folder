@@ -1,4 +1,4 @@
-import { type CanvasAck, canvasPlainText } from '../../domain/canvas.js';
+import { type CanvasAck, canvasPlainText } from '../../domain/canvas/index.js';
 import { titleOrUntitled } from '../../domain/text.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { SaveCanvasInput } from '../schemas/canvases.js';

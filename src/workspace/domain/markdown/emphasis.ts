@@ -1,4 +1,4 @@
-import { ESCAPED_ANYWHERE, type Inline, MARKS, type Mark } from './markdown-items.js';
+import { ESCAPED_ANYWHERE, type Inline, MARKS, type Mark } from './items.js';
 
 /** One formatted piece of inline content, with the emphasis written around it. */
 export interface EmphasisStep {

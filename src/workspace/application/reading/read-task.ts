@@ -1,4 +1,4 @@
-import { documentToMarkdown } from '../../domain/markdown.js';
+import { documentToMarkdown } from '../../domain/markdown/index.js';
 import { readDocumentCursor } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { workspaceErrors } from '../errors.js';

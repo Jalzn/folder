@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { displayMathLines, inlineMath, MATH_SEPARATOR, mathFence, needsMathSeparator } from './markdown-math.js';
+import { displayMathLines, inlineMath, MATH_SEPARATOR, mathFence, needsMathSeparator } from './math.js';
 
 describe('math fences', () => {
   it('uses one dollar more than the longest run inside', () => {

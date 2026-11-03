@@ -1,7 +1,7 @@
 import { readCivilDate, readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import type { TaskForReading } from '../../application/reading/read-models.js';
-import type { CanvasOutline } from '../../domain/canvas-outline.js';
+import type { CanvasOutline } from '../../domain/canvas/outline.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { compactJson, fitItems } from './format.js';
 import { formatCanvasOutline } from './format-outline.js';
