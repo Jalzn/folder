@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import { folderLabel, itemLabel, moreLabel } from './tree-labels';
 import type { FolderNode, ItemNode } from './tree-rows';
@@ -29,9 +30,9 @@ describe('tree labels', () => {
         type: 'document',
         id: 'a',
         title: 'Notas',
-        updatedAt: '',
-        createdAt: '',
-        pinnedAt: '2026-10-31T10:00:00Z',
+        updatedAt: toIsoInstant(new Date('2026-10-31T10:00:00.000Z')),
+        createdAt: toIsoInstant(new Date('2026-10-31T10:00:00.000Z')),
+        pinnedAt: toIsoInstant(new Date('2026-10-31T10:00:00Z')),
         folderId: null,
       },
       lastPin: true,

@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import { listTasks } from '../../application/reading/list-tasks.js';
 import type { ReadingContext } from '../../application/reading/ports.js';
 import type { TaskListing } from '../../application/reading/read-models.js';
@@ -7,7 +8,7 @@ import { isOverdue } from '../../domain/task-dates.js';
 import { keysetJsonResult } from './paged-result.js';
 import { defineTool, readOnlyAnnotations } from './types.js';
 
-const taskView = (today: string) => (task: TaskListing) => ({
+const taskView = (today: CivilDate) => (task: TaskListing) => ({
   id: task.id,
   title: task.title,
   column: task.column,

@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { type Kysely, sql } from 'kysely';
 import type { EmbeddedDrawing, EmbeddedTask, EmbedPreview, EmbedProject } from '../../application/embeds/ports.js';
 import type { CanvasScene } from '../../domain/canvas.js';
@@ -10,7 +11,7 @@ const project = (row: {
   project_id: string;
   project_name: string;
   project_color: EmbedProject['color'];
-  project_archived_at: string | null;
+  project_archived_at: IsoInstant | null;
 }): EmbedProject => ({
   id: row.project_id,
   name: row.project_name,

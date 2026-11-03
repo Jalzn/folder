@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { AppError } from '../application/index.js';
+import { toIsoInstant } from '../domain/instant.js';
 import { type Database, type DatabaseTransaction, tables, writeTransaction } from './db.js';
 
 interface Mutation {
@@ -7,7 +9,7 @@ interface Mutation {
   operation: string;
   fingerprint: string;
   response: string;
-  created_at: string;
+  created_at: IsoInstant;
 }
 
 function canonical(value: unknown): string {
@@ -26,7 +28,7 @@ export async function idempotentWrite<T>(
   operation: string,
   input: { requestId: string },
   work: (trx: DatabaseTransaction) => Promise<T>,
-  { now = () => new Date().toISOString() }: { now?: () => string } = {},
+  { now = () => toIsoInstant(new Date()) }: { now?: () => IsoInstant } = {},
 ): Promise<T> {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.requestId))
     throw new AppError('VALIDATION', 'Solicitação sem identificador válido.');
@@ -54,7 +56,7 @@ export async function idempotentWrite<T>(
 }
 
 export async function cleanupMutations(db: Database, now = new Date()): Promise<void> {
-  const cutoff = new Date(now.getTime() - 30 * 86_400_000).toISOString();
+  const cutoff = toIsoInstant(new Date(now.getTime() - 30 * 86_400_000));
   await tables<{ core_mutations: Mutation }>(db)
     .deleteFrom('core_mutations')
     .where('created_at', '<', cutoff)

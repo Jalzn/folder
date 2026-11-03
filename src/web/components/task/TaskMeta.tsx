@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import './task-meta.css';
 import type { LabelColor } from '@tinyfold/workspace/domain';
 import { Clock } from 'lucide-react';
@@ -41,7 +42,7 @@ export function TaskMeta({
   unsaved = false,
 }: {
   id: string;
-  dueOn: string | null;
+  dueOn: CivilDate | null;
   checklist: { done: number; total: number } | null;
   labels: readonly { id: string; name: string; color: LabelColor }[];
   late: boolean;

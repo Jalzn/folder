@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { excerptFromStart, NAVIGATION_LIMITS } from '@tinyfold/workspace/domain';
 import { countOf } from '../../../lib/text/count';
 import { displayTitle, type ItemType, itemTypeLabels } from '../../../lib/types';
@@ -20,7 +21,7 @@ export interface IndexRow {
   id: string;
   title: string;
   excerpt: string;
-  updatedAt: string;
+  updatedAt: IsoInstant;
   /** The folder it is in, or null at the project's root. */
   folderId: string | null;
 }
@@ -29,7 +30,7 @@ interface Listed {
   id: string;
   title: string;
   plainText: string;
-  updatedAt: string;
+  updatedAt: IsoInstant;
   folderId: string | null;
 }
 

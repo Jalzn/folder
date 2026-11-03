@@ -1,3 +1,5 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
+import { readIsoInstant } from '@tinyfold/core/domain';
 import {
   type CanvasScene,
   compactCanvasScene,
@@ -25,7 +27,7 @@ const drawing: CanvasScene = { elements: [element], appState: { viewBackgroundCo
 const initial: CanvasSnapshot = { title: 'Ideia', projectId: 'p', scene: emptyCanvasScene() };
 const edited = { ...initial, scene: drawing };
 function setup(
-  send: (input: SaveInput<CanvasSnapshot>) => Promise<{ id: string; version: number; updatedAt: string }>,
+  send: (input: SaveInput<CanvasSnapshot>) => Promise<{ id: string; version: number; updatedAt: IsoInstant }>,
   raw: string | null = null,
   version = 1,
 ) {
@@ -64,7 +66,11 @@ describe('canvas autosave', () => {
     const { controller } = setup(async (input) => {
       calls.push(input);
       if (calls.length === 1) throw new Error('response lost');
-      return { id: 'canvas', version: input.expectedVersion + 1, updatedAt: 'now' };
+      return {
+        id: 'canvas',
+        version: input.expectedVersion + 1,
+        updatedAt: readIsoInstant('2026-11-03T12:00:00.000Z'),
+      };
     });
     controller.change(edited);
     expect(await controller.flush()).toBe(false);
@@ -119,7 +125,11 @@ describe('canvas autosave', () => {
       } catch (error) {
         throw Object.assign(error as Error, { code: 'VALIDATION' });
       }
-      return { id: 'canvas', version: input.expectedVersion + 1, updatedAt: 'now' };
+      return {
+        id: 'canvas',
+        version: input.expectedVersion + 1,
+        updatedAt: readIsoInstant('2026-11-03T12:00:00.000Z'),
+      };
     });
     controller.change({ ...initial, scene: nativeScene });
     expect(await controller.flush()).toBe(false);
@@ -135,7 +145,11 @@ describe('canvas autosave', () => {
   });
   it('recovers a pending request with a newer remote version without losing its identity', async () => {
     const pending = { ...edited, id: 'canvas', expectedVersion: 1, requestId: 'stable' };
-    const send = vi.fn(async () => ({ id: 'canvas', version: 2, updatedAt: 'now' }));
+    const send = vi.fn(async () => ({
+      id: 'canvas',
+      version: 2,
+      updatedAt: readIsoInstant('2026-11-03T12:00:00.000Z'),
+    }));
     const { controller } = setup(send, JSON.stringify({ format: 1, baseVersion: 1, snapshot: edited, pending }), 2);
     await controller.flush();
     expect(send).toHaveBeenCalledWith(pending);

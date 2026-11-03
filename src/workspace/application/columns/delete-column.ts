@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { COLUMN_LIMITS, columnDeletionBlocker } from '../../domain/columns.js';
 import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext } from '../ports/context.js';
@@ -11,7 +12,7 @@ export interface MovedTask {
   id: string;
   version: number;
   position: number;
-  completedAt: string | null;
+  completedAt: IsoInstant | null;
 }
 
 /**

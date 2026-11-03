@@ -1,3 +1,4 @@
+import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
 import type { LabelColor } from '../../domain/labels.js';
 import type { ProjectColor } from '../../domain/project.js';
 
@@ -7,9 +8,9 @@ export interface ProjectRow {
   color: ProjectColor;
   position: number;
   version: number;
-  archived_at: string | null;
-  created_at: string;
-  updated_at: string;
+  archived_at: IsoInstant | null;
+  created_at: IsoInstant;
+  updated_at: IsoInstant;
 }
 
 export interface DocumentRow {
@@ -22,10 +23,10 @@ export interface DocumentRow {
   search_text: string;
   format_version: number;
   version: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  pinned_at: string | null;
+  created_at: IsoInstant;
+  updated_at: IsoInstant;
+  deleted_at: IsoInstant | null;
+  pinned_at: IsoInstant | null;
   /** Null at the project's root. A trashed item may keep a deleted folder, where it came from. */
   folder_id: string | null;
 }
@@ -38,9 +39,9 @@ export interface TaskRow {
   title: string;
   position: number;
   /** A civil date, YYYY-MM-DD. */
-  due_on: string | null;
+  due_on: CivilDate | null;
   /** Set exactly in the done column, which a trigger keeps. */
-  completed_at: string | null;
+  completed_at: IsoInstant | null;
   /** The description, in the document block format, as JSON. */
   description: string;
   description_plain_text: string;
@@ -50,9 +51,9 @@ export interface TaskRow {
   checklist_total: number;
   version: number;
   text_version: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  created_at: IsoInstant;
+  updated_at: IsoInstant;
+  deleted_at: IsoInstant | null;
 }
 
 /** A board column, the same for every project; a deleted one keeps its row. */
@@ -64,9 +65,9 @@ export interface ColumnRow {
   position: number;
   is_done: 0 | 1;
   version: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  created_at: IsoInstant;
+  updated_at: IsoInstant;
+  deleted_at: IsoInstant | null;
 }
 
 /** A label, the same for every project; a deleted one keeps its row and its links. */
@@ -77,9 +78,9 @@ export interface LabelRow {
   name_key: string;
   color: LabelColor;
   version: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  created_at: IsoInstant;
+  updated_at: IsoInstant;
+  deleted_at: IsoInstant | null;
 }
 
 /** A document deleted for good leaves `document_id` null; `document_title` is the title it had. */
@@ -98,7 +99,7 @@ export interface CanvasPreviewRow {
   png: Uint8Array;
   width: number;
   height: number;
-  created_at: string;
+  created_at: IsoInstant;
 }
 
 /** A deleted folder keeps its row (deleted_at): it names the origin of trashed items and can come back. */
@@ -110,9 +111,9 @@ export interface FolderRow {
   name_key: string;
   position: number;
   version: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  created_at: IsoInstant;
+  updated_at: IsoInstant;
+  deleted_at: IsoInstant | null;
 }
 
 export interface WorkspaceTables {
@@ -139,10 +140,10 @@ export interface CanvasRow {
   search_text: string;
   format_version: number;
   version: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  pinned_at: string | null;
+  created_at: IsoInstant;
+  updated_at: IsoInstant;
+  deleted_at: IsoInstant | null;
+  pinned_at: IsoInstant | null;
   /** Null at the project's root. A trashed item may keep a deleted folder, where it came from. */
   folder_id: string | null;
 }

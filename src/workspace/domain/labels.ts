@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { firstUnused } from './palette.js';
 /** A label, the same for every project. A deleted label keeps its row and its links to tasks. */
 export interface Label {
@@ -5,9 +6,9 @@ export interface Label {
   name: string;
   color: LabelColor;
   version: number;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
+  createdAt: IsoInstant;
+  updatedAt: IsoInstant;
+  deletedAt: IsoInstant | null;
 }
 
 /** The label colors, the keys of the --label-<color> tokens. */

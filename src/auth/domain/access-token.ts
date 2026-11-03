@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { DomainError } from '@tinyfold/core/domain';
 
 /** Personal access tokens: `tf_mcp_` and 43 base64url characters (32 random bytes). */
@@ -33,6 +34,6 @@ export function assertAccessTokenSlot(activeTokens: number): void {
     throw new DomainError(`Você já tem ${MAX_ACTIVE_ACCESS_TOKENS} tokens. Revogue um para gerar outro.`);
 }
 
-export function shouldRecordUse(lastUsedAt: string | null, now: Date): boolean {
+export function shouldRecordUse(lastUsedAt: IsoInstant | null, now: Date): boolean {
   return lastUsedAt === null || now.getTime() - Date.parse(lastUsedAt) >= LAST_USE_INTERVAL_MS;
 }

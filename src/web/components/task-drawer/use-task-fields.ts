@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import { useRef } from 'react';
 import { queryClient, requestId } from '../../lib/api';
 import { followingTask } from '../../lib/board-order';
@@ -12,7 +13,7 @@ import { useCreateLabel } from '../labels';
 import { TASK_CHANGED, taskWrites, useTaskCompletion } from '../task';
 
 type FieldKind = 'column' | 'due' | 'labels';
-type FieldPatch = { columnId?: string; dueOn?: string | null; labelIds?: string[] };
+type FieldPatch = { columnId?: string; dueOn?: CivilDate | null; labelIds?: string[] };
 
 /**
  * The drawer's writes to the open task's fields, one at a time in a queue: its column, due date, labels,
@@ -112,7 +113,7 @@ export function useTaskFields(task: Task | undefined) {
     busy: action.busy,
     /** To another column, at its end, or at the top of the done column. */
     setColumn: (columnId: string, name: string) => update('column', { columnId }, () => toast(`Movida para ${name}.`)),
-    setDue: (dueOn: string | null) => update('due', { dueOn }),
+    setDue: (dueOn: CivilDate | null) => update('due', { dueOn }),
     setLabels: (labelIds: string[]) => update('labels', { labelIds }),
     /** Creates a label with the next color and puts it on the task. */
     addNewLabel: async (name: string) => {

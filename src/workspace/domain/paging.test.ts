@@ -1,3 +1,4 @@
+import { readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import {
   boardCursor,
@@ -39,7 +40,7 @@ describe('cursors', () => {
   const id = '3f9e2c1a-0b4d-4e5f-8a6b-7c8d9e0f1a2b';
   it('round trips document, search and board cursors', () => {
     expect(readDocumentCursor(documentCursor('1f3a9c', 60_000))).toEqual({ textPrint: '1f3a9c', offset: 60_000 });
-    const searchKey = { titleRank: 2, updatedAt: '2026-10-31T06:41:25.403Z', typeRank: 1, id };
+    const searchKey = { titleRank: 2, updatedAt: readIsoInstant('2026-10-31T06:41:25.403Z'), typeRank: 1, id };
     expect(searchCursor(searchKey)).toBe(`s~2~2026-10-31T06:41:25.403Z~1~${id}`);
     expect(readSearchCursor(searchCursor(searchKey))).toEqual(searchKey);
     const boardKey = { columnRank: 1, position: 7, id };
@@ -60,7 +61,7 @@ describe('cursors', () => {
 
 describe('completed tasks cursor', () => {
   it('keeps the completion and the ID, and refuses any other cursor', () => {
-    const key = { completedAt: '2026-10-31T06:41:25.403Z', id: '00000000-0000-4000-8000-000000000010' };
+    const key = { completedAt: readIsoInstant('2026-10-31T06:41:25.403Z'), id: '00000000-0000-4000-8000-000000000010' };
     expect(completedCursor(key)).toBe(`c~2026-10-31T06:41:25.403Z~${key.id}`);
     expect(readCompletedCursor(completedCursor(key))).toEqual(key);
     for (const cursor of ['c~2026-10-31~x', `t~1~0~0~${key.id}`, ''])

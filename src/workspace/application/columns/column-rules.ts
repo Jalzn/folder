@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { COLUMN_LIMITS, type Column } from '../../domain/columns.js';
 import { workspaceErrors } from '../errors.js';
 import { namedCollection, renumber } from '../named-collection.js';
@@ -23,7 +24,7 @@ const COMPLETION_MARGIN_MS = 60_000;
  * folders, but every completion in them came from an earlier answer of this server, so one more than
  * a minute ahead of its clock is forged or corrupt, and the whole request is refused.
  */
-export function assertPastCompletions(completions: readonly (string | null)[], now: string): void {
+export function assertPastCompletions(completions: readonly (string | null)[], now: IsoInstant): void {
   const latest = Date.parse(now) + COMPLETION_MARGIN_MS;
   if (completions.some((completedAt) => completedAt !== null && Date.parse(completedAt) > latest))
     throw workspaceErrors.futureCompletion();

@@ -1,3 +1,4 @@
+import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
 import type { OriginTask, ProjectReference, TaskForReading } from '../../application/reading/read-models.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { isOverdue } from '../../domain/task-dates.js';
@@ -24,7 +25,7 @@ export function documentHeader(
       id: string;
       title: string;
       version: number;
-      updatedAt: string;
+      updatedAt: IsoInstant;
       folder: { name: string } | null;
     };
     originTasks: OriginTask[];
@@ -108,7 +109,7 @@ const MIN_CUT_ROOM = 200;
  * excerpt are cut to fit. Dates are civil dates in the owner's time zone, `today` among them.
  */
 export function taskHeader(
-  input: { task: Omit<TaskForReading, 'description'>; today: string; empty: boolean },
+  input: { task: Omit<TaskForReading, 'description'>; today: CivilDate; empty: boolean },
   maxChars: number = READING_LIMITS.task.headerChars,
 ): string {
   const { task, today } = input;

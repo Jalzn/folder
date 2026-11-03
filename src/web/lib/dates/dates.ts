@@ -1,3 +1,5 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
+
 const dayMonth = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' });
 
 function startOfDay(date: Date) {
@@ -10,7 +12,7 @@ export function daysAgo(value: string, now = new Date()) {
 }
 
 /** A date as lists show it: "hoje", "ontem" or "27 out". */
-export function shortInstant(value: string, now = new Date()) {
+export function shortInstant(value: IsoInstant, now = new Date()) {
   const date = new Date(value);
   const days = daysAgo(value, now);
   if (days === 0) return 'hoje';

@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 export const ITEM_TYPES = ['document', 'drawing', 'task'] as const;
 export const FILED_ITEM_TYPES = ['document', 'drawing'] as const;
 export type ItemType = (typeof ITEM_TYPES)[number];
@@ -7,8 +8,8 @@ export interface FiledItem {
   projectId: string;
   folderId: string | null;
   version: number;
-  pinnedAt: string | null;
-  deletedAt: string | null;
+  pinnedAt: IsoInstant | null;
+  deletedAt: IsoInstant | null;
 }
 
 /**
@@ -18,14 +19,14 @@ export interface FiledItem {
 export interface RestoreAck {
   id: string;
   version: number;
-  updatedAt: string;
+  updatedAt: IsoInstant;
   folderGone: boolean;
 }
 
 export interface ItemAck {
   id: string;
   version: number;
-  updatedAt: string;
+  updatedAt: IsoInstant;
 }
 
 export type DocumentAck = ItemAck;

@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { ArrowUpFromLine } from 'lucide-react';
 import { SaveState, useEdited } from '../../components/item-page';
 import type { SaveStatus } from '../../lib/autosave';
@@ -19,7 +20,7 @@ export function DrawingHeader({
   onImport,
   onTrash,
 }: {
-  canvas: { id: string; folderId: string | null; pinnedAt: string | null; updatedAt: string };
+  canvas: { id: string; folderId: string | null; pinnedAt: IsoInstant | null; updatedAt: IsoInstant };
   projectId: string;
   status: SaveStatus;
   /** In the trash, the drawing shows no save state: nothing is sent, and its band says why. */

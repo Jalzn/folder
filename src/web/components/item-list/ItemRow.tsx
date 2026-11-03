@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import './item-row.css';
 import { Link } from '@tanstack/react-router';
 import { shortInstant } from '../../lib/dates/dates';
@@ -21,7 +22,7 @@ export function ItemRow({
   /** The folder's name, or nothing at the project's root. */
   folder?: string | undefined;
   excerpt?: string | undefined;
-  updatedAt: string;
+  updatedAt: IsoInstant;
   href: string;
 }) {
   return (

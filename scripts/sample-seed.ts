@@ -19,7 +19,7 @@
  * (data/tinyfold.sqlite) and the production one (/data/tinyfold.sqlite) included.
  */
 import { randomUUID } from 'node:crypto';
-import { addDays } from '../src/core/domain/index.js';
+import { addDays, type CivilDate } from '../src/core/domain/index.js';
 import type { CanvasScene, DocumentBlock, LabelColor } from '../src/workspace/domain/index.js';
 import type { Project, WorkspaceService } from '../src/workspace/index.js';
 import {
@@ -143,7 +143,7 @@ interface Writers {
   workspace: WorkspaceService;
   at(instant: string): WorkspaceService;
   /** The day the seed runs, in UTC, which due dates and completions count from. */
-  today: string;
+  today: CivilDate;
 }
 
 interface SampleTask {

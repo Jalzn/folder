@@ -1,3 +1,5 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it, vi } from 'vitest';
 import { AutosaveController, parseDraft, type SaveAck, type SavedDraft, type SaveInput, type Snapshot } from '.';
 
@@ -7,7 +9,7 @@ const readDraft = (raw: string | null) => parseDraft(raw) as SavedDraft<Snapshot
 const initial: Snapshot = { title: 'Ideia', projectId: 'p', content: [] };
 const changed = { ...initial, title: 'Nova ideia' };
 function setup(
-  send: (input: SaveInput<Snapshot>) => Promise<{ id: string; version: number; updatedAt: string }>,
+  send: (input: SaveInput<Snapshot>) => Promise<{ id: string; version: number; updatedAt: IsoInstant }>,
   stored: string | null = null,
   remoteVersion = 1,
   hooks: {
@@ -45,7 +47,11 @@ describe('document autosave', () => {
     const { controller } = setup(async (input) => {
       calls.push(input);
       if (calls.length === 1) throw new Error('response lost');
-      return { id: input.id, version: input.expectedVersion + 1, updatedAt: 'now' };
+      return {
+        id: input.id,
+        version: input.expectedVersion + 1,
+        updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')),
+      };
     });
     controller.change(changed);
     expect(await controller.flush()).toBe(false);
@@ -63,7 +69,11 @@ describe('document autosave', () => {
     let release: (() => void) | undefined;
     const { controller } = setup(async (input) => {
       calls.push(input);
-      return { id: input.id, version: input.expectedVersion + 1, updatedAt: 'now' };
+      return {
+        id: input.id,
+        version: input.expectedVersion + 1,
+        updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')),
+      };
     });
     controller.change(changed);
     const moving = controller.relocate(async (version) => {
@@ -90,7 +100,7 @@ describe('document autosave', () => {
     const { controller } = setup(async (input) => ({
       id: input.id,
       version: input.expectedVersion + 1,
-      updatedAt: 'now',
+      updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')),
     }));
     await expect(
       controller.relocate(async () => {
@@ -112,14 +122,18 @@ describe('document autosave', () => {
   });
   it('hydrates an unacknowledged request and retries it despite a newer remote version', async () => {
     const pending = { ...changed, id: 'doc', expectedVersion: 1, requestId: 'stable-id' };
-    const send = vi.fn(async () => ({ id: 'doc', version: 2, updatedAt: 'now' }));
+    const send = vi.fn(async () => ({
+      id: 'doc',
+      version: 2,
+      updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')),
+    }));
     const { controller } = setup(send, JSON.stringify({ format: 1, baseVersion: 1, snapshot: changed, pending }), 2);
     await controller.flush();
     expect(send).toHaveBeenCalledWith(pending);
     expect(controller.getState().status).toBe('saved');
   });
   it('serializes edits made while a save is in flight', async () => {
-    let finish!: (value: { id: string; version: number; updatedAt: string }) => void;
+    let finish!: (value: { id: string; version: number; updatedAt: IsoInstant }) => void;
     const calls: SaveInput<Snapshot>[] = [];
     const { controller } = setup((input) => {
       calls.push(input);
@@ -127,13 +141,13 @@ describe('document autosave', () => {
         ? new Promise((resolve) => {
             finish = resolve;
           })
-        : Promise.resolve({ id: 'doc', version: 3, updatedAt: 'later' });
+        : Promise.resolve({ id: 'doc', version: 3, updatedAt: toIsoInstant(new Date('2026-11-03T12:00:01.000Z')) });
     });
     controller.change(changed);
     const pending = controller.flush();
     controller.change({ ...changed, title: 'Enquanto salva' });
     expect(calls).toHaveLength(1);
-    finish({ id: 'doc', version: 2, updatedAt: 'now' });
+    finish({ id: 'doc', version: 2, updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')) });
     await pending;
     expect(calls[1]?.expectedVersion).toBe(2);
     expect(controller.getState().snapshot.title).toBe('Enquanto salva');
@@ -142,7 +156,7 @@ describe('document autosave', () => {
   it('does not roll back a known newer remote version when replay returns an older acknowledgment', async () => {
     const pending = { ...changed, id: 'doc', expectedVersion: 1, requestId: 'stable-id' };
     const { controller } = setup(
-      async () => ({ id: 'doc', version: 2, updatedAt: 'now' }),
+      async () => ({ id: 'doc', version: 2, updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')) }),
       JSON.stringify({ format: 1, baseVersion: 1, snapshot: changed, pending }),
       3,
     );
@@ -168,15 +182,23 @@ describe('document autosave', () => {
     const flushing = controller.flush();
     const remote = { ...changed, title: 'Salvo depois em outro dispositivo' };
     controller.receiveRemote(remote, 3);
-    answer.resolve({ id: 'doc', version: 2, updatedAt: 'now' });
+    answer.resolve({ id: 'doc', version: 2, updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')) });
     expect(await flushing).toBe(true);
     expect(controller.getState()).toMatchObject({ status: 'saved', version: 3, snapshot: remote });
-    expect(onSaved).toHaveBeenCalledExactlyOnceWith({ id: 'doc', version: 2, updatedAt: 'now' }, changed);
+    expect(onSaved).toHaveBeenCalledExactlyOnceWith(
+      { id: 'doc', version: 2, updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')) },
+      changed,
+    );
     expect(onAdopted).toHaveBeenCalledExactlyOnceWith(remote, 3);
   });
   it('reports no adoption for its own saves', async () => {
     const onAdopted = vi.fn();
-    const { controller } = setup(async () => ({ id: 'doc', version: 2, updatedAt: 'now' }), null, 1, { onAdopted });
+    const { controller } = setup(
+      async () => ({ id: 'doc', version: 2, updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')) }),
+      null,
+      1,
+      { onAdopted },
+    );
     controller.change(changed);
     await controller.flush();
     controller.receiveRemote(changed, 2);
@@ -188,7 +210,7 @@ describe('document autosave', () => {
       version: 1,
       snapshot: initial,
       readDraft,
-      send: async () => ({ id: 'doc', version: 2, updatedAt: 'now' }),
+      send: async () => ({ id: 'doc', version: 2, updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')) }),
       idFactory: () => 'id',
       classifyError: () => undefined,
       storage: {
@@ -215,7 +237,11 @@ describe('document autosave', () => {
   });
   it('never replays a stored request for a different document', async () => {
     const pending = { ...changed, id: 'different-document', expectedVersion: 1, requestId: 'old-id' };
-    const send = vi.fn(async () => ({ id: 'doc', version: 2, updatedAt: 'now' }));
+    const send = vi.fn(async () => ({
+      id: 'doc',
+      version: 2,
+      updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')),
+    }));
     const { controller } = setup(send, JSON.stringify({ format: 1, baseVersion: 1, snapshot: changed, pending }));
     await controller.flush();
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ id: 'doc', title: changed.title, requestId: 'id-1' }));
@@ -249,7 +275,11 @@ describe('document autosave', () => {
     const { controller } = setup(async (input) => {
       const failure = failures.shift();
       if (failure) throw failure;
-      return { id: input.id, version: input.expectedVersion + 1, updatedAt: 'now' };
+      return {
+        id: input.id,
+        version: input.expectedVersion + 1,
+        updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')),
+      };
     });
     controller.change(changed);
     expect(await controller.flush()).toBe(false);
@@ -264,7 +294,11 @@ describe('document autosave', () => {
     const { controller } = setup(async (input) => {
       calls.push(input);
       if (calls.length === 1) throw Object.assign(new Error('inválido'), { code: 'VALIDATION' });
-      return { id: input.id, version: input.expectedVersion + 1, updatedAt: 'now' };
+      return {
+        id: input.id,
+        version: input.expectedVersion + 1,
+        updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')),
+      };
     });
     controller.change(changed);
     expect(await controller.flush()).toBe(false);
@@ -281,7 +315,7 @@ describe('document autosave', () => {
       const send = vi.fn(async (input: SaveInput<Snapshot>) => ({
         id: input.id,
         version: input.expectedVersion + 1,
-        updatedAt: 'now',
+        updatedAt: toIsoInstant(new Date('2026-11-03T12:00:00.000Z')),
       }));
       const { controller, stored } = setup(send);
       controller.hold(true);

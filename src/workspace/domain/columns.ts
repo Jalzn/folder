@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 /**
  * A board column. Columns are the same for every project: the board of a project is its tasks in
  * them. There is always one done column and at least one open column. A deleted column keeps its
@@ -11,9 +12,9 @@ export interface Column {
   /** Whether it is the done column: its tasks are completed, and only it has completedAt. */
   isDone: boolean;
   version: number;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
+  createdAt: IsoInstant;
+  updatedAt: IsoInstant;
+  deletedAt: IsoInstant | null;
 }
 
 /** Bounds of columns: the name, the active columns, and the tasks a deletion or a done switch lists. */

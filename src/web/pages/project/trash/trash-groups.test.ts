@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import { filterTrash, groupTrash } from './trash-groups';
 
@@ -5,7 +6,7 @@ const now = new Date(2026, 9, 31, 15, 0);
 const item = (id: string, type: 'document' | 'drawing' | 'task', deletedAt: Date) => ({
   id,
   type,
-  deletedAt: deletedAt.toISOString(),
+  deletedAt: toIsoInstant(deletedAt),
 });
 const old = item('e', 'task', new Date(2026, 5, 1));
 const items = [

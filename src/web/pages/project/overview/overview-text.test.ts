@@ -1,8 +1,9 @@
+import { readCivilDate, toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import { leftOutLine, overviewSummary } from './overview-text';
 
 const now = new Date(2026, 9, 31, 15, 0);
-const today = new Date(2026, 9, 31, 9, 30).toISOString();
+const today = toIsoInstant(new Date(2026, 9, 31, 9, 30));
 
 describe('overviewSummary', () => {
   it('counts open and late tasks and names the text edited last', () => {
@@ -13,7 +14,7 @@ describe('overviewSummary', () => {
   });
 
   it('says one task in the singular and a drawing as a drawing', () => {
-    const lastEdited = { type: 'drawing' as const, title: 'Fluxo', updatedAt: new Date(2026, 9, 27).toISOString() };
+    const lastEdited = { type: 'drawing' as const, title: 'Fluxo', updatedAt: toIsoInstant(new Date(2026, 9, 27)) };
     expect(overviewSummary(1, 0, lastEdited, now)).toBe('1 tarefa aberta. Último desenho editado: Fluxo, 27 out.');
   });
 
@@ -37,9 +38,11 @@ describe('leftOutLine', () => {
   });
 
   it('names the one task left out when it has a due date', () => {
-    expect(leftOutLine([{ name: 'A fazer', count: 1, only: { title: 'Renovar domínio', dueOn: '2026-11-15' } }])).toBe(
-      'Mais 1 em A fazer: Renovar domínio, 15 nov.',
-    );
+    expect(
+      leftOutLine([
+        { name: 'A fazer', count: 1, only: { title: 'Renovar domínio', dueOn: readCivilDate('2026-11-15') } },
+      ]),
+    ).toBe('Mais 1 em A fazer: Renovar domínio, 15 nov.');
   });
 
   it('is empty when Agora lists everything open', () => {

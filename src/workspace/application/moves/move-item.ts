@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { FiledItem } from '../../domain/items.js';
 import { workspaceErrors } from '../errors.js';
 import { requireFolderInProject, requireProjectForFolders } from '../folders/folder-rules.js';
@@ -14,7 +15,7 @@ export interface MovedItem {
   projectId: string;
   folderId: string | null;
   version: number;
-  pinnedAt: string | null;
+  pinnedAt: IsoInstant | null;
 }
 
 const where = (item: FiledItem): MovedItem => ({

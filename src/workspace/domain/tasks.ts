@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { DocumentContent } from './document-models.js';
 import type { Task } from './task-models.js';
 
@@ -6,7 +7,7 @@ export type { Task };
 /** A task with its description, as the drawer opens it, live or in the trash. */
 export interface TaskDetail extends Task {
   description: DocumentContent;
-  deletedAt: string | null;
+  deletedAt: IsoInstant | null;
 }
 
 /** Bounds of a task: its title and its labels. The description has the document's limits. */
@@ -16,5 +17,5 @@ export const TASK_LIMITS = { titleChars: 300, labels: 20 } as const;
 export interface TaskTextAck {
   id: string;
   textVersion: number;
-  updatedAt: string;
+  updatedAt: IsoInstant;
 }

@@ -1,14 +1,22 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
+import { readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import { byPinOrder, bySort, type NavItem } from './navigation.js';
 
 /** Created on October `created` and edited on October `edited`. */
-const item = (id: string, title: string, created: number, edited: number, pinnedAt: string | null = null): NavItem => ({
+const item = (
+  id: string,
+  title: string,
+  created: number,
+  edited: number,
+  pinnedAt: IsoInstant | null = null,
+): NavItem => ({
   type: 'document',
   folderId: null,
   id,
   title,
-  createdAt: `2026-10-${String(created).padStart(2, '0')}T12:00:00.000Z`,
-  updatedAt: `2026-10-${String(edited).padStart(2, '0')}T12:00:00.000Z`,
+  createdAt: readIsoInstant(`2026-10-${String(created).padStart(2, '0')}T12:00:00.000Z`),
+  updatedAt: readIsoInstant(`2026-10-${String(edited).padStart(2, '0')}T12:00:00.000Z`),
   pinnedAt,
 });
 
@@ -23,8 +31,8 @@ describe('sidebar order', () => {
 
   it('orders pinned items in the order they were pinned', () => {
     const pinned = [
-      item('c', 'Zebra', 3, 18, '2026-10-20T08:00:00.000Z'),
-      item('e', 'Doc 2', 5, 19, '2026-10-19T08:00:00.000Z'),
+      item('c', 'Zebra', 3, 18, readIsoInstant('2026-10-20T08:00:00.000Z')),
+      item('e', 'Doc 2', 5, 19, readIsoInstant('2026-10-19T08:00:00.000Z')),
     ];
     expect(ids([...pinned].sort(byPinOrder))).toEqual(['e', 'c']);
   });
@@ -39,7 +47,10 @@ describe('sidebar order', () => {
     const twins = [item('y', 'Igual', 1, 1), item('x', 'Igual', 1, 1)];
     for (const sort of ['recent', 'title', 'created'] as const)
       expect(ids([...twins].sort(bySort(sort)))).toEqual(['x', 'y']);
-    const pins = [item('y', 'Y', 1, 1, '2026-10-01T00:00:00.000Z'), item('x', 'X', 1, 1, '2026-10-01T00:00:00.000Z')];
+    const pins = [
+      item('y', 'Y', 1, 1, readIsoInstant('2026-10-01T00:00:00.000Z')),
+      item('x', 'X', 1, 1, readIsoInstant('2026-10-01T00:00:00.000Z')),
+    ];
     expect(ids([...pins].sort(byPinOrder))).toEqual(['x', 'y']);
   });
 });

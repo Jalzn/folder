@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { Calendar } from '../calendar.js';
 import type { BoardRepository } from './board.js';
 import type { CanvasPreviewRepository, CanvasRepository } from './canvases.js';
@@ -25,7 +26,7 @@ export type WorkspaceRepository = ProjectRepository &
   BoardRepository;
 
 export interface WorkspaceContext {
-  now(): string;
+  now(): IsoInstant;
   /** The owner's time zone and today in it. */
   calendar(): Promise<Calendar>;
   newId(): string;

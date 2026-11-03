@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import type { IsoInstant } from '@tinyfold/core/domain';
+import { readIsoInstant } from '@tinyfold/core/domain';
 import type { Database } from '@tinyfold/core/infra';
 import { useTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
@@ -34,9 +36,9 @@ async function migrateTo006() {
 }
 
 /** A folder written straight to the table, as the triggers see any write. */
-async function folder(projectId: string, name: string, deletedAt: string | null = null) {
+async function folder(projectId: string, name: string, deletedAt: IsoInstant | null = null) {
   const id = randomUUID();
-  const now = '2026-10-31T12:00:00.000Z';
+  const now = readIsoInstant('2026-10-31T12:00:00.000Z');
   await sql`insert into workspace_folders (id, project_id, name, name_key, position, version, created_at, updated_at, deleted_at)
     values (${id}, ${projectId}, ${name}, ${nameKey(name)}, 0, 1, ${now}, ${now}, ${deletedAt})`.execute(db);
   return id;
@@ -58,8 +60,16 @@ describe('migration 006', () => {
   it('keeps live, trashed and pinned items, previews and task sources as they were, at the root', async () => {
     const old = legacyRows(db, { at: 5 });
     const project = await old.project('Tinyfold');
-    const live = await old.document({ projectId: project.id, title: 'Visão', pinnedAt: '2026-10-20T10:00:00.000Z' });
-    await old.document({ projectId: project.id, title: 'Na lixeira', deletedAt: '2026-10-21T10:00:00.000Z' });
+    const live = await old.document({
+      projectId: project.id,
+      title: 'Visão',
+      pinnedAt: readIsoInstant('2026-10-20T10:00:00.000Z'),
+    });
+    await old.document({
+      projectId: project.id,
+      title: 'Na lixeira',
+      deletedAt: readIsoInstant('2026-10-21T10:00:00.000Z'),
+    });
     const canvas = await old.canvas({ projectId: project.id, title: 'Fluxo', scene: drawingFixture(), version: 3 });
     await old.preview(canvas.id, pngImage(10, 10), { sceneVersion: 3, fingerprint: 'abc' });
     const task = await old.task({ projectId: project.id, title: 'Revisar' });
@@ -81,7 +91,7 @@ describe('migration 006', () => {
     }
     // The workspace reads the old rows: the pin and the version stay, at the root.
     expect(await createWorkspaceService(db).getDocument({ id: live.id })).toMatchObject({
-      pinnedAt: '2026-10-20T10:00:00.000Z',
+      pinnedAt: readIsoInstant('2026-10-20T10:00:00.000Z'),
       version: 1,
       folderId: null,
     });
@@ -92,7 +102,7 @@ describe('migration 006', () => {
     const [mine, other] = [await old.project('Meu'), await old.project('Outro')];
     await migrateTo006();
     const [inMine, inOther] = [await folder(mine.id, 'MCP'), await folder(other.id, 'MCP')];
-    const gone = await folder(mine.id, 'Antiga', '2026-10-30T10:00:00.000Z');
+    const gone = await folder(mine.id, 'Antiga', readIsoInstant('2026-10-30T10:00:00.000Z'));
     const document = await old.document({ projectId: mine.id, title: 'Plano' });
     const canvas = await old.canvas({ projectId: mine.id, title: 'Fluxo' });
     const refused = (statement: ReturnType<typeof sql>) => expect(statement.execute(db)).rejects.toThrow();

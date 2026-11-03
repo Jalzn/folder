@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import { isOverdue } from '@tinyfold/workspace/domain';
 import { inBoardOrder } from '../../lib/board-order';
 import type { ColumnSummary } from '../../lib/queries';
@@ -28,7 +29,7 @@ export const keyLayout = (board: readonly BoardColumnView[]): BoardLayout => ({
 });
 
 /** How many of the board's tasks are late today: due before today, outside the done column. */
-export const lateCount = (board: readonly BoardColumnView[], today: string) =>
+export const lateCount = (board: readonly BoardColumnView[], today: CivilDate) =>
   board.reduce(
     (late, { column, tasks }) => late + tasks.filter((task) => isOverdue(task.dueOn, today, column.isDone)).length,
     0,

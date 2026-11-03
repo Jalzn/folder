@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { ComponentProps } from 'react';
 import { SaveState, useEdited } from '../../components/item-page';
 import type { SaveStatus } from '../../lib/autosave';
@@ -17,7 +18,7 @@ export function DocumentHeader({
 }: {
   status: SaveStatus;
   trashed: boolean;
-  updatedAt: string;
+  updatedAt: IsoInstant;
   onRetry: () => void;
   menu: ComponentProps<typeof DocumentMenu>;
 }) {

@@ -4,5 +4,16 @@ export class DomainError extends Error {
     this.name = 'DomainError';
   }
 }
-export { addDays, canonicalTimeZone, isCivilDate, isTimeZone, startOfDayIn, todayIn } from './time-zone.js';
+
+export { type IsoInstant, isIsoInstant, readIsoInstant, toIsoInstant } from './instant.js';
+export {
+  addDays,
+  type CivilDate,
+  canonicalTimeZone,
+  isCivilDate,
+  isTimeZone,
+  readCivilDate,
+  startOfDayIn,
+  todayIn,
+} from './time-zone.js';
 export { joinsEmoji, visibleText, withoutHidden } from './visible-text.js';

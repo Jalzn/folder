@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -19,7 +20,10 @@ const content = (text: string): DocumentBlock[] => [
 ];
 
 describe('project trash and permanent delete', () => {
-  const workspace = useWorkspaceDb({ prefix: 'tinyfold-trash-', start: '2026-10-31T12:00:00Z' });
+  const workspace = useWorkspaceDb({
+    prefix: 'tinyfold-trash-',
+    start: toIsoInstant(new Date('2026-10-31T12:00:00Z')),
+  });
   let db: Database;
   let service: WorkspaceService;
   let project: Project;
@@ -343,7 +347,7 @@ describe('project trash and permanent delete', () => {
   });
 
   it('lists and empties up to 1,000 items at once, and counts them all', async () => {
-    const deletedAt = (index: number) => new Date(Date.UTC(2026, 9, 1) + index * 1000).toISOString();
+    const deletedAt = (index: number) => toIsoInstant(new Date(Date.UTC(2026, 9, 1) + index * 1000));
     await tables<WorkspaceTables>(db)
       .insertInto('workspace_tasks')
       .values(

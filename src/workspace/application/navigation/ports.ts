@@ -1,3 +1,4 @@
+import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
 import type { Column } from '../../domain/columns.js';
 import type { NavItem, NavItemType } from '../../domain/navigation.js';
 import type { Project } from '../../domain/project-models.js';
@@ -20,9 +21,9 @@ export interface NavigationReader {
   /** The project's live tasks outside the done column, in board order, with their sources. */
   openTasks(projectId: string): Promise<Task[]>;
   /** How many of the project's live tasks are due before `today` outside the done column. */
-  overdueCount(projectId: string, today: string): Promise<number>;
+  overdueCount(projectId: string, today: CivilDate): Promise<number>;
   /** The project's live tasks completed since `since`, the most recent first: the first `limit` and how many. */
-  doneTasks(projectId: string, since: string, limit: number): Promise<{ items: Task[]; total: number }>;
+  doneTasks(projectId: string, since: IsoInstant, limit: number): Promise<{ items: Task[]; total: number }>;
   /** The live documents and drawings edited last, with an excerpt of their text. */
   recentItems(projectId: string, limit: number): Promise<RecentItem[]>;
   /** Items of every type in the project's trash. */
@@ -41,7 +42,7 @@ export interface RecentItem {
   type: NavItemType;
   id: string;
   title: string;
-  updatedAt: string;
+  updatedAt: IsoInstant;
   /**
    * On one line: a document's first text that is not a heading, or its headings when it has only
    * those; the start of a drawing's texts, separated by commas.
@@ -57,7 +58,7 @@ export interface TrashItem {
   title: string;
   /** What restoring or deleting the item for good must expect. */
   version: number;
-  deletedAt: string;
+  deletedAt: IsoInstant;
   /** The folder a document or drawing was in, even one deleted since; null for tasks and the root. */
   folder: { id: string; name: string; deleted: boolean } | null;
 }

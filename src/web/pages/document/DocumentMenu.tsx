@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { ArrowDownToLine, ArrowUpFromLine, Plus } from 'lucide-react';
 import { ARCHIVED_NOTE } from '../../lib/text/project-text';
 import { ItemMenu, type ItemMenuAction } from '../../shell';
@@ -24,7 +25,7 @@ export function DocumentMenu({
   onImport,
   onTrash,
 }: {
-  document: { id: string; folderId: string | null; pinnedAt: string | null };
+  document: { id: string; folderId: string | null; pinnedAt: IsoInstant | null };
   projectId: string;
   /** Whether the editor has a selected excerpt, which "Criar tarefa" takes. */
   selected: boolean;

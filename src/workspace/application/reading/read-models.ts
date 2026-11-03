@@ -1,3 +1,4 @@
+import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
 import type { CanvasScene } from '../../domain/canvas.js';
 import type { DocumentBlock } from '../../domain/document-models.js';
 import type { LabelColor } from '../../domain/labels.js';
@@ -56,8 +57,8 @@ export interface ProjectWithCounts extends ItemCounts {
   /** The place in the project selector; null for an archived project, which has none. */
   position: number | null;
   archived: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: IsoInstant;
+  updatedAt: IsoInstant;
   /** Every active folder of the project. */
   folderCount: number;
   /** The first active folders, in the sidebar's order, at most READING_LIMITS.projectFolders. */
@@ -86,7 +87,7 @@ export interface SearchQuery {
 export type SearchHit = ProjectReference & {
   id: string;
   title: string;
-  updatedAt: string;
+  updatedAt: IsoInstant;
   /** How many query words the title lacks; it orders the results and is not shown. */
   titleRank: number;
 } & (
@@ -112,8 +113,8 @@ export interface DocumentForReading extends ProjectReference {
   folder: FolderReference | null;
   content: DocumentBlock[];
   version: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: IsoInstant;
+  updatedAt: IsoInstant;
 }
 
 export interface OriginTask {
@@ -130,7 +131,7 @@ export interface CanvasForReading extends ProjectReference {
   folder: FolderReference | null;
   scene: CanvasScene;
   version: number;
-  updatedAt: string;
+  updatedAt: IsoInstant;
   preview: StoredPreview | null;
 }
 
@@ -174,17 +175,17 @@ export interface TaskListing extends ProjectReference {
   /** The position of the task's column among the active ones, which orders the board. */
   columnPosition: number;
   position: number;
-  dueOn: string | null;
-  completedAt: string | null;
+  dueOn: CivilDate | null;
+  completedAt: IsoInstant | null;
   /** The active labels, in alphabetical order. */
   labels: TaskLabel[];
   checklist: { done: number; total: number } | null;
-  updatedAt: string;
+  updatedAt: IsoInstant;
   source: SourceDocument | null;
 }
 
 export interface TaskForReading extends Omit<TaskListing, 'source'> {
-  createdAt: string;
+  createdAt: IsoInstant;
   version: number;
   textVersion: number;
   description: DocumentBlock[];

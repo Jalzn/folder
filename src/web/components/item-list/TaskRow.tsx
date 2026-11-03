@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import './item-row.css';
 import { isOverdue } from '@tinyfold/workspace/domain';
 import { Clock } from 'lucide-react';
@@ -24,7 +25,7 @@ export function TaskRow({
   task: Task;
   columns: readonly ColumnSummary[];
   labels: ReadonlyMap<string, LabelSummary>;
-  today: string;
+  today: CivilDate;
   /** What shows on the right instead of the due date. */
   date?: string;
   onOpen: () => void;

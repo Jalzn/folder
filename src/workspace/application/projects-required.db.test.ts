@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { readIsoInstant } from '@tinyfold/core/domain';
 import { coreModule, type Database, migrate } from '@tinyfold/core/infra';
 import { useTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
@@ -68,13 +69,13 @@ describe('migration 005', () => {
 
   it('orders projects as the sidebar did and rotates colours by creation, without Geral when nothing is loose', async () => {
     const old = legacyRows(db);
-    const first = await old.project('Primeiro', { updatedAt: '2026-10-05T10:00:00.000Z' });
-    const second = await old.project('Segundo', { updatedAt: '2026-10-07T10:00:00.000Z' });
+    const first = await old.project('Primeiro', { updatedAt: readIsoInstant('2026-10-05T10:00:00.000Z') });
+    const second = await old.project('Segundo', { updatedAt: readIsoInstant('2026-10-07T10:00:00.000Z') });
     const archived = await old.project('Arquivado', {
-      archivedAt: '2026-10-08T10:00:00.000Z',
-      updatedAt: '2026-10-08T10:00:00.000Z',
+      archivedAt: readIsoInstant('2026-10-08T10:00:00.000Z'),
+      updatedAt: readIsoInstant('2026-10-08T10:00:00.000Z'),
     });
-    const fourth = await old.project('Quarto', { updatedAt: '2026-10-06T10:00:00.000Z' });
+    const fourth = await old.project('Quarto', { updatedAt: readIsoInstant('2026-10-06T10:00:00.000Z') });
     await old.document({ projectId: first.id, title: 'No projeto' });
     const service = await migrateTo005();
     const projects = await service.listProjects({ includeArchived: true });
@@ -94,11 +95,23 @@ describe('migration 005', () => {
     const project = await old.project('Alfa');
     const kept = await old.document({ projectId: project.id, title: 'Em Alfa' });
     const document = await old.document({ title: 'Solto', version: 3, content: [paragraph('Ideia solta', 'b')] });
-    const trashedDocument = await old.document({ title: 'Lixo', version: 2, deletedAt: '2026-10-02T00:00:00.000Z' });
+    const trashedDocument = await old.document({
+      title: 'Lixo',
+      version: 2,
+      deletedAt: readIsoInstant('2026-10-02T00:00:00.000Z'),
+    });
     const canvas = await old.canvas({ title: 'Rabisco', scene: drawingFixture() });
-    const trashedCanvas = await old.canvas({ title: 'Velho', version: 2, deletedAt: '2026-10-02T00:00:00.000Z' });
+    const trashedCanvas = await old.canvas({
+      title: 'Velho',
+      version: 2,
+      deletedAt: readIsoInstant('2026-10-02T00:00:00.000Z'),
+    });
     const task = await old.task({ title: 'Solta', status: 'doing' });
-    const trashedTask = await old.task({ title: 'Removida', version: 2, deletedAt: '2026-10-02T00:00:00.000Z' });
+    const trashedTask = await old.task({
+      title: 'Removida',
+      version: 2,
+      deletedAt: readIsoInstant('2026-10-02T00:00:00.000Z'),
+    });
     await sql`update workspace_state set board_revision = 7`.execute(db);
     const service = await migrateTo005();
 
@@ -136,7 +149,7 @@ describe('migration 005', () => {
 
   it('leaves archived-only databases without Geral, and creates it active for their loose items', async () => {
     const old = legacyRows(db);
-    await old.project('Arquivado', { archivedAt: '2026-10-08T10:00:00.000Z' });
+    await old.project('Arquivado', { archivedAt: readIsoInstant('2026-10-08T10:00:00.000Z') });
     const service = await migrateTo005();
     expect(await service.listProjects()).toEqual([]);
     expect(await service.listProjects({ includeArchived: true })).toHaveLength(1);
@@ -145,7 +158,7 @@ describe('migration 005', () => {
     db = database.open('loose.sqlite');
     await migrateWorkspaceTo(db, 4, directory);
     const loose = legacyRows(db);
-    await loose.project('Arquivado', { archivedAt: '2026-10-08T10:00:00.000Z' });
+    await loose.project('Arquivado', { archivedAt: readIsoInstant('2026-10-08T10:00:00.000Z') });
     await loose.canvas({ title: 'Solto' });
     const withLoose = await migrateTo005();
     expect(await withLoose.listProjects()).toEqual([

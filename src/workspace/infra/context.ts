@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { type Database, idempotentWrite, readTransaction, writeTransaction } from '@tinyfold/core/infra';
 import type { WorkspaceContext } from '../application/ports/context.js';
 import { calendarOf, type TimeZoneSource, utc } from './calendar.js';
@@ -11,13 +12,13 @@ export function workspaceContext(
   mutationClock = clock,
 ): WorkspaceContext {
   return {
-    now: () => clock().toISOString(),
+    now: () => toIsoInstant(clock()),
     calendar: calendarOf(clock, timeZone),
     newId: randomUUID,
     read: (work) => readTransaction(db, (trx) => work(workspaceRepository(trx))),
     write: (operation, input, work) =>
       idempotentWrite(db, operation, input, (trx) => work(workspaceRepository(trx)), {
-        now: () => mutationClock().toISOString(),
+        now: () => toIsoInstant(mutationClock()),
       }),
     writeWithoutRequestRecord: (work) => writeTransaction(db, (trx) => work(workspaceRepository(trx))),
   };

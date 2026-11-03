@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { copyFile, mkdtemp, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import type { IsoInstant } from '@tinyfold/core/domain';
+import { toIsoInstant } from '@tinyfold/core/domain';
 import {
   coreModule,
   type Database,
@@ -50,11 +52,11 @@ interface LegacyItem {
   search_text: string;
   format_version: number;
   version: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  created_at: IsoInstant;
+  updated_at: IsoInstant;
+  deleted_at: IsoInstant | null;
   /** Since migration 005. */
-  pinned_at?: string | null;
+  pinned_at?: IsoInstant | null;
 }
 
 /**
@@ -66,9 +68,9 @@ interface LegacyTables {
     id: string;
     name: string;
     version: number;
-    archived_at: string | null;
-    created_at: string;
-    updated_at: string;
+    archived_at: IsoInstant | null;
+    created_at: IsoInstant;
+    updated_at: IsoInstant;
     /** Since migration 005. */
     color?: 'violet' | 'ochre' | 'gray' | 'green';
     position?: number;
@@ -83,7 +85,7 @@ interface LegacyTables {
     png: Buffer;
     width: number;
     height: number;
-    created_at: string;
+    created_at: IsoInstant;
   };
   workspace_tasks: {
     id: string;
@@ -92,9 +94,9 @@ interface LegacyTables {
     status: LegacyStatus;
     position: number;
     version: number;
-    created_at: string;
-    updated_at: string;
-    deleted_at: string | null;
+    created_at: IsoInstant;
+    updated_at: IsoInstant;
+    deleted_at: IsoInstant | null;
   };
   workspace_task_sources: {
     task_id: string;
@@ -107,9 +109,9 @@ interface LegacyTables {
 }
 
 interface Dates {
-  createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string | null;
+  createdAt?: IsoInstant;
+  updatedAt?: IsoInstant;
+  deletedAt?: IsoInstant | null;
 }
 
 interface ItemFields extends Dates {
@@ -117,7 +119,7 @@ interface ItemFields extends Dates {
   title?: string;
   version?: number;
   /** Only at migration 005. */
-  pinnedAt?: string | null;
+  pinnedAt?: IsoInstant | null;
 }
 
 /**
@@ -131,7 +133,7 @@ export function legacyRows(connection: Database, { at = 4 }: { at?: 4 | 5 } = {}
   let clock = Date.parse('2026-10-01T12:00:00.000Z');
   const next = () => {
     clock += 60_000;
-    return new Date(clock).toISOString();
+    return toIsoInstant(new Date(clock));
   };
   const dates = (fields: Dates) => {
     const createdAt = fields.createdAt ?? next();
@@ -155,7 +157,7 @@ export function legacyRows(connection: Database, { at = 4 }: { at?: 4 | 5 } = {}
   return {
     async project(
       name: string,
-      fields: Dates & { archivedAt?: string | null; version?: number; position?: number } = {},
+      fields: Dates & { archivedAt?: IsoInstant | null; version?: number; position?: number } = {},
     ) {
       const { created_at, updated_at } = dates(fields);
       const row = {

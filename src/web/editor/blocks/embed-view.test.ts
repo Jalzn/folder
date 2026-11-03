@@ -1,10 +1,11 @@
+import { readCivilDate } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import type { EmbeddedDrawing, EmbeddedTask } from '../../lib/queries/embeds';
 import { drawingEmbedView, taskEmbedView } from './embed-view';
 
 const project = { id: 'p1', name: 'Tinyfold', color: 'violet', archived: false } as const;
 const other = { id: 'p2', name: 'Reforma do escritório', color: 'ochre', archived: true } as const;
-const context = { documentProjectId: 'p1', today: '2026-11-01', openTaskId: null, readOnly: false };
+const context = { documentProjectId: 'p1', today: readCivilDate('2026-11-01'), openTaskId: null, readOnly: false };
 
 const liveTask = (patch: Partial<Extract<EmbeddedTask, { state: 'live' }>> = {}): EmbeddedTask => ({
   state: 'live',
@@ -12,7 +13,7 @@ const liveTask = (patch: Partial<Extract<EmbeddedTask, { state: 'live' }>> = {})
   title: 'Gerar token pessoal no Perfil',
   version: 3,
   column: { id: 'c2', name: 'Em andamento', isDone: false },
-  dueOn: '2026-11-06',
+  dueOn: readCivilDate('2026-11-06'),
   completedAt: null,
   labels: [],
   checklist: { done: 2, total: 5 },
@@ -46,11 +47,11 @@ describe('taskEmbedView', () => {
       'Tarefa: Gerar token pessoal no Perfil, Em andamento, aberta abaixo',
     );
     const done = taskEmbedView(
-      liveTask({ column: { id: 'c3', name: 'Concluído', isDone: true }, dueOn: '2026-10-01' }),
+      liveTask({ column: { id: 'c3', name: 'Concluído', isDone: true }, dueOn: readCivilDate('2026-10-01') }),
       context,
     );
     expect(done).toMatchObject({ kind: 'card', done: true, status: 'Concluída', late: false });
-    expect(taskEmbedView(liveTask({ dueOn: '2026-10-30' }), context)).toMatchObject({ late: true });
+    expect(taskEmbedView(liveTask({ dueOn: readCivilDate('2026-10-30') }), context)).toMatchObject({ late: true });
   });
 
   it('names another project, and says when it is archived', () => {

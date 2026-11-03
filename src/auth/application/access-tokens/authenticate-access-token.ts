@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { type AccessTokenScope, shouldRecordUse } from '../../domain/access-token.js';
 import type { AccessTokenDeps } from './ports.js';
 
@@ -17,7 +18,7 @@ export async function authenticateAccessToken(
   const now = deps.now();
   if (shouldRecordUse(record.lastUsedAt, now)) {
     // The last use is informative; failing to record it must not deny a valid token.
-    await deps.store.touch(record.id, now.toISOString()).catch(deps.logError);
+    await deps.store.touch(record.id, toIsoInstant(now)).catch(deps.logError);
   }
   return { id: record.id, scope: record.scope };
 }

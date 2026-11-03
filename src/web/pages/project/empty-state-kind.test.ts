@@ -1,3 +1,4 @@
+import { readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import type { Project } from '../../lib/types';
 import { emptyStateKind } from './empty-state-kind';
@@ -8,9 +9,9 @@ const project = (id: string, archived: boolean): Project => ({
   color: 'gray',
   position: 0,
   version: 1,
-  archivedAt: archived ? '2026-10-12T12:00:00.000Z' : null,
-  createdAt: '2026-10-01T12:00:00.000Z',
-  updatedAt: '2026-10-12T12:00:00.000Z',
+  archivedAt: archived ? readIsoInstant('2026-10-12T12:00:00.000Z') : null,
+  createdAt: readIsoInstant('2026-10-01T12:00:00.000Z'),
+  updatedAt: readIsoInstant('2026-10-12T12:00:00.000Z'),
 });
 
 describe('emptyStateKind', () => {

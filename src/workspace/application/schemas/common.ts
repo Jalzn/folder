@@ -1,4 +1,4 @@
-import { visibleText } from '@tinyfold/core/domain';
+import { toIsoInstant, visibleText } from '@tinyfold/core/domain';
 import { z } from 'zod';
 
 /** Fields every aggregate's inputs share. */
@@ -11,7 +11,7 @@ export const edit = { ...request, id, expectedVersion: version };
  * the one form the server writes (toISOString: UTC with milliseconds), so stored instants sort as
  * text and the cursors built from them read back. Any ISO form in UTC is accepted.
  */
-export const instant = z.iso.datetime().transform((value) => new Date(value).toISOString());
+export const instant = z.iso.datetime().transform((value) => toIsoInstant(new Date(value)));
 /**
  * A project name or an item title: without characters that draw nothing nor edge spaces
  * (visibleText), then checked by `checked`, which sees the empty text a name of only those has.

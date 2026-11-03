@@ -1,3 +1,9 @@
+import { type IsoInstant, toIsoInstant } from './instant.js';
+
+declare const civilDateBrand: unique symbol;
+/** A validated YYYY-MM-DD calendar date, without a time or offset. */
+export type CivilDate = string & { readonly [civilDateBrand]: true };
+
 /**
  * Civil dates (`YYYY-MM-DD`) in an IANA time zone, by Intl alone: the day it is somewhere, the
  * instant a day starts there, and whole days added to a date. Time zones with daylight saving
@@ -52,7 +58,8 @@ function wallClock(instant: number, timeZone: string): number {
 }
 
 const pad = (value: number, length = 2) => String(value).padStart(length, '0');
-const civil = (utc: Date) => `${pad(utc.getUTCFullYear(), 4)}-${pad(utc.getUTCMonth() + 1)}-${pad(utc.getUTCDate())}`;
+const civil = (utc: Date): CivilDate =>
+  `${pad(utc.getUTCFullYear(), 4)}-${pad(utc.getUTCMonth() + 1)}-${pad(utc.getUTCDate())}` as CivilDate;
 
 /**
  * The canonical IANA name Intl gives a zone in any spelling ("america/sao_paulo" is
@@ -72,7 +79,7 @@ export function canonicalTimeZone(timeZone: string): string | undefined {
 export const isTimeZone = (timeZone: string): boolean => canonicalTimeZone(timeZone) !== undefined;
 
 /** Whether the text is a real date of the calendar: "2026-02-30" is not. */
-export function isCivilDate(date: string): boolean {
+export function isCivilDate(date: string): date is CivilDate {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!match) return false;
   const utc = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
@@ -80,19 +87,19 @@ export function isCivilDate(date: string): boolean {
 }
 
 /** The civil date it is in the zone at `now`. */
-export function todayIn(timeZone: string, now: Date): string {
+export function todayIn(timeZone: string, now: Date): CivilDate {
   return civil(new Date(wallClock(now.getTime(), timeZone)));
 }
 
 /** The date `days` whole days after `date` (before, when negative). */
-export function addDays(date: string, days: number): string {
+export function addDays(date: CivilDate, days: number): CivilDate {
   if (!isCivilDate(date)) throw new RangeError(`Not a civil date: ${date}`);
   const [year, month, day] = date.split('-').map(Number);
   return civil(new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, (day ?? 1) + days)));
 }
 
 /** The first instant of `date` in the zone, as an ISO string in UTC. */
-export function startOfDayIn(date: string, timeZone: string): string {
+export function startOfDayIn(date: CivilDate, timeZone: string): IsoInstant {
   if (!isCivilDate(date)) throw new RangeError(`Not a civil date: ${date}`);
   const midnight = Date.parse(`${date}T00:00:00.000Z`);
   const offset = (instant: number) => wallClock(instant, timeZone) - instant;
@@ -109,5 +116,11 @@ export function startOfDayIn(date: string, timeZone: string): string {
     if (civil(new Date(wallClock(before, timeZone))) !== date) break;
     earliest = before;
   }
-  return new Date(earliest).toISOString();
+  return toIsoInstant(new Date(earliest));
+}
+
+/** Validate an untrusted civil date without normalizing it. */
+export function readCivilDate(value: string): CivilDate {
+  if (!isCivilDate(value)) throw new RangeError(`Not a civil date: ${value}`);
+  return value;
 }

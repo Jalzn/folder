@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import { ChevronDown, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { useContext, useLayoutEffect, useRef, useState } from 'react';
 import {
@@ -18,7 +19,7 @@ import { Button, Popover } from '../../ui';
  * The calendar starts on the due date. Without a date library of its own, the web takes a date of the
  * calendar's (its focused one, today) and sets the year, month and day on it.
  */
-function StartAt({ due, onStart }: { due: string | null; onStart: (date: DateValue) => void }) {
+function StartAt({ due, onStart }: { due: CivilDate | null; onStart: (date: DateValue) => void }) {
   const state = useContext(CalendarStateContext);
   const started = useRef(false);
   useLayoutEffect(() => {
@@ -38,9 +39,9 @@ function DuePicker({
   today,
   onChoose,
 }: {
-  due: string | null;
-  today: string;
-  onChoose: (due: string | null) => void;
+  due: CivilDate | null;
+  today: CivilDate;
+  onChoose: (due: CivilDate | null) => void;
 }) {
   const [value, setValue] = useState<DateValue | null>(null);
   return (
@@ -51,7 +52,7 @@ function DuePicker({
           className="due-calendar"
           value={value}
           autoFocus
-          onChange={(date) => onChoose(date.toString())}
+          onChange={(date) => onChoose(date.toString() as CivilDate)}
         >
           <StartAt due={due} onStart={setValue} />
           <header className="due-calendar__head">
@@ -92,11 +93,11 @@ export function DueField({
   editable,
   onChange,
 }: {
-  due: string | null;
-  today: string;
+  due: CivilDate | null;
+  today: CivilDate;
   late: boolean;
   editable: boolean;
-  onChange: (due: string | null) => void;
+  onChange: (due: CivilDate | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const text = due ? `${longDate(due)} · ${relativeDay(due, today)}` : 'Sem prazo';

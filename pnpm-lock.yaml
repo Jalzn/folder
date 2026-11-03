@@ -185,6 +185,9 @@ importers:
       '@tinyfold/auth':
         specifier: workspace:*
         version: link:../auth
+      '@tinyfold/core':
+        specifier: workspace:*
+        version: link:../core
       '@tinyfold/server':
         specifier: workspace:*
         version: link:../server

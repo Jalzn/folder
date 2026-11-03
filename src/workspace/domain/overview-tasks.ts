@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import { addDays } from '@tinyfold/core/domain';
 import type { Column } from './columns.js';
 import { byPosition } from './order.js';
@@ -9,7 +10,7 @@ export interface AgendaTask {
   title: string;
   columnId: string;
   position: number;
-  dueOn: string | null;
+  dueOn: CivilDate | null;
 }
 
 /** An open column's tasks that "Agora" leaves out: how many, how many without a due date, and the one. */
@@ -18,7 +19,7 @@ export interface LeftOut {
   count: number;
   withoutDue: number;
   /** The only task left out, when there is one and it has a due date: "Mais 1 em A fazer: …, 15 nov.". */
-  only: { title: string; dueOn: string } | null;
+  only: { title: string; dueOn: CivilDate } | null;
 }
 
 /** How many tasks "Agora" shows, and how far ahead it looks in the first open column. */
@@ -37,7 +38,7 @@ export const AGENDA = { limit: 6, soonDays: 14 } as const;
 export function overviewTasks<T extends AgendaTask>(
   tasks: readonly T[],
   columns: readonly Pick<Column, 'id' | 'isDone' | 'position'>[],
-  today: string,
+  today: CivilDate,
 ): { now: T[]; rest: LeftOut[] } {
   const open = columns.filter((column) => !column.isDone);
   const columnRank = new Map(open.map((column, index) => [column.id, index]));

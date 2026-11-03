@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { checklistProgress } from '../../domain/checklist.js';
 import type { Column } from '../../domain/columns.js';
 import { documentPlainText, withBlockIds } from '../../domain/document.js';
@@ -51,7 +52,7 @@ async function topPosition(repo: WorkspaceRepository, projectId: string, columnI
 }
 
 /** The completion a task has in `column`: kept while it stays done, now on entering, none outside it. */
-export const completionIn = (column: Column, task: Pick<TaskRecord, 'completedAt'> | undefined, now: string) =>
+export const completionIn = (column: Column, task: Pick<TaskRecord, 'completedAt'> | undefined, now: IsoInstant) =>
   column.isDone ? (task?.completedAt ?? now) : null;
 
 /** The labels a task takes: each active, at most TASK_LIMITS.labels, repeats counted once. */

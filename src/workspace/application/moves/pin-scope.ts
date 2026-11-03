@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { MAX_PINNED } from '../../domain/project.js';
 import { workspaceErrors } from '../errors.js';
 import type { FolderRepository } from '../ports/folders.js';
@@ -6,9 +7,9 @@ import type { PinRepository } from '../ports/pins.js';
 /** The pin an item keeps when it changes scope: its own while the destination has room, none otherwise. */
 export async function keepPinIfRoom(
   repo: Pick<PinRepository, 'pinnedInScope'>,
-  item: { projectId: string; pinnedAt: string | null },
+  item: { projectId: string; pinnedAt: IsoInstant | null },
   folderId: string | null,
-): Promise<string | null> {
+): Promise<IsoInstant | null> {
   if (item.pinnedAt === null) return null;
   return (await repo.pinnedInScope({ projectId: item.projectId, folderId })) < MAX_PINNED ? item.pinnedAt : null;
 }

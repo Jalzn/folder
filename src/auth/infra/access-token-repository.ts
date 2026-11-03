@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { type Database, tables } from '@tinyfold/core/infra';
 import type { AccessTokenRecord, AccessTokenRepository } from '../application/access-tokens/ports.js';
 import type { AccessTokenScope } from '../domain/access-token.js';
@@ -8,8 +9,8 @@ interface AccessTokenRow {
   digest: string;
   prefix: string;
   scope: AccessTokenScope;
-  created_at: string;
-  last_used_at: string | null;
+  created_at: IsoInstant;
+  last_used_at: IsoInstant | null;
 }
 
 const record = (row: Omit<AccessTokenRow, 'digest'>): AccessTokenRecord => ({

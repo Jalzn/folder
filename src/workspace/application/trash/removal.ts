@@ -1,4 +1,5 @@
 import { AppError } from '@tinyfold/core/application';
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext, WorkspaceRepository } from '../ports/context.js';
 import type { PurgeItemInput } from '../schemas/trash.js';
@@ -10,7 +11,7 @@ export interface TrashedItem {
   title: string;
   projectId: string | null;
   version: number;
-  deletedAt: string | null;
+  deletedAt: IsoInstant | null;
 }
 
 /** How to find an item of one type and delete it for good, with whatever must outlive it. */

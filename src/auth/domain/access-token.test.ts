@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import {
   accessTokenName,
@@ -39,8 +40,8 @@ describe('personal access token rules', () => {
     expect(() => assertAccessTokenSlot(10)).toThrow('Você já tem 10 tokens. Revogue um para gerar outro.');
   });
   it('records the last use at most once per interval', () => {
-    const now = new Date('2026-10-31T12:00:00Z');
-    const before = (ms: number) => new Date(now.getTime() - ms).toISOString();
+    const now = new Date(toIsoInstant(new Date('2026-10-31T12:00:00Z')));
+    const before = (ms: number) => toIsoInstant(new Date(now.getTime() - ms));
     expect(shouldRecordUse(null, now)).toBe(true);
     expect(shouldRecordUse(before(LAST_USE_INTERVAL_MS - 1), now)).toBe(false);
     expect(shouldRecordUse(before(LAST_USE_INTERVAL_MS), now)).toBe(true);

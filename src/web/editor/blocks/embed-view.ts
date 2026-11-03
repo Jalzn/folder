@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import { isOverdue } from '@tinyfold/workspace/domain';
 import type { EmbeddedDrawing, EmbeddedTask, EmbedProject, LiveDrawing, LiveTask } from '../../lib/queries/embeds';
 
@@ -43,7 +44,7 @@ export type DrawingEmbedView =
 /** What the document tells each embed: its project, today, the open task, and whether it only reads. */
 export interface EmbedViewContext {
   documentProjectId: string;
-  today: string;
+  today: CivilDate;
   openTaskId: string | null;
   /** A document of an archived project only reads: no Restaurar nor Remover. */
   readOnly: boolean;

@@ -1,3 +1,4 @@
+import { readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import type { Project } from '../lib/types';
 import { emptyNavState, type NavState, parseNavState } from './last-location';
@@ -9,11 +10,11 @@ const project = (id: string, position: number, archived = false): Project => ({
   color: 'violet',
   position,
   version: 1,
-  archivedAt: archived ? '2026-10-30T12:00:00.000Z' : null,
-  createdAt: '2026-10-29T12:00:00.000Z',
-  updatedAt: '2026-10-29T12:00:00.000Z',
+  archivedAt: archived ? readIsoInstant('2026-10-30T12:00:00.000Z') : null,
+  createdAt: readIsoInstant('2026-10-29T12:00:00.000Z'),
+  updatedAt: readIsoInstant('2026-10-29T12:00:00.000Z'),
 });
-const at = '2026-10-31T12:00:00.000Z';
+const at = readIsoInstant('2026-10-31T12:00:00.000Z');
 const visited = (lastProjectId: string, path: string, scrollTop = 0): NavState => ({
   version: 1,
   lastProjectId,

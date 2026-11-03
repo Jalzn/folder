@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { renewalIntervalMs, sessionLifetimeMs } from '../domain/index.js';
 import type { AuthContext } from './ports.js';
 
@@ -8,7 +9,7 @@ export async function authenticate(deps: AuthContext, token: string | undefined)
   return deps.transaction(async (repo) => {
     const session = await repo.session(digest);
     if (!session) return undefined;
-    if (session.expiresAt <= now.toISOString()) {
+    if (session.expiresAt <= toIsoInstant(now)) {
       await repo.deleteSession(session.id);
       return undefined;
     }
@@ -18,7 +19,7 @@ export async function authenticate(deps: AuthContext, token: string | undefined)
     let expiresAt = new Date(session.expiresAt);
     if (renewed) {
       expiresAt = new Date(now.getTime() + sessionLifetimeMs);
-      await repo.renewSession(session.id, now.toISOString(), expiresAt.toISOString());
+      await repo.renewSession(session.id, toIsoInstant(now), toIsoInstant(expiresAt));
     }
     return { owner: deps.profile(owner), sessionId: session.id, token, renewed, expiresAt };
   });

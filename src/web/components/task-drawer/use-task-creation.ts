@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import { type RefObject, useState } from 'react';
 import { api, errorMessage, refreshWorkspace } from '../../lib/api';
 import { openEditor } from '../../lib/autosave/save-registry';
@@ -9,7 +10,7 @@ type TaskDraft = {
   title: string;
   projectId: string;
   chosenColumn: string | undefined;
-  dueOn: string | null;
+  dueOn: CivilDate | null;
   labelIds: string[];
 };
 

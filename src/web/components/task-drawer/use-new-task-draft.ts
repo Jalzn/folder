@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import { type RefObject, useEffect, useId, useRef, useState } from 'react';
 import { doneAndFirstOpen } from '../../lib/board-order';
 import { useColumns, useLabels, useProjects } from '../../lib/queries';
@@ -30,7 +31,7 @@ export function useNewTaskDraft(
   const column = columns.find((each) => each.id === columnId);
   const today = useOwnerToday();
   const labels = useLabels().data ?? [];
-  const [dueOn, setDue] = useState<string | null>(null);
+  const [dueOn, setDue] = useState<CivilDate | null>(null);
   const [labelIds, setLabels] = useState<string[]>([]);
   const [discarding, setDiscarding] = useState(false);
   const project = projects.find((each) => each.id === projectId);

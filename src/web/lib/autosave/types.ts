@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 /** The shapes of an autosave, for any snapshot. */
 export type SaveInput<T> = T & {
   id: string;
@@ -7,7 +8,7 @@ export type SaveInput<T> = T & {
 export interface SaveAck {
   id: string;
   version: number;
-  updatedAt: string;
+  updatedAt: IsoInstant;
 }
 export type SaveStatus = 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
 /** A snapshot as a draft from before every item had a project may hold it: with `projectId: null`. */

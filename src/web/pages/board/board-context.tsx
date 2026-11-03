@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import { createContext, useContext } from 'react';
 import type { LabelSummary } from '../../lib/queries';
 import type { ElementRefs } from '../../ui';
@@ -12,7 +13,7 @@ import type { useBoardDnd } from './use-board-dnd';
 export interface BoardContextValue {
   editable: boolean;
   labels: ReadonlyMap<string, LabelSummary>;
-  today: string;
+  today: CivilDate;
   isStop: (kind: BoardFocus['kind'], id: string) => boolean;
   refs: {
     cards: ElementRefs<HTMLLIElement>;

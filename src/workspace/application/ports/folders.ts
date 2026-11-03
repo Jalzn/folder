@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { Folder } from '../../domain/folders.js';
 import type { FiledItem } from '../../domain/items.js';
 import type { NavItemType } from '../../domain/navigation.js';
@@ -33,15 +34,20 @@ export interface FolderRepository {
   itemsInFolder(folderId: string): Promise<FolderItem[]>;
   findItem(type: NavItemType, id: string): Promise<FolderItem | undefined>;
   /** Files an item at the root (null) or in a folder, pinned or not. Not an edit: version and dates stay. */
-  placeItem(input: { type: NavItemType; id: string; folderId: string | null; pinnedAt: string | null }): Promise<void>;
+  placeItem(input: {
+    type: NavItemType;
+    id: string;
+    folderId: string | null;
+    pinnedAt: IsoInstant | null;
+  }): Promise<void>;
   /** Sends an item to the trash at the expected version, keeping its folder as its origin, unpinned. */
-  trashItem(input: { type: NavItemType; id: string; at: string; expectedVersion: number }): Promise<void>;
+  trashItem(input: { type: NavItemType; id: string; at: IsoInstant; expectedVersion: number }): Promise<void>;
   /** Brings a trashed item back, at the expected version, into `folderId`, pinned or not. */
   restoreItem(input: {
     type: NavItemType;
     id: string;
-    place: { folderId: string | null; pinnedAt: string | null };
-    at: string;
+    place: { folderId: string | null; pinnedAt: IsoInstant | null };
+    at: IsoInstant;
     expectedVersion: number;
   }): Promise<void>;
 }

@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import type { NavFolder, NavItem, NavTree } from '@tinyfold/workspace/domain';
 import { describe, expect, it } from 'vitest';
 import { type FolderNode, treeRows } from './tree-rows';
@@ -6,9 +7,9 @@ const item = (id: string, folderId: string | null = null, pinned = false): NavIt
   type: 'document',
   id,
   title: id,
-  updatedAt: '2026-10-31T10:00:00Z',
-  createdAt: '2026-10-31T10:00:00Z',
-  pinnedAt: pinned ? '2026-10-31T10:00:00Z' : null,
+  updatedAt: toIsoInstant(new Date('2026-10-31T10:00:00Z')),
+  createdAt: toIsoInstant(new Date('2026-10-31T10:00:00Z')),
+  pinnedAt: pinned ? toIsoInstant(new Date('2026-10-31T10:00:00Z')) : null,
   folderId,
 });
 const folder = (id: string, items: NavItem[], total = items.length): NavFolder => ({

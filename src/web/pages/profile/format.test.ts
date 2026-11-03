@@ -1,8 +1,9 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import { createdLabel, lastUseLabel } from './format';
 
-const now = new Date('2026-10-31T12:00:00Z');
-const before = (milliseconds: number) => new Date(now.getTime() - milliseconds).toISOString();
+const now = new Date(toIsoInstant(new Date('2026-10-31T12:00:00Z')));
+const before = (milliseconds: number) => toIsoInstant(new Date(now.getTime() - milliseconds));
 
 describe('lastUseLabel', () => {
   it('says when a token was never used', () => {
@@ -29,6 +30,6 @@ describe('lastUseLabel', () => {
 
 describe('createdLabel', () => {
   it('shows the creation day in the Brazilian format', () => {
-    expect(createdLabel('2026-10-30T12:00:00Z')).toBe('Criado em 30/10/2026');
+    expect(createdLabel(toIsoInstant(new Date('2026-10-30T12:00:00Z')))).toBe('Criado em 30/10/2026');
   });
 });

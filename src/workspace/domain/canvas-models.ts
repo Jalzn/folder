@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { FiledItem, ItemAck } from './items.js';
 import type { JsonValue } from './json.js';
 
@@ -29,8 +30,8 @@ export interface CanvasSummary extends FiledItem {
   title: string;
   plainText: string;
   formatVersion: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: IsoInstant;
+  updatedAt: IsoInstant;
   /** The folder it is in, or null at the project's root. A trashed item keeps it as its origin. */
 }
 export interface Canvas extends CanvasSummary {

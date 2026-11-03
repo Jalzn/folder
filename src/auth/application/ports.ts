@@ -1,30 +1,31 @@
 import type { Owner } from '@tinyfold/core/application';
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { TokenSecrets } from './token-secrets.js';
 
 export interface StoredOwner extends Owner {
   passwordHash: string;
-  passwordChangedAt: string;
+  passwordChangedAt: IsoInstant;
 }
 export interface StoredSession {
   id: string;
   digest: string;
   deviceLabel: string;
-  createdAt: string;
-  lastUsedAt: string;
-  expiresAt: string;
+  createdAt: IsoInstant;
+  lastUsedAt: IsoInstant;
+  expiresAt: IsoInstant;
 }
 export interface AuthRepository {
   owner(): Promise<StoredOwner | undefined>;
   createOwner(owner: StoredOwner): Promise<void>;
-  updatePassword(hash: string, changedAt: string): Promise<void>;
+  updatePassword(hash: string, changedAt: IsoInstant): Promise<void>;
   setTimeZone(timeZone: string): Promise<void>;
   session(digest: string): Promise<StoredSession | undefined>;
   createSession(session: StoredSession): Promise<void>;
-  renewSession(id: string, usedAt: string, expiresAt: string): Promise<void>;
+  renewSession(id: string, usedAt: IsoInstant, expiresAt: IsoInstant): Promise<void>;
   deleteSession(id: string): Promise<void>;
   deleteSessionsExcept(id?: string): Promise<void>;
-  listSessions(now: string): Promise<StoredSession[]>;
-  deleteExpiredSessions(now: string): Promise<void>;
+  listSessions(now: IsoInstant): Promise<StoredSession[]>;
+  deleteExpiredSessions(now: IsoInstant): Promise<void>;
   /** Revokes every personal access token, as recovering a compromised account requires. */
   deleteAccessTokens(): Promise<void>;
 }

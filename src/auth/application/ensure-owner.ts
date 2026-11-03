@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { ownerName, validatePassword } from '../domain/index.js';
 import type { AuthContext, StoredOwner } from './ports.js';
 
@@ -14,7 +15,7 @@ export async function ensureOwner(deps: AuthContext, input: { name: string; pass
       name: ownerName(input.name),
       installationId: deps.id(),
       passwordHash,
-      passwordChangedAt: deps.now().toISOString(),
+      passwordChangedAt: toIsoInstant(deps.now()),
       timeZone: null,
     };
     await repo.createOwner(owner);

@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { queryClient } from '../api';
 import type { Document } from '../types';
 import { keys } from './keys';
@@ -20,7 +21,7 @@ export function patchItemPlace(
 
 /** Whether the open document or drawing is pinned, as the cache holds it. */
 export const isItemPinned = (type: Parameters<typeof keys.item>[0], id: string) =>
-  Boolean(queryClient.getQueryData<{ pinnedAt: string | null }>(keys.item(type, id))?.pinnedAt);
+  Boolean(queryClient.getQueryData<{ pinnedAt: IsoInstant | null }>(keys.item(type, id))?.pinnedAt);
 
 /** The sidebar and the overview of every project, which a move or a save changes. */
 export function invalidateNavigation() {

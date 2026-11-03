@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { sql } from 'kysely';
 import type { ProjectReference, SourceDocument } from '../../application/reading/read-models.js';
 
@@ -14,7 +15,7 @@ export const projectColumns = [
 export const projectReference = (row: {
   project_id: string;
   project_name: string;
-  project_archived_at: string | null;
+  project_archived_at: IsoInstant | null;
 }): ProjectReference => ({
   projectId: row.project_id,
   projectName: row.project_name,
@@ -42,7 +43,7 @@ export function sourceDocument(row: {
   document_id: string | null;
   kept_title: string;
   document_title: string | null;
-  document_deleted_at: string | null;
+  document_deleted_at: IsoInstant | null;
 }): SourceDocument {
   if (row.document_id === null) return { documentId: null, documentTitle: row.kept_title, available: false };
   if (row.document_title !== null && row.document_deleted_at === null)

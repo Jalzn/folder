@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import {
   ACCESS_TOKEN_SCOPE,
   accessTokenName,
@@ -25,7 +26,7 @@ export async function createAccessToken(deps: AccessTokenDeps, input: { name: st
     name,
     prefix: accessTokenPrefix(token),
     scope: ACCESS_TOKEN_SCOPE,
-    createdAt: deps.now().toISOString(),
+    createdAt: toIsoInstant(deps.now()),
     lastUsedAt: null,
   };
   await deps.transaction(async (repository) => {

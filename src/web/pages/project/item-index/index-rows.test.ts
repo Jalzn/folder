@@ -1,3 +1,5 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import {
   defaultIndexSort,
@@ -9,7 +11,7 @@ import {
   sortIndexRows,
 } from './index-rows';
 
-const listed = (id: string, title: string, updatedAt: string, folderId: string | null = null) => ({
+const listed = (id: string, title: string, updatedAt: IsoInstant, folderId: string | null = null) => ({
   id,
   title,
   plainText: `${title}…`,
@@ -17,10 +19,13 @@ const listed = (id: string, title: string, updatedAt: string, folderId: string |
   folderId,
 });
 const documents = [
-  listed('d1', 'Visão do produto', '2026-10-31T10:00:00Z'),
-  listed('d2', 'Árvore', '2026-10-20T10:00:00Z', 'f1'),
+  listed('d1', 'Visão do produto', toIsoInstant(new Date('2026-10-31T10:00:00Z'))),
+  listed('d2', 'Árvore', toIsoInstant(new Date('2026-10-20T10:00:00Z')), 'f1'),
 ];
-const drawings = [listed('c1', 'Fluxo', '2026-10-25T10:00:00Z'), listed('c2', '', '2026-10-31T12:00:00Z')];
+const drawings = [
+  listed('c1', 'Fluxo', toIsoInstant(new Date('2026-10-25T10:00:00Z'))),
+  listed('c2', '', toIsoInstant(new Date('2026-10-31T12:00:00Z'))),
+];
 const keys = (rows: IndexRow[]) => rows.map((row) => row.key);
 
 describe('indexRows', () => {

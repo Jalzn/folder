@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { type Database, tables } from '@tinyfold/core/infra';
 import type { AuthRepository, StoredOwner, StoredSession } from '../application/ports.js';
 import { accessTokenRepository } from './access-token-repository.js';
@@ -7,16 +8,16 @@ interface OwnerRow {
   name: string;
   installation_id: string;
   password_hash: string;
-  password_changed_at: string;
+  password_changed_at: IsoInstant;
   time_zone: string | null;
 }
 interface SessionRow {
   id: string;
   digest: string;
   device_label: string;
-  created_at: string;
-  last_used_at: string;
-  expires_at: string;
+  created_at: IsoInstant;
+  last_used_at: IsoInstant;
+  expires_at: IsoInstant;
 }
 const session = (row: SessionRow): StoredSession => ({
   id: row.id,

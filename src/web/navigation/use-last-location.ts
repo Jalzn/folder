@@ -1,4 +1,5 @@
 import { useLocation } from '@tanstack/react-router';
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { useEffect, useRef } from 'react';
 import { recordPath, recordScroll } from './last-location';
 import { loadNavState, saveNavState } from './nav-store';
@@ -19,7 +20,7 @@ export function useLastLocation(installationId: string) {
   useEffect(() => {
     const projectId = parseProjectPath(href)?.projectId;
     if (projectId)
-      saveNavState(installationId, recordPath(loadNavState(installationId), projectId, href, new Date().toISOString()));
+      saveNavState(installationId, recordPath(loadNavState(installationId), projectId, href, toIsoInstant(new Date())));
     restoreScheduledScroll(href);
   }, [href, installationId]);
 

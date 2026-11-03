@@ -1,3 +1,4 @@
+import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
 import { countOf } from '../../../lib/text/count';
 
 const MONTHS = [
@@ -15,12 +16,12 @@ const MONTHS = [
   'Dezembro',
 ];
 
-type Dated<Item> = Item & { completedAt: string };
+type Dated<Item> = Item & { completedAt: IsoInstant };
 
 /** A completed task and the day it was completed, YYYY-MM-DD in the owner's time zone. */
 export interface CompletedEntry<Item> {
   item: Item;
-  day: string;
+  day: CivilDate;
 }
 
 export interface CompletedGroup<Item> {
@@ -45,7 +46,7 @@ export function monthLabel(month: string) {
  * The loaded pages as one list, in the order they give: each task once, the first time it shows, and only the
  * ones with a completion date, which every task of the listing has.
  */
-export function completedItems<Item extends { id: string; completedAt: string | null }>(
+export function completedItems<Item extends { id: string; completedAt: IsoInstant | null }>(
   pages: readonly { items: readonly Item[] }[],
 ): Dated<Item>[] {
   const seen = new Set<string>();
@@ -59,7 +60,7 @@ export function completedItems<Item extends { id: string; completedAt: string | 
   return items;
 }
 
-const isDated = <Item extends { completedAt: string | null }>(item: Item): item is Dated<Item> =>
+const isDated = <Item extends { completedAt: IsoInstant | null }>(item: Item): item is Dated<Item> =>
   item.completedAt !== null;
 
 /** The civil date of an instant in a time zone, by one formatter for the whole list. */
@@ -68,7 +69,7 @@ function civilDates(timeZone: string) {
   return (instant: string) => {
     const parts = format.formatToParts(new Date(instant));
     const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((each) => each.type === type)?.value;
-    return `${part('year')}-${part('month')}-${part('day')}`;
+    return `${part('year')}-${part('month')}-${part('day')}` as CivilDate;
   };
 }
 
@@ -76,7 +77,7 @@ function civilDates(timeZone: string) {
  * Groups completed tasks by the month they were completed in the owner's time zone, the newest month first.
  * Each group keeps the order given, the most recently completed first as the listing sends them.
  */
-export function groupCompleted<Item extends { completedAt: string }>(
+export function groupCompleted<Item extends { completedAt: IsoInstant }>(
   items: readonly Item[],
   timeZone: string,
 ): CompletedGroup<Item>[] {

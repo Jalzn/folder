@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { validatePassword } from '../domain/index.js';
 import { authErrors } from './errors.js';
 import type { AuthContext } from './ports.js';
@@ -16,9 +17,9 @@ export async function changePassword(
   await deps.transaction(async (repo) => {
     const current = await repo.owner();
     if (!current || current.passwordHash !== owner.passwordHash) throw authErrors.passwordConflict();
-    const sessions = await repo.listSessions(deps.now().toISOString());
+    const sessions = await repo.listSessions(toIsoInstant(deps.now()));
     if (!sessions.some((session) => session.id === sessionId)) throw authErrors.sessionEnded();
-    await repo.updatePassword(hash, deps.now().toISOString());
+    await repo.updatePassword(hash, toIsoInstant(deps.now()));
     await repo.deleteSessionsExcept(sessionId);
   });
   return { ok: true as const };

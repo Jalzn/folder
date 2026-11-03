@@ -1,3 +1,4 @@
+import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
 import type { LabelColor } from './labels.js';
 import type { ProjectColor } from './project.js';
 
@@ -25,8 +26,8 @@ export type EmbeddedTask =
       title: string;
       version: number;
       column: { id: string; name: string; isDone: boolean };
-      dueOn: string | null;
-      completedAt: string | null;
+      dueOn: CivilDate | null;
+      completedAt: IsoInstant | null;
       /** The active labels, in alphabetical order. */
       labels: { id: string; name: string; color: LabelColor }[];
       checklist: { done: number; total: number } | null;

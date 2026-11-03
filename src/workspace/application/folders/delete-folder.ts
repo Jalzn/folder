@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { FOLDER_LIMITS } from '../../domain/folders.js';
 import { MAX_PINNED } from '../../domain/project.js';
 import type { WorkspaceContext } from '../ports/context.js';
@@ -10,7 +11,7 @@ import { renumberFolders, requireActiveFolder, requireProjectForFolders } from '
 interface ListedItem {
   type: FolderItem['type'];
   id: string;
-  pinnedAt: string | null;
+  pinnedAt: IsoInstant | null;
 }
 
 /**

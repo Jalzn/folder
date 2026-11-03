@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { Column } from '../../domain/columns.js';
 import type { TaskRecord } from './tasks.js';
 
@@ -16,9 +17,9 @@ export interface ColumnRepository {
    * Makes the column the done one at `at`, its update date; the version stays. The migration's
    * triggers hand the role over and set the completions of both columns' tasks.
    */
-  makeDoneColumn(id: string, at: string): Promise<void>;
+  makeDoneColumn(id: string, at: IsoInstant): Promise<void>;
   /** Every task of the column, live and trashed, of every project, by project and board order. */
   tasksOfColumn(columnId: string): Promise<TaskRecord[]>;
   /** Sets one task's completion without editing it. */
-  setTaskCompletion(input: { taskId: string; completedAt: string | null }): Promise<void>;
+  setTaskCompletion(input: { taskId: string; completedAt: IsoInstant | null }): Promise<void>;
 }

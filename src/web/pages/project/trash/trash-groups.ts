@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { daysAgo } from '../../../lib/dates/dates';
 import type { TrashItem } from '../../../lib/queries';
 
@@ -22,7 +23,7 @@ const groupOf = (days: number): TrashGroupLabel => (days <= 0 ? 'Hoje' : days <=
  * Groups by the day each item was deleted, on this device's calendar: Hoje, Esta semana (the six days
  * before) and Mais antigos. Empty groups are left out, and each keeps the order given.
  */
-export function groupTrash<Item extends { deletedAt: string }>(
+export function groupTrash<Item extends { deletedAt: IsoInstant }>(
   items: readonly Item[],
   now = new Date(),
 ): TrashGroup<Item>[] {

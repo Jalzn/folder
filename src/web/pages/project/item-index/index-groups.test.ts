@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import {
   filterByFolder,
@@ -15,7 +16,7 @@ const row = (id: string, folderId: string | null): IndexRow => ({
   id,
   title: id,
   excerpt: '',
-  updatedAt: '2026-10-31T10:00:00Z',
+  updatedAt: toIsoInstant(new Date('2026-10-31T10:00:00Z')),
   folderId,
 });
 const folders = [

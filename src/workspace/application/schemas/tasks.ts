@@ -1,5 +1,5 @@
 import { domainMessage } from '@tinyfold/core/application';
-import { isCivilDate } from '@tinyfold/core/domain';
+import { type CivilDate, isCivilDate } from '@tinyfold/core/domain';
 import { z } from 'zod';
 import { TASK_LIMITS } from '../../domain/tasks.js';
 import { edit, id, request, version, visible } from './common.js';
@@ -10,7 +10,11 @@ const title = visible(z.string().min(1, domainMessage('Escreva um título.')).ma
 /** Saving the text: empty, or of only characters that draw nothing, it becomes "Sem título". */
 const textTitle = visible(z.string().max(TASK_LIMITS.titleChars));
 /** A due date, a civil date of the calendar; null clears it. */
-const dueOn = z.string().refine(isCivilDate, domainMessage('Use uma data válida, no formato AAAA-MM-DD.'));
+// The refinement establishes the brand; no transform changes the RPC schema or serialized value.
+const dueOn = z.string().refine(isCivilDate, domainMessage('Use uma data válida, no formato AAAA-MM-DD.')) as z.ZodType<
+  CivilDate,
+  string
+>;
 /** The labels replace the task's set; the use case checks each and the limit, with its own message. */
 const labelIds = z.array(id).max(5 * TASK_LIMITS.labels);
 

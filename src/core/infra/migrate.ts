@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { sql } from 'kysely';
+import { toIsoInstant } from '../domain/instant.js';
 import {
   type Database,
   executeMigrationScript,
@@ -18,7 +20,7 @@ interface MigrationTable {
   version: number;
   name: string;
   checksum: string;
-  applied_at: string;
+  applied_at: IsoInstant;
 }
 export interface AppliedMigration {
   module: string;
@@ -154,7 +156,7 @@ function applyPending(
           version: file.version,
           name: file.name,
           checksum: file.checksum,
-          applied_at: new Date().toISOString(),
+          applied_at: toIsoInstant(new Date()),
         })
         .execute();
       applied.push({ module: file.module, version: file.version, name: file.name });

@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { AccessTokenScope } from '../../domain/access-token.js';
 import type { TokenSecrets } from '../token-secrets.js';
 
@@ -6,8 +7,8 @@ export interface AccessToken {
   id: string;
   name: string;
   prefix: string;
-  createdAt: string;
-  lastUsedAt: string | null;
+  createdAt: IsoInstant;
+  lastUsedAt: IsoInstant | null;
 }
 
 export interface AccessTokenRecord extends AccessToken {
@@ -20,7 +21,7 @@ export interface AccessTokenRepository {
   /** Newest first. */
   list(): Promise<AccessTokenRecord[]>;
   countActive(): Promise<number>;
-  touch(id: string, usedAt: string): Promise<void>;
+  touch(id: string, usedAt: IsoInstant): Promise<void>;
   delete(id: string): Promise<void>;
   /** Used by the terminal password reset, in its own transaction. */
   deleteAll(): Promise<void>;

@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { restoredPosition } from '../../domain/order.js';
 import { MAX_PINNED } from '../../domain/project.js';
 import { workspaceErrors } from '../errors.js';
@@ -47,7 +48,7 @@ export function restoreFolder(ctx: WorkspaceContext, input: RestoreFolderInput) 
     await renumberFolders(repo, folders.toSpliced(position, 0, { ...folder, position }));
 
     let pins = 0;
-    const pinIfRoom = (pinnedAt: string | null) => {
+    const pinIfRoom = (pinnedAt: IsoInstant | null) => {
       if (pinnedAt === null || pins >= MAX_PINNED) return null;
       pins += 1;
       return pinnedAt;
@@ -79,5 +80,5 @@ export function restoreFolder(ctx: WorkspaceContext, input: RestoreFolderInput) 
 }
 
 /** A listed pin, or none when it is later than the deletion, which no answer of deleteFolder holds. */
-const pinBefore = (pinnedAt: string | null, deletedAt: string): string | null =>
+const pinBefore = (pinnedAt: IsoInstant | null, deletedAt: IsoInstant): IsoInstant | null =>
   pinnedAt !== null && Date.parse(pinnedAt) <= Date.parse(deletedAt) ? pinnedAt : null;

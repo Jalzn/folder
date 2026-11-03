@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { FiledItemType, ItemAck, RestoreAck } from '../../domain/items.js';
 import { folderAfterRestore } from '../folders/folder-rules.js';
 import type { WorkspaceRepository } from '../ports/context.js';
@@ -8,12 +9,12 @@ interface ItemWrite {
   id: string;
   expectedVersion: number;
 }
-export const itemAck = (id: string, version: number, updatedAt: string): ItemAck => ({ id, version, updatedAt });
+export const itemAck = (id: string, version: number, updatedAt: IsoInstant): ItemAck => ({ id, version, updatedAt });
 export async function trashItem(
   repo: WorkspaceRepository,
   type: FiledItemType,
   input: ItemWrite,
-  now: () => string,
+  now: () => IsoInstant,
 ): Promise<ItemAck> {
   const item = await requireItem(repo, type, input.id, true);
   assertVersion(item.version, input.expectedVersion);
@@ -25,7 +26,7 @@ export async function restoreItem(
   repo: WorkspaceRepository,
   type: FiledItemType,
   input: ItemWrite,
-  now: () => string,
+  now: () => IsoInstant,
 ): Promise<RestoreAck> {
   const item = await requireItem(repo, type, input.id, true);
   assertVersion(item.version, input.expectedVersion);

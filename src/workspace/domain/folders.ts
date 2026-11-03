@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { displayName, nameKey } from './names.js';
 
 /** Bounds of folders: the name, the active folders of a project, and the items a restore takes back. */
@@ -19,9 +20,9 @@ export interface Folder {
   /** Manual order among the project's active folders, from 0; a deleted folder keeps its last one. */
   position: number;
   version: number;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
+  createdAt: IsoInstant;
+  updatedAt: IsoInstant;
+  deletedAt: IsoInstant | null;
 }
 
 /** A folder's name as stored: see displayName. The web's folder field still reads it by this name. */

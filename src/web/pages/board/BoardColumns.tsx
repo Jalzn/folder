@@ -1,3 +1,4 @@
+import type { CivilDate } from '@tinyfold/core/domain';
 import { type CSSProperties, type ReactNode, type RefObject, useImperativeHandle, useRef } from 'react';
 import type { LabelSummary } from '../../lib/queries';
 import type { Task } from '../../lib/types';
@@ -51,7 +52,7 @@ export function BoardColumns({
   /** Under the done column's cards. */
   doneFooter?: ReactNode;
   labels: ReadonlyMap<string, LabelSummary>;
-  today: string;
+  today: CivilDate;
   archived: boolean;
   commands: RefObject<BoardCommands>;
 }) {

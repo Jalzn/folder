@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { type Kysely, sql } from 'kysely';
 import type { TrashItemType } from '../../application/schemas/trash.js';
 import { itemTable } from '../sql/item-tables.js';
@@ -10,7 +11,7 @@ export function trashSources(db: Kysely<WorkspaceTables>) {
       .select([sql<TrashItemType>`${type}`.as('type'), 'item.id', 'item.title', 'item.version', 'item.deleted_at'])
       .where('item.project_id', '=', projectId)
       .where('item.deleted_at', 'is not', null)
-      .$narrowType<{ deleted_at: string }>();
+      .$narrowType<{ deleted_at: IsoInstant }>();
   /** Documents and drawings keep their folder in the trash, as their origin; tasks have none. */
   const withFolder = (projectId: string, type: 'document' | 'drawing') =>
     db
@@ -25,7 +26,7 @@ export function trashSources(db: Kysely<WorkspaceTables>) {
       ])
       .where('item.project_id', '=', projectId)
       .where('item.deleted_at', 'is not', null)
-      .$narrowType<{ deleted_at: string }>();
+      .$narrowType<{ deleted_at: IsoInstant }>();
   const tasks = (projectId: string) =>
     db
       .selectFrom('workspace_tasks as item')
@@ -39,7 +40,7 @@ export function trashSources(db: Kysely<WorkspaceTables>) {
       ])
       .where('item.project_id', '=', projectId)
       .where('item.deleted_at', 'is not', null)
-      .$narrowType<{ deleted_at: string }>();
+      .$narrowType<{ deleted_at: IsoInstant }>();
 
   return { trashed, withFolder, tasks };
 }

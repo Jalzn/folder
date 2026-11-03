@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { DocumentBlock } from '../../domain/document-models.js';
 import type { TaskSource } from '../../domain/task-models.js';
 import { excerptPresent } from '../../domain/task-source.js';
@@ -7,7 +8,7 @@ interface SourceInput {
   keptTitle: string;
   blockId: string | null;
   excerpt: string;
-  document: { title: string; deletedAt: string | null; content: DocumentBlock[]; plainText: string } | undefined;
+  document: { title: string; deletedAt: IsoInstant | null; content: DocumentBlock[]; plainText: string } | undefined;
 }
 type AgentSource = Omit<TaskSource, 'documentTitle'> & { documentTitle: string | null };
 export function hydrateTaskSource(input: SourceInput, audience: 'owner'): TaskSource;

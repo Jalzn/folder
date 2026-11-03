@@ -1,3 +1,4 @@
+import { toIsoInstant } from '@tinyfold/core/domain';
 import { parseProjectPath } from './paths';
 
 /**
@@ -31,7 +32,7 @@ function readLocation(projectId: string, value: unknown): ProjectLocation | null
   return {
     path,
     scrollTop: typeof scrollTop === 'number' && Number.isFinite(scrollTop) && scrollTop > 0 ? Math.round(scrollTop) : 0,
-    at: typeof at === 'string' ? at : new Date(0).toISOString(),
+    at: typeof at === 'string' ? at : toIsoInstant(new Date(0)),
   };
 }
 

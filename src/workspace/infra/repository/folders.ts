@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import type { FolderItem, FolderRepository } from '../../application/ports/folders.js';
@@ -21,8 +22,8 @@ interface ItemRow {
   project_id: string;
   folder_id: string | null;
   version: number;
-  pinned_at: string | null;
-  deleted_at: string | null;
+  pinned_at: IsoInstant | null;
+  deleted_at: IsoInstant | null;
 }
 
 const folderItem = (type: NavItemType, row: ItemRow): FolderItem => ({

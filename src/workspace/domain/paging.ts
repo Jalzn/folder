@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import { DomainError } from '@tinyfold/core/domain';
 import { COLUMN_LIMITS } from './columns.js';
 import { type ItemType, ITEM_TYPES as SEARCH_ITEM_TYPES } from './items.js';
@@ -65,14 +66,14 @@ export type SearchItemType = ItemType;
 export interface SearchKey {
   /** How many query words the title lacks; title matches come first. */
   titleRank: number;
-  updatedAt: string;
+  updatedAt: IsoInstant;
   /** The index of the item's type in SEARCH_ITEM_TYPES. */
   typeRank: number;
   id: string;
 }
 
 export interface ProjectKey {
-  updatedAt: string;
+  updatedAt: IsoInstant;
   id: string;
 }
 
@@ -99,7 +100,7 @@ const completedCursorPattern = new RegExp(`^c~(${isoDate})~(${uuid})$`, 'u');
 
 /** Completed tasks, the most recently completed first, IDs breaking ties. */
 export interface CompletedKey {
-  completedAt: string;
+  completedAt: IsoInstant;
   id: string;
 }
 
@@ -110,7 +111,7 @@ export function completedCursor(key: CompletedKey): string {
 export function readCompletedCursor(cursor: string): CompletedKey {
   const match = completedCursorPattern.exec(cursor);
   if (!match) throw invalidCursor();
-  return { completedAt: match[1] as string, id: match[2] as string };
+  return { completedAt: match[1] as IsoInstant, id: match[2] as string };
 }
 
 export function searchCursor(key: SearchKey): string {
@@ -122,7 +123,7 @@ export function readSearchCursor(cursor: string): SearchKey {
   if (!match) throw invalidCursor();
   return {
     titleRank: Number(match[1]),
-    updatedAt: match[2] as string,
+    updatedAt: match[2] as IsoInstant,
     typeRank: rankIn(match[3], SEARCH_ITEM_TYPES.length),
     id: match[4] as string,
   };
@@ -148,5 +149,5 @@ export function projectCursor(key: ProjectKey): string {
 export function readProjectCursor(cursor: string): ProjectKey {
   const match = projectCursorPattern.exec(cursor);
   if (!match) throw invalidCursor();
-  return { updatedAt: match[1] as string, id: match[2] as string };
+  return { updatedAt: match[1] as IsoInstant, id: match[2] as string };
 }

@@ -1,3 +1,4 @@
+import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
 import { shortInstant } from '../../../lib/dates/dates';
 import { shortCivilDate as dayAndMonth } from '../../../lib/dates/task-dates';
 import { countOf, formatCount } from '../../../lib/text/count';
@@ -10,7 +11,7 @@ import { displayTitle, type ItemType } from '../../../lib/types';
 export function overviewSummary(
   openTasks: number,
   overdueTasks: number,
-  lastEdited: { type: ItemType; title: string; updatedAt: string } | null,
+  lastEdited: { type: ItemType; title: string; updatedAt: IsoInstant } | null,
   now = new Date(),
 ) {
   const late = overdueTasks ? `, ${countOf(overdueTasks, 'atrasada', 'atrasadas')}` : '';
@@ -26,7 +27,7 @@ export function overviewSummary(
 export interface LeftOut {
   name: string;
   count: number;
-  only: { title: string; dueOn: string | null } | null;
+  only: { title: string; dueOn: CivilDate | null } | null;
 }
 
 /**

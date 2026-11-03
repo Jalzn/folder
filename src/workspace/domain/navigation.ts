@@ -1,3 +1,4 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
 import type { FiledItemType } from './items.js';
 import { compareCodeUnits } from './order.js';
 
@@ -16,9 +17,9 @@ export interface NavItem {
   type: NavItemType;
   id: string;
   title: string;
-  updatedAt: string;
-  createdAt: string;
-  pinnedAt: string | null;
+  updatedAt: IsoInstant;
+  createdAt: IsoInstant;
+  pinnedAt: IsoInstant | null;
   /** Null at the project's root. */
   folderId: string | null;
 }

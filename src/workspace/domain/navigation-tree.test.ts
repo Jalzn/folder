@@ -1,3 +1,5 @@
+import type { IsoInstant } from '@tinyfold/core/domain';
+import { readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import type { NavItem } from './navigation.js';
 import { navTree } from './navigation-tree.js';
@@ -6,13 +8,17 @@ import { navTree } from './navigation-tree.js';
 const item = (
   id: string,
   folderId: string | null,
-  { created = 1, edited = 1, pinnedAt = null }: { created?: number; edited?: number; pinnedAt?: string | null } = {},
+  {
+    created = 1,
+    edited = 1,
+    pinnedAt = null,
+  }: { created?: number; edited?: number; pinnedAt?: IsoInstant | null } = {},
 ): NavItem => ({
   type: 'document',
   id,
   title: `Item ${id}`,
-  createdAt: `2026-10-${String(created).padStart(2, '0')}T12:00:00.000Z`,
-  updatedAt: `2026-10-${String(edited).padStart(2, '0')}T12:00:00.000Z`,
+  createdAt: readIsoInstant(`2026-10-${String(created).padStart(2, '0')}T12:00:00.000Z`),
+  updatedAt: readIsoInstant(`2026-10-${String(edited).padStart(2, '0')}T12:00:00.000Z`),
   pinnedAt,
   folderId,
 });
@@ -25,8 +31,8 @@ describe('navigation tree', () => {
       [
         item('r1', null, { edited: 3 }),
         item('r2', null, { edited: 5 }),
-        item('p2', null, { pinnedAt: '2026-10-20T00:00:00.000Z' }),
-        item('p1', null, { pinnedAt: '2026-10-10T00:00:00.000Z' }),
+        item('p2', null, { pinnedAt: readIsoInstant('2026-10-20T00:00:00.000Z') }),
+        item('p1', null, { pinnedAt: readIsoInstant('2026-10-10T00:00:00.000Z') }),
         item('a1', 'a'),
       ],
       [folder('b', 1), folder('a', 0)],
@@ -48,8 +54,8 @@ describe('navigation tree', () => {
   it('puts a folder’s pins first and keeps `limit` children in all, and `limit` loose items', () => {
     const children = Array.from({ length: 10 }, (_, index) => item(`c${index}`, 'a', { edited: index + 1 }));
     const pins = [
-      item('pa', 'a', { pinnedAt: '2026-10-02T00:00:00.000Z' }),
-      item('pb', 'a', { pinnedAt: '2026-10-01T00:00:00.000Z' }),
+      item('pa', 'a', { pinnedAt: readIsoInstant('2026-10-02T00:00:00.000Z') }),
+      item('pb', 'a', { pinnedAt: readIsoInstant('2026-10-01T00:00:00.000Z') }),
     ];
     const loose = Array.from({ length: 10 }, (_, index) => item(`r${index}`, null, { edited: index + 1 }));
     const tree = navTree([...children, ...pins, ...loose], [folder('a', 0)], 'recent', 3);
