@@ -1,6 +1,6 @@
 import { ChevronRight, Folder, FolderOpen } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { countOf, formatCount } from '../../../lib/count';
+import { countOf, formatCount } from '../../../lib/text/count';
 import type { FolderNode } from './tree-rows';
 
 /**

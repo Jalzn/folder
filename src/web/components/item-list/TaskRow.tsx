@@ -3,8 +3,8 @@ import { isOverdue } from '@tinyfold/workspace/domain';
 import { Clock } from 'lucide-react';
 import { Button } from 'react-aria-components';
 import { inBoardOrder } from '../../lib/board-order';
+import { shortCivilDate } from '../../lib/dates/task-dates';
 import type { ColumnSummary, LabelSummary } from '../../lib/queries';
-import { shortDate } from '../../lib/task-dates';
 import { displayTitle, type Task } from '../../lib/types';
 import { ColumnRing } from '../../ui';
 
@@ -51,10 +51,10 @@ export function TaskRow({
               (late ? (
                 <span className="item-row__late">
                   <Clock size={12} aria-hidden="true" />
-                  atrasada desde {shortDate(task.dueOn)}
+                  atrasada desde {shortCivilDate(task.dueOn)}
                 </span>
               ) : (
-                shortDate(task.dueOn)
+                shortCivilDate(task.dueOn)
               )))}
           {!date && task.checklist && (
             <span className="item-row__progress">

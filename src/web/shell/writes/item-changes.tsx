@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, useContext, useState } from 'react';
-import { createItemChanges, type ItemChanges } from '../../lib/item-changes';
+import { createItemChanges, type ItemChanges } from '../../lib/writes/item-changes';
 
 const ItemChangesContext = createContext<ItemChanges | null>(null);
 

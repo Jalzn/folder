@@ -1,7 +1,7 @@
 import { excerptFromStart, NAVIGATION_LIMITS } from '@tinyfold/workspace/domain';
-import { countOf } from '../../../lib/count';
+import { countOf } from '../../../lib/text/count';
 import { displayTitle, type ItemType, itemTypeLabels } from '../../../lib/types';
-import type { IndexType } from '../../../router/paths';
+import type { IndexType } from '../../../navigation/paths';
 
 /** A sortable column of the Índice. Trecho does not sort; Ligações arrives in stage 11. */
 export type IndexColumn = 'title' | 'type' | 'updatedAt';

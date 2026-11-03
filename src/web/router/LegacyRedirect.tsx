@@ -3,18 +3,18 @@ import { useEffect, useState } from 'react';
 import { errorCode } from '../lib/api';
 import { useCanvas, useDocument, useProjects, useTask } from '../lib/queries';
 import type { ItemType } from '../lib/types';
-import { ItemNotFound, NotFoundPage } from '../pages/project/NotFoundPage';
-import { PageStatus, useApp } from '../shell';
-import { ErrorNotice, Spinner } from '../ui';
-import { loadNavState } from './nav-store';
-import { paths } from './paths';
+import { loadNavState } from '../navigation/nav-store';
+import { paths } from '../navigation/paths';
 import {
   itemRedirectPath,
   type LegacyAddress,
   listRedirectPath,
   listRedirectProject,
   parseLegacyAddress,
-} from './redirects';
+} from '../navigation/redirects';
+import { ItemNotFound, NotFoundPage } from '../pages/project/NotFoundPage';
+import { PageStatus, useApp } from '../shell';
+import { ErrorNotice, Spinner } from '../ui';
 
 function Redirecting({ to, error, retry }: { to: string | null; error?: unknown; retry?: (() => void) | undefined }) {
   const navigate = useNavigate();

@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draft-download';
 import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
-import { type CanvasSnapshot, canvasFile, canvasFileName, readCanvasImport } from '../../lib/canvas-autosave';
-import { renderCanvasPng } from '../../lib/canvas-png';
-import { downloadFile } from '../../lib/download';
+import { type CanvasSnapshot, canvasFile, canvasFileName, readCanvasImport } from '../../lib/autosave/canvas-autosave';
+import { renderCanvasPng } from '../../lib/files/canvas-png';
+import { downloadFile } from '../../lib/files/download';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
 import { canvasQuery } from '../../lib/queries';
-import { useRequest } from '../../lib/use-request';
-import { paths } from '../../router/paths';
+import { useRequest } from '../../lib/writes/use-request';
+import { paths } from '../../navigation/paths';
 import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
 import { useToast } from '../../ui';
 

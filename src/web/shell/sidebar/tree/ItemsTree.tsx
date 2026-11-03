@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { type Ref, type RefObject, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { type Key, Tree } from 'react-aria-components';
 import type { Project } from '../../../lib/types';
-import { paths } from '../../../router/paths';
+import { paths } from '../../../navigation/paths';
 import { focusPageTitle, focusWhenPresent } from '../../../ui';
 import { useApp } from '../../AppProvider';
 import { useAnnounce } from '../../announcer';

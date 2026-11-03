@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useSearch } from '../../lib/queries';
 import type { Project } from '../../lib/types';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { useSidebarRequests } from '../shell-ui';
 import { itemResults } from './SearchResults';
 

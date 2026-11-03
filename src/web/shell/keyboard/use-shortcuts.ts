@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useLatest } from '../../lib/use-latest';
+import { useLatest } from '../../lib/react/use-latest';
 import { useShellActions } from '../shell-ui';
 import { createChords } from './chords';
 import { acceptsPlainKey, describeTarget, isComposing } from './guards';

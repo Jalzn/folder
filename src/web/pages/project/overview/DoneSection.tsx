@@ -1,11 +1,10 @@
 import { Link } from '@tanstack/react-router';
 import { TaskRow } from '../../../components/item-list/TaskRow';
-import { civilDateIn } from '../../../lib/civil-date';
+import { civilDateIn } from '../../../lib/dates/civil-date';
+import { shortCivilDate } from '../../../lib/dates/task-dates';
 import type { ColumnSummary, LabelSummary, ProjectOverview } from '../../../lib/queries';
-import { shortDate } from '../../../lib/task-dates';
-import { paths } from '../../../router/paths';
-import { useTaskDrawer } from '../../../shell';
-import { useApp } from '../../../shell/AppProvider';
+import { paths } from '../../../navigation/paths';
+import { useApp, useTaskDrawer } from '../../../shell';
 
 /**
  * "Concluídas · 14 dias": up to eight tasks, the latest completed first, each with its completion date in the
@@ -38,7 +37,7 @@ export function DoneSection({
               columns={columns}
               labels={labels}
               today={overview.today}
-              date={task.completedAt ? shortDate(civilDateIn(timeZone, new Date(task.completedAt))) : ''}
+              date={task.completedAt ? shortCivilDate(civilDateIn(timeZone, new Date(task.completedAt))) : ''}
               onOpen={() => drawer.openTask(task)}
             />
           ))}

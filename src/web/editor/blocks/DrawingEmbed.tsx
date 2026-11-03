@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { LiveDrawing } from '../../lib/queries/embeds';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { drawingEmbedView } from './embed-view';
 import { useEmbedsContext } from './embeds-context';
 import { UnavailableEmbed } from './UnavailableEmbed';

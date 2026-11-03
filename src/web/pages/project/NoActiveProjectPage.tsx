@@ -1,10 +1,10 @@
 import './project-page.css';
 import { useNavigate } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
-import { shortDate } from '../../lib/dates';
+import { shortInstant } from '../../lib/dates/dates';
 import { useProjects } from '../../lib/queries';
-import { paths } from '../../router/paths';
-import { StartRedirect } from '../../router/StartRedirect';
+import { paths } from '../../navigation/paths';
+import { StartRedirect } from '../../navigation/StartRedirect';
 import { PageFrame, useApp, useProjectActions } from '../../shell';
 import { Button, ErrorNotice, PageHeader, ProjectMark, Spinner } from '../../ui';
 import { emptyStateKind } from './empty-state-kind';
@@ -66,7 +66,7 @@ export function NoActiveProjectPage() {
                   <ProjectMark name={project.name} color={project.color} />
                   <span className="archived-row__name">{project.name}</span>
                   <span className="archived-row__date">
-                    arquivado em {shortDate(project.archivedAt ?? project.updatedAt)}
+                    arquivado em {shortInstant(project.archivedAt ?? project.updatedAt)}
                   </span>
                   <Button size="sm" onPress={() => void navigate({ href: paths.overview(project.id) })}>
                     Abrir

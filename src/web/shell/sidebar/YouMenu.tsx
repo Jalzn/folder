@@ -3,7 +3,7 @@ import { Keyboard, KeyRound, LogOut, Monitor, Moon, Sun, SunMoon } from 'lucide-
 import { type ReactElement, useState } from 'react';
 import { errorMessage } from '../../lib/api';
 import { signOut } from '../../lib/session';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { AlertDialog, Menu, MenuItem, MenuSeparator, MenuTrigger, SubmenuTrigger, useToast } from '../../ui';
 import { KEYS } from '../keyboard/keys';
 import { useShellActions } from '../shell-ui';

@@ -1,4 +1,4 @@
-import { useApp, useOwnerToday } from '../../shell/AppProvider';
+import { useApp, useOwnerToday } from '../../shell';
 import { editedPhrase, savedTime } from './edited-phrase';
 import type { EditedDetail } from './SaveState';
 

@@ -1,5 +1,5 @@
 import { Switch } from 'react-aria-components';
-import type { IndexFolder, IndexType } from '../../../router/paths';
+import type { IndexFolder, IndexType } from '../../../navigation/paths';
 import { FilterMenu, type FilterOption } from '../../../ui';
 import { type IndexFolderEntry, NO_FOLDER } from './index-groups';
 

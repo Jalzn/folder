@@ -1,5 +1,5 @@
-import { placeLabel } from '../../../lib/place-label';
 import type { TrashItem } from '../../../lib/queries';
+import { placeLabel } from '../../../lib/text/place-label';
 import { itemTypeLabels } from '../../../lib/types';
 import { Button } from '../../../ui';
 import type { TrashGroup } from './trash-groups';

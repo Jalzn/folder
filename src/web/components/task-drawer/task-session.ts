@@ -1,11 +1,11 @@
 import { checklistProgress } from '@tinyfold/workspace/domain';
 import { api, errorCode, queryClient } from '../../lib/api';
 import { AutosaveController, type SaveInput } from '../../lib/autosave';
-import { draftStorage } from '../../lib/draft-storage';
+import { draftStorage } from '../../lib/autosave/draft-storage';
+import { registerSave } from '../../lib/autosave/save-registry';
+import { createSessionPool } from '../../lib/autosave/session-pool';
 import { embedsKey, type ProjectBoard, type TaskList, type TaskWithText, taskQuery } from '../../lib/queries';
-import { registerSave } from '../../lib/save-registry';
-import { createSessionPool } from '../../lib/session-pool';
-import { refuseOverLimit } from '../../lib/text-limit';
+import { refuseOverLimit } from '../../lib/text/text-limit';
 import { displayTitle } from '../../lib/types';
 import { parseTaskTextDraft, type TaskTextSnapshot } from './task-text-draft';
 

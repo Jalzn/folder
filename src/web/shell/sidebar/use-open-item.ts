@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation } from '@tanstack/react-router';
 import type { NavItem } from '@tinyfold/workspace/domain';
 import { canvasQuery, documentQuery } from '../../lib/queries';
-import { parseProjectPath } from '../../router/paths';
+import { parseProjectPath } from '../../navigation/paths';
 
 /** The document or drawing the page shows, as a tree row, from the data its page already loaded. */
 export function useOpenItem(): NavItem | null {

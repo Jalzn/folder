@@ -1,11 +1,11 @@
 import { useRef } from 'react';
 import { api, queryClient, requestId } from '../../lib/api';
 import { followingTask } from '../../lib/board-order';
-import { onceMoreIfLost } from '../../lib/lost-answer';
 import { cachedTasks, keys, type TaskWithText } from '../../lib/queries';
 import type { Task } from '../../lib/types';
-import { useRequest } from '../../lib/use-request';
-import { useTaskDrawer } from '../../shell/task-drawer-state';
+import { onceMoreIfLost } from '../../lib/writes/lost-answer';
+import { useRequest } from '../../lib/writes/use-request';
+import { useTaskDrawer } from '../../shell/state';
 import { useAction, useUndoableChange } from '../../shell/writes';
 import { useToast } from '../../ui';
 import { useCreateLabel } from '../labels/use-create-label';

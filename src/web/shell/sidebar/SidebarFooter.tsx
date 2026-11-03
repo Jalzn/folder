@@ -1,9 +1,9 @@
 import { Link, useLocation } from '@tanstack/react-router';
 import { ChevronDown, Trash2 } from 'lucide-react';
 import { Button as AriaButton } from 'react-aria-components';
-import { countOf, formatCount } from '../../lib/count';
+import { countOf, formatCount } from '../../lib/text/count';
 import type { Project } from '../../lib/types';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { useApp } from '../AppProvider';
 import { YouMenu } from './YouMenu';
 

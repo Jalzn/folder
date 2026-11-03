@@ -1,4 +1,4 @@
-import { countOf } from '../../lib/count';
+import { countOf } from '../../lib/text/count';
 
 /**
  * The board's words (docs/etapas/10-quadro-tarefa.md, "Quadro"): its count, the columns' names for a screen

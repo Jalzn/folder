@@ -2,7 +2,7 @@ import type { PointerEvent, ReactElement } from 'react';
 import { TreeItem, TreeItemContent } from 'react-aria-components';
 import { cx } from '../../../lib/cx';
 import type { Project } from '../../../lib/types';
-import { paths } from '../../../router/paths';
+import { paths } from '../../../navigation/paths';
 import { FolderTools } from '../../folders/FolderMenu';
 import { EmptyFolderRow } from './EmptyFolderRow';
 import { FolderNameField } from './FolderNameField';

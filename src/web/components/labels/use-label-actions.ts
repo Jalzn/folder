@@ -1,8 +1,8 @@
 import type { LabelColor } from '@tinyfold/workspace/domain';
 import { api, requestId } from '../../lib/api';
-import { onceMoreIfLost } from '../../lib/lost-answer';
 import type { LabelSummary } from '../../lib/queries/labels';
-import { useAnnounce } from '../../shell/announcer';
+import { onceMoreIfLost } from '../../lib/writes/lost-answer';
+import { useAnnounce } from '../../shell';
 import { useUndoableChange, type WriteRunner } from '../../shell/writes';
 import { useToast } from '../../ui';
 import {

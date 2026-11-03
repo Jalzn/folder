@@ -5,8 +5,8 @@ import { embedText } from '../../editor/blocks/embed-text';
 import { createOriginMarkers } from '../../editor/origin-markers';
 import { type BlockEditorInstance, useBlockEditor } from '../../editor/use-block-editor';
 import type { AutosaveController, SaveState, Snapshot } from '../../lib/autosave';
-import { lacksBlockIds } from '../../lib/block-ids';
-import { sanitizeEmbeds } from '../../lib/sanitize-embeds';
+import { lacksBlockIds } from '../../lib/files/block-ids';
+import { sanitizeEmbeds } from '../../lib/files/sanitize-embeds';
 import type { Document, DocumentContent } from '../../lib/types';
 import { documentSnapshot } from './document-session';
 

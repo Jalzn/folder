@@ -1,6 +1,6 @@
 import './item-row.css';
 import { Link } from '@tanstack/react-router';
-import { shortDate } from '../../lib/dates';
+import { shortInstant } from '../../lib/dates/dates';
 import { displayTitle, type ItemType, itemTypeLabels } from '../../lib/types';
 
 /**
@@ -38,7 +38,7 @@ export function ItemRow({
           </span>
         </span>
         <time className="item-row__date" dateTime={updatedAt}>
-          {shortDate(updatedAt)}
+          {shortInstant(updatedAt)}
         </time>
       </Link>
     </li>

@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { errorMessage, queryClient } from '../../../lib/api';
 import { type TrashItem, trashQuery } from '../../../lib/queries';
 import { displayTitle, type Project } from '../../../lib/types';
-import { useRequest } from '../../../lib/use-request';
+import { useRequest } from '../../../lib/writes/use-request';
 import { useAction } from '../../../shell/writes';
 import { focusPageTitle, useToast } from '../../../ui';
 import { emptyTrash, hasOriginatedTasks, itemAddress, purgeItem, restoreItem } from './trash-api';

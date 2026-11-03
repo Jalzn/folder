@@ -1,12 +1,12 @@
 import { checklistProgress, isOverdue } from '@tinyfold/workspace/domain';
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useAutosaveLifecycle } from '../../lib/autosave/use-autosave-lifecycle';
 import { type ColumnSummary, type TaskWithText, useLabels } from '../../lib/queries';
+import { useCommandSlot } from '../../lib/react/use-command-slot';
 import { type Task, UNTITLED } from '../../lib/types';
-import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
-import { useCommandSlot } from '../../lib/use-command-slot';
-import { paths } from '../../router/paths';
-import { useApp, useOwnerToday } from '../../shell/AppProvider';
-import { useTaskDrawer } from '../../shell/task-drawer-state';
+import { paths } from '../../navigation/paths';
+import { useApp, useOwnerToday } from '../../shell';
+import { useTaskDrawer } from '../../shell/state';
 import { Banner, useToast } from '../../ui';
 import { ReloadDialog } from '../item-page/EditorDialogs';
 import { SaveBanners } from '../item-page/SaveBanners';

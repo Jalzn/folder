@@ -2,8 +2,8 @@ import { displayName, nameKey } from '@tinyfold/workspace/domain';
 import { Plus } from 'lucide-react';
 import { type CSSProperties, type RefObject, useState } from 'react';
 import { Menu as AriaMenu, SearchField as AriaSearchField, Autocomplete, Input } from 'react-aria-components';
-import { matchesAllWords } from '../../lib/highlight';
 import type { LabelSummary } from '../../lib/queries';
+import { matchesAllWords } from '../../lib/text/highlight';
 import { MenuItem, MenuSection, PopoverSurface } from '../../ui';
 import { labelColorVar } from '../labels/label-colors';
 

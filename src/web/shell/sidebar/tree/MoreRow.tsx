@@ -1,5 +1,5 @@
 import { ChevronRight } from 'lucide-react';
-import { formatCount } from '../../../lib/count';
+import { formatCount } from '../../../lib/text/count';
 import type { MoreNode } from './tree-rows';
 
 /** "Ver todos · n" of a folder, or "Ver todos na raiz · n": the rest of that level in the Índice. */

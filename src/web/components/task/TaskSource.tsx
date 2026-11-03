@@ -2,7 +2,7 @@ import './task-source.css';
 import { useNavigate } from '@tanstack/react-router';
 import { FileText } from 'lucide-react';
 import type { Task } from '../../lib/types';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 
 type Source = NonNullable<Task['source']>;
 

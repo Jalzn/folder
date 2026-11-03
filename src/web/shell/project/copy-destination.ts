@@ -1,5 +1,5 @@
 import type { Project } from '../../lib/types';
-import type { NavState } from '../../router/last-location';
+import type { NavState } from '../../navigation/last-location';
 import { activeProjects } from './project-order';
 
 export interface CopyDestination {

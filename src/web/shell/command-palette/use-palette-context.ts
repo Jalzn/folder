@@ -1,6 +1,6 @@
 import { useLocation } from '@tanstack/react-router';
 import { isItemPinned, useFolders } from '../../lib/queries';
-import { parseProjectPath } from '../../router/paths';
+import { parseProjectPath } from '../../navigation/paths';
 import { activeProjects } from '../project/project-order';
 import { useCurrentProject } from '../project/use-current-project';
 import { useShellActions } from '../shell-ui';

@@ -1,5 +1,5 @@
-import { countOf } from '../../lib/count';
-import { matchesAllWords, queryWords } from '../../lib/highlight';
+import { countOf } from '../../lib/text/count';
+import { matchesAllWords, queryWords } from '../../lib/text/highlight';
 import type { Project } from '../../lib/types';
 import type { PaletteRowData } from './palette-types';
 

@@ -1,7 +1,7 @@
 import './layout.css';
 import type { ReactNode } from 'react';
-import { useLastLocation } from '../router/use-last-location';
-import { useRouteFocus } from '../router/use-route-focus';
+import { useLastLocation } from '../navigation/use-last-location';
+import { useRouteFocus } from '../navigation/use-route-focus';
 import { useApp } from './AppProvider';
 import { DrawerRegion } from './DrawerRegion';
 import { useShellLayers } from './keyboard/use-shell-layers';

@@ -1,5 +1,5 @@
-import { matchesAllWords } from '../../lib/highlight';
 import type { SearchResult } from '../../lib/queries';
+import { matchesAllWords } from '../../lib/text/highlight';
 import { displayTitle, type Project } from '../../lib/types';
 import { activeProjects } from '../project/project-order';
 import { type Command, filterCommands } from './commands';

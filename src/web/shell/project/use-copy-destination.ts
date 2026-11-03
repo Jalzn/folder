@@ -1,6 +1,6 @@
 import { queryClient } from '../../lib/api';
 import { projectsQuery } from '../../lib/queries';
-import { loadNavState } from '../../router/nav-store';
+import { loadNavState } from '../../navigation/nav-store';
 import { useApp } from '../AppProvider';
 import { copyDestination } from './copy-destination';
 

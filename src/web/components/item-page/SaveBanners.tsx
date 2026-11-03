@@ -3,7 +3,7 @@ import { ArrowDownToLine, RotateCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { errorMessage } from '../../lib/api';
 import type { SaveState } from '../../lib/autosave';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { Banner, Button, ButtonLink } from '../../ui';
 
 /**

@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useParams } from '@tanstack/react-router';
 import { useProjects } from '../../lib/queries';
-import { parseProjectPath } from '../../router/paths';
+import { parseProjectPath } from '../../navigation/paths';
 import { PageStatus } from '../../shell';
 import { ErrorNotice, Spinner } from '../../ui';
 import { NotFoundPage } from './NotFoundPage';

@@ -1,4 +1,4 @@
-import type { IndexFolder } from '../../../router/paths';
+import type { IndexFolder } from '../../../navigation/paths';
 import type { IndexRow } from './index-rows';
 
 /** A folder as the Índice names it: its id and name, in the project's manual order. */

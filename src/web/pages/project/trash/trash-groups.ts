@@ -1,4 +1,4 @@
-import { daysAgo } from '../../../lib/dates';
+import { daysAgo } from '../../../lib/dates/dates';
 import type { TrashItem } from '../../../lib/queries';
 
 /** The trash's Tipo filter. */

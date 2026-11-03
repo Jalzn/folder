@@ -1,6 +1,6 @@
 import './editor.css';
 import { Trash2 } from 'lucide-react';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { ButtonLink, EmptyState } from '../../ui';
 
 /** An item opened while it is in the trash: what happened and the way to the project's trash. */

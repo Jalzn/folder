@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Archive, ArchiveRestore, ArrowDown, ArrowUp, Ellipsis, Pencil, Table2, Trash2 } from 'lucide-react';
 import { useProjects } from '../../lib/queries';
 import type { Project } from '../../lib/types';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { IconButton, Menu, MenuItem, MenuSeparator, MenuTrigger } from '../../ui';
 import { useApp } from '../AppProvider';
 import { moveTarget } from './project-order';

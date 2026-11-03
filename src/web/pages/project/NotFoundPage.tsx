@@ -1,9 +1,9 @@
 import { Download } from 'lucide-react';
 import { useState } from 'react';
-import { downloadFile } from '../../lib/download';
-import { draftDownload, localDrafts } from '../../lib/local-drafts';
+import { draftDownload, localDrafts } from '../../lib/autosave/local-drafts';
+import { downloadFile } from '../../lib/files/download';
 import type { ItemType } from '../../lib/types';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { PageStatus, useApp } from '../../shell';
 import { Button, ButtonLink, PageHeader } from '../../ui';
 

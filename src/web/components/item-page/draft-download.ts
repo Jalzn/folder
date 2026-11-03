@@ -1,5 +1,5 @@
-import { downloadFile } from '../../lib/download';
-import { type DraftKind, draftFileName } from '../../lib/local-drafts';
+import { type DraftKind, draftFileName } from '../../lib/autosave/local-drafts';
+import { downloadFile } from '../../lib/files/download';
 
 export { type DraftKind, draftFileName };
 

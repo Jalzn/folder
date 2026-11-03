@@ -1,7 +1,7 @@
 import { sceneFingerprint } from '@tinyfold/workspace/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, queryClient } from '../../lib/api';
-import { renderPreview } from '../../lib/canvas-preview';
+import { renderPreview } from '../../lib/files/canvas-preview';
 import { type EmbeddedDrawing, embedsKey } from '../../lib/queries';
 
 /** What a figure shows while its preview is made again: the old image with "Atualizando…", or none fits. */
@@ -56,8 +56,8 @@ export function useEmbedPreviews(drawings: ReadonlyMap<string, EmbeddedDrawing>)
         await whenIdle();
         const canvas = await api.workspace.getCanvas({ id: next.id });
         if (canvas.deletedAt) return mark(null);
-        await import('../../lib/excalidraw-assets');
-        const { renderCanvasPng } = await import('../../lib/canvas-png');
+        await import('../../lib/files/excalidraw-assets');
+        const { renderCanvasPng } = await import('../../lib/files/canvas-png');
         // A light rendering with background, as the drawing's own previews.
         const png = await renderPreview(canvas.scene, (scene, maxSide) =>
           renderCanvasPng(scene, { maxSide, darkMode: false }),

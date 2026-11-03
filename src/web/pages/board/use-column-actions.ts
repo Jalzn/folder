@@ -1,9 +1,9 @@
 import { nameKey } from '@tinyfold/workspace/domain';
 import { api, requestId } from '../../lib/api';
 import { inBoardOrder } from '../../lib/board-order';
-import { onceMoreIfLost } from '../../lib/lost-answer';
 import type { ColumnSummary } from '../../lib/queries';
-import { useAnnounce } from '../../shell/announcer';
+import { onceMoreIfLost } from '../../lib/writes/lost-answer';
+import { useAnnounce } from '../../shell';
 import { useUndoableChange, type WriteRunner } from '../../shell/writes';
 import { useToast } from '../../ui';
 import {

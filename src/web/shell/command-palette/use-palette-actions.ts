@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { Project } from '../../lib/types';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { useCommandRegistry } from '../commands/use-command-registry';
 import { useProjectActions } from '../project/use-project-actions';
 import { type SwitcherPlace, useShellActions } from '../shell-ui';

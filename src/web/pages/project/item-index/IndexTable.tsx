@@ -2,11 +2,11 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { ChevronDown, ChevronUp, FileText, Folder, Shapes } from 'lucide-react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import { Cell, Column, Row, Table, TableBody, TableHeader } from 'react-aria-components';
-import { formatCount } from '../../../lib/count';
 import { cx } from '../../../lib/cx';
-import { shortDate } from '../../../lib/dates';
+import { shortInstant } from '../../../lib/dates/dates';
+import { formatCount } from '../../../lib/text/count';
 import { displayTitle, type ItemType, itemTypeLabels } from '../../../lib/types';
-import { paths } from '../../../router/paths';
+import { paths } from '../../../navigation/paths';
 import { folderNameOf, type IndexFolderEntry, type IndexGroup } from './index-groups';
 import type { IndexColumn, IndexRow, IndexSort } from './index-rows';
 
@@ -148,7 +148,7 @@ export function IndexTable({
                 )}
                 <Cell className="index-table__cell index-table__excerpt">{row.excerpt}</Cell>
                 <Cell className="index-table__cell index-table__date">
-                  <time dateTime={row.updatedAt}>{shortDate(row.updatedAt)}</time>
+                  <time dateTime={row.updatedAt}>{shortInstant(row.updatedAt)}</time>
                 </Cell>
               </Row>
             );

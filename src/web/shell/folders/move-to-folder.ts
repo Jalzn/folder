@@ -1,7 +1,7 @@
 import { api, queryClient } from '../../lib/api';
-import { onceMoreIfLost } from '../../lib/lost-answer';
 import { keys, patchItemPlace } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
+import { onceMoreIfLost } from '../../lib/writes/lost-answer';
 
 /**
  * Files a document or drawing in a folder of its project, or at its root (`folderId` null). It carries no

@@ -1,4 +1,6 @@
 import { createRootRoute, createRoute, lazyRouteComponent, redirect } from '@tanstack/react-router';
+import type { IndexSearch } from '../navigation/paths';
+import { StartRedirect } from '../navigation/StartRedirect';
 import { BoardPage } from '../pages/board';
 import { CompletedPage } from '../pages/project/completed';
 import { DocumentRoute, DrawingRoute } from '../pages/project/ItemRoute';
@@ -7,11 +9,10 @@ import { NoActiveProjectPage } from '../pages/project/NoActiveProjectPage';
 import { OverviewPage } from '../pages/project/overview';
 import { ProjectRoute } from '../pages/project/ProjectRoute';
 import { TrashPage } from '../pages/project/trash';
-import { AppRoot, PageStatus } from '../shell';
+import { PageStatus } from '../shell';
+import { AppRoot } from '../shell/app';
 import { Spinner } from '../ui';
 import { LegacyRedirect } from './LegacyRedirect';
-import type { IndexSearch } from './paths';
-import { StartRedirect } from './StartRedirect';
 
 const text = (value: unknown) => (typeof value === 'string' && value ? value : undefined);
 

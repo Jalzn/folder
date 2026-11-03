@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
-import { onceMoreIfLost } from '../../lib/lost-answer';
 import { taskQuery } from '../../lib/queries';
 import type { Task } from '../../lib/types';
-import { useTaskDrawer } from '../../shell/task-drawer-state';
+import { onceMoreIfLost } from '../../lib/writes/lost-answer';
+import { useTaskDrawer } from '../../shell/state';
 import { useToast } from '../../ui';
 import { DRAFT_DOWNLOADED, downloadDraft } from '../item-page/draft-download';
 import { copyTitle, isFinalRefusal } from '../item-page/item-copy';

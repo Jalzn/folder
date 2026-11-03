@@ -1,7 +1,7 @@
 import { Button as AriaButton } from 'react-aria-components';
-import { formatCount } from '../../../lib/count';
+import { shortCivilDate } from '../../../lib/dates/task-dates';
 import type { CompletedTask } from '../../../lib/queries';
-import { shortDate } from '../../../lib/task-dates';
+import { formatCount } from '../../../lib/text/count';
 import { displayTitle } from '../../../lib/types';
 import { Button, ColumnRing } from '../../../ui';
 import type { CompletedEntry, CompletedGroup } from './completed-groups';
@@ -26,7 +26,7 @@ function CompletedRow({ entry: { item, day }, titles, openId, onOpen, onReopen }
       <AriaButton className="completed-row__title" ref={titles.ref(item.id)} onPress={() => onOpen(item)}>
         {title}
       </AriaButton>
-      <span className="completed-row__date">{shortDate(day)}</span>
+      <span className="completed-row__date">{shortCivilDate(day)}</span>
       {onReopen && (
         <Button size="sm" variant="ghost" onPress={() => onReopen(item)} aria-label={`Reabrir ${title}`}>
           Reabrir

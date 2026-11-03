@@ -5,8 +5,8 @@ import { type FormEvent, useState } from 'react';
 import { api } from '../../lib/api';
 import { useProjects } from '../../lib/queries';
 import type { Project } from '../../lib/types';
-import { useRequest } from '../../lib/use-request';
-import { paths } from '../../router/paths';
+import { useRequest } from '../../lib/writes/use-request';
+import { paths } from '../../navigation/paths';
 import { Button, Dialog, DialogActions, ProjectMark, RadioChip, RadioGroup, TextField, useToast } from '../../ui';
 import { useAction } from '../writes';
 

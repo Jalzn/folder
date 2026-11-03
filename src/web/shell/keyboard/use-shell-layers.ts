@@ -1,4 +1,4 @@
-import { useStableHandlers } from '../../lib/use-stable-handlers';
+import { useStableHandlers } from '../../lib/react/use-stable-handlers';
 import { useShellOverlays } from '../shell-ui';
 import { useLayer } from './use-layer';
 

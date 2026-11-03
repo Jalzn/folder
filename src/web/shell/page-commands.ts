@@ -1,5 +1,5 @@
-import { useCommandSlot } from '../lib/use-command-slot';
-import { useStableHandlers } from '../lib/use-stable-handlers';
+import { useCommandSlot } from '../lib/react/use-command-slot';
+import { useStableHandlers } from '../lib/react/use-stable-handlers';
 import { type PageCommands, useShellActions } from './shell-ui';
 
 const EMPTY: PageCommands = {};

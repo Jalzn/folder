@@ -1,8 +1,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import { createContext, type ReactNode, useCallback, useContext, useRef } from 'react';
 import { api } from '../lib/api';
-import { useRequest } from '../lib/use-request';
-import { paths } from '../router/paths';
+import { useRequest } from '../lib/writes/use-request';
+import { paths } from '../navigation/paths';
 import { focusPageTitle } from '../ui';
 import { type HeldTyping, type HeldTypingTarget, holdTyping } from './held-typing';
 import { useAction } from './writes';

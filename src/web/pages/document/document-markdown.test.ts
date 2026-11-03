@@ -1,6 +1,6 @@
 import { type DocumentBlock, readDocumentContent } from '@tinyfold/workspace/domain';
 import { describe, expect, it, vi } from 'vitest';
-import { importMarkdownWithMath } from '../../lib/markdown';
+import { importMarkdownWithMath } from '../../lib/files/markdown';
 import type { EmbeddedItems } from '../../lib/queries/embeds';
 import { setupBlockNoteEditor } from '../../testing/blocknote-editor';
 import { documentMarkdown } from './document-markdown';

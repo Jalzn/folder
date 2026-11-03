@@ -1,6 +1,6 @@
 import { Fragment, type Node, Slice } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { validEmbed } from '../../lib/sanitize-embeds';
+import { validEmbed } from '../../lib/files/sanitize-embeds';
 import { isEmbedType } from './embed-blocks';
 
 /** Whether a node is an embed's content with an ID the server refuses. */

@@ -1,7 +1,7 @@
 import { api } from '../../../lib/api';
 import type { TrashItem } from '../../../lib/queries';
-import type { RequestFor } from '../../../lib/use-request';
-import { paths } from '../../../router/paths';
+import type { RequestFor } from '../../../lib/writes/use-request';
+import { paths } from '../../../navigation/paths';
 
 const edit = (item: TrashItem, requestFor: RequestFor) => {
   const input = { id: item.id, expectedVersion: item.version };

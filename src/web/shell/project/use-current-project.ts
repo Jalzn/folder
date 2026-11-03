@@ -1,6 +1,6 @@
 import { useProjects } from '../../lib/queries';
 import type { Project } from '../../lib/types';
-import { useCurrentProjectId } from '../../router/current-project';
+import { useCurrentProjectId } from '../../navigation/current-project';
 import { useApp } from '../AppProvider';
 
 /**

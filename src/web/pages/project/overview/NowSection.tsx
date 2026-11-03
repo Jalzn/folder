@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { TaskRow } from '../../../components/item-list/TaskRow';
 import type { ColumnSummary, LabelSummary, ProjectOverview } from '../../../lib/queries';
-import { paths } from '../../../router/paths';
+import { paths } from '../../../navigation/paths';
 import { useTaskDrawer } from '../../../shell';
 import { leftOutLine } from './overview-text';
 

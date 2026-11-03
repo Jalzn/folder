@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Label, Radio, RadioGroup } from 'react-aria-components';
-import { countOf } from '../../lib/count';
 import type { ColumnSummary } from '../../lib/queries';
+import { countOf } from '../../lib/text/count';
 import { AlertDialog } from '../../ui';
 
 /** The column a deletion moves the tasks to by default: the one on the left, or on the right of the first. */

@@ -1,5 +1,5 @@
-import { civilDateIn } from '../../lib/civil-date';
-import { daysBetween, shortDate } from '../../lib/task-dates';
+import { civilDateIn } from '../../lib/dates/civil-date';
+import { daysBetween, shortCivilDate } from '../../lib/dates/task-dates';
 
 /**
  * When an item was last edited, beside "Salvo" in its page bar (the prototype's `saveSeg`): "editado hoje",
@@ -10,7 +10,7 @@ export function editedPhrase(updatedAt: string, today: string, timeZone: string)
   const days = daysBetween(day, today);
   if (days === 0) return 'editado hoje';
   if (days === 1) return 'editado ontem';
-  return `editado em ${shortDate(day)}`;
+  return `editado em ${shortCivilDate(day)}`;
 }
 
 /** The time of the last save, "14:32", for the save state's "Salvo às 14:32". */

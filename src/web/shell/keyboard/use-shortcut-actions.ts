@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { isItemPinned } from '../../lib/queries';
 import type { Project } from '../../lib/types';
-import { parseProjectPath, paths } from '../../router/paths';
+import { parseProjectPath, paths } from '../../navigation/paths';
 import { useToast, useUndoLatest } from '../../ui';
 import { useApp } from '../AppProvider';
 import { useCommandRegistry } from '../commands/use-command-registry';

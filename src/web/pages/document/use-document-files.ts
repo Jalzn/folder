@@ -6,13 +6,13 @@ import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draf
 import { oneAtATime } from '../../components/item-page/one-at-a-time';
 import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController, Snapshot } from '../../lib/autosave';
-import { downloadFile, fileNameFrom } from '../../lib/download';
+import { downloadFile, fileNameFrom } from '../../lib/files/download';
+import { importMarkdownWithMath } from '../../lib/files/markdown';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
-import { importMarkdownWithMath } from '../../lib/markdown';
 import { documentQuery } from '../../lib/queries';
 import { type DocumentContent, displayTitle } from '../../lib/types';
-import { useRequest } from '../../lib/use-request';
-import { paths } from '../../router/paths';
+import { useRequest } from '../../lib/writes/use-request';
+import { paths } from '../../navigation/paths';
 import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
 import { useToast } from '../../ui';
 import { documentMarkdown } from './document-markdown';

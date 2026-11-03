@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from '../../lib/types';
-import { emptyNavState, type NavState } from '../../router/last-location';
+import { emptyNavState, type NavState } from '../../navigation/last-location';
 import { copyDestination, copyFolder, redirectedCopyText } from './copy-destination';
 
 const project = (id: string, position: number, archived = false) =>

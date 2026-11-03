@@ -1,4 +1,4 @@
-import { matchesAllWords } from '../../lib/highlight';
+import { matchesAllWords } from '../../lib/text/highlight';
 import { KEYS } from '../keyboard/keys';
 import type { ThemeChoice } from '../theme';
 

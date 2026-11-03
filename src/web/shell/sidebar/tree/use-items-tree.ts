@@ -2,7 +2,7 @@ import { useLocation } from '@tanstack/react-router';
 import type { NavTree } from '@tinyfold/workspace/domain';
 import { useMemo } from 'react';
 import type { Project } from '../../../lib/types';
-import { parseProjectPath } from '../../../router/paths';
+import { parseProjectPath } from '../../../navigation/paths';
 import { useOpenItem } from '../use-open-item';
 import { usePendingSaves } from '../use-pending-saves';
 import { type PendingItem, treeRows } from './tree-rows';

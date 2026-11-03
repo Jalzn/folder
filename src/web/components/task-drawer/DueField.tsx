@@ -11,7 +11,7 @@ import {
   Heading,
   I18nProvider,
 } from 'react-aria-components';
-import { longDate, relativeDay } from '../../lib/task-dates';
+import { longDate, relativeDay } from '../../lib/dates/task-dates';
 import { Button, Popover } from '../../ui';
 
 /**

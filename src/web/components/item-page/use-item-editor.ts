@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { AutosaveController } from '../../lib/autosave';
-import { moveThroughController } from '../../lib/editor-move';
+import { moveThroughController } from '../../lib/autosave/editor-move';
+import { type OpenEditor, registerOpenEditor } from '../../lib/autosave/save-registry';
+import { useAutosaveLifecycle } from '../../lib/autosave/use-autosave-lifecycle';
 import { useHasActiveProject } from '../../lib/queries';
-import { type OpenEditor, registerOpenEditor } from '../../lib/save-registry';
+import { usePageTitle } from '../../lib/react/use-page-title';
 import { UNTITLED } from '../../lib/types';
-import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
-import { usePageTitle } from '../../lib/use-page-title';
 import type { ItemEditorDialogsProps } from './ItemEditorDialogs';
 import { type ItemAdapter, useItemActions } from './use-item-actions';
 

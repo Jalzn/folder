@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { api, errorMessage, refreshWorkspace } from '../lib/api';
-import { deviceTimeZone } from '../lib/civil-date';
+import { deviceTimeZone } from '../lib/dates/civil-date';
 import type { Owner } from './LoginScreen';
 
 export interface OwnerValue {

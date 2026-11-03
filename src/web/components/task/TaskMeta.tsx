@@ -1,7 +1,7 @@
 import './task-meta.css';
 import type { LabelColor } from '@tinyfold/workspace/domain';
 import { Clock } from 'lucide-react';
-import { shortDate } from '../../lib/task-dates';
+import { shortCivilDate } from '../../lib/dates/task-dates';
 import { LabelChip } from '../labels/LabelChip';
 
 /** The checklist's ring of 12 px: the share of checked items, in --ok once all are. */
@@ -64,15 +64,15 @@ export function TaskMeta({
       {unsaved && <span className="sr-only">Não salvo</span>}
       {dueOn &&
         (late ? (
-          <span className="card-meta__late" title={`Atrasada desde ${shortDate(dueOn)}`}>
+          <span className="card-meta__late" title={`Atrasada desde ${shortCivilDate(dueOn)}`}>
             <Clock size={12} aria-hidden="true" />
-            <span aria-hidden="true">{shortDate(dueOn)}</span>
-            <span className="sr-only">Atrasada desde {shortDate(dueOn)}</span>
+            <span aria-hidden="true">{shortCivilDate(dueOn)}</span>
+            <span className="sr-only">Atrasada desde {shortCivilDate(dueOn)}</span>
           </span>
         ) : (
           <span className="card-meta__due">
             <span className="sr-only">Prazo </span>
-            {shortDate(dueOn)}
+            {shortCivilDate(dueOn)}
           </span>
         ))}
       {progress && (

@@ -4,9 +4,9 @@ import type { ExcalidrawImperativeAPI, ExcalidrawProps } from '@excalidraw/excal
 import { type CanvasScene, compactCanvasScene } from '@tinyfold/workspace/domain';
 import { type RefObject, useEffect, useRef } from 'react';
 import type { AutosaveController, SaveState } from '../../lib/autosave';
-import { type CanvasSnapshot, withCleanLinks } from '../../lib/canvas-autosave';
+import { type CanvasSnapshot, withCleanLinks } from '../../lib/autosave/canvas-autosave';
 import { useToast } from '../../ui';
-import { sceneRevision } from './canvas-session';
+import { sceneRevision } from './drawing-session';
 
 const unsupportedTools = new Set(['image', 'embeddable', 'iframe', 'magicframe']);
 

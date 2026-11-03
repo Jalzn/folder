@@ -4,7 +4,7 @@ import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { useEffect } from 'react';
 import { useCanvases, useDocuments, useFolders, useProject } from '../../../lib/queries';
-import type { IndexSearch } from '../../../router/paths';
+import type { IndexSearch } from '../../../navigation/paths';
 import { NewItemMenu, PageFrame } from '../../../shell';
 import { Button, ErrorNotice, PageHeader, Spinner } from '../../../ui';
 import { IndexFilters } from './IndexFilters';

@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { Project } from '../../lib/types';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { useApp } from '../AppProvider';
 import type { CommandId } from '../command-palette/commands';
 import { useCreateInProject } from '../project/use-create-in-project';

@@ -1,4 +1,4 @@
-import { countOf } from '../../../lib/count';
+import { countOf } from '../../../lib/text/count';
 
 const MONTHS = [
   'Janeiro',

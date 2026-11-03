@@ -1,6 +1,6 @@
-import { countOf, formatCount } from '../../../lib/count';
-import { shortDate } from '../../../lib/dates';
-import { shortDate as dayAndMonth } from '../../../lib/task-dates';
+import { shortInstant } from '../../../lib/dates/dates';
+import { shortCivilDate as dayAndMonth } from '../../../lib/dates/task-dates';
+import { countOf, formatCount } from '../../../lib/text/count';
 import { displayTitle, type ItemType } from '../../../lib/types';
 
 /**
@@ -19,7 +19,7 @@ export function overviewSummary(
     : 'Nenhuma tarefa aberta.';
   if (!lastEdited) return tasks;
   const noun = lastEdited.type === 'document' ? 'texto' : 'desenho';
-  return `${tasks} Último ${noun} editado: ${displayTitle(lastEdited.title)}, ${shortDate(lastEdited.updatedAt, now)}.`;
+  return `${tasks} Último ${noun} editado: ${displayTitle(lastEdited.title)}, ${shortInstant(lastEdited.updatedAt, now)}.`;
 }
 
 /** A column Agora left tasks out of, and the one task left when it has a due date. */

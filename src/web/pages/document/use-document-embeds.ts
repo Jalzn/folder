@@ -2,9 +2,9 @@ import { type DocumentBlock, embedIds, figureNumbers } from '@tinyfold/workspace
 import { useEffect, useMemo, useState } from 'react';
 import { embedBlock } from '../../editor/blocks/embed-blocks';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
+import { validEmbed } from '../../lib/files/sanitize-embeds';
 import { useEmbeds } from '../../lib/queries';
 import type { EmbeddedDrawing, EmbeddedTask } from '../../lib/queries/embeds';
-import { validEmbed } from '../../lib/sanitize-embeds';
 
 interface EditorEmbeds {
   /** The IDs the server can resolve. */

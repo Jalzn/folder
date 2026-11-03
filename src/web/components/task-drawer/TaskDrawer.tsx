@@ -1,10 +1,9 @@
 import './drawer.css';
 import { type KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usesCommandKey } from '../../lib/platform';
-import { useApp } from '../../shell/AppProvider';
-import { isTextTarget } from '../../shell/keyboard/guards';
-import { useShellActions } from '../../shell/shell-ui';
-import { type DrawerContent, useTaskDrawer } from '../../shell/task-drawer-state';
+import { useApp } from '../../shell';
+import { isTextTarget } from '../../shell/keyboard';
+import { type DrawerContent, useShellActions, useTaskDrawer } from '../../shell/state';
 import { DrawerHandle } from './DrawerHandle';
 import type { DrawerCommands } from './drawer-commands';
 import { drawerPixels, nextPreset, shareText } from './drawer-height';

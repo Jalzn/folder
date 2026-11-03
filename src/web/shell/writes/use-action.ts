@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { errorMessage, refreshWorkspace } from '../../lib/api';
-import { createWriteQueue } from '../../lib/write-queue';
+import { createWriteQueue } from '../../lib/writes/write-queue';
 import { useToast } from '../../ui';
 
 export interface RunOptions {

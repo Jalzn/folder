@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api } from '../api';
-import { useDebouncedValue } from '../use-debounced-value';
+import { useDebouncedValue } from '../react/use-debounced-value';
 import { keys } from './keys';
 
 export type SearchInput = Parameters<typeof api.workspace.search>[0];

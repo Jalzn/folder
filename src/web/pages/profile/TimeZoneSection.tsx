@@ -1,7 +1,7 @@
 import { Globe } from 'lucide-react';
 import { useState } from 'react';
-import { deviceTimeZone } from '../../lib/civil-date';
-import { useApp } from '../../shell/AppProvider';
+import { deviceTimeZone } from '../../lib/dates/civil-date';
+import { useApp } from '../../shell';
 import { Button, useToast } from '../../ui';
 import { ProfileSection } from './ProfileSection';
 

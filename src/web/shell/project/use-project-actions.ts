@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { api, queryClient, requestId } from '../../lib/api';
 import { projectsQuery } from '../../lib/queries';
 import type { Project } from '../../lib/types';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { useToast } from '../../ui';
 import { useAction } from '../writes';
 import { type MoveDirection, moveTarget } from './project-order';

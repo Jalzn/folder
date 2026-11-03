@@ -3,17 +3,14 @@ import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { CircleCheck, Columns3, Ellipsis, LayoutDashboard, Plus, Settings2, X } from 'lucide-react';
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../lib/api';
-import { civilDateIn } from '../../lib/civil-date';
+import { civilDateIn } from '../../lib/dates/civil-date';
+import { shortCivilDate } from '../../lib/dates/task-dates';
 import { useColumns, useLabels, useProject, useProjectBoard } from '../../lib/queries';
-import { shortDate } from '../../lib/task-dates';
 import type { Task } from '../../lib/types';
-import { paths } from '../../router/paths';
-import { PageFrame, useTaskDrawer } from '../../shell';
-import { useApp, useOwnerToday } from '../../shell/AppProvider';
-import { useAnnounce } from '../../shell/announcer';
-import { isTextTarget } from '../../shell/keyboard/guards';
-import { usePageCommands } from '../../shell/page-commands';
-import { useBoardFilters, useShellActions } from '../../shell/shell-ui';
+import { paths } from '../../navigation/paths';
+import { PageFrame, useAnnounce, useApp, useOwnerToday, usePageCommands, useTaskDrawer } from '../../shell';
+import { isTextTarget } from '../../shell/keyboard';
+import { useBoardFilters, useShellActions } from '../../shell/state';
 import {
   Button,
   ErrorNotice,
@@ -115,7 +112,7 @@ export function BoardPage() {
   const doneFooter =
     board.data && older > 0 ? (
       <Link to={paths.completed(projectId)} className="board-column__older">
-        {olderDoneText(older, shortDate(civilDateIn(timeZone, new Date(board.data.doneSince))))}
+        {olderDoneText(older, shortCivilDate(civilDateIn(timeZone, new Date(board.data.doneSince))))}
       </Link>
     ) : undefined;
   function keyDown(event: KeyboardEvent<HTMLDivElement>) {

@@ -1,8 +1,8 @@
 import { ChevronDown, ListTodo } from 'lucide-react';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { LinkedTask } from '../../components/task';
-import { countOf, formatCount } from '../../lib/count';
 import { useTasks } from '../../lib/queries';
+import { countOf, formatCount } from '../../lib/text/count';
 import type { Task } from '../../lib/types';
 import { useTaskDrawer } from '../../shell';
 import { Button, ErrorNotice, Popover, PopoverTrigger, Spinner, useElementRefs } from '../../ui';

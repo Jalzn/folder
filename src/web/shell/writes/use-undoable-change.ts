@@ -1,4 +1,4 @@
-import { type ChangeToast, runUndoableChange } from '../../lib/undoable-change';
+import { type ChangeToast, runUndoableChange } from '../../lib/writes/undoable-change';
 import { useToast, useWithdrawUndo } from '../../ui';
 import { useAnnounce } from '../announcer';
 import { useItemChanges } from './item-changes';

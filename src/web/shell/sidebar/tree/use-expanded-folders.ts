@@ -1,7 +1,7 @@
 import type { NavFolder, NavItem } from '@tinyfold/workspace/domain';
 import { useEffect, useMemo } from 'react';
 import { itemKey } from '../../../lib/types';
-import { parseProjectPath } from '../../../router/paths';
+import { parseProjectPath } from '../../../navigation/paths';
 import { useSidebarPrefs } from '../use-sidebar-prefs';
 
 /** An item's place in the arrivals: "document:<id>", the key the pending saves use too (save-registry). */

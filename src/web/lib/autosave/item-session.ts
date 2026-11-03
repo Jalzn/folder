@@ -1,9 +1,9 @@
 import { queryClient } from '../api';
-import { withDraftProject } from '../draft-project';
 import { invalidateNavigation, keys } from '../queries';
-import { registerSave } from '../save-registry';
 import type { ItemType } from '../types';
 import { AutosaveController } from './controller';
+import { withDraftProject } from './draft-project';
+import { registerSave } from './save-registry';
 import type { DraftStorage, Legacy, SaveAck, SavedDraft, SaveInput } from './types';
 
 /** What an open document or drawing is, as its query holds it. */

@@ -1,5 +1,5 @@
 import { MAX_PINNED } from '@tinyfold/workspace/domain';
-import { countOf, formatCount } from '../../lib/count';
+import { countOf, formatCount } from '../../lib/text/count';
 
 /** "Pasta “MCP” excluída. 1 item foi para a raiz.", with the pins that did not fit, or "Estava vazia." */
 export function deletedText(name: string, moved: number, unpinned: number) {

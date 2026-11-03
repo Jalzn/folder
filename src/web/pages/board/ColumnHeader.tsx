@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react';
-import { formatCount } from '../../lib/count';
 import type { ColumnSummary } from '../../lib/queries';
+import { formatCount } from '../../lib/text/count';
 import { ColumnRing, IconButton } from '../../ui';
 import { useBoard } from './board-context';
 import { columnLabel } from './board-text';

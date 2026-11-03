@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext, useMemo, useRef, useState } from 'react';
+import { useLatest } from '../lib/react/use-latest';
 import type { Task } from '../lib/types';
-import { useLatest } from '../lib/use-latest';
 import { pageFocus, returnFocus } from '../ui';
 
 /** Where a task created from a document's selection came from. */

@@ -23,7 +23,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
-import { placeLabel } from '../../lib/place-label';
+import { placeLabel } from '../../lib/text/place-label';
 import type { Project } from '../../lib/types';
 import { ColumnRing, ProjectMark } from '../../ui';
 import type { CommandId } from './commands';

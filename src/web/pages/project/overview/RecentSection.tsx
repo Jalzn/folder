@@ -1,6 +1,6 @@
 import { ItemRow } from '../../../components/item-list/ItemRow';
 import type { ProjectOverview } from '../../../lib/queries';
-import { paths } from '../../../router/paths';
+import { paths } from '../../../navigation/paths';
 
 /** Editados recentemente: the five documents or drawings edited last, with type, folder, excerpt and date. */
 export function RecentSection({ projectId, recent }: { projectId: string; recent: ProjectOverview['recent'] }) {

@@ -1,5 +1,5 @@
 import type { NavItem } from '@tinyfold/workspace/domain';
-import { countOf, formatCount } from '../../../lib/count';
+import { countOf, formatCount } from '../../../lib/text/count';
 import { displayTitle } from '../../../lib/types';
 import type { FolderNode, ItemNode, MoreNode } from './tree-rows';
 

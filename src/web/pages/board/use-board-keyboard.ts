@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import { usesCommandKey } from '../../lib/platform';
-import { isTextTarget } from '../../shell/keyboard/guards';
+import { isTextTarget } from '../../shell/keyboard';
 import { type BoardFocus, type BoardKeyAction, type BoardLayout, boardKey, type KeyPress } from './board-keys';
 
 /** Marks a card's title button and a column's name, the board's two kinds of focus. */

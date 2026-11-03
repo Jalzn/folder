@@ -6,7 +6,7 @@ import { useMemo, useRef } from 'react';
 import { errorMessage } from '../../../lib/api';
 import { type CompletedTask, useCompletedTasks, useProject } from '../../../lib/queries';
 import type { Project } from '../../../lib/types';
-import { paths } from '../../../router/paths';
+import { paths } from '../../../navigation/paths';
 import { PageFrame, useApp, useDrawerContent, useTaskDrawer } from '../../../shell';
 import {
   Button,

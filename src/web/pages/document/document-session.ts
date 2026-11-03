@@ -1,10 +1,10 @@
 import type { ItemAdapter } from '../../components/item-page';
 import { api } from '../../lib/api';
 import { parseDraft, type Snapshot } from '../../lib/autosave';
+import { draftStorage } from '../../lib/autosave/draft-storage';
 import { defineItemSession } from '../../lib/autosave/item-session';
-import { draftStorage } from '../../lib/draft-storage';
 import { documentQuery, keys } from '../../lib/queries';
-import { refuseOverLimit } from '../../lib/text-limit';
+import { refuseOverLimit } from '../../lib/text/text-limit';
 import { type Document, displayTitle } from '../../lib/types';
 
 export function documentSnapshot(document: Document): Snapshot {

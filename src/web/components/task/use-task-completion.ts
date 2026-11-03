@@ -1,9 +1,9 @@
 import { api, requestId } from '../../lib/api';
 import { doneAndFirstOpen, followingTask } from '../../lib/board-order';
 import { Refusal } from '../../lib/errors';
-import { onceMoreIfLost } from '../../lib/lost-answer';
 import { cachedColumns, cachedTasks } from '../../lib/queries';
 import { displayTitle } from '../../lib/types';
+import { onceMoreIfLost } from '../../lib/writes/lost-answer';
 import { useUndoableChange, type WriteRunner } from '../../shell/writes';
 import { completedText, reopenedText, TASK_CHANGED } from './task-change-text';
 

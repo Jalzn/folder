@@ -1,8 +1,8 @@
 import { useLocation } from '@tanstack/react-router';
 import { LayoutDashboard, SquareKanban } from 'lucide-react';
-import { countOf, formatCount } from '../../lib/count';
+import { countOf, formatCount } from '../../lib/text/count';
 import type { Project } from '../../lib/types';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { SidebarRow } from './SidebarRow';
 
 /**

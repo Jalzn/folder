@@ -1,9 +1,9 @@
 import { api, queryClient } from '../../lib/api';
+import { openEditor } from '../../lib/autosave/save-registry';
 import { Refusal } from '../../lib/errors';
 import { canvasQuery, documentQuery } from '../../lib/queries';
-import { openEditor } from '../../lib/save-registry';
 import type { ItemType } from '../../lib/types';
-import type { RequestFor } from '../../lib/use-request';
+import type { RequestFor } from '../../lib/writes/use-request';
 
 /**
  * Moves a document or drawing to another active project with moveItem, which carries no content and is

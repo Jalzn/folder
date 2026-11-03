@@ -4,7 +4,7 @@ import { lazy, type ReactNode, Suspense, useEffect } from 'react';
 import { errorCode } from '../../lib/api';
 import { useCanvas, useDocument } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
-import { paths } from '../../router/paths';
+import { paths } from '../../navigation/paths';
 import { PageStatus } from '../../shell';
 import { ErrorNotice, Spinner } from '../../ui';
 import { ItemNotFound } from './NotFoundPage';

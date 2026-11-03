@@ -96,7 +96,7 @@ module.exports = {
         "web/ui holds the app's primitives: it never imports the shell, components, pages, the editor or the router.",
       severity: 'error',
       from: { path: '^src/web/ui/' },
-      to: { path: '^src/web/(shell|components|pages|editor|router)/' },
+      to: { path: '^src/web/(shell|components|pages|editor|router|navigation)/' },
     },
     {
       name: 'web-nothing-imports-pages',
@@ -111,7 +111,21 @@ module.exports = {
         'web/lib holds helpers and hooks below the interface: it imports no other web layer. The write hooks that need the toast live in shell/writes.',
       severity: 'error',
       from: { path: '^src/web/lib/' },
-      to: { path: '^src/web/(ui|shell|components|pages|editor|router)/' },
+      to: { path: '^src/web/(ui|shell|components|pages|editor|router|navigation)/' },
+    },
+    {
+      name: 'web-shell-through-public-entries',
+      comment: 'Other web layers use explicit shell entry points.',
+      severity: 'error',
+      from: { path: '^src/web/', pathNot: ['^src/web/shell/', '\\.test\\.tsx?$'] },
+      to: { path: '^src/web/shell/', pathNot: '^src/web/shell/(index|[^/]+/index)\\.tsx?$' },
+    },
+    {
+      name: 'web-router-only-mounts-routes',
+      comment: 'Navigation helpers live below route composition; no web layer imports the mounted router.',
+      severity: 'error',
+      from: { path: '^src/web/(pages|components|shell|editor|navigation)/' },
+      to: { path: '^src/web/router/' },
     },
     {
       name: 'workspace-read-models-share-sql-only',

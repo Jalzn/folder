@@ -1,5 +1,5 @@
 import { api, requestId } from '../../lib/api';
-import { onceMoreIfLost } from '../../lib/lost-answer';
+import { onceMoreIfLost } from '../../lib/writes/lost-answer';
 import type { WriteRunner } from '../../shell/writes';
 
 /**

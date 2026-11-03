@@ -1,4 +1,4 @@
-import { countOf, formatCount } from '../../../lib/count';
+import { countOf, formatCount } from '../../../lib/text/count';
 
 /*
  * What emptying deletes is what the page shows. All of the trash empties it; only part of it, under a filter

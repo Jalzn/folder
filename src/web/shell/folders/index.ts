@@ -1,0 +1,1 @@
+export { FolderLabel } from './FolderLabel';

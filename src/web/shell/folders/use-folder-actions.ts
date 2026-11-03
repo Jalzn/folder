@@ -1,9 +1,9 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { NavFolder, NavItem } from '@tinyfold/workspace/domain';
 import { api } from '../../lib/api';
-import { onceMoreIfLost } from '../../lib/lost-answer';
-import { useRequest } from '../../lib/use-request';
-import { paths } from '../../router/paths';
+import { onceMoreIfLost } from '../../lib/writes/lost-answer';
+import { useRequest } from '../../lib/writes/use-request';
+import { paths } from '../../navigation/paths';
 import { useToast } from '../../ui';
 import { useAnnounce } from '../announcer';
 import { useAction } from '../writes';

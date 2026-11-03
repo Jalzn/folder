@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
 import { inBoardOrder } from '../../lib/board-order';
 import { type ColumnSummary, useProjects } from '../../lib/queries';
-import { activeProjects } from '../../shell/project/project-order';
+import { activeProjects } from '../../shell/project';
 import { ColumnRing, Menu, MenuItem, MenuTrigger, ProjectMark } from '../../ui';
 
 /** A value of the properties grid: a ghost button that opens its menu, or its text when it cannot change. */
