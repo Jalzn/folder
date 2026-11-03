@@ -1,21 +1,17 @@
-import { copyFile, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { copyFile, mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import { coreModule, migrate } from '@tinyfold/core/infra';
+import { useTestDatabases } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createAccessTokens } from '../infra/access-tokens.js';
 import { createAuthService } from '../infra/context.js';
 import { authModule } from '../infra/module.js';
 
-const resources: { db: Database; folder: string }[] = [];
+const databases = useTestDatabases([coreModule, authModule]);
 async function fixture() {
-  const folder = await mkdtemp(join(tmpdir(), 'tinyfold-tokens-'));
-  const path = join(folder, 'test.sqlite');
-  const db = createDatabase(path);
-  resources.push({ db, folder });
-  await migrate(db, [coreModule, authModule]);
+  const { db, folder, path } = await databases.create();
   let now = new Date('2026-10-31T12:00:00Z');
   const logError = vi.fn();
   const tokens = createAccessTokens(db, { clock: () => now, logError });
@@ -30,13 +26,6 @@ async function fixture() {
     },
   };
 }
-afterEach(async () => {
-  for (const { db, folder } of resources) {
-    await db.destroy();
-    await rm(folder, { recursive: true, force: true });
-  }
-  resources.length = 0;
-});
 
 describe('personal access tokens', () => {
   it('creates, lists newest first and revokes tokens, cutting access on the next call', async () => {
@@ -116,8 +105,8 @@ describe('personal access tokens', () => {
     const oldMigrations = join(folder, 'old-auth');
     await mkdir(oldMigrations);
     await copyFile(new URL('../infra/migrations/001_auth.sql', import.meta.url), join(oldMigrations, '001_auth.sql'));
-    const db = createDatabase(join(folder, 'upgrade.sqlite'));
-    resources.push({ db, folder });
+    const legacy = await databases.create({ modules: [] });
+    const db = legacy.open('upgrade.sqlite');
     await migrate(db, [coreModule, { ...authModule, migrations: pathToFileURL(`${oldMigrations}/`) }]);
     const auth = createAuthService(db);
     await auth.ensureOwner({ name: 'Pessoa', password: 'tinyfold-test-password' });

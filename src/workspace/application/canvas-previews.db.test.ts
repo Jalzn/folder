@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
-import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
+import { coreModule, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Project } from '../domain/project-models.js';
@@ -169,7 +168,7 @@ describe('drawing previews', () => {
 
   it('adds the preview table to a database with the first two workspace migrations', async () => {
     await db.destroy();
-    db = createDatabase(join(directory, 'upgrade.sqlite'));
+    db = workspace.open('upgrade.sqlite');
     await migrateWorkspaceTo(db, 2, directory);
     const canvas = await legacyRows(db).canvas({ projectId: null, title: 'Antigo', scene: drawingFixture() });
     expect(await migrate(db, [coreModule, workspaceModule])).toEqual([
@@ -232,7 +231,7 @@ describe('drawing previews', () => {
 
   it('adds fingerprints to existing previews, which fall back to the version until replaced', async () => {
     await db.destroy();
-    db = createDatabase(join(directory, 'fingerprints.sqlite'));
+    db = workspace.open('fingerprints.sqlite');
     await migrateWorkspaceTo(db, 3, directory);
     const old = legacyRows(db);
     const canvas = await old.canvas({ title: 'Antigo', scene: drawingFixture() });

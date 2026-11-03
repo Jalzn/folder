@@ -1,49 +1,24 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
-import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { todayIn } from '@tinyfold/core/domain';
-import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { createWorkspaceService } from '@tinyfold/workspace';
 import { sql } from 'kysely';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { drawingFixture } from '../workspace/testing/canvas-scenes.js';
 import { pngImage } from '../workspace/testing/png.js';
-import { createApp } from './app.js';
-import { modules } from './modules.js';
+import { useAppFixture } from './testing/app.js';
 
 const origin = 'http://localhost:5170';
 const password = 'tinyfold-mcp-password';
-const resources: { db: Database; folder: string }[] = [];
-afterEach(async () => {
-  for (const { db, folder } of resources) {
-    await db.destroy();
-    await rm(folder, { recursive: true, force: true });
-  }
-  resources.length = 0;
-});
+const appFixture = useAppFixture(password, origin);
 
 async function fixture(options: { trustProxy?: boolean } = {}) {
-  const folder = await mkdtemp(join(tmpdir(), 'tinyfold-mcp-'));
-  const db = createDatabase(join(folder, 'test.sqlite'));
-  resources.push({ db, folder });
-  await migrate(db, modules);
-  const auth = createAuthService(db, { warn: () => {} });
-  await auth.ensureOwner({ name: 'Você', password });
-  const accessTokens = createAccessTokens(db);
-  const webDir = join(folder, 'web');
-  await mkdir(webDir, { recursive: true });
-  await writeFile(join(webDir, 'index.html'), '<!doctype html><title>Tinyfold</title>');
   const logError = vi.fn();
-  const app = createApp({
-    db,
-    auth,
-    accessTokens,
+  const { db, auth, accessTokens, app } = await appFixture({
+    trustProxy: options.trustProxy ?? false,
+    warn: () => {},
     logError,
-    config: { appOrigin: origin, secureCookie: true, trustProxy: options.trustProxy ?? false, webDir },
   });
   const { token, accessToken } = await accessTokens.create({ name: 'Claude Code' });
   const responses: string[] = [];

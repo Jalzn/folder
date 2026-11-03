@@ -1,9 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { coreModule, type Database } from '@tinyfold/core/infra';
+import { useTempDatabase } from '@tinyfold/core/testing';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
 import type { Project } from '../domain/project-models.js';
 import { workspaceModule } from '../infra/module.js';
@@ -13,16 +11,14 @@ import { testProject } from '../testing/projects.js';
 const request = () => ({ requestId: randomUUID() });
 
 describe('board reads', () => {
-  let directory: string;
+  const database = useTempDatabase([coreModule, workspaceModule]);
   let db: Database;
   let service: ReturnType<typeof createWorkspaceService>;
   let project: Project;
   let now: Date;
   let timeZone: string;
   beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'tinyfold-board-'));
-    db = createDatabase(join(directory, 'test.sqlite'));
-    await migrate(db, [coreModule, workspaceModule]);
+    db = database.db;
     now = new Date('2026-10-31T15:00:00Z');
     timeZone = 'America/Sao_Paulo';
     service = createWorkspaceService(
@@ -31,10 +27,6 @@ describe('board reads', () => {
       async () => timeZone,
     );
     project = await testProject(service);
-  });
-  afterEach(async () => {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
   });
 
   /** A task created at `instant`: in the done column it is completed then. */

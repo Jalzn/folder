@@ -1,20 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { expect, test } from 'vitest';
-import { createDatabase, migrate } from '../src/core/infra/index.js';
+import { migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
 import { emptyCanvasScene } from '../src/workspace/domain/index.js';
 import { createWorkspaceService } from '../src/workspace/index.js';
-import { snapshot } from './storage.js';
+import { backupRoundTrip } from './testing/backup-round-trip.js';
 
 test('restores canvas scenes and project links independently from a live SQLite backup', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'tinyfold-canvas-backup-'));
-  const source = join(directory, 'source.sqlite');
-  const backup = join(directory, 'backup.sqlite');
-  const restored = join(directory, 'restored.sqlite');
-  const db = createDatabase(source);
+  const roundTrip = await backupRoundTrip('tinyfold-canvas-backup-');
+  const { db } = roundTrip;
   try {
     await migrate(db, modules);
     const workspace = createWorkspaceService(db);
@@ -27,7 +21,7 @@ test('restores canvas scenes and project links independently from a live SQLite 
       scene,
     });
     const original = await workspace.getCanvas({ id: ack.id });
-    await snapshot(source, backup);
+    await roundTrip.backup();
     await workspace.saveCanvas({
       requestId: randomUUID(),
       id: ack.id,
@@ -35,8 +29,7 @@ test('restores canvas scenes and project links independently from a live SQLite 
       title: 'Alterado depois da cópia',
       scene: emptyCanvasScene(),
     });
-    await snapshot(backup, restored);
-    const restoredDb = createDatabase(restored);
+    const restoredDb = await roundTrip.restore();
     try {
       expect(await migrate(restoredDb, modules)).toEqual([]);
       const copy = createWorkspaceService(restoredDb);
@@ -47,7 +40,6 @@ test('restores canvas scenes and project links independently from a live SQLite 
       await restoredDb.destroy();
     }
   } finally {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
+    await roundTrip.dispose();
   }
 });

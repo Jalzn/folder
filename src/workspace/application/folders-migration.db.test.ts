@@ -1,26 +1,21 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { createDatabase, type Database } from '@tinyfold/core/infra';
+import type { Database } from '@tinyfold/core/infra';
+import { useTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { nameKey } from '../domain/names.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';
 import { legacyRows, migrateWorkspaceTo } from '../testing/legacy-workspace.js';
 import { pngImage } from '../testing/png.js';
 
+const database = useTempDatabase([]);
 let directory: string;
 let db: Database;
 beforeEach(async () => {
-  directory = await mkdtemp(join(tmpdir(), 'tinyfold-folders-migration-'));
-  db = createDatabase(join(directory, 'test.sqlite'));
+  directory = database.folder;
+  db = database.db;
   await migrateWorkspaceTo(db, 5, directory);
-});
-afterEach(async () => {
-  await db.destroy();
-  await rm(directory, { recursive: true, force: true });
 });
 
 const rows = async (table: string) =>
@@ -159,7 +154,7 @@ describe('migration 006', () => {
   it('runs once: reopening the database migrates nothing', async () => {
     await migrateTo006();
     await db.destroy();
-    db = createDatabase(join(directory, 'test.sqlite'));
+    db = database.open('test.sqlite');
     expect(await migrateWorkspaceTo(db, 6, directory)).toEqual([]);
     await consistent();
   });

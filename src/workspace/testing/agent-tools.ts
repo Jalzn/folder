@@ -1,8 +1,6 @@
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
-import { afterEach, beforeEach, vi } from 'vitest';
+import { coreModule, type Database } from '@tinyfold/core/infra';
+import { useTempDatabase } from '@tinyfold/core/testing';
+import { beforeEach, vi } from 'vitest';
 import type { Project } from '../domain/project-models.js';
 import { createWorkspaceTools } from '../infra/mcp/index.js';
 import { workspaceModule } from '../infra/module.js';
@@ -19,7 +17,7 @@ export const missingId = '00000000-0000-4000-8000-000000000000';
  * is UTC until a test sets another.
  */
 export function useAgentTools() {
-  let directory = '';
+  const database = useTempDatabase([coreModule, workspaceModule], 'tinyfold-tools-');
   let db: Database;
   let service: ReturnType<typeof createWorkspaceService>;
   let tools: ReturnType<typeof createWorkspaceTools>;
@@ -29,9 +27,7 @@ export function useAgentTools() {
   const logError = vi.fn();
 
   beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'tinyfold-tools-'));
-    db = createDatabase(join(directory, 'test.sqlite'));
-    await migrate(db, [coreModule, workspaceModule]);
+    db = database.db;
     now = new Date('2026-10-31T12:00:00Z');
     timeZone = 'UTC';
     service = createWorkspaceService(db, () => {
@@ -41,10 +37,6 @@ export function useAgentTools() {
     tools = createWorkspaceTools(db, { logError, clock: () => now, timeZone: async () => timeZone });
     project = await testProject(service);
     logError.mockClear();
-  });
-  afterEach(async () => {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
   });
 
   /** The whole tool result, as the MCP endpoint receives it. */
@@ -94,7 +86,7 @@ export function useAgentTools() {
     async closeDatabase() {
       await db.destroy();
       // A fresh handle for afterEach to close; the tools keep the closed one.
-      db = createDatabase(join(directory, 'test.sqlite'));
+      db = database.open();
     },
   };
 }

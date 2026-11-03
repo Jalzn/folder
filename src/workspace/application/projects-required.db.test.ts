@@ -1,10 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import { coreModule, type Database, migrate } from '@tinyfold/core/infra';
+import { useTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
 import { createWorkspaceTools } from '../infra/mcp/index.js';
 import { workspaceModule } from '../infra/module.js';
@@ -32,15 +30,12 @@ function refusal(call: () => unknown): unknown {
   throw new Error('The call was accepted.');
 }
 
+const database = useTempDatabase([]);
 let directory: string;
 let db: Database;
 beforeEach(async () => {
-  directory = await mkdtemp(join(tmpdir(), 'tinyfold-projects-required-'));
-  db = createDatabase(join(directory, 'test.sqlite'));
-});
-afterEach(async () => {
-  await db.destroy();
-  await rm(directory, { recursive: true, force: true });
+  directory = database.folder;
+  db = database.db;
 });
 
 /** Runs migration 005, and the ones after it, over a database the rows were written to with migrations 001 to 004. */
@@ -147,7 +142,7 @@ describe('migration 005', () => {
     expect(await service.listProjects({ includeArchived: true })).toHaveLength(1);
 
     await db.destroy();
-    db = createDatabase(join(directory, 'loose.sqlite'));
+    db = database.open('loose.sqlite');
     await migrateWorkspaceTo(db, 4, directory);
     const loose = legacyRows(db);
     await loose.project('Arquivado', { archivedAt: '2026-10-08T10:00:00.000Z' });
@@ -221,7 +216,7 @@ describe('migration 005', () => {
     await legacyRows(db).document({ title: 'Solto' });
     await migrateTo005();
     await db.destroy();
-    db = createDatabase(join(directory, 'test.sqlite'));
+    db = database.open('test.sqlite');
     expect(await migrate(db, [coreModule, workspaceModule])).toEqual([]);
     expect(await createWorkspaceService(db).listProjects({ includeArchived: true })).toEqual([
       expect.objectContaining({ id: generalId }),

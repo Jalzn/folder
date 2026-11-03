@@ -21,6 +21,7 @@ export function useWorkspaceDb({ prefix, start }: { prefix?: string; start?: str
     service = createWorkspaceService(database.db, start ? testClock(start) : undefined);
   });
   return {
+    open: (filename) => database.open(filename),
     get db() {
       return database.db;
     },

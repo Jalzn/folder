@@ -1,7 +1,5 @@
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { coreModule, createDatabase, migrate } from '@tinyfold/core/infra';
+import { coreModule, migrate } from '@tinyfold/core/infra';
+import { createTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
 import { expect, it } from 'vitest';
 import { workspaceModule } from './module.js';
@@ -15,8 +13,8 @@ const kinds = ['table', 'index', 'trigger', 'view'];
  * whose runner refuses any file not named NNN_name.sql.
  */
 it('leaves the schema of schema/current.sql', async () => {
-  const folder = await mkdtemp(join(tmpdir(), 'tinyfold-schema-'));
-  const db = createDatabase(join(folder, 'schema.sqlite'));
+  const database = await createTempDatabase();
+  const { db } = database;
   try {
     await migrate(db, [coreModule, workspaceModule]);
     const migrations = await sql<{ module: string; version: number; name: string }>`
@@ -39,7 +37,6 @@ it('leaves the schema of schema/current.sql', async () => {
     const schema = [header, ...ordered.map((object) => `${object.sql};`)].join('\n\n');
     await expect(`${schema}\n`).toMatchFileSnapshot('./schema/current.sql');
   } finally {
-    await db.destroy();
-    await rm(folder, { recursive: true, force: true });
+    await database.dispose();
   }
 });

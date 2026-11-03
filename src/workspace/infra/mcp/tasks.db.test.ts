@@ -1,7 +1,5 @@
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { coreModule, createDatabase, migrate } from '@tinyfold/core/infra';
+import { coreModule, migrate } from '@tinyfold/core/infra';
+import { createTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../../domain/columns.js';
@@ -338,8 +336,8 @@ describe('list_tasks and read_task', () => {
   });
 
   it('refuses a cursor from before the migration to the board', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'tinyfold-tools-007-'));
-    const db = createDatabase(join(directory, 'test.sqlite'));
+    const database = await createTempDatabase();
+    const { db } = database;
     try {
       await loadStage09Fixture(db, 'sample');
       const { rows } = await sql<{ revision: number; id: string; position: number }>`
@@ -361,8 +359,7 @@ describe('list_tasks and read_task', () => {
       const page = JSON.parse(content?.type === 'text' ? content.text : '') as TaskPage;
       expect(page.tasks[0]?.column).toEqual({ id: INITIAL_COLUMN_IDS.todo, name: 'A fazer', isDone: false });
     } finally {
-      await db.destroy();
-      await rm(directory, { recursive: true, force: true });
+      await database.dispose();
     }
   });
 });

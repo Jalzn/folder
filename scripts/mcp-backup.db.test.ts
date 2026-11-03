@@ -1,22 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { expect, test } from 'vitest';
 import { createAccessTokens } from '../src/auth/index.js';
-import { createDatabase, migrate } from '../src/core/infra/index.js';
+import { migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
 import { createWorkspaceService } from '../src/workspace/index.js';
 import { drawingFixture } from '../src/workspace/testing/canvas-scenes.js';
 import { pngImage } from '../src/workspace/testing/png.js';
-import { snapshot } from './storage.js';
+import { backupRoundTrip } from './testing/backup-round-trip.js';
 
 test('restores access tokens and drawing previews from a live SQLite backup', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'tinyfold-mcp-backup-'));
-  const source = join(directory, 'source.sqlite');
-  const backup = join(directory, 'backup.sqlite');
-  const restored = join(directory, 'restored.sqlite');
-  const db = createDatabase(source);
+  const roundTrip = await backupRoundTrip('tinyfold-mcp-backup-');
+  const { db } = roundTrip;
   try {
     await migrate(db, modules);
     const tokens = createAccessTokens(db);
@@ -30,10 +24,9 @@ test('restores access tokens and drawing previews from a live SQLite backup', as
       scene: drawingFixture(),
     });
     await workspace.saveCanvasPreview({ id: canvas.id, version: 1, png: pngImage(640, 480) });
-    await snapshot(source, backup);
+    await roundTrip.backup();
     await tokens.revoke({ id: created.accessToken.id });
-    await snapshot(backup, restored);
-    const restoredDb = createDatabase(restored);
+    const restoredDb = await roundTrip.restore();
     try {
       expect(await migrate(restoredDb, modules)).toEqual([]);
       const copy = createAccessTokens(restoredDb);
@@ -45,7 +38,6 @@ test('restores access tokens and drawing previews from a live SQLite backup', as
       await restoredDb.destroy();
     }
   } finally {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
+    await roundTrip.dispose();
   }
 });

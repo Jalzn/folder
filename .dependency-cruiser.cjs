@@ -72,7 +72,7 @@ module.exports = {
       name: 'testing-helpers-stay-in-tests',
       comment: 'testing/ folders hold test helpers that use vitest and fixtures: runtime code never imports them.',
       severity: 'error',
-      from: { path: '^(src|scripts)/', pathNot: ['\\.test\\.tsx?$', '^src/[^/]+/testing/'] },
+      from: { path: '^(src|scripts)/', pathNot: ['\\.test\\.tsx?$', '^src/[^/]+/testing/', '^scripts/testing/'] },
       to: { path: '^src/[^/]+/testing/' },
     },
     {

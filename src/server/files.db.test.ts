@@ -1,44 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { createAccessTokens, createAuthService } from '@tinyfold/auth';
-import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { createWorkspaceService } from '@tinyfold/workspace';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { drawingFixture } from '../workspace/testing/canvas-scenes.js';
 import { pngImage } from '../workspace/testing/png.js';
-import { createApp } from './app.js';
-import { modules } from './modules.js';
+import { useAppFixture } from './testing/app.js';
 
 const origin = 'http://localhost:5170';
 const password = 'tinyfold-files-password';
-const resources: { db: Database; folder: string }[] = [];
-afterEach(async () => {
-  for (const { db, folder } of resources) {
-    await db.destroy();
-    await rm(folder, { recursive: true, force: true });
-  }
-  resources.length = 0;
-});
+const appFixture = useAppFixture(password, origin);
 
 async function fixture() {
-  const folder = await mkdtemp(join(tmpdir(), 'tinyfold-files-'));
-  const db = createDatabase(join(folder, 'test.sqlite'));
-  resources.push({ db, folder });
-  await migrate(db, modules);
-  const auth = createAuthService(db);
-  await auth.ensureOwner({ name: 'Você', password });
-  const webDir = join(folder, 'web');
-  await mkdir(webDir, { recursive: true });
-  await writeFile(join(webDir, 'index.html'), '<!doctype html><title>Tinyfold</title>');
-  const accessTokens = createAccessTokens(db);
-  const app = createApp({
-    db,
-    auth,
-    accessTokens,
-    config: { appOrigin: origin, secureCookie: true, trustProxy: false, webDir },
-  });
+  const { db, app, accessTokens } = await appFixture();
   const login = await app.request('/rpc/auth/login', {
     method: 'POST',
     headers: { origin, 'content-type': 'application/json' },

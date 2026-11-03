@@ -1,22 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { expect, test } from 'vitest';
-import { createDatabase, migrate } from '../src/core/infra/index.js';
+import { migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
 import { createWorkspaceService } from '../src/workspace/index.js';
-import { snapshot } from './storage.js';
+import { backupRoundTrip } from './testing/backup-round-trip.js';
 
 const request = () => ({ requestId: randomUUID() });
 const paragraph = (text: string) => [{ type: 'paragraph', content: [{ type: 'text', text, styles: {} }] }];
 
 test('restores project colours and order, pins and task sources with their titles from a live backup', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'tinyfold-projects-backup-'));
-  const source = join(directory, 'source.sqlite');
-  const backup = join(directory, 'backup.sqlite');
-  const restored = join(directory, 'restored.sqlite');
-  const db = createDatabase(source);
+  const roundTrip = await backupRoundTrip('tinyfold-projects-backup-');
+  const { db } = roundTrip;
   try {
     await migrate(db, modules);
     const workspace = createWorkspaceService(db);
@@ -52,12 +46,11 @@ test('restores project colours and order, pins and task sources with their title
     await workspace.purgeDocument({ ...request(), id: draft.id, expectedVersion: trashed.version });
     const projects = await workspace.listProjects();
     const tasks = await workspace.listTasks();
-    await snapshot(source, backup);
+    await roundTrip.backup();
 
     await workspace.unpinItem({ type: 'document', id: pinned.id });
     await workspace.moveProject({ ...request(), id: tinyfold.id, beforeProjectId: reforma.id });
-    await snapshot(backup, restored);
-    const restoredDb = createDatabase(restored);
+    const restoredDb = await roundTrip.restore();
     try {
       expect(await migrate(restoredDb, modules)).toEqual([]);
       const copy = createWorkspaceService(restoredDb);
@@ -82,7 +75,6 @@ test('restores project colours and order, pins and task sources with their title
       await restoredDb.destroy();
     }
   } finally {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
+    await roundTrip.dispose();
   }
 });

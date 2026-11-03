@@ -1,22 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import { expect, test } from 'vitest';
 import { createAuthService } from '../src/auth/index.js';
-import { createDatabase, migrate } from '../src/core/infra/index.js';
+import { migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
 import { createWorkspaceService } from '../src/workspace/index.js';
 import { seedSample } from './seed-sample.js';
-import { snapshot } from './storage.js';
+import { backupRoundTrip } from './testing/backup-round-trip.js';
 
 test('restores the columns, labels, links, descriptions and time zone, with the board rules, from a live backup', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'tinyfold-board-backup-'));
-  const source = join(directory, 'source.sqlite');
-  const backup = join(directory, 'backup.sqlite');
-  const restored = join(directory, 'restored.sqlite');
-  const db = createDatabase(source);
+  const roundTrip = await backupRoundTrip('tinyfold-board-backup-');
+  const { db, source, restored } = roundTrip;
   try {
     await migrate(db, modules);
     const auth = createAuthService(db);
@@ -36,12 +30,11 @@ test('restores the columns, labels, links, descriptions and time zone, with the 
     const links = new Database(source, { readonly: true });
     const linkRows = links.prepare('SELECT * FROM workspace_task_labels ORDER BY task_id, label_id').all();
     links.close();
-    await snapshot(source, backup);
+    await roundTrip.backup();
 
     // Changes after the backup stay out of it.
     await workspace.createColumn({ requestId: randomUUID(), name: 'Depois do backup' });
-    await snapshot(backup, restored);
-    const restoredDb = createDatabase(restored);
+    const restoredDb = await roundTrip.restore();
     try {
       expect(await migrate(restoredDb, modules)).toEqual([]);
       const copy = createWorkspaceService(restoredDb);
@@ -102,7 +95,6 @@ test('restores the columns, labels, links, descriptions and time zone, with the 
       raw.close();
     }
   } finally {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
+    await roundTrip.dispose();
   }
 });

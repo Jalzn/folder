@@ -1,71 +1,22 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createORPCClient } from '@orpc/client';
-import { RPCLink } from '@orpc/client/fetch';
 import { isProcedure, type RouterClient } from '@orpc/server';
-import { createAccessTokens, createAuthService } from '@tinyfold/auth';
-import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import { createAccessTokens } from '@tinyfold/auth';
 import { createWorkspace } from '@tinyfold/workspace';
 import { emptyCanvasScene, sceneFingerprint } from '@tinyfold/workspace/domain';
 import { sql } from 'kysely';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { pngImage } from '../workspace/testing/png.js';
-import { createApp } from './app.js';
 import { readConfig } from './config.js';
-import { modules } from './modules.js';
 import { type AppRouter, createRouter } from './router.js';
+import { useAppFixture } from './testing/app.js';
 
-const resources: { db: Database; folder: string }[] = [];
 const origin = 'http://localhost:5170';
 const password = 'tinyfold-server-password';
+const appFixture = useAppFixture(password, origin);
 async function fixture(clock = () => new Date()) {
-  const folder = await mkdtemp(join(tmpdir(), 'tinyfold-server-'));
-  const db = createDatabase(join(folder, 'test.sqlite'));
-  resources.push({ db, folder });
-  await migrate(db, modules);
-  const auth = createAuthService(db, { clock });
-  await auth.ensureOwner({ name: 'Você', password });
-  const webDir = join(folder, 'web');
-  await mkdir(join(webDir, 'assets'), { recursive: true });
-  await writeFile(join(webDir, 'index.html'), '<!doctype html><title>Tinyfold</title>');
-  await writeFile(join(webDir, 'assets', 'test.js'), '/* built asset */');
-  const app = createApp({
-    db,
-    auth,
-    clock,
-    config: { appOrigin: origin, secureCookie: true, trustProxy: false, webDir },
-  });
-  function browser(requestOrigin = origin) {
-    const state = { cookie: undefined as string | undefined, setCookies: [] as string[] };
-    const client = createORPCClient<RouterClient<AppRouter>>(
-      new RPCLink({
-        url: 'http://localhost/rpc',
-        headers: () => ({ origin: requestOrigin, ...(state.cookie ? { cookie: state.cookie } : {}) }),
-        fetch: async (request) => {
-          const response = await app.fetch(request);
-          state.setCookies = response.headers.getSetCookie();
-          for (const header of state.setCookies) {
-            const pair = header.split(';')[0];
-            if (pair) state.cookie = pair.endsWith('=') ? undefined : pair;
-          }
-          return response;
-        },
-      }),
-    );
-    return { client, state };
-  }
-  return { db, auth, app, browser };
+  return appFixture({ clock });
 }
-afterEach(async () => {
-  for (const { db, folder } of resources) {
-    await db.destroy();
-    await rm(folder, { recursive: true, force: true });
-  }
-  resources.length = 0;
-});
 /** Every item belongs to a project, and a new database has none. */
 const newProject = (client: RouterClient<AppRouter>) =>
   client.workspace.createProject({ requestId: randomUUID(), name: 'Projeto de teste' });

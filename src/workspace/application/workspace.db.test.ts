@@ -1,10 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
+import { useTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
 import type { DocumentBlock } from '../domain/document-models.js';
 import type { Project } from '../domain/project-models.js';
@@ -21,24 +19,17 @@ const content = (text: string, blockId = 'block-one'): DocumentBlock[] => [
 ];
 
 describe('workspace persistence and adversarial cases', () => {
-  let directory: string;
+  const database = useTempDatabase([coreModule, workspaceModule]);
   let filename: string;
   let db: Database;
   let service: ReturnType<typeof createWorkspaceService>;
   let project: Project;
 
   beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'tinyfold-workspace-'));
-    filename = join(directory, 'test.sqlite');
-    db = createDatabase(filename);
-    await migrate(db, [coreModule, workspaceModule]);
+    filename = database.path;
+    db = database.db;
     service = createWorkspaceService(db);
     project = await testProject(service);
-  });
-
-  afterEach(async () => {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
   });
 
   it('creates a document in its project, persists edits and reopens after server restart', async () => {
@@ -58,7 +49,7 @@ describe('workspace persistence and adversarial cases', () => {
     });
     expect(ack).toEqual({ id: document.id, version: 2, updatedAt: expect.any(String) });
     await db.destroy();
-    db = createDatabase(filename);
+    db = database.open();
     await migrate(db, [coreModule, workspaceModule]);
     const saved = await createWorkspaceService(db).getDocument({ id: document.id });
     expect(saved).toMatchObject({ title: 'Primeira ideia', plainText: 'Continuar no celular', version: 2 });
@@ -89,7 +80,7 @@ describe('workspace persistence and adversarial cases', () => {
       content: equations,
     });
     await db.destroy();
-    db = createDatabase(filename);
+    db = database.open();
     await migrate(db, [coreModule, workspaceModule]);
     service = createWorkspaceService(db);
     expect((await service.getDocument({ id: document.id })).content).toEqual(equations);

@@ -1,22 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import { expect, test } from 'vitest';
-import { createDatabase, migrate } from '../src/core/infra/index.js';
+import { migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
 import { createWorkspaceService } from '../src/workspace/index.js';
-import { snapshot } from './storage.js';
+import { backupRoundTrip } from './testing/backup-round-trip.js';
 
 const request = () => ({ requestId: randomUUID() });
 
 test('restores active and deleted folders, filed items and the folder rules from a live backup', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'tinyfold-folders-backup-'));
-  const source = join(directory, 'source.sqlite');
-  const backup = join(directory, 'backup.sqlite');
-  const restored = join(directory, 'restored.sqlite');
-  const db = createDatabase(source);
+  const roundTrip = await backupRoundTrip('tinyfold-folders-backup-');
+  const { db, restored } = roundTrip;
   try {
     await migrate(db, modules);
     const workspace = createWorkspaceService(db);
@@ -37,12 +31,11 @@ test('restores active and deleted folders, filed items and the folder rules from
     });
     await workspace.deleteFolder({ ...request(), id: old.id, expectedVersion: old.version, withItems: false });
     const folders = await workspace.listFolders({});
-    await snapshot(source, backup);
+    await roundTrip.backup();
 
     // Changes after the backup stay out of it.
     await workspace.moveItem({ ...request(), type: 'document', id: filed.id, projectId: project.id, folderId: null });
-    await snapshot(backup, restored);
-    const restoredDb = createDatabase(restored);
+    const restoredDb = await roundTrip.restore();
     try {
       expect(await migrate(restoredDb, modules)).toEqual([]);
       const copy = createWorkspaceService(restoredDb);
@@ -79,7 +72,6 @@ test('restores active and deleted folders, filed items and the folder rules from
       raw.close();
     }
   } finally {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
+    await roundTrip.dispose();
   }
 });

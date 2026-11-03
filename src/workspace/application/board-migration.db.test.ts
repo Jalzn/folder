@@ -1,25 +1,20 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import { coreModule, type Database, migrate } from '@tinyfold/core/infra';
+import { useTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
 import { searchText } from '../domain/search-text.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { loadStage09Fixture, migrateWorkspaceTo } from '../testing/legacy-workspace.js';
 
+const database = useTempDatabase([]);
 let directory: string;
 let db: Database;
 beforeEach(async () => {
-  directory = await mkdtemp(join(tmpdir(), 'tinyfold-board-migration-'));
-  db = createDatabase(join(directory, 'test.sqlite'));
-});
-afterEach(async () => {
-  await db.destroy();
-  await rm(directory, { recursive: true, force: true });
+  directory = database.folder;
+  db = database.db;
 });
 
 const rows = async <T = Record<string, unknown>>(query: string) => (await sql.raw<T>(query).execute(db)).rows;
@@ -128,7 +123,7 @@ describe('migration 007', () => {
       expect(await revision()).toEqual({ board_revision: oldRevision + 1 });
       // A second start applies nothing.
       await db.destroy();
-      db = createDatabase(join(directory, 'test.sqlite'));
+      db = database.open('test.sqlite');
       expect(await migrate(db, [coreModule, workspaceModule])).toEqual([]);
       await consistent();
     });

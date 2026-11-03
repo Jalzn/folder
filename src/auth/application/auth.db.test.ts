@@ -1,21 +1,18 @@
-import { copyFile, mkdtemp, readdir, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { copyFile, mkdtemp, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import { coreModule, migrate } from '@tinyfold/core/infra';
+import { useTestDatabases } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createAccessTokens } from '../infra/access-tokens.js';
 import { createAuthService } from '../infra/context.js';
 import { authModule } from '../infra/module.js';
 
-const resources: { db: Database; folder: string }[] = [];
+const databases = useTestDatabases([coreModule, authModule]);
 const password = 'tinyfold-test-password';
 async function fixture() {
-  const folder = await mkdtemp(join(tmpdir(), 'tinyfold-auth-'));
-  const db = createDatabase(join(folder, 'test.sqlite'));
-  resources.push({ db, folder });
-  await migrate(db, [coreModule, authModule]);
+  const { db } = await databases.create();
   let now = new Date('2026-10-29T12:00:00Z');
   const auth = createAuthService(db, { clock: () => now });
   const owner = await auth.ensureOwner({ name: 'Pessoa', password });
@@ -28,13 +25,6 @@ async function fixture() {
     },
   };
 }
-afterEach(async () => {
-  for (const { db, folder } of resources) {
-    await db.destroy();
-    await rm(folder, { recursive: true, force: true });
-  }
-  resources.length = 0;
-});
 
 describe('owner authentication', () => {
   it('stores only password and session hashes, and ignores bootstrap password after creation', async () => {
@@ -51,10 +41,7 @@ describe('owner authentication', () => {
     expect((await auth.listSessions(result.sessionId))[0]?.deviceLabel).toBe('Chrome · macOS');
   });
   it("passes the owner's name through the visible text rule, cut at 100 code points (decision 7)", async () => {
-    const folder = await mkdtemp(join(tmpdir(), 'tinyfold-auth-'));
-    const db = createDatabase(join(folder, 'test.sqlite'));
-    resources.push({ db, folder });
-    await migrate(db, [coreModule, authModule]);
+    const { db } = await databases.create();
     const auth = createAuthService(db);
     // An invisible character first, and an emoji as the 100th code point once it is gone.
     const name = ` \u{200B}Ana${'a'.repeat(96)}😀 de Souza`;
@@ -200,10 +187,10 @@ describe('owner authentication', () => {
   });
 
   it('adds the time zone, null, to an owner created with migrations 001 and 002', async () => {
-    const folder = await mkdtemp(join(tmpdir(), 'tinyfold-auth-003-'));
+    const legacy = await databases.create({ modules: [], prefix: 'tinyfold-auth-003-' });
+    const { folder, db } = legacy;
     const migrations = await mkdtemp(join(folder, 'migrations-'));
-    const db = createDatabase(join(folder, 'test.sqlite'));
-    resources.push({ db, folder });
+
     for (const name of (await readdir(authModule.migrations)).filter((file) => Number(file.slice(0, 3)) <= 2))
       await copyFile(new URL(name, authModule.migrations), join(migrations, name));
     await migrate(db, [coreModule, { ...authModule, migrations: pathToFileURL(`${migrations}/`) }]);

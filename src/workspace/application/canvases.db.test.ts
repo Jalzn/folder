@@ -1,9 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { useTempDatabase } from '@tinyfold/core/testing';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { emptyCanvasScene } from '../domain/canvas.js';
 import type { Project } from '../domain/project-models.js';
 import { workspaceModule } from '../infra/module.js';
@@ -14,22 +12,18 @@ import { testProject } from '../testing/projects.js';
 
 const request = () => ({ requestId: randomUUID() });
 describe('canvas persistence and concurrency', () => {
+  const database = useTempDatabase([coreModule, workspaceModule]);
   let directory: string;
   let filename: string;
   let db: Database;
   let service: ReturnType<typeof createWorkspaceService>;
   let project: Project;
   beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'tinyfold-canvas-'));
-    filename = join(directory, 'test.sqlite');
-    db = createDatabase(filename);
-    await migrate(db, [coreModule, workspaceModule]);
+    directory = database.folder;
+    filename = database.path;
+    db = database.db;
     service = createWorkspaceService(db);
     project = await testProject(service);
-  });
-  afterEach(async () => {
-    await db.destroy();
-    await rm(directory, { recursive: true, force: true });
   });
   it('persists a complete editable scene and reopens it after database restart', async () => {
     const created = await service.createCanvas({ ...request(), projectId: project.id });
@@ -42,7 +36,7 @@ describe('canvas persistence and concurrency', () => {
     const saved = await service.saveCanvas({ ...request(), id: created.id, expectedVersion: 1, title: 'Fluxo', scene });
     expect(saved).toEqual({ id: created.id, version: 2, updatedAt: expect.any(String) });
     await db.destroy();
-    db = createDatabase(filename);
+    db = database.open();
     await migrate(db, [coreModule, workspaceModule]);
     service = createWorkspaceService(db);
     expect(await service.getCanvas({ id: created.id })).toMatchObject({
@@ -180,7 +174,7 @@ describe('canvas persistence and concurrency', () => {
   });
   it('adds the canvas migration to an existing workspace without changing documents or tasks', async () => {
     await db.destroy();
-    db = createDatabase(join(directory, 'upgrade.sqlite'));
+    db = database.open('upgrade.sqlite');
     await migrateWorkspaceTo(db, 1, directory);
     const old = legacyRows(db);
     const document = await old.document({ title: 'Preservado' });
