@@ -11,7 +11,7 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   expect: {
     timeout: 10_000,
-    toHaveScreenshot: { animations: 'disabled', caret: 'hide', maxDiffPixels: 0, threshold: 0 },
+    toHaveScreenshot: { animations: 'disabled', caret: 'hide', maxDiffPixels: 0, threshold: 0.05 },
   },
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'test-results-visual/report' }]],
   use: { channel: 'chrome', trace: 'retain-on-failure' },

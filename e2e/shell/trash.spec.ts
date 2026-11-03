@@ -1,10 +1,10 @@
 import { expect, type Page } from '@playwright/test';
-import { test } from './fixtures.js';
-import { closeDrawer, createInDrawer, drawer, openDrawer } from './support/board.js';
-import { createTaskFromSelection } from './support/document.js';
-import { moveToTrash, newDocument, newDrawing, newTask } from './support/items.js';
-import { hostShortcut } from './support/keyboard.js';
-import { createProject, openBoard, openTrash } from './support/navigation.js';
+import { test } from '../fixtures.js';
+import { closeDrawer, createInDrawer, drawer, openDrawer } from '../support/board.js';
+import { createTaskFromSelection } from '../support/document.js';
+import { moveToTrash, newDocument, newDrawing, newTask } from '../support/items.js';
+import { hostShortcut } from '../support/keyboard.js';
+import { createProject, openBoard, openTrash } from '../support/navigation.js';
 
 /** A document whose text became a task, so its permanent deletion warns that the task stays. */
 async function documentWithTask(page: Page, title: string, task: string) {

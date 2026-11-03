@@ -7,7 +7,7 @@ import { statSync } from 'node:fs';
  */
 const SOURCES = ['src/web', 'src/workspace/domain', 'src/auth/domain', 'src/core/domain'];
 /** Files that never reach the bundle. */
-const NOT_BUNDLED = /\.test\.tsx?$|\/testing\//;
+const NOT_BUNDLED = /\.test\.tsx?$|\/(testing|__snapshots__)\//;
 
 /**
  * Refuses to test a web bundle older than its code: the server serves src/web/dist as it is, and the e2e

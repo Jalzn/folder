@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`document refuses invalid content without changing its message > constructor key 1`] = `[Error: O documento contém uma propriedade inválida.]`;
+
+exports[`document refuses invalid content without changing its message > non JSON value 1`] = `[Error: O documento contém um valor inválido.]`;
+
+exports[`document refuses invalid content without changing its message > non finite number 1`] = `[Error: O documento contém um valor inválido.]`;
+
+exports[`document refuses invalid content without changing its message > prototype key 1`] = `[Error: O documento contém uma propriedade inválida.]`;
+
+exports[`document refuses invalid content without changing its message > too deep 1`] = `[Error: O documento contém estruturas muito profundas.]`;
+
+exports[`document refuses invalid content without changing its message > wrong shape 1`] = `[Error: O documento precisa ser uma lista de blocos.]`;
+
+exports[`drawing refuses invalid content without changing its message > constructor key 1`] = `[Error: O desenho contém uma propriedade inválida.]`;
+
+exports[`drawing refuses invalid content without changing its message > non JSON value 1`] = `[Error: O desenho contém elementos inválidos.]`;
+
+exports[`drawing refuses invalid content without changing its message > non finite number 1`] = `[Error: O desenho contém elementos inválidos.]`;
+
+exports[`drawing refuses invalid content without changing its message > prototype key 1`] = `[Error: O desenho contém uma propriedade inválida.]`;
+
+exports[`drawing refuses invalid content without changing its message > too deep 1`] = `[Error: O desenho contém estruturas muito profundas.]`;
+
+exports[`drawing refuses invalid content without changing its message > wrong shape 1`] = `[Error: A cena do desenho é inválida.]`;
+
+exports[`keeps drawing media, element and byte refusals distinct 1`] = `[Error: Imagens e conteúdo incorporado ainda não são suportados nos desenhos.]`;
+
+exports[`keeps drawing media, element and byte refusals distinct 2`] = `[Error: O desenho ultrapassa o limite de 5.000 elementos.]`;
+
+exports[`keeps drawing media, element and byte refusals distinct 3`] = `[Error: O desenho ultrapassa o limite de 1 MiB. Exporte uma cópia e reduza seu conteúdo.]`;
+
+exports[`keeps the document block and byte ceilings distinct 1`] = `[Error: Este tipo de bloco ainda não é suportado.]`;
+
+exports[`keeps the document block and byte ceilings distinct 2`] = `[Error: O documento ultrapassa o limite de 5.000 blocos.]`;
+
+exports[`keeps the document block and byte ceilings distinct 3`] = `[Error: O documento ultrapassa o limite de 1 MiB. Divida o conteúdo em mais documentos.]`;

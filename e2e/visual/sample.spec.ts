@@ -11,7 +11,7 @@ async function capture(page: Page, name: string) {
   await expect(page).toHaveScreenshot(`${name}.png`);
 }
 
-test('sample pages and shared controls keep their pixels', async ({ page, api }) => {
+test('sample pages and shared controls keep their pixels', async ({ page, api, isMobile }) => {
   const projects = await api.workspace.listProjects({});
   const project = projects.find((value) => value.name === 'Tinyfold');
   if (!project) throw new Error('The sample project is missing.');
@@ -21,7 +21,8 @@ test('sample pages and shared controls keep their pixels', async ({ page, api })
   await capture(page, 'overview');
 
   await showSidebar(page);
-  await page.getByRole('button', { name: 'Projeto Tinyfold. Trocar de projeto' }).click();
+  const sidebar = isMobile ? page.getByRole('dialog', { name: 'Navegação' }) : page;
+  await sidebar.getByRole('button', { name: 'Projeto Tinyfold. Trocar de projeto' }).click();
   await capture(page, 'project-picker');
   await page.keyboard.press('Escape');
 
@@ -48,7 +49,8 @@ test('sample pages and shared controls keep their pixels', async ({ page, api })
   // The figure finishes its preview before the reference is taken.
   await expect(page.locator('.embed-figure img').first()).toBeVisible();
   await capture(page, 'document');
-  await page.getByRole('button', { name: /Mover para pasta/ }).click();
+  await page.getByRole('button', { name: 'Opções do documento' }).click();
+  await page.getByRole('menuitem', { name: /Mover para pasta/ }).click();
   await capture(page, 'folder-picker');
   await page.keyboard.press('Escape');
 
