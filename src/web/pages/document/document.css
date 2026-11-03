@@ -33,14 +33,18 @@
   background: var(--line);
 }
 .document__content {
+  --editor-type: var(--type-body);
+  --editor-tracking: var(--tracking-body);
+  --editor-content-size: 15px;
+  --editor-content-leading: 24px;
   min-height: 300px;
 }
 .document__content .bn-editor {
   min-height: 300px;
 }
 .document__content .bn-block-content {
-  font-size: 15px;
-  line-height: 24px;
+  font-size: var(--editor-content-size);
+  line-height: var(--editor-content-leading);
 }
 
 /* "Tarefas · n": the tasks born in the document, in a 320 px popover under the bar's button. */
@@ -96,8 +100,8 @@
 }
 
 @media (max-width: 719px) {
-  .document__content .bn-block-content {
-    font-size: 16px;
+  .document__content {
+    --editor-content-size: 16px;
   }
   /* In the phone's top bar the button shows its icon and count; its name still says "Tarefas · n". */
   .document-tasks-button__word {

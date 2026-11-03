@@ -1,11 +1,10 @@
 import './move-folder.css';
 import { ArrowRightLeft, Check, Folder, FolderPlus, Layers } from 'lucide-react';
 import type { JSX, RefObject } from 'react';
-import { Menu as AriaMenu, SearchField as AriaSearchField, Autocomplete, Input } from 'react-aria-components';
 import { useFolders } from '../../lib/queries';
 import { formatCount } from '../../lib/text/count';
 import { matchesAllWords } from '../../lib/text/highlight';
-import { MenuItem, MenuSeparator, PopoverSurface } from '../../ui';
+import { MenuItem, MenuSeparator, PopoverSurface, SearchableMenu } from '../../ui';
 import { useShellActions } from '../shell-ui';
 import { type FolderMoveItem, useMoveToFolder } from './use-move-to-folder';
 
@@ -67,36 +66,36 @@ export function MoveToFolderPopover({
       className="move-folder"
       aria-label="Mover para pasta"
     >
-      <Autocomplete filter={(text, input, node) => matches(text, input, node.key)}>
-        <AriaSearchField aria-label="Mover para pasta" className="move-folder__filter" autoFocus>
-          <Input className="move-folder__input" placeholder="Mover para pasta…" />
-        </AriaSearchField>
-        <AriaMenu className="menu move-folder__list" aria-label="Pastas" onAction={(key) => choose(String(key))}>
-          <MenuItem id={ROOT} textValue="Raiz do projeto" icon={icon(null, <Layers size={16} />)}>
-            Raiz do projeto
-            {current(null)}
+      <SearchableMenu
+        autocomplete={{ filter: (text, input, node) => matches(text, input, node.key) }}
+        search={{ 'aria-label': 'Mover para pasta', className: 'move-folder__filter', autoFocus: true }}
+        input={{ className: 'move-folder__input', placeholder: 'Mover para pasta…' }}
+        menu={{ className: 'menu move-folder__list', 'aria-label': 'Pastas', onAction: (key) => choose(String(key)) }}
+      >
+        <MenuItem id={ROOT} textValue="Raiz do projeto" icon={icon(null, <Layers size={16} />)}>
+          Raiz do projeto
+          {current(null)}
+        </MenuItem>
+        {folders.map((folder) => (
+          <MenuItem
+            key={folder.id}
+            id={folder.id}
+            textValue={folder.name}
+            icon={icon(folder.id, <Folder size={16} />)}
+            detail={<span className="move-folder__count">{formatCount(folder.items)}</span>}
+          >
+            {folder.name}
+            {current(folder.id)}
           </MenuItem>
-          {folders.map((folder) => (
-            <MenuItem
-              key={folder.id}
-              id={folder.id}
-              textValue={folder.name}
-              icon={icon(folder.id, <Folder size={16} />)}
-              detail={<span className="move-folder__count">{formatCount(folder.items)}</span>}
-            >
-              {folder.name}
-              {current(folder.id)}
-            </MenuItem>
-          ))}
-          <MenuSeparator />
-          <MenuItem id={NEW_FOLDER} textValue="Nova pasta" icon={<FolderPlus size={16} />}>
-            Nova pasta…
-          </MenuItem>
-          <MenuItem id={OTHER_PROJECT} textValue="Outro projeto" icon={<ArrowRightLeft size={16} />}>
-            Outro projeto…
-          </MenuItem>
-        </AriaMenu>
-      </Autocomplete>
+        ))}
+        <MenuSeparator />
+        <MenuItem id={NEW_FOLDER} textValue="Nova pasta" icon={<FolderPlus size={16} />}>
+          Nova pasta…
+        </MenuItem>
+        <MenuItem id={OTHER_PROJECT} textValue="Outro projeto" icon={<ArrowRightLeft size={16} />}>
+          Outro projeto…
+        </MenuItem>
+      </SearchableMenu>
     </PopoverSurface>
   );
 }

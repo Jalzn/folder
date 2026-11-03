@@ -2,21 +2,12 @@
 .move-folder {
   width: 280px;
 }
-.move-folder__filter {
-  padding: 6px;
-  border-bottom: 1px solid var(--line);
+.move-folder {
+  --menu-filter-padding: 6px;
+  --menu-filter-input-padding: 0 8px;
+  --menu-filter-tracking: var(--tracking-ui);
 }
-.move-folder__input {
-  width: 100%;
-  height: var(--height-field-dense);
-  padding: 0 8px;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: var(--type-ui);
-  letter-spacing: var(--tracking-ui);
-  outline: none;
-}
+
 .move-folder__input::placeholder {
   color: var(--text-3);
 }

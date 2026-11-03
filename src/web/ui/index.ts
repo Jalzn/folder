@@ -38,6 +38,7 @@ export {
 export { PageHeader } from './PageHeader';
 export { Popover, PopoverSurface, PopoverTrigger } from './Popover';
 export { RadioChip, RadioGroup } from './RadioGroup';
+export { SearchableMenu } from './SearchableMenu';
 export { SearchField, type SearchFieldProps } from './SearchField';
 export { Select, type SelectOption } from './Select';
 export { Spinner } from './Spinner';
@@ -52,5 +53,4 @@ export {
   useWithdrawUndo,
 } from './Toast';
 export { Tooltip, TooltipTrigger } from './Tooltip';
-
 export { TrashDialog } from './TrashDialog';

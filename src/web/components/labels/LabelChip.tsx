@@ -1,3 +1,4 @@
+import './label-chip.css';
 import './labels.css';
 import type { LabelColor } from '@tinyfold/workspace/domain';
 import type { CSSProperties, ReactNode } from 'react';

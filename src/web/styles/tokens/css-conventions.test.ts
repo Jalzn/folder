@@ -94,10 +94,7 @@ const RAW_FONT_EXCEPTIONS: Record<string, string> = {
   'components/inline-math.css | .inline-math-help, .inline-math-error | font-size: 12px': OWN_SIZE,
   'components/inline-math.css | .inline-math-dialog-preview | font-size: 14px': OWN_SIZE,
 
-  'components/task-drawer/drawer.css | .task-description .block-editor .bn-editor | font: var(--weight-ui) 14px / 22px var(--font-sans)':
-    "the description's 14/22, --type-desc, whose weight in the dark theme is decision 7 (W6.2a)",
-
-  'components/task-drawer/drawer.css | .due-calendar__grid th | font: var(--weight-ui) 11px / 16px var(--font-sans)':
+  'components/task-drawer/due-picker.css | .due-calendar__grid th | font: var(--weight-ui) 11px / 16px var(--font-sans)':
     OWN_SIZE,
 
   'components/task-drawer/drawer.css | .task-drawer__props .task-source .task-source__excerpt | font: var(--weight-ui) 12px / 18px var(--font-sans)':
@@ -105,10 +102,6 @@ const RAW_FONT_EXCEPTIONS: Record<string, string> = {
 
   'editor/blocks/embeds.css | .embed-card__title | font: 500 14px / 20px var(--font-sans)': OWN_SIZE,
 
-  'pages/document/document.css | .document__content .bn-block-content | font-size: 15px':
-    "the editor's content size over BlockNote's own, which --editor-type will carry (TT-6)",
-  'pages/document/document.css | .document__content .bn-block-content | font-size: 16px':
-    "the editor's content size on a phone, which --editor-type will carry (TT-6)",
   'pages/profile/profile.css | .profile-row__meta code | font-size: 12px': OWN_SIZE,
   'pages/profile/profile.css | .created-token__copy .input | font-size: 16px':
     'the 16 px that keeps iOS from zooming into a focused field',
@@ -139,7 +132,7 @@ const NARROW_719 = 'below 720 px written as 719px, which misses widths between 7
 const BREAKPOINT_EXCEPTIONS: Record<string, string> = {
   'components/item-page/editor.css | (max-width: 719px)': NARROW_719,
   'components/task-drawer/drawer.css | (max-width: 719px)': NARROW_719,
-  'editor/blocks/embeds.css | (max-width: 719px)': NARROW_719,
+  'editor/embed-picker.css | (max-width: 719px)': NARROW_719,
   'pages/board/board.css | (max-width: 719px)': NARROW_719,
   'pages/document/document.css | (max-width: 719px)': NARROW_719,
   'shell/layout.css | (max-width: 719px)': NARROW_719,

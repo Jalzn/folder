@@ -1,11 +1,11 @@
+import './label-picker.css';
 import { displayName, nameKey } from '@tinyfold/workspace/domain';
 import { Plus } from 'lucide-react';
-import { type CSSProperties, type RefObject, useState } from 'react';
-import { Menu as AriaMenu, SearchField as AriaSearchField, Autocomplete, Input } from 'react-aria-components';
+import { type RefObject, useState } from 'react';
 import type { LabelSummary } from '../../lib/queries';
 import { matchesAllWords } from '../../lib/text/highlight';
-import { MenuItem, MenuSection, PopoverSurface } from '../../ui';
-import { labelColorVar } from '../labels';
+import { MenuItem, MenuSection, PopoverSurface, SearchableMenu } from '../../ui';
+import { LabelSquare } from '../labels/display';
 
 const CREATE = 'create';
 
@@ -43,59 +43,48 @@ export function LabelPicker({
       className="label-picker"
       aria-label="Etiquetas"
     >
-      <Autocomplete
-        inputValue={text}
-        onInputChange={setText}
-        filter={(textValue, input, node) => node.key === CREATE || matchesAllWords(textValue, input)}
-      >
-        <AriaSearchField aria-label="Buscar ou criar etiqueta" className="label-picker__filter" autoFocus>
-          <Input className="label-picker__input" placeholder="Buscar ou criar etiqueta" />
-        </AriaSearchField>
-        <AriaMenu
-          className="menu label-picker__list"
-          aria-label="Etiquetas"
-          renderEmptyState={() => <p className="label-picker__empty">Nenhuma etiqueta ainda.</p>}
-          onAction={(key) => {
+      <SearchableMenu
+        autocomplete={{
+          inputValue: text,
+          onInputChange: setText,
+          filter: (textValue, input, node) => node.key === CREATE || matchesAllWords(textValue, input),
+        }}
+        search={{ 'aria-label': 'Buscar ou criar etiqueta', className: 'label-picker__filter', autoFocus: true }}
+        input={{ className: 'label-picker__input', placeholder: 'Buscar ou criar etiqueta' }}
+        menu={{
+          className: 'menu label-picker__list',
+          'aria-label': 'Etiquetas',
+          renderEmptyState: () => <p className="label-picker__empty">Nenhuma etiqueta ainda.</p>,
+          onAction: (key) => {
             if (key !== CREATE || !name) return;
             setText('');
             onCreate(name);
+          },
+        }}
+      >
+        <MenuSection
+          selectionMode="multiple"
+          selectedKeys={chosen}
+          onSelectionChange={(keys) => {
+            const next = keys === 'all' ? labels.map((each) => each.id) : [...keys].map(String);
+            setChosen(next);
+            onChange(next);
           }}
         >
-          <MenuSection
-            selectionMode="multiple"
-            selectedKeys={chosen}
-            onSelectionChange={(keys) => {
-              const next = keys === 'all' ? labels.map((each) => each.id) : [...keys].map(String);
-              setChosen(next);
-              onChange(next);
-            }}
-          >
-            {labels.map((label) => (
-              <MenuItem
-                key={label.id}
-                id={label.id}
-                textValue={label.name}
-                icon={
-                  <i
-                    className="label-picker__color"
-                    style={{ '--label-color': labelColorVar(label.color) } as CSSProperties}
-                    aria-hidden="true"
-                  />
-                }
-              >
-                {label.name}
-              </MenuItem>
-            ))}
+          {labels.map((label) => (
+            <MenuItem key={label.id} id={label.id} textValue={label.name} icon={<LabelSquare color={label.color} />}>
+              {label.name}
+            </MenuItem>
+          ))}
+        </MenuSection>
+        {name && !exists ? (
+          <MenuSection>
+            <MenuItem id={CREATE} textValue={name} icon={<Plus size={16} />} detail="nova">
+              {`Criar ${name}`}
+            </MenuItem>
           </MenuSection>
-          {name && !exists ? (
-            <MenuSection>
-              <MenuItem id={CREATE} textValue={name} icon={<Plus size={16} />} detail="nova">
-                {`Criar ${name}`}
-              </MenuItem>
-            </MenuSection>
-          ) : null}
-        </AriaMenu>
-      </Autocomplete>
+        ) : null}
+      </SearchableMenu>
     </PopoverSurface>
   );
 }

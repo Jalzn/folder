@@ -25,8 +25,8 @@
   padding: 0;
   background: transparent;
   color: var(--text);
-  font: var(--type-body);
-  letter-spacing: var(--tracking-body);
+  font: var(--editor-type, var(--type-body));
+  letter-spacing: var(--editor-tracking, var(--tracking-body));
 }
 .block-editor .bn-inline-content[data-is-empty-and-focused]::before {
   color: var(--text-3);

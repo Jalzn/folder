@@ -1,0 +1,14 @@
+.label-picker {
+  width: 260px;
+}
+
+.label-picker__list {
+  max-height: 280px;
+  overflow: auto;
+}
+.label-picker__empty {
+  margin: 0;
+  padding: 8px 10px;
+  font: var(--type-meta);
+  color: var(--text-3);
+}

@@ -1,0 +1,33 @@
+/* The picker of the `/` menu. */
+.embed-picker {
+  width: 360px;
+  padding: 0;
+}
+
+.embed-picker__list {
+  max-height: 320px;
+  overflow: auto;
+  padding: 4px;
+}
+.embed-picker__project {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 140px;
+  color: var(--text-3);
+  font: var(--type-meta);
+}
+/* The name is the flex item that gives way, so a long one ends in "…" instead of being cut. */
+.embed-picker__project-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 719px) {
+  .embed-picker {
+    width: calc(100vw - 24px);
+    max-width: none;
+  }
+}

@@ -1,0 +1,67 @@
+/* The 52 px header: the ring or "+", the title in 20/28 600, the actions. */
+.task-drawer__form {
+  display: contents;
+}
+.task-drawer__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--height-drawer-header);
+  padding: 0 16px 0 32px;
+}
+.task-drawer__state {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: var(--height-button-dense);
+  margin-left: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--icon);
+  transition: background-color var(--duration-hover) var(--ease-out);
+}
+button.task-drawer__state {
+  cursor: pointer;
+}
+.task-drawer__state[data-hovered] {
+  background: var(--hover-raised);
+}
+.task-drawer__state[data-focus-visible] {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.task-drawer__title {
+  flex: 1;
+  min-width: 0;
+  height: var(--height-field-dense);
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text);
+  font: var(--type-task-title);
+  letter-spacing: -0.017em;
+  white-space: pre;
+  resize: none;
+  outline: none;
+}
+.task-drawer__title:focus-visible {
+  box-shadow: 0 2px 0 var(--accent);
+}
+.task-drawer__title::placeholder {
+  color: var(--text-3);
+}
+.task-drawer__title[aria-invalid="true"] {
+  box-shadow: 0 2px 0 var(--late);
+}
+.task-drawer__actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

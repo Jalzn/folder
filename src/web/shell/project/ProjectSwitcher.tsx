@@ -3,12 +3,20 @@ import { useNavigate } from '@tanstack/react-router';
 import { searchText } from '@tinyfold/workspace/domain';
 import { Check, Plus } from 'lucide-react';
 import type { ReactElement } from 'react';
-import { Menu as AriaMenu, SearchField as AriaSearchField, Autocomplete, Input } from 'react-aria-components';
 import { useProjects } from '../../lib/queries';
 import { countOf } from '../../lib/text/count';
 import type { Project } from '../../lib/types';
 import { paths } from '../../navigation/paths';
-import { Kbd, MenuItem, MenuSection, MenuSeparator, Popover, PopoverTrigger, ProjectMark } from '../../ui';
+import {
+  Kbd,
+  MenuItem,
+  MenuSection,
+  MenuSeparator,
+  Popover,
+  PopoverTrigger,
+  ProjectMark,
+  SearchableMenu,
+} from '../../ui';
 import { useApp } from '../AppProvider';
 import { type SwitcherPlace, useShellOverlays } from '../shell-ui';
 import { activeProjects } from './project-order';
@@ -86,40 +94,40 @@ export function ProjectSwitcher({
       {trigger}
       <Popover aria-label="Trocar de projeto" placement={placement} className="project-switcher">
         {({ close }) => (
-          <Autocomplete filter={(text, input, node) => matches(text, input, node.key)}>
-            <AriaSearchField aria-label="Trocar de projeto" className="project-switcher__filter" autoFocus>
-              <Input className="project-switcher__input" placeholder="Trocar de projeto…" />
-            </AriaSearchField>
-            <AriaMenu
-              className="menu project-switcher__list"
-              aria-label="Projetos"
-              onAction={(key) => choose(String(key), close)}
-            >
-              {active.length > 0 && (
-                <MenuSection title="Ativos">
-                  {active.map((project, index) => (
-                    <ProjectOption
-                      key={project.id}
-                      project={project}
-                      current={project.id === current?.id}
-                      {...(index < 9 ? { shortcut: index + 1 } : {})}
-                    />
-                  ))}
-                </MenuSection>
-              )}
-              {archived.length > 0 && (
-                <MenuSection title="Arquivados">
-                  {archived.map((project) => (
-                    <ProjectOption key={project.id} project={project} current={project.id === current?.id} />
-                  ))}
-                </MenuSection>
-              )}
-              <MenuSeparator />
-              <MenuItem id={NEW_PROJECT} textValue="Novo projeto" icon={<Plus size={16} />}>
-                Novo projeto
-              </MenuItem>
-            </AriaMenu>
-          </Autocomplete>
+          <SearchableMenu
+            autocomplete={{ filter: (text, input, node) => matches(text, input, node.key) }}
+            search={{ 'aria-label': 'Trocar de projeto', className: 'project-switcher__filter', autoFocus: true }}
+            input={{ className: 'project-switcher__input', placeholder: 'Trocar de projeto…' }}
+            menu={{
+              className: 'menu project-switcher__list',
+              'aria-label': 'Projetos',
+              onAction: (key) => choose(String(key), close),
+            }}
+          >
+            {active.length > 0 && (
+              <MenuSection title="Ativos">
+                {active.map((project, index) => (
+                  <ProjectOption
+                    key={project.id}
+                    project={project}
+                    current={project.id === current?.id}
+                    {...(index < 9 ? { shortcut: index + 1 } : {})}
+                  />
+                ))}
+              </MenuSection>
+            )}
+            {archived.length > 0 && (
+              <MenuSection title="Arquivados">
+                {archived.map((project) => (
+                  <ProjectOption key={project.id} project={project} current={project.id === current?.id} />
+                ))}
+              </MenuSection>
+            )}
+            <MenuSeparator />
+            <MenuItem id={NEW_PROJECT} textValue="Novo projeto" icon={<Plus size={16} />}>
+              Novo projeto
+            </MenuItem>
+          </SearchableMenu>
         )}
       </Popover>
     </PopoverTrigger>

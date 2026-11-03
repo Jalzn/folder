@@ -1,3 +1,10 @@
+@import "./drawer-header.css";
+@import "./task-description.css";
+@import "./task-properties.css";
+@import "./due-picker.css";
+@import "./task-labels.css";
+@import "./task-checklist.css";
+
 /*
  * The task drawer (docs/interface/visual.md, "Gaveta da tarefa", and refino §6): level 2 in the dark theme
  * and white in the light one, with the top corners at radius 12, a hairline on top, the top light and a
@@ -12,7 +19,7 @@
   flex-direction: column;
   min-height: 0;
   border-top: 1px solid var(--line);
-  border-radius: 12px 12px 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background: var(--raised-2);
   box-shadow: var(--shadow-drawer), var(--top-light);
   outline: none;
@@ -63,7 +70,7 @@
   display: grid;
   place-items: center;
   height: 12px;
-  border-radius: 12px 12px 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   cursor: ns-resize;
   touch-action: none;
   outline: none;
@@ -81,74 +88,6 @@
 }
 .drawer-handle:focus-visible {
   box-shadow: inset 0 0 0 2px var(--accent);
-}
-
-/* The 52 px header: the ring or "+", the title in 20/28 600, the actions. */
-.task-drawer__form {
-  display: contents;
-}
-.task-drawer__head {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 52px;
-  padding: 0 16px 0 32px;
-}
-.task-drawer__state {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  margin-left: -4px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--icon);
-  transition: background-color var(--duration-hover) var(--ease-out);
-}
-button.task-drawer__state {
-  cursor: pointer;
-}
-.task-drawer__state[data-hovered] {
-  background: var(--hover-raised);
-}
-.task-drawer__state[data-focus-visible] {
-  outline: 2px solid var(--accent);
-  outline-offset: 0;
-}
-.task-drawer__title {
-  flex: 1;
-  min-width: 0;
-  height: 28px;
-  padding: 0;
-  overflow: hidden;
-  border: 0;
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--text);
-  font: var(--type-task-title);
-  letter-spacing: -0.017em;
-  white-space: pre;
-  resize: none;
-  outline: none;
-}
-.task-drawer__title:focus-visible {
-  box-shadow: 0 2px 0 var(--accent);
-}
-.task-drawer__title::placeholder {
-  color: var(--text-3);
-}
-.task-drawer__title[aria-invalid="true"] {
-  box-shadow: 0 2px 0 var(--late);
-}
-.task-drawer__actions {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 /*
@@ -208,28 +147,6 @@ button.task-drawer__state {
   }
 }
 
-/*
- * The description: the shared editor in 14/22, check items of 28 px, done ones in --text-3 and struck. The
- * shared editor sets the document's 15/24 on `.block-editor .bn-editor`, which this overrides.
- */
-.task-description .block-editor .bn-editor {
-  font: var(--weight-ui) 14px / 22px var(--font-sans);
-  letter-spacing: -0.006em;
-}
-.task-description [data-content-type="checkListItem"] {
-  min-height: 28px;
-}
-.task-description [data-content-type="checkListItem"][data-checked="true"] .bn-inline-content {
-  color: var(--text-3);
-  text-decoration: line-through;
-  /* Keep the pre-refactor rendered ink, independent of BlockNote stylesheet order. */
-  text-decoration-color: currentColor;
-}
-.task-description .bn-block-outer:only-child .bn-inline-content[data-is-empty-and-focused]::before,
-.task-description .bn-block-outer:only-child .bn-inline-content:empty::before {
-  color: var(--text-3);
-}
-
 .task-drawer__intro {
   display: flex;
   flex-direction: column;
@@ -266,269 +183,6 @@ button.task-drawer__state {
   margin: 0;
   font: var(--type-ui);
   color: var(--text-3);
-}
-
-/* Properties: 300 px, a grid of 88 px + 1fr with 30 px rows; label 12/16 --text-3, value 13/20. */
-.task-drawer__props {
-  width: min(300px, 100%);
-  min-width: 0;
-}
-.task-props {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
-  grid-auto-rows: minmax(30px, auto);
-  align-items: center;
-  column-gap: 8px;
-  margin: 0;
-}
-.task-props__row {
-  display: contents;
-}
-.task-props dt {
-  font: var(--type-meta);
-  color: var(--text-3);
-}
-.task-props dd {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
-  min-width: 0;
-  margin: 0;
-  font: var(--type-ui);
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-.task-prop {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  margin-left: -6px;
-  padding: 0 6px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text);
-  font: var(--type-ui);
-  letter-spacing: -0.003em;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color var(--duration-hover) var(--ease-out);
-}
-.task-prop--static {
-  cursor: default;
-}
-.task-prop[data-hovered] {
-  background: var(--hover-raised);
-}
-.task-prop[data-focus-visible] {
-  outline: 2px solid var(--accent);
-  outline-offset: 0;
-}
-.task-prop__chevron {
-  color: var(--icon);
-  opacity: 0;
-  transition: opacity var(--duration-hover) var(--ease-out);
-}
-.task-prop[data-hovered] .task-prop__chevron,
-.task-prop[data-focus-visible] .task-prop__chevron {
-  opacity: 1;
-}
-
-/* The due date: late with the clock in --late, or "Sem prazo" in --text-3. */
-.task-prop[data-late] {
-  color: var(--late);
-  font-weight: 500;
-}
-.task-prop[data-empty] {
-  color: var(--text-3);
-}
-.task-drawer__title--static {
-  display: flex;
-  align-items: center;
-  margin: 0;
-}
-
-/* React Aria's calendar in its popover, pt-BR, from Sunday; "Hoje" and "Sem prazo" below. */
-.due-popover .popover__dialog {
-  padding: 8px;
-}
-.due-picker__actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid var(--line);
-}
-.due-calendar__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-.due-calendar__month {
-  margin: 0;
-  font: var(--type-ui-medium);
-  color: var(--text);
-}
-.due-calendar__month::first-letter {
-  text-transform: uppercase;
-}
-.due-calendar__nav {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--icon);
-  cursor: pointer;
-}
-.due-calendar__nav[data-hovered] {
-  background: var(--hover-raised);
-  color: var(--text);
-}
-.due-calendar__grid {
-  border-collapse: collapse;
-}
-.due-calendar__grid th {
-  width: 32px;
-  height: 24px;
-  font: var(--weight-ui) 11px / 16px var(--font-sans);
-  color: var(--text-3);
-  text-transform: lowercase;
-}
-.due-calendar__cell {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 30px;
-  border-radius: var(--radius-sm);
-  font: var(--type-ui);
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-  cursor: pointer;
-  outline: none;
-}
-.due-calendar__cell[data-outside-month] {
-  display: none;
-}
-.due-calendar__cell[data-hovered] {
-  background: var(--hover-raised);
-}
-.due-calendar__cell[data-today] {
-  color: var(--accent);
-  font-weight: 600;
-}
-.due-calendar__cell[data-selected] {
-  background: var(--accent-solid);
-  color: var(--on-accent);
-}
-.due-calendar__cell[data-focus-visible] {
-  box-shadow: 0 0 0 2px var(--accent);
-}
-
-/* The labels: editable chips, whose "×" shows on hover or focus, then "+". */
-.task-labels {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 0;
-}
-.task-labels .label-chip {
-  padding-right: 2px;
-  transition: border-color var(--duration-hover) var(--ease-out);
-}
-.task-labels .label-chip:hover {
-  border-color: var(--line-strong);
-}
-.label-chip__remove {
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  margin-left: -1px;
-  padding: 0;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--icon);
-  opacity: 0;
-  cursor: pointer;
-}
-.label-chip:hover .label-chip__remove,
-.label-chip__remove:focus-visible {
-  opacity: 1;
-}
-.label-chip__remove:hover {
-  background: var(--hover-raised);
-  color: var(--text);
-}
-.label-chip__remove:focus-visible {
-  outline: 2px solid var(--accent);
-}
-.label-picker {
-  width: 260px;
-}
-.label-picker__filter {
-  padding: 6px 6px 4px;
-  border-bottom: 1px solid var(--line);
-}
-.label-picker__input {
-  width: 100%;
-  height: 28px;
-  padding: 0 6px;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: var(--type-ui);
-  outline: none;
-}
-.label-picker__list {
-  max-height: 280px;
-  overflow: auto;
-}
-.label-picker__color {
-  width: 8px;
-  height: 8px;
-  margin: 0 4px;
-  border-radius: 2px;
-  background: var(--label-color);
-}
-.label-picker__empty {
-  margin: 0;
-  padding: 8px 10px;
-  font: var(--type-meta);
-  color: var(--text-3);
-}
-
-/* The checklist: a 64×4 bar, --accent over --line-strong, complete in --ok, and "2 de 5". */
-.task-checklist {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-2);
-}
-.task-checklist__bar {
-  width: 64px;
-  height: 4px;
-  overflow: hidden;
-  border-radius: 2px;
-  background: var(--line-strong);
-}
-.task-checklist__fill {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  transition: width var(--duration-hover) var(--ease-out);
-}
-.task-checklist[data-full] .task-checklist__fill {
-  background: var(--ok);
 }
 
 /* Where the task came from, after a hairline. */

@@ -1,0 +1,40 @@
+/* The labels: editable chips, whose "×" shows on hover or focus, then "+". */
+.task-labels {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+.task-labels .label-chip {
+  padding-right: 2px;
+  transition: border-color var(--duration-hover) var(--ease-out);
+}
+.task-labels .label-chip:hover {
+  border-color: var(--line-strong);
+}
+.label-chip__remove {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-left: -1px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--icon);
+  opacity: 0;
+  cursor: pointer;
+}
+.label-chip:hover .label-chip__remove,
+.label-chip__remove:focus-visible {
+  opacity: 1;
+}
+.label-chip__remove:hover {
+  background: var(--hover-raised);
+  color: var(--text);
+}
+.label-chip__remove:focus-visible {
+  outline: 2px solid var(--accent);
+}

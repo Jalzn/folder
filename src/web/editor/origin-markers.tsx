@@ -1,3 +1,4 @@
+import './origin-markers.css';
 import { createExtension } from '@blocknote/core';
 import { type EditorState, Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';

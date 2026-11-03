@@ -1,0 +1,21 @@
+/*
+ * The description: the shared editor in 14/22, check items of 28 px, done ones in --text-3 and struck. The
+ * shared editor sets the document's 15/24 on `.block-editor .bn-editor`, which this overrides.
+ */
+.task-description {
+  --editor-type: var(--weight-ui) 14px / 22px var(--font-sans);
+  --editor-tracking: var(--tracking-desc);
+}
+.task-description [data-content-type="checkListItem"] {
+  min-height: var(--height-field-dense);
+}
+.task-description [data-content-type="checkListItem"][data-checked="true"] .bn-inline-content {
+  color: var(--text-3);
+  text-decoration: line-through;
+  /* Keep the pre-refactor rendered ink, independent of BlockNote stylesheet order. */
+  text-decoration-color: currentColor;
+}
+.task-description .bn-block-outer:only-child .bn-inline-content[data-is-empty-and-focused]::before,
+.task-description .bn-block-outer:only-child .bn-inline-content:empty::before {
+  color: var(--text-3);
+}

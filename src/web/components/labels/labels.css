@@ -1,39 +1,3 @@
-/* A label (docs/interface/visual.md, "Quadro"): a 20 px chip with a 7 px square of its color. */
-.label-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 20px;
-  padding: 0 6px 0 5px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--text-2);
-  font: var(--type-meta);
-  white-space: nowrap;
-}
-.label-chip > i {
-  flex: none;
-  width: 7px;
-  height: 7px;
-  border-radius: 2px;
-  background: var(--label-color);
-}
-
-/* A label's 8 px square in menus and rows; outlined for a label yet to be named. */
-.label-square {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  margin: 0 4px;
-  border-radius: 2px;
-  background: var(--label-color);
-}
-.label-square[data-empty] {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--line-strong);
-}
-
 /* "Etiquetas" (docs/etapas/10-quadro-tarefa.md, "Etiquetas"): a 480 px dialog with rows like a menu list. */
 .modal.labels-dialog {
   width: min(480px, 100%);
@@ -65,7 +29,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 32px;
+  min-height: var(--height-field);
   padding: 0 4px;
   border-radius: var(--radius-sm);
 }
@@ -75,7 +39,7 @@
 .label-row__name {
   flex: 1;
   min-width: 0;
-  height: 24px;
+  height: var(--height-button-dense);
   padding: 0 4px;
   margin-left: -4px;
   border: 0;
@@ -143,7 +107,7 @@
 }
 .label-name-field__input {
   width: 100%;
-  height: 28px;
+  height: var(--height-field-dense);
   margin-left: -4px;
   padding: 0 7px;
   border: 1px solid var(--accent);

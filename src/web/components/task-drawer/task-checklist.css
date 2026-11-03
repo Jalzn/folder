@@ -1,0 +1,23 @@
+/* The checklist: a 64×4 bar, --accent over --line-strong, complete in --ok, and "2 de 5". */
+.task-checklist {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+}
+.task-checklist__bar {
+  width: 64px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+.task-checklist__fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--duration-hover) var(--ease-out);
+}
+.task-checklist[data-full] .task-checklist__fill {
+  background: var(--ok);
+}

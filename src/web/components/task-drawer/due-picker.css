@@ -1,0 +1,81 @@
+/* React Aria's calendar in its popover, pt-BR, from Sunday; "Hoje" and "Sem prazo" below. */
+.due-popover .popover__dialog {
+  padding: 8px;
+}
+.due-picker__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+.due-calendar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.due-calendar__month {
+  margin: 0;
+  font: var(--type-ui-medium);
+  color: var(--text);
+}
+.due-calendar__month::first-letter {
+  text-transform: uppercase;
+}
+.due-calendar__nav {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: var(--height-field-dense);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--icon);
+  cursor: pointer;
+}
+.due-calendar__nav[data-hovered] {
+  background: var(--hover-raised);
+  color: var(--text);
+}
+.due-calendar__grid {
+  border-collapse: collapse;
+}
+.due-calendar__grid th {
+  width: 32px;
+  height: var(--height-button-dense);
+  font: var(--weight-ui) 11px / 16px var(--font-sans);
+  color: var(--text-3);
+  text-transform: lowercase;
+}
+.due-calendar__cell {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: var(--height-menu-item);
+  border-radius: var(--radius-sm);
+  font: var(--type-ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+}
+.due-calendar__cell[data-outside-month] {
+  display: none;
+}
+.due-calendar__cell[data-hovered] {
+  background: var(--hover-raised);
+}
+.due-calendar__cell[data-today] {
+  color: var(--accent);
+  font-weight: 600;
+}
+.due-calendar__cell[data-selected] {
+  background: var(--accent-solid);
+  color: var(--on-accent);
+}
+.due-calendar__cell[data-focus-visible] {
+  box-shadow: 0 0 0 2px var(--accent);
+}

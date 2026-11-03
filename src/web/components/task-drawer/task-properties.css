@@ -1,0 +1,81 @@
+/* Properties: 300 px, a grid of 88 px + 1fr with 30 px rows; label 12/16 --text-3, value 13/20. */
+.task-drawer__props {
+  width: min(300px, 100%);
+  min-width: 0;
+}
+.task-props {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  grid-auto-rows: minmax(30px, auto);
+  align-items: center;
+  column-gap: 8px;
+  margin: 0;
+}
+.task-props__row {
+  display: contents;
+}
+.task-props dt {
+  font: var(--type-meta);
+  color: var(--text-3);
+}
+.task-props dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+  margin: 0;
+  font: var(--type-ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.task-prop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  margin-left: -6px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: var(--type-ui);
+  letter-spacing: -0.003em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--duration-hover) var(--ease-out);
+}
+.task-prop--static {
+  cursor: default;
+}
+.task-prop[data-hovered] {
+  background: var(--hover-raised);
+}
+.task-prop[data-focus-visible] {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.task-prop__chevron {
+  color: var(--icon);
+  opacity: 0;
+  transition: opacity var(--duration-hover) var(--ease-out);
+}
+.task-prop[data-hovered] .task-prop__chevron,
+.task-prop[data-focus-visible] .task-prop__chevron {
+  opacity: 1;
+}
+
+/* The due date: late with the clock in --late, or "Sem prazo" in --text-3. */
+.task-prop[data-late] {
+  color: var(--late);
+  font-weight: 500;
+}
+.task-prop[data-empty] {
+  color: var(--text-3);
+}
+.task-drawer__title--static {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
