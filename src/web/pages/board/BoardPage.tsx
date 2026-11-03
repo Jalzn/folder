@@ -13,7 +13,7 @@ import { useApp, useOwnerToday } from '../../shell/AppProvider';
 import { useAnnounce } from '../../shell/announcer';
 import { isTextTarget } from '../../shell/keyboard/guards';
 import { usePageCommands } from '../../shell/page-commands';
-import { useShellActions, useShellUi } from '../../shell/shell-ui';
+import { useBoardFilters, useShellActions } from '../../shell/shell-ui';
 import {
   Button,
   ErrorNotice,
@@ -48,7 +48,7 @@ export function BoardPage() {
   const toast = useToast();
   const announce = useAnnounce();
   const ui = useShellActions();
-  const chosen = useShellUi().labelFilters[projectId] ?? NO_LABELS;
+  const chosen = useBoardFilters().labelFilters[projectId] ?? NO_LABELS;
   const { timeZone } = useApp();
   const today = useOwnerToday();
   const project = useProject(projectId);

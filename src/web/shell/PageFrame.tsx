@@ -2,7 +2,7 @@ import './page-frame.css';
 import { type FocusEvent, type ReactNode, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { focusPageTitle } from '../ui';
-import { useShellUi } from './shell-ui';
+import { usePageUi } from './shell-ui';
 import { useLayoutMode } from './use-layout-mode';
 
 /** The focus was in a menu that one of the actions opened, which a portal renders elsewhere. */
@@ -45,7 +45,7 @@ export function PageFrame({
   children: ReactNode;
 }) {
   const mode = useLayoutMode();
-  const { topBarActions } = useShellUi();
+  const { topBarActions } = usePageUi();
   // Below 720 px the top bar is the page's only bar, and the actions move into it.
   const inTopBar = Boolean(mode === 'narrow' && topBarActions);
   const bar = useRef<HTMLDivElement>(null);

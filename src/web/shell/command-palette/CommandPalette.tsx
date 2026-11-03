@@ -6,7 +6,7 @@ import { inBoardOrder } from '../../lib/board-order';
 import { useColumns } from '../../lib/queries';
 import { Kbd, MenuSection } from '../../ui';
 import { useApp } from '../AppProvider';
-import { type SwitcherPlace, useShellUi } from '../shell-ui';
+import { type SwitcherPlace, useShellOverlays } from '../shell-ui';
 import { availableCommands } from './commands';
 import { PaletteRow } from './PaletteRow';
 import { rowIcon, rowRight } from './palette-row-content';
@@ -29,7 +29,7 @@ interface PaletteProps {
  * here.
  */
 export function CommandPalette(props: PaletteProps) {
-  const ui = useShellUi();
+  const ui = useShellOverlays();
   const open = ui.palette !== null;
   return (
     <ModalOverlay
@@ -49,7 +49,7 @@ export function CommandPalette(props: PaletteProps) {
 
 /** The field and the sections (palette-sections.ts), each row run after the palette closes. */
 function PaletteBody({ initial, switcherPlace, toggleSidebar }: PaletteProps & { initial: string }) {
-  const ui = useShellUi();
+  const ui = useShellOverlays();
   const app = useApp();
   const { context, project, projects, item, pinned } = usePaletteContext();
   const [query, setQuery] = useState(initial);

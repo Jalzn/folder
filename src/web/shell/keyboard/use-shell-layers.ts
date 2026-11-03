@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useLatest } from '../../lib/use-latest';
-import { useShellUi } from '../shell-ui';
+import { useShellOverlays } from '../shell-ui';
 import { useLayer } from './use-layer';
 
 /**
@@ -10,7 +10,7 @@ import { useLayer } from './use-layer';
  * layer below.
  */
 export function useShellLayers() {
-  const ui = useShellUi();
+  const ui = useShellOverlays();
   const latest = useLatest(ui);
   // Stable closers: a new one would register the layer again, at the top.
   const close = useMemo(

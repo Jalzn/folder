@@ -10,7 +10,7 @@ import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
 import { Kbd, MenuItem, MenuSection, MenuSeparator, Popover, PopoverTrigger, ProjectMark } from '../../ui';
 import { useApp } from '../AppProvider';
-import { type SwitcherPlace, useShellUi } from '../shell-ui';
+import { type SwitcherPlace, useShellOverlays } from '../shell-ui';
 import { activeProjects } from './project-order';
 
 const NEW_PROJECT = 'new';
@@ -71,7 +71,7 @@ export function ProjectSwitcher({
   placement?: 'bottom start' | 'right top';
 }) {
   const app = useApp();
-  const ui = useShellUi();
+  const ui = useShellOverlays();
   const navigate = useNavigate();
   const projects = useProjects(true).data ?? [];
   const active = activeProjects(projects);

@@ -4,7 +4,7 @@ import type { Project } from '../../../lib/types';
 import { focusPageTitle, focusWhenPresent, useToast } from '../../../ui';
 import type { FolderMenuAction } from '../../folders/FolderMenu';
 import { useFolderActions } from '../../folders/use-folder-actions';
-import { useShellUi } from '../../shell-ui';
+import { useSidebarRequests } from '../../shell-ui';
 import { useOpenItem } from '../use-open-item';
 import type { TreeKeyAction } from './tree-keys';
 import { type FolderNode, folderKey, type TreeNode } from './tree-rows';
@@ -38,7 +38,7 @@ export function useTreeFolders({
   /** A new folder given up: the focus goes back to the "+" of Itens. */
   onDraftCancel: () => void;
 }) {
-  const ui = useShellUi();
+  const ui = useSidebarRequests();
   const toast = useToast();
   const open = useOpenItem();
   const actions = useFolderActions(project.id);

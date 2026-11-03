@@ -1,6 +1,6 @@
 import { type RefObject, useEffect } from 'react';
 import { focusWhenPresent } from '../../ui';
-import { useShellUi } from '../shell-ui';
+import { useSidebarRequests } from '../shell-ui';
 import { rowIn } from './tree/tree-dom';
 import { folderKey } from './tree/tree-rows';
 import { useSidebarPrefs } from './use-sidebar-prefs';
@@ -29,7 +29,7 @@ export function useFolderReveal(
   tree: RefObject<HTMLElement | null>,
   clearFilter: () => void,
 ) {
-  const ui = useShellUi();
+  const ui = useSidebarRequests();
   const prefs = useSidebarPrefs();
   function openFolder(folderId: string) {
     if (!projectId) return;

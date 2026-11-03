@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearch } from '../../lib/queries';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
-import { useShellUi } from '../shell-ui';
+import { useSidebarRequests } from '../shell-ui';
 import { itemResults } from './SearchResults';
 
 /**
@@ -12,7 +12,7 @@ import { itemResults } from './SearchResults';
  * with an empty search.
  */
 export function useSidebarSearch(project: Project | null, focusSearch: boolean) {
-  const ui = useShellUi();
+  const ui = useSidebarRequests();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const input = useRef<HTMLInputElement>(null);

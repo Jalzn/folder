@@ -1,227 +1,64 @@
-import { createContext, type ReactNode, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, type ReactNode, useContext, useMemo, useState } from 'react';
 import { AnnouncerProvider, useAnnounce } from './announcer';
-import { createLayerStack, type LayerStack } from './keyboard/layers';
+import { createLayerStack } from './keyboard/layers';
+import { BoardFiltersProvider, boardFilters } from './state/board-filters';
+import { OverlaysProvider, overlays } from './state/overlays';
+import { PageUiProvider, pageUi } from './state/page';
+import { SidebarRequestsProvider, sidebarRequests } from './state/sidebar-requests';
+import type { ShellActions, ShellState } from './state/types';
 
-/** Where the project switcher opens: the sidebar, the rail, the narrow top bar or the sidebar over the page. */
-export type SwitcherPlace = 'sidebar' | 'rail' | 'top-bar' | 'overlay';
-
-/** An action of the open item that the palette lists under "Neste item". */
-export interface PageAction {
-  id: string;
-  label: string;
-  icon?: ReactNode;
-  run: () => void;
-}
-
-/**
- * What the page offers the shell: ⌘S, and for the palette's "Neste item" the item's file actions (export,
- * import) and moving it to the trash. Fixar and Mover para projeto… come from the shell itself.
- */
-export interface PageCommands {
-  saveNow?: () => void;
-  files?: PageAction[] | undefined;
-  trash?: (() => void) | undefined;
-  /** The board's column in focus, where N's "Tarefa" creates, read when N is pressed. */
-  newTaskColumn?: (() => string | undefined) | undefined;
-  /** ⌘⌥T: a task from the excerpt selected in the page's editor; only a document's page offers it. */
-  createTask?: (() => void) | undefined;
-}
-
-/** A folder being named in the sidebar, before it exists: from "+", N, ⌘K or "Mover para pasta…". */
-export interface FolderDraft {
-  projectId: string;
-}
-
-/** A created folder, as the sidebar hands it over. */
-export interface CreatedFolder {
-  id: string;
-  name: string;
-}
-
-/** A folder to show in the sidebar, from ⌘K's Pastas: it opens there and its first item takes the focus. */
-export interface FolderReveal {
-  projectId: string;
-  folderId: string;
-}
-
-/** What the shell's parts ask of it. These never change, so a part that only asks never re-renders for it. */
-export interface ShellActions {
-  layers: LayerStack;
-  setOverlay: (open: boolean, options?: { search?: boolean }) => void;
-  setSwitcherAt: (place: SwitcherPlace | null) => void;
-  openPalette: (text?: string) => void;
-  closePalette: () => void;
-  setShortcutsOpen: (open: boolean) => void;
-  /** Opens or closes N's menu; its "Tarefa" creates in `taskColumnId` when given. */
-  setNewItemOpen: (open: boolean, taskColumnId?: string) => void;
-  setMoveOpen: (open: false | 'folder' | 'project') => void;
-  /** Asks the sidebar's Buscar for the focus. */
-  requestSearch: () => void;
-  announce: (text: string) => void;
-  page: { current: PageCommands };
-  /** Names a folder in the sidebar; `onCreated` follows its creation, as moving an item into it. */
-  startFolder: (draft: FolderDraft & { onCreated?: ((folder: CreatedFolder) => void) | undefined }) => void;
-  /**
-   * Ends the draft, with the folder when it was created: true when the one who started it took it, false when
-   * the sidebar should say it was created.
-   */
-  endFolder: (created?: CreatedFolder) => boolean;
-  revealFolder: (reveal: FolderReveal | null) => void;
-  setTopBarActions: (element: HTMLElement | null) => void;
-  /** The board's label filter of a project, for this tab only (decision 17). */
-  setLabelFilter: (projectId: string, labelIds: readonly string[]) => void;
-  /** Opens "Gerenciar etiquetas…", from the board, its filter or ⌘K. */
-  setLabelsOpen: (open: boolean) => void;
-}
-
-/** What the shell shows open now. */
-export interface ShellState {
-  overlay: { open: boolean; search: boolean };
-  switcherAt: SwitcherPlace | null;
-  /** The palette's text while it is open, or null. */
-  palette: string | null;
-  shortcutsOpen: boolean;
-  newItemOpen: boolean;
-  /** The column N's "Tarefa" creates in, as the board's column in focus when N was pressed. */
-  newTaskColumn: string | null;
-  /** The open item's move menu: "Mover para pasta…" (M), "Mover para projeto…", or closed. */
-  moveOpen: false | 'folder' | 'project';
-  /** Grows by one at each request to focus the sidebar's Buscar. */
-  searchRequest: number;
-  /** The folder being named in the sidebar, which opens the sidebar when it is hidden. */
-  folderDraft: FolderDraft | null;
-  /** The folder the sidebar shows next, which opens the sidebar when it is hidden; cleared once shown. */
-  folderReveal: FolderReveal | null;
-  /**
-   * Below 720 px, the place in the top bar where the page's actions go, so there is one 44 px bar. It is state,
-   * not a ref, because the page's actions portal into it once it exists.
-   */
-  topBarActions: HTMLElement | null;
-  /** The label filter of each project's board in this tab: tasks with all of them show. */
-  labelFilters: Readonly<Record<string, readonly string[]>>;
-  labelsOpen: boolean;
-}
+export type { PageAction, PageCommands, SwitcherPlace } from './state/types';
 
 const ActionsContext = createContext<ShellActions | null>(null);
-const StateContext = createContext<ShellState | null>(null);
-
-/** The shell's actions, which never change: for the parts that only ask. */
 export function useShellActions() {
   const value = useContext(ActionsContext);
   if (!value) throw new Error('A interface do shell está indisponível.');
   return value;
 }
-
-/** The shell's actions and what it shows open: re-renders when any of that changes. */
-export function useShellUi(): ShellActions & ShellState {
-  const actions = useShellActions();
-  const state = useContext(StateContext);
-  if (!state) throw new Error('A interface do shell está indisponível.');
-  return { ...actions, ...state };
-}
-
-/** The shell's actions, or null outside it, as on the error page of a shell that failed. */
 export const useOptionalShellUi = () => useContext(ActionsContext);
-
-/** The shell's open layers and requests, shared by the sidebar, the shortcuts and the palette. */
+export const useBoardFilters = boardFilters.useState;
+export const usePageUi = pageUi.useState;
+export function useShellOverlays() {
+  return { ...useShellActions(), ...overlays.useState() };
+}
+export function useSidebarRequests() {
+  return { ...useShellActions(), ...sidebarRequests.useState() };
+}
+/** Compatibility facade for consumers that span several concerns. */
+export function useShellUi(): ShellActions & ShellState {
+  return {
+    ...useShellActions(),
+    ...overlays.useState(),
+    ...sidebarRequests.useState(),
+    ...pageUi.useState(),
+    ...boardFilters.useState(),
+  };
+}
 export function ShellUiProvider({ children }: { children: ReactNode }) {
   return (
     <AnnouncerProvider>
-      <ShellUiState>{children}</ShellUiState>
+      <OverlaysProvider>
+        <SidebarRequestsProvider>
+          <PageUiProvider>
+            <BoardFiltersProvider>
+              <ShellActionsProvider>{children}</ShellActionsProvider>
+            </BoardFiltersProvider>
+          </PageUiProvider>
+        </SidebarRequestsProvider>
+      </OverlaysProvider>
     </AnnouncerProvider>
   );
 }
-
-function ShellUiState({ children }: { children: ReactNode }) {
+function ShellActionsProvider({ children }: { children: ReactNode }) {
   const announce = useAnnounce();
   const [layers] = useState(createLayerStack);
-  const [overlay, setOverlayState] = useState({ open: false, search: false });
-  const [switcherAt, setSwitcherAt] = useState<SwitcherPlace | null>(null);
-  const [palette, setPalette] = useState<string | null>(null);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [newItemOpen, setNewItemOpen] = useState(false);
-  const [newTaskColumn, setNewTaskColumn] = useState<string | null>(null);
-  const [moveOpen, setMoveOpen] = useState<false | 'folder' | 'project'>(false);
-  const [searchRequest, setSearchRequest] = useState(0);
-  const [folderDraft, setFolderDraft] = useState<FolderDraft | null>(null);
-  const [folderReveal, revealFolder] = useState<FolderReveal | null>(null);
-  const [topBarActions, setTopBarActions] = useState<HTMLElement | null>(null);
-  const [labelFilters, setLabelFilters] = useState<Readonly<Record<string, readonly string[]>>>({});
-  const [labelsOpen, setLabelsOpen] = useState(false);
-  const page = useRef<PageCommands>({});
-  // What follows a folder's creation is a callback, kept beside the draft rather than in its state.
-  const draftCreated = useRef<((folder: CreatedFolder) => void) | undefined>(undefined);
-
+  const overlayActions = overlays.useActions();
+  const sidebarActions = sidebarRequests.useActions();
+  const pageActions = pageUi.useActions();
+  const boardActions = boardFilters.useActions();
   const actions = useMemo<ShellActions>(
-    () => ({
-      layers,
-      setOverlay: (open, options = {}) => setOverlayState({ open, search: open && Boolean(options.search) }),
-      setSwitcherAt,
-      openPalette: (text = '') => setPalette(text),
-      closePalette: () => setPalette(null),
-      setShortcutsOpen,
-      setNewItemOpen: (open, taskColumnId) => {
-        setNewItemOpen(open);
-        setNewTaskColumn(open ? (taskColumnId ?? null) : null);
-      },
-      setMoveOpen,
-      requestSearch: () => setSearchRequest((count) => count + 1),
-      announce,
-      page,
-      startFolder: ({ onCreated, ...draft }) => {
-        draftCreated.current = onCreated;
-        setFolderDraft(draft);
-      },
-      endFolder: (created) => {
-        const then = draftCreated.current;
-        draftCreated.current = undefined;
-        setFolderDraft(null);
-        if (!created || !then) return false;
-        then(created);
-        return true;
-      },
-      revealFolder,
-      setTopBarActions,
-      setLabelFilter: (projectId, labelIds) => setLabelFilters((all) => ({ ...all, [projectId]: [...labelIds] })),
-      setLabelsOpen,
-    }),
-    [layers, announce],
+    () => ({ layers, announce, ...overlayActions, ...sidebarActions, ...pageActions, ...boardActions }),
+    [layers, announce, overlayActions, sidebarActions, pageActions, boardActions],
   );
-  const state = useMemo<ShellState>(
-    () => ({
-      overlay,
-      switcherAt,
-      palette,
-      shortcutsOpen,
-      newItemOpen,
-      newTaskColumn,
-      moveOpen,
-      searchRequest,
-      folderDraft,
-      folderReveal,
-      topBarActions,
-      labelFilters,
-      labelsOpen,
-    }),
-    [
-      overlay,
-      switcherAt,
-      palette,
-      shortcutsOpen,
-      newItemOpen,
-      newTaskColumn,
-      moveOpen,
-      searchRequest,
-      folderDraft,
-      folderReveal,
-      topBarActions,
-      labelFilters,
-      labelsOpen,
-    ],
-  );
-  return (
-    <ActionsContext.Provider value={actions}>
-      <StateContext.Provider value={state}>{children}</StateContext.Provider>
-    </ActionsContext.Provider>
-  );
+  return <ActionsContext.Provider value={actions}>{children}</ActionsContext.Provider>;
 }
