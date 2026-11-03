@@ -1,5 +1,5 @@
 import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, Shapes, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useRef, useState, useSyncExternalStore } from 'react';
 import {
   HiddenFileInput,
   ItemEditorDialogs,
@@ -25,15 +25,43 @@ import { useOriginMarkers } from './use-origin-markers';
 import { NO_EXCERPT, selectedText, useTaskFromSelection } from './use-task-from-selection';
 
 /**
- * An open document: the page bar with its folder, the save state, "Tarefas · n" and the ⋯; the bands, which
- * stay in view; and the column with the title and the content.
+ * An open document, or, in the trash with nothing local to keep, the way to the trash. The session reads what
+ * this device keeps of the document, so it decides; only the editor's page registers its commands, its tab
+ * title and the editor.
  */
 export function DocumentEditor({ document }: { document: Document }) {
   const app = useApp();
+  const [controller] = useState(() => documentController(document, app.owner.installationId));
+  const state = useSyncExternalStore(controller.subscribe, controller.getState);
+  // In the trash with nothing local to keep, the page only leads to the trash; with local text, the editor stays
+  // with the trashed band and the copy, as the drawing's (decision 1).
+  if (onlyTrashNotice(document.deletedAt, state))
+    return (
+      <PageFrame>
+        <TrashedItem
+          title="Este documento está na lixeira"
+          description="Você pode restaurá-lo para continuar escrevendo."
+          projectId={document.projectId}
+        />
+      </PageFrame>
+    );
+  return <OpenDocument document={document} controller={controller} />;
+}
+
+/**
+ * The document's editor: the page bar with its folder, the save state, "Tarefas · n" and the ⋯; the bands, which
+ * stay in view; and the column with the title and the content.
+ */
+function OpenDocument({
+  document,
+  controller,
+}: {
+  document: Document;
+  controller: ReturnType<typeof documentController>;
+}) {
   const theme = useTheme();
   const toast = useToast();
   const drawer = useTaskDrawer();
-  const [controller] = useState(() => documentController(document, app.owner.installationId));
   const embedCommands = useRef<EmbedCommands | null>(null);
   const page = useItemEditor({
     controller,
@@ -118,18 +146,6 @@ export function DocumentEditor({ document }: { document: Document }) {
     trash: page.openTrash,
   });
 
-  // In the trash with nothing local to keep, the page only leads to the trash; with local text, the editor stays
-  // with the trashed band and the copy, as the drawing's (decision 1).
-  if (onlyTrashNotice(document.deletedAt, state))
-    return (
-      <PageFrame>
-        <TrashedItem
-          title="Este documento está na lixeira"
-          description="Você pode restaurá-lo para continuar escrevendo."
-          projectId={document.projectId}
-        />
-      </PageFrame>
-    );
   return (
     <PageFrame
       lead={<FolderLabel projectId={projectId} folderId={document.folderId} />}

@@ -1,6 +1,6 @@
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { ArrowDownToLine, ArrowUpFromLine, ImageDown } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   HiddenFileInput,
   ItemEditorDialogs,
@@ -22,13 +22,36 @@ import { useSceneChanges } from './use-scene-changes';
 import { useViewport } from './use-viewport';
 
 /**
- * An open drawing: the page bar with its folder, the save state, "Exportar ▾" and the ⋯; the bands; the
- * title; and Excalidraw in a frame that takes the rest of the page, in the resolved theme.
+ * An open drawing, or, in the trash with nothing local to keep, the way to the trash. The session reads what
+ * this device keeps of the drawing, so it decides; only the editor's page registers its commands, its tab
+ * title and Excalidraw.
  */
 export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const app = useApp();
+  const [session] = useState(() => canvasSession(canvas, app.owner.installationId));
+  const state = useSyncExternalStore(session.controller.subscribe, session.controller.getState);
+  // In the trash with nothing local to keep, the page only leads to the trash.
+  if (onlyTrashNotice(canvas.deletedAt, state))
+    return (
+      <PageFrame>
+        <TrashedItem
+          title="Este desenho está na lixeira"
+          description="Restaure o desenho para continuar editando."
+          projectId={canvas.projectId}
+        />
+      </PageFrame>
+    );
+  return <OpenCanvas canvas={canvas} session={session} />;
+}
+
+/**
+ * The drawing's editor: the page bar with its folder, the save state, "Exportar ▾" and the ⋯; the bands; the
+ * title; and Excalidraw in a frame that takes the rest of the page, in the resolved theme.
+ */
+function OpenCanvas({ canvas, session }: { canvas: EditableCanvas; session: ReturnType<typeof canvasSession> }) {
+  const app = useApp();
   const theme = useTheme();
-  const [{ controller, previews }] = useState(() => canvasSession(canvas, app.owner.installationId));
+  const { controller, previews } = session;
   const page = useItemEditor({
     controller,
     item: canvasItem(canvas.id),
@@ -69,17 +92,6 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   // Leaving mid-stroke must not keep the preview waiting for a pointer release.
   useEffect(() => () => previews.release(), [previews]);
 
-  // In the trash with nothing local to keep, the page only leads to the trash.
-  if (onlyTrashNotice(canvas.deletedAt, state))
-    return (
-      <PageFrame>
-        <TrashedItem
-          title="Este desenho está na lixeira"
-          description="Restaure o desenho para continuar editando."
-          projectId={canvas.projectId}
-        />
-      </PageFrame>
-    );
   const projectId = state.snapshot.projectId;
   const { title } = page;
   return (

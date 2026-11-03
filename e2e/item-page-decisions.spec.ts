@@ -78,6 +78,59 @@ test('W5.7a: a document trashed elsewhere keeps its editor while it holds unsave
   await expect(editor(page)).toHaveCount(0);
 });
 
+/** The rows ⌘K shows on the page, by their labels without the keys. */
+async function paletteRows(page: Page) {
+  await pressCommand(page, 'k');
+  const palette = page.getByRole('dialog', { name: 'Buscar e comandar' });
+  await expect(palette).toBeVisible();
+  const labels = await palette.locator('[role="menuitem"] .palette-row__label').allInnerTexts();
+  await page.keyboard.press('Escape');
+  await expect(palette).toBeHidden();
+  return labels.map((label) => label.trim());
+}
+
+/** Neither the document's nor the drawing's own commands: the page offers no editor. */
+const editorCommands = [
+  'Criar tarefa da seleção',
+  'Incorporar tarefa…',
+  'Incorporar desenho…',
+  'Exportar Markdown',
+  'Importar Markdown',
+  'Importar desenho',
+  'Exportar desenho editável',
+  'Exportar PNG',
+  'Mover para a lixeira',
+  'Salvar agora',
+];
+
+test('E2: a trashed document or drawing with nothing local offers ⌘K no command of its editor, nor its title to the tab', async ({
+  page,
+}) => {
+  await login(page);
+  const id = await savedDocument(page, `Na lixeira sem nada local ${Date.now()}`, 'Tudo salvo.');
+  await trashDocument(page, id);
+  await page.reload();
+  await expect(page.getByText('Este documento está na lixeira')).toBeVisible();
+  await expect(page).toHaveTitle('Tinyfold');
+  const documentRows = await paletteRows(page);
+  expect(documentRows).toEqual(expect.arrayContaining(['Fixar', 'Mover para pasta…', 'Mover para projeto…']));
+  expect(documentRows.filter((label) => editorCommands.includes(label))).toEqual([]);
+
+  const drawing = await drawingInProject(page, `Lixeira com desenho ${Date.now()}`);
+  const canvas = await rpc<{ version: number }>(page, 'workspace/getCanvas', { id: drawing.id });
+  await rpc(page, 'workspace/deleteCanvas', {
+    id: drawing.id,
+    expectedVersion: canvas.version,
+    requestId: crypto.randomUUID(),
+  });
+  await page.goto(`/projetos/${drawing.projectId}/desenhos/${drawing.id}`);
+  await expect(page.getByText('Este desenho está na lixeira')).toBeVisible();
+  await expect(page).toHaveTitle('Tinyfold');
+  const drawingRows = await paletteRows(page);
+  expect(drawingRows).toEqual(expect.arrayContaining(['Fixar', 'Mover para pasta…', 'Mover para projeto…']));
+  expect(drawingRows.filter((label) => editorCommands.includes(label))).toEqual([]);
+});
+
 /** An empty drawing made over RPC in a new project, with the project's ID. */
 async function drawingInProject(page: Page, name: string) {
   const project = await rpc<{ id: string }>(page, 'workspace/createProject', { requestId: crypto.randomUUID(), name });
