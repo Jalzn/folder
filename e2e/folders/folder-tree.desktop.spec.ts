@@ -4,7 +4,7 @@ import { seedDocument, seedFolder } from '../support/builders.js';
 import { escapeRegExp, folderRow, itemsTree, treeRow } from '../support/folders.js';
 import { appShortcut } from '../support/keyboard.js';
 import { createProject, projectNavigation } from '../support/navigation.js';
-import { holdRpc } from '../support/network.js';
+import { delayRpc, holdRpc } from '../support/network.js';
 
 // The keyboard of a fixed sidebar; narrow.spec.ts covers the tree over the page on a phone.
 
@@ -78,12 +78,17 @@ test('N, P, M and G P act on the row in focus, F2 and ⇧F10 on a folder', async
   const { projectId } = await sampleProject(page);
   const project = (await page.getByRole('heading', { level: 1 }).textContent()) ?? '';
 
-  // P pins the item in focus, and again unpins it.
+  // Navigation can render the pin before this slower aggregate query finishes refreshing.
+  await delayRpc(page, 'workspace/projectOverview', 500);
+  // The announcement confirms the write and all query refreshes have finished before the next P.
+  const announcement = page.locator('p.sr-only[aria-live="polite"]');
   await treeRow(page, 'Zebra').focus();
   await page.keyboard.press('p');
   await expect(treeRow(page, 'Zebra, documento, fixado')).toBeFocused();
+  await expect(announcement).toHaveText('Fixado.');
   await page.keyboard.press('p');
   await expect(treeRow(page, 'Zebra')).toHaveAttribute('aria-label', 'Zebra, documento');
+  await expect(announcement).toHaveText('Desafixado.');
 
   // N on a folder offers it first; on a root item, the project's menu.
   await folderRow(page, 'Arquitetura').focus();
