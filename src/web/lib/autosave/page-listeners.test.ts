@@ -51,12 +51,13 @@ describe('watchPage', () => {
   });
 
   it.each([
-    ['error', true],
-    ['dirty', false],
-    ['conflict', false],
-  ] as const)('when the network returns in %s, saves: %s', (status, saves) => {
+    ['error', false, true],
+    ['error', true, false],
+    ['dirty', false, false],
+    ['conflict', false, false],
+  ] as const)('when the network returns in %s (refused: %s), saves: %s', (status, refused, saves) => {
     const page = fakePage();
-    const save = fakeSave(status);
+    const save = fakeSave(status, refused);
     watchPage(save, page.events);
     page.online();
     expect(save.flush).toHaveBeenCalledTimes(saves ? 1 : 0);
