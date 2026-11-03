@@ -1,5 +1,5 @@
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
-import type { DocumentContent } from '@tinyfold/rich-text/domain';
+import type { CivilDate, IsoInstant } from '#core/domain';
+import type { DocumentContent } from '#rich-text/domain';
 import type { CompletedKey } from '../../domain/paging.js';
 import type { Task, TaskSource } from '../../domain/task-models.js';
 import type { TaskDetail } from '../../domain/tasks.js';

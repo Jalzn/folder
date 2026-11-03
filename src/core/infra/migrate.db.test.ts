@@ -6,7 +6,7 @@ import { sql } from 'kysely';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createDatabase, type Database } from './db.js';
 import { migrate } from './migrate.js';
-import { coreModule, defineModule, type ModuleDefinition } from './module.js';
+import { coreModule, defineMigrationModule, type MigrationModuleDefinition } from './module.js';
 
 const resources: { db: Database; folder: string }[] = [];
 afterEach(async () => {
@@ -18,13 +18,13 @@ afterEach(async () => {
 });
 
 /** A database and a module whose migrations are the given files, written as they come. */
-async function fixture(sqlFunctions?: ModuleDefinition['sqlFunctions']) {
+async function fixture(sqlFunctions?: MigrationModuleDefinition['sqlFunctions']) {
   const folder = await mkdtemp(join(tmpdir(), 'tinyfold-migrate-'));
   const migrations = join(folder, 'migrations');
   await mkdir(migrations);
   const db = createDatabase(join(folder, 'test.sqlite'));
   resources.push({ db, folder });
-  const module = defineModule({
+  const module = defineMigrationModule({
     id: 'example',
     migrations: pathToFileURL(`${migrations}/`),
     ...(sqlFunctions ? { sqlFunctions } : {}),

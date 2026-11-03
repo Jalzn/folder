@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
 import { sql } from 'kysely';
+import type { IsoInstant } from '#core/domain';
 import type { ProjectReference } from '../../application/reading/read-models.js';
 
 /**

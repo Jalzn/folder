@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { DomainError } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
+import { DomainError } from '#core/domain';
 import { type ItemType, ITEM_TYPES as SEARCH_ITEM_TYPES } from './items.js';
 
 const invalidCursor = () => new DomainError('Cursor inválido. Repita a consulta sem cursor.');

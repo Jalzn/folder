@@ -1,7 +1,7 @@
 import './label-chip.css';
 import './labels.css';
-import type { LabelColor } from '@tinyfold/board/domain';
 import type { CSSProperties, ReactNode } from 'react';
+import type { LabelColor } from '#board/domain';
 import { labelColorVar } from './label-colors';
 
 /** A label as a 20 px chip: its color square and its name, and what may follow, as a remove button. */

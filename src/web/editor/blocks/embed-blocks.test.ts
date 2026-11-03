@@ -1,5 +1,5 @@
-import { EMBED_TYPES } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
+import { EMBED_TYPES } from '#rich-text/domain';
 import { EMBED_BLOCKS, EMBED_CLIPBOARD_MARK, embedBlock, embedBlockType, embedOf, isEmbedType } from './embed-blocks';
 
 const ID = '0b4f2a4e-8f8c-4a5e-9d55-1f2a3b4c5d6e';

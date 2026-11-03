@@ -1,4 +1,4 @@
-import { operation } from '@tinyfold/core/application';
+import { operation } from '#core/application';
 import {
   createColumn,
   deleteColumn,

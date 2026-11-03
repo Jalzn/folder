@@ -1,5 +1,5 @@
-import { id, request, version } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { id, request, version } from '#core/application';
 import { NAV_ITEM_TYPES } from '../../domain/navigation.js';
 
 /**

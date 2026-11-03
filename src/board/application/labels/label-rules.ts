@@ -1,4 +1,4 @@
-import { namedCollection } from '@tinyfold/core/application';
+import { namedCollection } from '#core/application';
 import { LABEL_LIMITS, type Label } from '../../domain/labels.js';
 import { boardErrors } from '../errors.js';
 import type { LabelRepository } from '../ports/labels.js';

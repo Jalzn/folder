@@ -1,5 +1,5 @@
-import { folderName, folderNameKey } from '@tinyfold/projects/domain';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { folderName, folderNameKey } from '#projects/domain';
 import { InlineNameField, whenPresent } from '../../../ui';
 import { takenText } from '../../folders/folder-text';
 

@@ -1,5 +1,5 @@
-import type { CivilDate } from '@tinyfold/core/domain';
 import { type RefObject, useState } from 'react';
+import type { CivilDate } from '#core/domain';
 import { api, errorMessage, refreshWorkspace } from '../../lib/api';
 import { openEditor } from '../../lib/autosave/save-registry';
 import { useRequest } from '../../lib/writes/use-request';

@@ -1,7 +1,7 @@
 import { ORPCError, onError } from '@orpc/server';
 import { BodyLimitPlugin, RPCHandler } from '@orpc/server/fetch';
-import type { AuthService } from '@tinyfold/auth';
 import type { Hono } from 'hono';
+import type { AuthService } from '#auth';
 import { clientIp } from './client-ip.js';
 import type { Config } from './config.js';
 import { cookieSession } from './cookie-session.js';

@@ -1,4 +1,4 @@
-import { checklistProgress } from '@tinyfold/rich-text/domain';
+import { checklistProgress } from '#rich-text/domain';
 import { api, errorCode, queryClient } from '../../lib/api';
 import { AutosaveController, type SaveInput } from '../../lib/autosave';
 import { draftStorage } from '../../lib/autosave/draft-storage';

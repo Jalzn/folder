@@ -1,5 +1,5 @@
-import { excerptEnd } from '@tinyfold/rich-text/domain';
 import type { Node as ProseNode } from '@tiptap/pm/model';
+import { excerptEnd } from '#rich-text/domain';
 
 /** A task born in the document, as its marker shows it. */
 export interface OriginMarker {

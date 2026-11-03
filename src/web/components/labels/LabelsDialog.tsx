@@ -1,10 +1,10 @@
 import { NewLabelRow } from './NewLabelRow';
 import { useLabelFocus } from './use-label-focus';
 import './labels.css';
-import { LABEL_LIMITS } from '@tinyfold/board/domain';
 import { Plus } from 'lucide-react';
 import { type KeyboardEvent, useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
+import { LABEL_LIMITS } from '#board/domain';
 import { usesCommandKey } from '../../lib/platform';
 import { type LabelSummary, useLabels } from '../../lib/queries/labels';
 import { useAction } from '../../shell/writes';

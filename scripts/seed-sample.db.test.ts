@@ -1,8 +1,8 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { embedIds, excerptPresent } from '@tinyfold/rich-text/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { embedIds, excerptPresent } from '#rich-text/domain';
 import { createDatabase, type Database, migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
 import { createWorkspaceService } from '../src/server/workspace/index.js';

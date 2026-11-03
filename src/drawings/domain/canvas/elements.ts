@@ -1,4 +1,4 @@
-import { validColor as color, object } from '@tinyfold/core/domain';
+import { validColor as color, object } from '#core/domain';
 import type { CanvasElement } from './models.js';
 
 const elementTypes = new Set(['rectangle', 'diamond', 'ellipse', 'line', 'arrow', 'freedraw', 'text', 'frame']);

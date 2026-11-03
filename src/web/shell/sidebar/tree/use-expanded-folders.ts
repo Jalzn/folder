@@ -1,5 +1,5 @@
-import type { NavFolder, NavItem } from '@tinyfold/workspace/domain';
 import { useEffect, useMemo } from 'react';
+import type { NavFolder, NavItem } from '#workspace/domain';
 import { itemKey } from '../../../lib/types';
 import { parseProjectPath } from '../../../navigation/paths';
 import { useSidebarPrefs } from '../use-sidebar-prefs';

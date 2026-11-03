@@ -1,10 +1,10 @@
 import { copyFile, mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { coreModule, migrate } from '@tinyfold/core/infra';
-import { useTestDatabases } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
 import { describe, expect, it, vi } from 'vitest';
+import { coreModule, migrate } from '#core/infra';
+import { useTestDatabases } from '#core/testing';
 import { createAccessTokens } from '../infra/access-tokens.js';
 import { createAuthService } from '../infra/context.js';
 import { authModule } from '../infra/module.js';

@@ -1,5 +1,5 @@
-import type { CivilDate } from '@tinyfold/core/domain';
 import { useRef } from 'react';
+import type { CivilDate } from '#core/domain';
 import { queryClient, requestId } from '../../lib/api';
 import { followingTask } from '../../lib/board-order';
 import { cachedTasks, keys, type TaskWithText } from '../../lib/queries';

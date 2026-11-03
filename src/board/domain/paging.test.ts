@@ -1,5 +1,5 @@
-import { readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { readIsoInstant } from '#core/domain';
 import { boardCursor, completedCursor, readBoardCursor, readCompletedCursor } from './paging.js';
 
 describe('board cursors', () => {

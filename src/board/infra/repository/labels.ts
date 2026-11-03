@@ -1,4 +1,4 @@
-import { type Database, tables, versionedUpdate } from '@tinyfold/core/infra';
+import { type Database, tables, versionedUpdate } from '#core/infra';
 import type { LabelRepository } from '../../application/ports/labels.js';
 import { byLabelName } from '../../domain/labels.js';
 import { labelModel, labelRow } from '../sql/mappers.js';

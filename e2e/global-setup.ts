@@ -1,11 +1,21 @@
 import { execFileSync } from 'node:child_process';
-import { statSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
+import { dirname } from 'node:path';
 
-/**
- * What the web bundle is built from: the web, and the pure modules of the other packages it imports, the core's
- * among them through the workspace's and the auth's.
- */
-const SOURCES = ['src/web', 'src/workspace/domain', 'src/auth/domain', 'src/core/domain'];
+/** The web plus every public domain, including transitive pure dependencies and build inputs. */
+const { imports } = JSON.parse(readFileSync('package.json', 'utf8')) as { imports: Record<string, string> };
+const SOURCES = [
+  'src/web',
+  'package.json',
+  'pnpm-lock.yaml',
+  'pnpm-workspace.yaml',
+  'patches',
+  'tsconfig.base.json',
+  'tsconfig.web.json',
+  ...Object.entries(imports)
+    .filter(([alias]) => alias.endsWith('/domain'))
+    .map(([, target]) => dirname(target)),
+];
 /** Files that never reach the bundle. */
 const NOT_BUNDLED = /\.test\.tsx?$|\/(testing|__snapshots__)\//;
 

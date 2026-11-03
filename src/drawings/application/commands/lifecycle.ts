@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import type { CanvasAck, CanvasRestoreAck } from '../../domain/index.js';
 import type { DeleteCanvasInput, PurgeCanvasInput, RestoreCanvasInput } from '../contracts/schemas.js';
 import { drawingErrors } from '../errors.js';

@@ -1,7 +1,7 @@
-import type { Database } from '@tinyfold/core/infra';
-import type { Project } from '@tinyfold/projects/domain';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { Database } from '#core/infra';
+import type { Project } from '#projects/domain';
 import { MAX_PINNED } from '../../../workspace/domain/project.js';
 import { request } from '../../testing/workspace/builders.js';
 import { useWorkspaceDb } from '../../testing/workspace/database.js';

@@ -6,7 +6,9 @@
 
 ## Entradas e composição
 
-`.` exporta a classe; `./domain` contém regras puras; `./contracts` reúne schemas, tipos e eventos; `./composition` disponibiliza os participantes e operações para o servidor. Outros módulos de negócio não importam este pacote: recebem portas locais ligadas pela composição.
+`#drawings` expõe a classe; `#drawings/domain` contém regras puras; `#drawings/contracts` reúne schemas, tipos e eventos; `#drawings/composition` disponibiliza os participantes e operações para o servidor. Essas entradas exatas ficam no `package.json` da raiz. Outros módulos de negócio recebem portas locais ligadas pela composição.
+
+`DrawingsModule` estende a classe gerada por uma definição privada `defineModule`, de `#core/application`. A definição associa comandos, consultas e assinatura de eventos ao estado de cada instância; somente a infraestrutura do próprio módulo acessa esse estado. Dependências e TypeScript são configurados na raiz.
 
 Os participantes usam o escopo transacional recebido, não abrem outra escrita e não podem ser reutilizados depois dele. Os nomes externos `workspace.*` e o histórico de migrações permanecem. Eventos são notificações tipadas após commit, locais ao processo, sem replay durável; rollback e retentativa idempotente não notificam novamente. Detalhes em [arquitetura](../../docs/arquitetura.md).
 

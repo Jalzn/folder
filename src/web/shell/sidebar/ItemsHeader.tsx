@@ -1,9 +1,9 @@
 import './items-header.css';
 import { Link } from '@tanstack/react-router';
-import { NAV_SORTS, type NavSort } from '@tinyfold/workspace/domain';
 import { Ellipsis, FileText, Folder, FoldVertical, Plus, Shapes } from 'lucide-react';
 import { type Ref, useRef } from 'react';
 import { isTextDropItem, useDrop } from 'react-aria-components';
+import { NAV_SORTS, type NavSort } from '#workspace/domain';
 import { formatCount } from '../../lib/text/count';
 import type { Project } from '../../lib/types';
 import { paths } from '../../navigation/paths';

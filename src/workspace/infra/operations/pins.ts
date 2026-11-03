@@ -1,4 +1,4 @@
-import { operation } from '@tinyfold/core/application';
+import { operation } from '#core/application';
 import { pinItem } from '../../application/pins/pin-item.js';
 import { unpinItem } from '../../application/pins/unpin-item.js';
 import type { PinPorts, WorkspaceFlowContext } from '../../application/ports/context.js';

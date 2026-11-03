@@ -1,5 +1,5 @@
-import { nameKey, searchText } from '@tinyfold/core/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import { nameKey, searchText } from '#core/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 import type { TaskRecord } from '../../application/ports/tasks.js';
 import type { Column } from '../../domain/columns.js';
 import type { Label } from '../../domain/labels.js';

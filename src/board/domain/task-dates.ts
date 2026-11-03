@@ -1,5 +1,5 @@
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
-import { civilWindowStart, isCivilDate, isPastDue } from '@tinyfold/core/domain';
+import type { CivilDate, IsoInstant } from '#core/domain';
+import { civilWindowStart, isCivilDate, isPastDue } from '#core/domain';
 
 export { isCivilDate };
 

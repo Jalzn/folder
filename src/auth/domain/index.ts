@@ -1,4 +1,4 @@
-import { DomainError, visibleText } from '@tinyfold/core/domain';
+import { DomainError, visibleText } from '#core/domain';
 
 export * from './access-token.js';
 

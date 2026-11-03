@@ -1,4 +1,4 @@
-import type { NavFolder, NavItem, NavTree } from '@tinyfold/workspace/domain';
+import type { NavFolder, NavItem, NavTree } from '#workspace/domain';
 
 /** An item the tree shows: a pin of the root, a folder's child or a loose item. */
 export interface ItemNode {

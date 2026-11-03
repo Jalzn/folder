@@ -1,5 +1,5 @@
-import { type DocumentBlock, readDocumentContent } from '@tinyfold/rich-text/domain';
 import { describe, expect, it, vi } from 'vitest';
+import { type DocumentBlock, readDocumentContent } from '#rich-text/domain';
 import { importMarkdownWithMath } from '../../lib/files/markdown';
 import type { EmbeddedItems } from '../../lib/queries/embeds';
 import { setupBlockNoteEditor } from '../../testing/blocknote-editor';

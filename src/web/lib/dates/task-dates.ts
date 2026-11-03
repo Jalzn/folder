@@ -1,4 +1,4 @@
-import type { CivilDate } from '@tinyfold/core/domain';
+import type { CivilDate } from '#core/domain';
 
 /**
  * How the interface writes a task's dates (docs/etapas/10-quadro-tarefa.md): "04 nov" on a card,

@@ -1,5 +1,5 @@
-import type { CivilDate } from '@tinyfold/core/domain';
 import { useEffect, useState } from 'react';
+import type { CivilDate } from '#core/domain';
 
 /** This device's time zone, which the owner's replaces once the server sends it with the board. */
 export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';

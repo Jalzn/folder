@@ -1,6 +1,6 @@
 import type { DefaultReactSuggestionItem } from '@blocknote/react';
-import type { EmbedKind } from '@tinyfold/rich-text/domain';
 import { ListTodo, Shapes } from 'lucide-react';
+import type { EmbedKind } from '#rich-text/domain';
 
 /**
  * The "Incorporar" group of the document's `/` menu (docs/etapas/11-documento-desenho.md, "Menu /"): "Tarefa"

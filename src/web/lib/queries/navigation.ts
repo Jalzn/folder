@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { NavSort } from '@tinyfold/workspace/domain';
+import type { NavSort } from '#workspace/domain';
 import { api } from '../api';
 import { keys } from './keys';
 

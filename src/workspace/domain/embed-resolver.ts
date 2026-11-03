@@ -1,4 +1,4 @@
-import type { EmbedKind, EmbedResolver } from '@tinyfold/rich-text/domain';
+import type { EmbedKind, EmbedResolver } from '#rich-text/domain';
 import type { EmbeddedItems } from './embed-items.js';
 
 /**

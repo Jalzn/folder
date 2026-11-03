@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { toIsoInstant } from '@tinyfold/core/domain';
-import { coreModule, createUnitOfWork } from '@tinyfold/core/infra';
-import { useTestDatabases } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
 import { afterEach, describe, expect, it } from 'vitest';
+import { toIsoInstant } from '#core/domain';
+import { coreModule, createUnitOfWork } from '#core/infra';
+import { useTestDatabases } from '#core/testing';
 import type { DocumentEvent } from '../application/contracts/events.js';
 import { DocumentsModule, disposeDocuments, documentsParticipant } from './module.js';
 

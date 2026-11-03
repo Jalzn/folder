@@ -1,6 +1,6 @@
 import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { createSlidingWindow } from '@tinyfold/core/infra';
+import { createSlidingWindow } from '#core/infra';
 import { authErrors } from '../application/errors.js';
 import type { LoginThrottle } from '../application/ports.js';
 

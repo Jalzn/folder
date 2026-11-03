@@ -1,4 +1,4 @@
-import { namedCollection, renumber } from '@tinyfold/core/application';
+import { namedCollection, renumber } from '#core/application';
 import { FOLDER_LIMITS, type Folder } from '../../domain/folders.js';
 import { workspaceErrors } from '../errors.js';
 import type { FolderLifecyclePorts, ProjectFacts, ProjectLookup } from '../ports/context.js';

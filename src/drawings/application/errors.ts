@@ -1,4 +1,4 @@
-import { AppError } from '@tinyfold/core/application';
+import { AppError } from '#core/application';
 import { MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas/preview.js';
 
 export const drawingErrors = {

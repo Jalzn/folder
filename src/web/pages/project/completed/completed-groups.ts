@@ -1,4 +1,4 @@
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
+import type { CivilDate, IsoInstant } from '#core/domain';
 import { countOf } from '../../../lib/text/count';
 
 const MONTHS = [

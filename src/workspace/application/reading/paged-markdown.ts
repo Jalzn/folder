@@ -1,6 +1,6 @@
-import { AppError } from '@tinyfold/core/application';
-import { textFingerprint } from '@tinyfold/core/domain';
-import { pageMarkdown } from '@tinyfold/rich-text/domain';
+import { AppError } from '#core/application';
+import { textFingerprint } from '#core/domain';
+import { pageMarkdown } from '#rich-text/domain';
 import { documentCursor, type readDocumentCursor } from '../../domain/paging.js';
 export function pagedMarkdown(
   markdown: string,

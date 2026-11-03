@@ -1,4 +1,4 @@
-import { searchText } from '@tinyfold/core/domain';
+import { searchText } from '#core/domain';
 import type { Canvas, CanvasSummary } from '../../domain/index.js';
 import type { CanvasRow } from './tables.js';
 

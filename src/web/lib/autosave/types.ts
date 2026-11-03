@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 /** The shapes of an autosave, for any snapshot. */
 export type SaveInput<T> = T & {
   id: string;

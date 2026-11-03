@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 import { queryClient } from '../api';
 import type { Document } from '../types';
 import { keys } from './keys';

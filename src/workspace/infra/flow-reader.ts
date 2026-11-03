@@ -1,6 +1,6 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
+import type { IsoInstant } from '#core/domain';
+import { type Database, tables } from '#core/infra';
 import type { FolderItem } from '../application/ports/context.js';
 import type { NavItemType } from '../domain/navigation.js';
 import { itemTable } from './sql/item-tables.js';

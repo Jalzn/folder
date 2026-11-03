@@ -1,7 +1,6 @@
-import type { RuntimeModule } from '@tinyfold/core/application';
-import { bindOperation, type EventDraft, operation, type TransactionScope } from '@tinyfold/core/application';
-import { createEventChannel, type SqliteUnitOfWork } from '@tinyfold/core/infra';
 import type { z } from 'zod';
+import { bindOperation, defineModule, type EventDraft, operation, type TransactionScope } from '#core/application';
+import { createEventChannel, type SqliteUnitOfWork } from '#core/infra';
 import type { Calendar } from '../application/calendar.js';
 import type { WorkspaceEvent } from '../application/contracts/events.js';
 import {
@@ -159,53 +158,44 @@ function build(deps: WorkspaceDependencies) {
     ...navigationOperations(deps.navigation, deps.reading),
     ...embedOperations(deps.reading),
   };
-  return { channel, operations, sourceTaskOperation };
+  return { channel, operations, sourceTaskOperation, reading: deps.reading };
 }
 
-const instances = new WeakMap<WorkspaceModule, ReturnType<typeof build>>();
-
-export class WorkspaceModule implements RuntimeModule<object, object, WorkspaceEvent> {
-  readonly id = 'workspace';
-  readonly commands;
-  readonly queries;
-  readonly events;
-
-  constructor(deps: WorkspaceDependencies) {
-    const built = build(deps);
-    instances.set(this, built);
-    this.events = built.channel.source;
-    const op = built.operations;
-    this.commands = {
-      createTaskFromDocument: bindOperation(built.sourceTaskOperation),
-      deleteFolder: bindOperation(op.deleteFolder),
-      restoreFolder: bindOperation(op.restoreFolder),
-      moveItem: bindOperation(op.moveItem),
-      pinItem: bindOperation(op.pinItem),
-      unpinItem: bindOperation(op.unpinItem),
-      purgeDocument: bindOperation(op.purgeDocument),
-      emptyTrash: bindOperation(op.emptyTrash),
+const definition = defineModule({
+  id: 'workspace',
+  setup: build,
+  api: (state) => {
+    const op = state.operations;
+    return {
+      commands: {
+        createTaskFromDocument: bindOperation(state.sourceTaskOperation),
+        deleteFolder: bindOperation(op.deleteFolder),
+        restoreFolder: bindOperation(op.restoreFolder),
+        moveItem: bindOperation(op.moveItem),
+        pinItem: bindOperation(op.pinItem),
+        unpinItem: bindOperation(op.unpinItem),
+        purgeDocument: bindOperation(op.purgeDocument),
+        emptyTrash: bindOperation(op.emptyTrash),
+      },
+      queries: {
+        readDocument: bindOperation(operation(ReadDocumentInput, (input) => readDocument(state.reading, input))),
+        listProjectsForAgent: bindOperation(
+          operation(AgentProjectsInput, (input) => listProjectsForAgent(state.reading, input)),
+        ),
+        searchForAgent: bindOperation(operation(SearchInput, (input) => searchForAgent(state.reading, input))),
+        projectNavigation: bindOperation(op.projectNavigation),
+        projectOverview: bindOperation(op.projectOverview),
+        search: bindOperation(op.search),
+        resolveEmbeds: bindOperation(op.resolveEmbeds),
+        listTrash: bindOperation(op.listTrash),
+      },
+      events: state.channel.source,
     };
-    this.queries = {
-      readDocument: bindOperation(operation(ReadDocumentInput, (input) => readDocument(deps.reading, input))),
-      listProjectsForAgent: bindOperation(
-        operation(AgentProjectsInput, (input) => listProjectsForAgent(deps.reading, input)),
-      ),
-      searchForAgent: bindOperation(operation(SearchInput, (input) => searchForAgent(deps.reading, input))),
-      projectNavigation: bindOperation(op.projectNavigation),
-      projectOverview: bindOperation(op.projectOverview),
-      search: bindOperation(op.search),
-      resolveEmbeds: bindOperation(op.resolveEmbeds),
-      listTrash: bindOperation(op.listTrash),
-    };
-  }
-}
+  },
+});
 
-function runtime(module: WorkspaceModule) {
-  const value = instances.get(module);
-  if (!value) throw new Error('Unknown workspace module.');
-  return value;
-}
+export class WorkspaceModule extends definition.Module {}
 
-export const workspaceOperationsFrom = (module: WorkspaceModule) => runtime(module).operations;
-export const workspaceSourceTaskOperation = (module: WorkspaceModule) => runtime(module).sourceTaskOperation;
-export const disposeWorkspace = (module: WorkspaceModule) => runtime(module).channel.dispose();
+export const workspaceOperationsFrom = (module: WorkspaceModule) => definition.stateOf(module).operations;
+export const workspaceSourceTaskOperation = (module: WorkspaceModule) => definition.stateOf(module).sourceTaskOperation;
+export const disposeWorkspace = (module: WorkspaceModule) => definition.stateOf(module).channel.dispose();

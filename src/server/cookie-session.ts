@@ -1,7 +1,7 @@
-import type { AuthService } from '@tinyfold/auth';
-import type { RequestContext } from '@tinyfold/core/infra';
 import type { Context } from 'hono';
 import { getCookie } from 'hono/cookie';
+import type { AuthService } from '#auth';
+import type { RequestContext } from '#core/infra';
 import { clearedSessionCookie, sessionCookie, sessionCookieName } from './session-cookie.js';
 /** Session resolution and renewal are identical for RPC and private files. */
 export async function cookieSession(c: Context, auth: AuthService, now: Date, secureCookie: boolean) {

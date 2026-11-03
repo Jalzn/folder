@@ -1,5 +1,5 @@
-import { assertVersion } from '@tinyfold/core/application';
-import { restoredPosition } from '@tinyfold/core/domain';
+import { assertVersion } from '#core/application';
+import { restoredPosition } from '#core/domain';
 import { boardErrors } from '../errors.js';
 import type { BoardContext } from '../ports/context.js';
 import type { RestoreColumnInput } from '../schemas/columns.js';

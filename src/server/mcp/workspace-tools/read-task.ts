@@ -1,5 +1,5 @@
-import { ReadTaskInput } from '@tinyfold/board/contracts';
-import { READING_LIMITS } from '@tinyfold/workspace/contracts';
+import { ReadTaskInput } from '#board/contracts';
+import { READING_LIMITS } from '#workspace/contracts';
 import { taskHeader } from './headers.js';
 import { pagedMarkdownResult } from './paged-result.js';
 import type { AgentQueries } from './queries.js';

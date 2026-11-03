@@ -1,5 +1,5 @@
-import { sceneFingerprint } from '@tinyfold/drawings/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { sceneFingerprint } from '#drawings/domain';
 import { api, queryClient } from '../../lib/api';
 import { renderPreview } from '../../lib/files/canvas-preview';
 import { type EmbeddedDrawing, embedsKey } from '../../lib/queries';

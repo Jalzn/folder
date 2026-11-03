@@ -1,4 +1,4 @@
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
+import type { CivilDate, IsoInstant } from '#core/domain';
 import type { NavItem, NavItemType } from '../../domain/navigation.js';
 import type { Project } from '../../domain/project-models.js';
 import type { BoardColumn as Column, BoardTask as Task } from '../../domain/read-models.js';

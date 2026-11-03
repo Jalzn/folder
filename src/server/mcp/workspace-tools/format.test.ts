@@ -1,7 +1,7 @@
-import type { TaskForReading } from '@tinyfold/board/contracts';
-import { readCivilDate, readIsoInstant } from '@tinyfold/core/domain';
-import type { CanvasOutline } from '@tinyfold/drawings/domain';
 import { describe, expect, it } from 'vitest';
+import type { TaskForReading } from '#board/contracts';
+import { readCivilDate, readIsoInstant } from '#core/domain';
+import type { CanvasOutline } from '#drawings/domain';
 import { READING_LIMITS } from '../../../workspace/domain/reading-limits.js';
 import { compactJson, fitItems } from './format.js';
 import { formatCanvasOutline } from './format-outline.js';

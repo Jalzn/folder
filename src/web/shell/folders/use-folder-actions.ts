@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import type { NavFolder, NavItem } from '@tinyfold/workspace/domain';
+import type { NavFolder, NavItem } from '#workspace/domain';
 import { api } from '../../lib/api';
 import { onceMoreIfLost } from '../../lib/writes/lost-answer';
 import { useRequest } from '../../lib/writes/use-request';

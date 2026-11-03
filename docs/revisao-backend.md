@@ -2,6 +2,8 @@
 
 **Data:** 29 de outubro de 2026. **Estado:** duas rodadas concluídas no ambiente local; os achados confirmados abaixo foram corrigidos e verificados novamente.
 
+**Como ler no código atual:** este é um registro histórico, com os comandos executados naquela data. A [etapa 14](etapas/14-definicoes.md) centraliza dependências e TypeScript na raiz: para uma nova verificação, use `mise exec -- pnpm typecheck`, sem filtros de pacote, e entradas como `#core/testing`. `defineModule`/`defineApplication`/`defineProject` tratam da composição; o registro SQLite usa `defineMigrationModule`. As verificações da etapa 14 serão registradas separadamente quando executadas.
+
 ## Método
 
 - Revisão independente dos módulos `workspace`, autenticação, transporte e controlador de salvamento.

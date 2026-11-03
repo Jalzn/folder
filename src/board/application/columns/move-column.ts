@@ -1,4 +1,4 @@
-import { reorderById } from '@tinyfold/core/domain';
+import { reorderById } from '#core/domain';
 import { boardErrors } from '../errors.js';
 import type { BoardContext } from '../ports/context.js';
 import type { MoveColumnInput } from '../schemas/columns.js';

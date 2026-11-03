@@ -1,5 +1,5 @@
-import type { TextPage } from '@tinyfold/rich-text/domain';
-import { READING_LIMITS } from '@tinyfold/workspace/contracts';
+import type { TextPage } from '#rich-text/domain';
+import { READING_LIMITS } from '#workspace/contracts';
 import { compactJson, fitItems, textResult } from './format.js';
 export function pagedMarkdownResult(input: {
   page: TextPage;

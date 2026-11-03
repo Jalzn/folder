@@ -2,7 +2,7 @@
 
 Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar, sempre dentro de um projeto. Interface Sumário, limpa e tipográfica, em tema claro e escuro, com dados em SQLite no servidor e autenticação por senha.
 
-**Código:** [etapa 13](docs/etapas/13-modulos.md) concluída, validada e integrada na `main`: projetos, documentos, desenhos e quadro têm módulos próprios; workspace coordena os fluxos conjuntos. A [etapa 12](docs/etapas/12-refatoracao.md), incluindo os quatro opcionais, é a referência anterior. Repositório público: [jalzn/folder](https://github.com/jalzn/folder).
+**Código:** [etapa 14](docs/etapas/14-definicoes.md) concluída e validada localmente em `refactor/stage14-root-definitions`: configuração centralizada na raiz e definições de módulo, aplicação e projeto. A [etapa 13](docs/etapas/13-modulos.md) está integrada na `main`: projetos, documentos, desenhos e quadro têm módulos próprios; workspace coordena os fluxos conjuntos. Repositório público: [jalzn/folder](https://github.com/jalzn/folder).
 
 **Implantação:** Railway, com deploy automático de `main` após o CI, com SQLite persistente e uma instalação iniciada vazia. Disponível em [folder.jalzn.com](https://folder.jalzn.com), com DNS, HTTPS e login verificados. Snapshot remoto baixado e restauração verificada; backups automáticos externos continuam pendentes. Ver [operação no Railway](docs/railway.md).
 
@@ -71,7 +71,9 @@ O E2E usa quatro workers, cada um com servidor, porta disponível e banco tempor
 
 ## Organização do código
 
-O workspace pnpm tem dez pacotes: `core`, `auth`, `rich-text`, `projects`, `documents`, `drawings`, `board`, `workspace`, `server` e `web`. As cinco classes de negócio expõem comandos, consultas e eventos após commit. O servidor liga portas e participantes transacionais; `workspace` conserva os fluxos conjuntos, leituras agregadas e migrações históricas. Os contratos RPC continuam com os nomes existentes. Ver [arquitetura](docs/arquitetura.md) e os READMEs de [projects](src/projects/README.md), [documents](src/documents/README.md), [drawings](src/drawings/README.md), [board](src/board/README.md), [workspace](src/workspace/README.md) e [rich-text](src/rich-text/README.md).
+Há um único `package.json` na raiz, com dependências, scripts e entradas públicas como `#documents`, `#documents/domain` e `#documents/composition`. As pastas em `src/` conservam seus limites de domínio, aplicação e infraestrutura, verificados automaticamente. As configurações TypeScript de Node, navegador e E2E também ficam na raiz.
+
+`defineModule` associa cada classe de negócio à sua API e ao estado privado por instância. `defineApplication` descreve a composição do servidor; `defineProject`, em `project.ts`, reúne as definições das aplicações do software Tinyfold. O servidor cria as instâncias e liga portas e participantes transacionais; `workspace` conserva os fluxos conjuntos, leituras agregadas e migrações históricas. Os contratos RPC continuam com os nomes existentes. Ver [arquitetura](docs/arquitetura.md) e os READMEs de [projects](src/projects/README.md), [documents](src/documents/README.md), [drawings](src/drawings/README.md), [board](src/board/README.md), [workspace](src/workspace/README.md) e [rich-text](src/rich-text/README.md).
 
 ## Documentação
 

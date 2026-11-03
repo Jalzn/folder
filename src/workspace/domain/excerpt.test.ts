@@ -1,6 +1,6 @@
-import { searchTerms } from '@tinyfold/core/domain';
-import { documentLead } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
+import { searchTerms } from '#core/domain';
+import { documentLead } from '#rich-text/domain';
 import { excerptAround, excerptFromStart } from './excerpt.js';
 import * as domain from './index.js';
 

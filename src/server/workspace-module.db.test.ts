@@ -1,11 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { CreateTaskInput } from '@tinyfold/board/contracts';
-import { coreModule, tables } from '@tinyfold/core/infra';
-import { useTestDatabases } from '@tinyfold/core/testing';
-import { workspaceModule } from '@tinyfold/workspace';
-import type { WorkspaceEvent } from '@tinyfold/workspace/contracts';
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
+import { CreateTaskInput } from '#board/contracts';
+import { coreModule, tables } from '#core/infra';
+import { useTestDatabases } from '#core/testing';
+import { workspaceModule } from '#workspace';
+import type { WorkspaceEvent } from '#workspace/contracts';
 import { createWorkspace } from './workspace/index.js';
 
 const databases = useTestDatabases([coreModule, workspaceModule], 'tinyfold-workspace-module-');

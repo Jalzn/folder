@@ -1,5 +1,5 @@
-import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
+import { type Database, tables } from '#core/infra';
 import type { BoardRepository } from '../../application/ports/board.js';
 import type { BoardTables } from '../sql/tables.js';
 

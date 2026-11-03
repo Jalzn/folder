@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 import type { Column } from '../../domain/columns.js';
 import type { TaskRecord } from './tasks.js';
 

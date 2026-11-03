@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { type Database, writeTransaction } from '@tinyfold/core/infra';
+import { type Database, writeTransaction } from '#core/infra';
 import type { LoginThrottle } from '../application/ports.js';
 import { authService } from '../application/service.js';
 import { authRepository } from './repository.js';

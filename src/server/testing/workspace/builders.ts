@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 
 /** A write's request ID, new each time. */
 export const request = () => ({ requestId: randomUUID() });

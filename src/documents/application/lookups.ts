@@ -1,5 +1,5 @@
-import { AppError, assertVersion } from '@tinyfold/core/application';
-import { excerptPresent } from '@tinyfold/rich-text/domain';
+import { AppError, assertVersion } from '#core/application';
+import { excerptPresent } from '#rich-text/domain';
 import type { Document } from '../domain/index.js';
 import type { DocumentOrganization, DocumentRepository, DocumentSourceFact, DocumentSourceInput } from './ports.js';
 

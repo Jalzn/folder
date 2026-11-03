@@ -1,7 +1,7 @@
-import type { AccessToken } from '@tinyfold/auth';
-import { MAX_ACTIVE_ACCESS_TOKENS } from '@tinyfold/auth/domain';
 import { Key } from 'lucide-react';
 import { useId, useState } from 'react';
+import type { AccessToken } from '#auth';
+import { MAX_ACTIVE_ACCESS_TOKENS } from '#auth/domain';
 import { Button, ErrorNotice, Spinner } from '../../ui';
 import { useAccessTokens } from './access-tokens';
 import { createdLabel, lastUseLabel } from './format';

@@ -1,6 +1,6 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it, vi } from 'vitest';
+import type { IsoInstant } from '#core/domain';
+import { toIsoInstant } from '#core/domain';
 import { AutosaveController, parseDraft, type SaveAck, type SavedDraft, type SaveInput, type Snapshot } from '.';
 
 /** The document's draft format, as the controller read a draft before it took the reader as an option. */

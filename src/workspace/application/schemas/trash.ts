@@ -1,5 +1,5 @@
-import { edit, id, request, version } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { edit, id, request, version } from '#core/application';
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
 
 export const TRASH_ITEM_TYPES = ['document', 'drawing', 'task'] as const;

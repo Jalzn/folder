@@ -1,4 +1,4 @@
-import { type Database, tables } from '@tinyfold/core/infra';
+import { type Database, tables } from '#core/infra';
 import type { TaskRemovalRepository } from '../../application/ports/context.js';
 import type { BoardTables } from '../sql/tables.js';
 

@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import type { BoardContext } from '../ports/context.js';
 import type { DeleteTaskInput } from '../schemas/tasks.js';
 import { requireTask } from './task-lookups.js';

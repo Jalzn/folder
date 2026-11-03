@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { coreModule, createDatabase, type Database } from '@tinyfold/core/infra';
-import { useTempDatabase } from '@tinyfold/core/testing';
-import { documentsParticipant } from '@tinyfold/documents/composition';
-import type { Project } from '@tinyfold/projects/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { coreModule, createDatabase, type Database } from '#core/infra';
+import { useTempDatabase } from '#core/testing';
+import { documentsParticipant } from '#documents/composition';
+import type { Project } from '#projects/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 import { workspaceModule } from '../../../workspace/infra/module.js';
 import { testProject } from '../../testing/workspace/projects.js';
 import { composeWorkspace } from '../../workspace/operations.js';

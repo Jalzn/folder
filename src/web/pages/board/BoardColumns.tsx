@@ -1,5 +1,5 @@
-import type { CivilDate } from '@tinyfold/core/domain';
 import { type CSSProperties, type ReactNode, type RefObject, useImperativeHandle, useRef } from 'react';
+import type { CivilDate } from '#core/domain';
 import type { LabelSummary } from '../../lib/queries';
 import type { Task } from '../../lib/types';
 import { useAction } from '../../shell/writes';

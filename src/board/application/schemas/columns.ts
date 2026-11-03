@@ -1,5 +1,5 @@
-import { edit, id, instant, request, version } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { edit, id, instant, request, version } from '#core/application';
 import { COLUMN_LIMITS } from '../../domain/columns.js';
 
 /** The raw name, bounded before displayName tidies it; readName checks the rest. */

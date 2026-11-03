@@ -1,4 +1,4 @@
-import { firstUnused } from '@tinyfold/core/domain';
+import { firstUnused } from '#core/domain';
 /** The mark colours a project can have, in the order a new project takes the first unused one. */
 export const PROJECT_COLORS = ['violet', 'ochre', 'gray', 'green'] as const;
 

@@ -1,5 +1,5 @@
-import { assertVersion } from '@tinyfold/core/application';
-import type { IsoInstant } from '@tinyfold/core/domain';
+import { assertVersion } from '#core/application';
+import type { IsoInstant } from '#core/domain';
 import type { FiledItem } from '../../domain/items.js';
 import { workspaceErrors } from '../errors.js';
 import { requireFolderInProject, requireProjectForFolders } from '../folders/folder-rules.js';

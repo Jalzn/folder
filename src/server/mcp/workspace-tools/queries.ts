@@ -1,6 +1,6 @@
-import type { BoardModule } from '@tinyfold/board';
-import type { DrawingsModule } from '@tinyfold/drawings';
-import type { WorkspaceModule } from '@tinyfold/workspace';
+import type { BoardModule } from '#board';
+import type { DrawingsModule } from '#drawings';
+import type { WorkspaceModule } from '#workspace';
 export interface AgentQueries {
   readDrawing: DrawingsModule['queries']['readForAgent'];
   readDocument: WorkspaceModule['queries']['readDocument'];

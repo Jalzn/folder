@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { excerptFromStart, NAVIGATION_LIMITS } from '@tinyfold/workspace/domain';
+import type { IsoInstant } from '#core/domain';
+import { excerptFromStart, NAVIGATION_LIMITS } from '#workspace/domain';
 import { countOf } from '../../../lib/text/count';
 import { displayTitle, type ItemType, itemTypeLabels } from '../../../lib/types';
 import type { IndexType } from '../../../navigation/paths';

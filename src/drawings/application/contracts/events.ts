@@ -1,4 +1,4 @@
-import type { ModuleEvent } from '@tinyfold/core/application';
+import type { ModuleEvent } from '#core/application';
 
 type VersionEventType = 'drawing.created' | 'drawing.saved' | 'drawing.trashed' | 'drawing.restored' | 'drawing.purged';
 

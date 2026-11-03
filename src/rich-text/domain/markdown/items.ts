@@ -1,4 +1,4 @@
-import type { JsonValue } from '@tinyfold/core/domain';
+import type { JsonValue } from '#core/domain';
 
 export type Mark = 'bold' | 'italic' | 'strike';
 /** Nesting order, outermost first, when marks start and end together. */

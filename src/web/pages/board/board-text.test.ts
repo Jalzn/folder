@@ -1,5 +1,5 @@
-import { nameKey } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { nameKey } from '#core/domain';
 import {
   boardCount,
   columnDeletedText,

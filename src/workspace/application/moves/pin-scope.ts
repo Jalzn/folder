@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 import { MAX_PINNED } from '../../domain/project.js';
 import { workspaceErrors } from '../errors.js';
 import type { PinPorts } from '../ports/context.js';

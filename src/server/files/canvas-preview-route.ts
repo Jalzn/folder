@@ -1,6 +1,6 @@
-import type { AuthService } from '@tinyfold/auth';
-import { AppError } from '@tinyfold/core/application';
 import type { Hono } from 'hono';
+import type { AuthService } from '#auth';
+import { AppError } from '#core/application';
 import { cookieSession } from '../cookie-session.js';
 import type { WorkspaceFiles } from '../workspace/index.js';
 

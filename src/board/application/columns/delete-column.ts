@@ -1,5 +1,5 @@
-import { assertVersion } from '@tinyfold/core/application';
-import type { IsoInstant } from '@tinyfold/core/domain';
+import { assertVersion } from '#core/application';
+import type { IsoInstant } from '#core/domain';
 import { COLUMN_LIMITS, columnDeletionBlocker } from '../../domain/columns.js';
 import { boardErrors } from '../errors.js';
 import type { BoardContext } from '../ports/context.js';

@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { coreModule, type Database, idempotentWrite } from '@tinyfold/core/infra';
-import { useTestDatabases } from '@tinyfold/core/testing';
-import { CreateDocumentInput } from '@tinyfold/documents/contracts';
-import { workspaceModule } from '@tinyfold/workspace';
 import { sql } from 'kysely';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { coreModule, type Database, idempotentWrite } from '#core/infra';
+import { useTestDatabases } from '#core/testing';
+import { CreateDocumentInput } from '#documents/contracts';
+import { workspaceModule } from '#workspace';
 import { createWorkspace } from './workspace/index.js';
 
 const databases = useTestDatabases([coreModule, workspaceModule], 'tinyfold-module-integration-');

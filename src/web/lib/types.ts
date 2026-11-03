@@ -1,8 +1,8 @@
-export type { Task } from '@tinyfold/board/domain';
-export type { Document, DocumentSummary } from '@tinyfold/documents/domain';
-export type { Canvas, CanvasScene, CanvasSummary } from '@tinyfold/drawings/domain';
-export type { Project } from '@tinyfold/projects/domain';
-export type { DocumentBlock, DocumentContent } from '@tinyfold/rich-text/domain';
+export type { Task } from '#board/domain';
+export type { Document, DocumentSummary } from '#documents/domain';
+export type { Canvas, CanvasScene, CanvasSummary } from '#drawings/domain';
+export type { Project } from '#projects/domain';
+export type { DocumentBlock, DocumentContent } from '#rich-text/domain';
 
 /** What an item without a title is called wherever it shows. */
 export const UNTITLED = 'Sem título';

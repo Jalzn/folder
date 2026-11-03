@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 import { AppError } from '../application/index.js';
 import { toIsoInstant } from '../domain/instant.js';
 import { type Database, type DatabaseTransaction, tables, writeTransaction } from './db.js';

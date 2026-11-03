@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import type { ProjectsContext } from '../ports/context.js';
 import type { RenameFolderInput } from '../schemas/folders.js';
 import { assertFolderNameFree, readFolderName, requireActiveFolder, requireProjectForFolders } from './folder-rules.js';

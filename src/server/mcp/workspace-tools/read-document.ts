@@ -1,4 +1,4 @@
-import { READING_LIMITS, ReadDocumentInput } from '@tinyfold/workspace/contracts';
+import { READING_LIMITS, ReadDocumentInput } from '#workspace/contracts';
 import { documentHeader } from './headers.js';
 import { pagedMarkdownResult } from './paged-result.js';
 import type { AgentQueries } from './queries.js';

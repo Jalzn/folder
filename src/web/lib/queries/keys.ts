@@ -1,4 +1,4 @@
-import type { NavSort } from '@tinyfold/workspace/domain';
+import type { NavSort } from '#workspace/domain';
 import type { ItemType } from '../types';
 
 const root = ['workspace'] as const;

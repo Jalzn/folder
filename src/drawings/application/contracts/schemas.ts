@@ -1,5 +1,5 @@
-import { domainIssue, domainMessage, edit, id, request, version, visible } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { domainIssue, domainMessage, edit, id, request, version, visible } from '#core/application';
 import { readCanvasScene } from '../../domain/canvas/index.js';
 
 /** Empty, or of only characters that draw nothing, it becomes "Sem título". */

@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import type { DocumentContent } from '@tinyfold/rich-text/domain';
+import type { IsoInstant } from '#core/domain';
+import type { DocumentContent } from '#rich-text/domain';
 import type { CreateTaskInput } from '../schemas/tasks.js';
 
 /** The project facts board rules need; projects remain owned by their module. */

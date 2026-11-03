@@ -184,4 +184,4 @@ export function readDocumentContent(
   return value as unknown as DocumentBlock[];
 }
 
-import { assertContentJson, boundedLimit, object, validColor } from '@tinyfold/core/domain';
+import { assertContentJson, boundedLimit, object, validColor } from '#core/domain';

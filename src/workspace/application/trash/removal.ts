@@ -1,4 +1,4 @@
-import { AppError, assertVersion } from '@tinyfold/core/application';
+import { AppError, assertVersion } from '#core/application';
 import { workspaceErrors } from '../errors.js';
 import type { TrashedItem, TrashPorts, WorkspaceFlowContext } from '../ports/context.js';
 import type { PurgeItemInput } from '../schemas/trash.js';

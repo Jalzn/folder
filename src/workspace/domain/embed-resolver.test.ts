@@ -1,5 +1,5 @@
-import { documentToMarkdown } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
+import { documentToMarkdown } from '#rich-text/domain';
 import type { EmbeddedItems } from './embed-items.js';
 import { embedResolver } from './embed-resolver.js';
 

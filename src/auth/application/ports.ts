@@ -1,5 +1,5 @@
-import type { Owner } from '@tinyfold/core/application';
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { Owner } from '#core/application';
+import type { IsoInstant } from '#core/domain';
 import type { TokenSecrets } from './token-secrets.js';
 
 export interface StoredOwner extends Owner {

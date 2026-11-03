@@ -1,7 +1,7 @@
-import type { CivilDate } from '@tinyfold/core/domain';
+import type { CivilDate } from '#core/domain';
 import './task-meta.css';
-import type { LabelColor } from '@tinyfold/board/domain';
 import { Clock } from 'lucide-react';
+import type { LabelColor } from '#board/domain';
 import { shortCivilDate } from '../../lib/dates/task-dates';
 import { LabelChip } from '../labels/display';
 

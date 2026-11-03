@@ -1,6 +1,6 @@
-import type { EventDraft } from '@tinyfold/core/application';
-import { type Database, tables, versionedUpdate } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
+import type { EventDraft } from '#core/application';
+import { type Database, tables, versionedUpdate } from '#core/infra';
 import type { DrawingEvent } from '../../application/contracts/events.js';
 import type { DrawingsRepository } from '../../application/ports.js';
 import { canvasModel, canvasRow, canvasSummary } from '../sql/mappers.js';

@@ -1,6 +1,6 @@
-import { emptyCanvasScene, readCanvasScene } from '@tinyfold/drawings/domain';
-import { readDocumentContent } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
+import { emptyCanvasScene, readCanvasScene } from '#drawings/domain';
+import { readDocumentContent } from '#rich-text/domain';
 
 const deep = () => {
   let value: unknown = 'x';

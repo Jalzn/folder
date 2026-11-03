@@ -1,5 +1,5 @@
-import type { JsonValue } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import type { JsonValue } from '#core/domain';
 import type { DocumentBlock } from '../document-models.js';
 import type { EmbedResolver } from './embeds.js';
 import { documentToMarkdown } from './index.js';

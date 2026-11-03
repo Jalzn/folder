@@ -1,7 +1,7 @@
-import { coreModule } from '@tinyfold/core/infra';
-import { type TempDatabase, testClock, useTempDatabase } from '@tinyfold/core/testing';
-import { workspaceModule } from '@tinyfold/workspace';
 import { beforeEach } from 'vitest';
+import { coreModule } from '#core/infra';
+import { type TempDatabase, testClock, useTempDatabase } from '#core/testing';
+import { workspaceModule } from '#workspace';
 import { createWorkspaceService, type WorkspaceService } from '../../workspace/service.js';
 
 /** A test's workspace database and the service over it. */

@@ -1,10 +1,10 @@
-import { INITIAL_COLUMN_IDS } from '@tinyfold/board/domain';
-import { coreModule, migrate } from '@tinyfold/core/infra';
-import { createTempDatabase } from '@tinyfold/core/testing';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
-import { documentToMarkdown } from '@tinyfold/rich-text/domain';
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '#board/domain';
+import { coreModule, migrate } from '#core/infra';
+import { createTempDatabase } from '#core/testing';
+import type { DocumentBlock } from '#rich-text/domain';
+import { documentToMarkdown } from '#rich-text/domain';
 import { READING_LIMITS } from '../../../workspace/domain/reading-limits.js';
 import { workspaceModule } from '../../../workspace/infra/module.js';
 import { paragraph, request, useAgentTools } from '../../testing/workspace/agent-tools.js';

@@ -1,4 +1,4 @@
-import { collapseWhitespace } from '@tinyfold/core/domain';
+import { collapseWhitespace } from '#core/domain';
 import { documentPlainText, findBlock } from './document.js';
 import type { DocumentContent } from './document-models.js';
 

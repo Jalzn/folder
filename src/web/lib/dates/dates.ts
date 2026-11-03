@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 
 const dayMonth = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' });
 

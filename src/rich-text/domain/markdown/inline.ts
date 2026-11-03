@@ -1,4 +1,4 @@
-import type { JsonValue } from '@tinyfold/core/domain';
+import type { JsonValue } from '#core/domain';
 import { planEmphasis } from './emphasis.js';
 import { fenceFor } from './fence.js';
 import { ESCAPED_ANYWHERE, type Inline, inlineItems, type LineBreaks, type Mark } from './items.js';

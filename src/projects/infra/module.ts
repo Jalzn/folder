@@ -1,6 +1,7 @@
-import type { EventDraft, RuntimeModule, TransactionScope } from '@tinyfold/core/application';
-import type { CivilDate } from '@tinyfold/core/domain';
-import { createEventChannel, type SqliteUnitOfWork } from '@tinyfold/core/infra';
+import type { EventDraft, TransactionScope } from '#core/application';
+import { defineModule } from '#core/application';
+import type { CivilDate } from '#core/domain';
+import { createEventChannel, type SqliteUnitOfWork } from '#core/infra';
 import type { ProjectEvent } from '../application/contracts/events.js';
 import type { ProjectsContext, ProjectsRepository } from '../application/ports/context.js';
 import { projectApi, projectOperations } from './operations.js';
@@ -103,27 +104,15 @@ function runtime(deps: ProjectsDependencies) {
     },
   };
 }
-const runtimes = new WeakMap<ProjectsModule, ReturnType<typeof runtime>>();
-export class ProjectsModule implements RuntimeModule<object, object, ProjectEvent> {
-  readonly id = 'projects';
-  readonly commands;
-  readonly queries;
-  readonly events;
-  constructor(dependencies: ProjectsDependencies) {
-    const built = runtime(dependencies);
-    runtimes.set(this, built);
-    const api = projectApi(built.operations);
-    this.commands = api.commands;
-    this.queries = api.queries;
-    this.events = built.channel.source;
-  }
-}
-function runtimeOf(module: ProjectsModule) {
-  const built = runtimes.get(module);
-  if (!built) throw new Error('Unknown projects module.');
-  return built;
-}
+const definition = defineModule({
+  id: 'projects',
+  setup: runtime,
+  api: (state) => ({ ...projectApi(state.operations), events: state.channel.source }),
+});
+
+export class ProjectsModule extends definition.Module {}
+
 export const projectsParticipant = (module: ProjectsModule, scope: TransactionScope) =>
-  runtimeOf(module).participant(scope);
-export const projectsOperations = (module: ProjectsModule) => runtimeOf(module).operations;
-export const disposeProjects = (module: ProjectsModule) => runtimeOf(module).channel.dispose();
+  definition.stateOf(module).participant(scope);
+export const projectsOperations = (module: ProjectsModule) => definition.stateOf(module).operations;
+export const disposeProjects = (module: ProjectsModule) => definition.stateOf(module).channel.dispose();

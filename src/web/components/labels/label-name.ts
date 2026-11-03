@@ -1,5 +1,5 @@
-import { LABEL_LIMITS } from '@tinyfold/board/domain';
-import { displayName, nameKey } from '@tinyfold/core/domain';
+import { LABEL_LIMITS } from '#board/domain';
+import { displayName, nameKey } from '#core/domain';
 import { LABEL_TOO_LONG, labelTakenText } from './label-text';
 
 /** What a typed label name does: nothing, an error under the field, or a write with the tidied name. */

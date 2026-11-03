@@ -1,4 +1,4 @@
-import { nameKey } from '@tinyfold/core/domain';
+import { nameKey } from '#core/domain';
 import type { Folder, Project } from '../../domain/index.js';
 import type { FolderRow, ProjectRow } from './tables.js';
 export const projectModel = (row: ProjectRow): Project => ({

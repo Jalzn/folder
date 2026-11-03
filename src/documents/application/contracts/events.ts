@@ -1,4 +1,4 @@
-import type { ModuleEvent } from '@tinyfold/core/application';
+import type { ModuleEvent } from '#core/application';
 
 type Versioned<Type extends string> = ModuleEvent<Type, { version: number }>;
 

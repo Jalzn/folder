@@ -1,5 +1,5 @@
-import type { SearchHit } from '@tinyfold/workspace/contracts';
-import { SearchInput } from '@tinyfold/workspace/contracts';
+import type { SearchHit } from '#workspace/contracts';
+import { SearchInput } from '#workspace/contracts';
 import { keysetJsonResult } from './paged-result.js';
 import type { AgentQueries } from './queries.js';
 import { defineTool, readOnlyAnnotations } from './types.js';

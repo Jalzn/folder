@@ -1,5 +1,5 @@
-import type { Owner } from '@tinyfold/core/application';
-import { canonicalTimeZone } from '@tinyfold/core/domain';
+import type { Owner } from '#core/application';
+import { canonicalTimeZone } from '#core/domain';
 import type { AuthDependencies, StoredOwner } from './ports.js';
 export function authProfile(deps: AuthDependencies) {
   let read: { stored: string; canonical: string | null; warned: boolean } | undefined;

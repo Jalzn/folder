@@ -1,6 +1,6 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
-import { excerptPresent } from '@tinyfold/rich-text/domain';
+import type { IsoInstant } from '#core/domain';
+import type { DocumentBlock } from '#rich-text/domain';
+import { excerptPresent } from '#rich-text/domain';
 import type { TaskSource } from '../../domain/task-models.js';
 
 interface SourceInput {

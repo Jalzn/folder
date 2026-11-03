@@ -1,5 +1,5 @@
-import { edit, id, request } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { edit, id, request } from '#core/application';
 import { FOLDER_LIMITS } from '../../domain/folders.js';
 
 /** The raw name, bounded before folderName collapses its spaces; readFolderName checks the rest. */

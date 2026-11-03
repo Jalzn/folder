@@ -1,4 +1,4 @@
-import { canonicalTimeZone } from '@tinyfold/core/domain';
+import { canonicalTimeZone } from '#core/domain';
 import { isOffset } from '../domain/index.js';
 import { authErrors } from './errors.js';
 import type { AuthContext } from './ports.js';

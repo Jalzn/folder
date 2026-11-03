@@ -1,9 +1,9 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { toIsoInstant } from '#core/domain';
 import { createdLabel, lastUseLabel } from './format';
 
 const now = new Date(toIsoInstant(new Date('2026-10-31T12:00:00Z')));
-const before = (milliseconds: number) => toIsoInstant(new Date(now.getTime() - milliseconds));
+const earlierInstant = (milliseconds: number) => toIsoInstant(new Date(now.getTime() - milliseconds));
 
 describe('lastUseLabel', () => {
   it('says when a token was never used', () => {
@@ -20,11 +20,11 @@ describe('lastUseLabel', () => {
     [45 * 86_400_000, 'Último uso há 1 mês'],
     [800 * 86_400_000, 'Último uso há 2 anos'],
   ])('describes a use %d ms ago in Portuguese', (elapsed, label) => {
-    expect(lastUseLabel(before(elapsed), now)).toBe(label);
+    expect(lastUseLabel(earlierInstant(elapsed), now)).toBe(label);
   });
 
   it('treats a use slightly ahead of this clock as now', () => {
-    expect(lastUseLabel(before(-30_000), now)).toBe('Último uso agora');
+    expect(lastUseLabel(earlierInstant(-30_000), now)).toBe('Último uso agora');
   });
 });
 

@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import type { IsoInstant } from '#core/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 import type { ProjectKey, SearchItemType, SearchKey } from '../../domain/paging.js';
 import type { ProjectColor } from '../../domain/project.js';
 import type { BoardLabelColor } from '../../domain/read-models.js';

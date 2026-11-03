@@ -1,5 +1,5 @@
-import { readCivilDate, toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { readCivilDate, toIsoInstant } from '#core/domain';
 import { editedPhrase, savedTime } from './edited-phrase';
 
 describe('editedPhrase', () => {

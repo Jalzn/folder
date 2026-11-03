@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { DomainError } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
+import { DomainError } from '#core/domain';
 
 /** Personal access tokens: `tf_mcp_` and 43 base64url characters (32 random bytes). */
 export const ACCESS_TOKEN_PREFIX = 'tf_mcp_';

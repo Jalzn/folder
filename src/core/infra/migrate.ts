@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
-import type { IsoInstant } from '@tinyfold/core/domain';
 import { sql } from 'kysely';
+import type { IsoInstant } from '#core/domain';
 import { toIsoInstant } from '../domain/instant.js';
 import {
   type Database,
@@ -13,7 +13,7 @@ import {
   tables,
   writeTransaction,
 } from './db.js';
-import type { ModuleDefinition } from './module.js';
+import type { MigrationModuleDefinition } from './module.js';
 
 interface MigrationTable {
   module: string;
@@ -76,7 +76,7 @@ export interface MigrateOptions {
  */
 export async function migrate(
   db: Database,
-  modules: readonly ModuleDefinition[],
+  modules: readonly MigrationModuleDefinition[],
   { warn = console.warn }: MigrateOptions = {},
 ): Promise<AppliedMigration[]> {
   // Read files before obtaining the database write lock.
@@ -121,7 +121,7 @@ interface MigrationFile {
 
 function applyPending(
   db: Database,
-  available: readonly { module: ModuleDefinition; files: MigrationFile[] }[],
+  available: readonly { module: MigrationModuleDefinition; files: MigrationFile[] }[],
   warn: (message: string) => void,
 ): Promise<AppliedMigration[]> {
   return writeTransaction(db, async (trx) => {

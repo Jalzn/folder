@@ -1,8 +1,8 @@
 import { Excalidraw, MainMenu } from '@excalidraw/excalidraw';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
-import type { CanvasScene } from '@tinyfold/drawings/domain';
 import type { RefObject } from 'react';
+import type { CanvasScene } from '#drawings/domain';
 import { displayTitle } from '../../lib/types';
 import type { useSceneChanges } from './use-scene-changes';
 import type { useViewport } from './use-viewport';

@@ -1,6 +1,6 @@
 import './card.css';
-import { isOverdue } from '@tinyfold/board/domain';
 import { useId, useSyncExternalStore } from 'react';
+import { isOverdue } from '#board/domain';
 import { TaskMeta } from '../../components/task';
 import { isPendingSave, pendingSaves, subscribePendingSaves } from '../../lib/autosave/save-registry';
 import type { ColumnSummary } from '../../lib/queries';

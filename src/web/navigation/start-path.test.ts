@@ -1,5 +1,5 @@
-import { readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { readIsoInstant } from '#core/domain';
 import type { Project } from '../lib/types';
 import { emptyNavState, type NavState, parseNavState } from './last-location';
 import { resolveStartPath } from './start-path';

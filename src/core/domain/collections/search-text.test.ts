@@ -1,5 +1,5 @@
-import { searchTerms, searchText } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { searchTerms, searchText } from '#core/domain';
 
 describe('search normalization', () => {
   it('ignores case and accents, keeping other characters literal', () => {

@@ -1,57 +1,88 @@
-// Dependency rules from docs/arquitetura.md ("Regras de dependência").
-// Business modules are folders in src/ except server, web and the shared core/rich-text packages.
-// `pnpm deps` cruises src, scripts and e2e.
+// Dependency rules from docs/arquitetura.md.
+// Public entries come only from the root package imports; src directories define module coverage.
+// `pnpm deps` includes project.ts, src, scripts and e2e.
 
-const { existsSync, readdirSync, readFileSync } = require('node:fs');
+const { readdirSync, readFileSync } = require('node:fs');
 const { join } = require('node:path');
 
-const modulePackages = readdirSync(join(__dirname, 'src'), { withFileTypes: true })
+const { imports = {} } = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8'));
+for (const [alias, target] of Object.entries(imports)) {
+  if (
+    !alias.startsWith('#') ||
+    alias.includes('*') ||
+    typeof target !== 'string' ||
+    target.includes('*') ||
+    !target.startsWith('./') ||
+    target.split('/').includes('..')
+  )
+    throw new Error(`Public import ${alias} must have one exact local target, without wildcards.`);
+}
+if (imports['#project'] !== './project.ts') throw new Error('The #project entry must point to ./project.ts.');
+
+const pathPattern = (target) => `^${RegExp.escape(target.replace(/^\.\//u, ''))}$`;
+const publicEntries = Object.entries(imports);
+const moduleEntries = readdirSync(join(__dirname, 'src'), { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && !['server', 'web'].includes(entry.name))
-  .filter((entry) => existsSync(join(__dirname, 'src', entry.name, 'package.json')))
-  .map((entry) => {
-    const { exports = {} } = JSON.parse(readFileSync(join(__dirname, 'src', entry.name, 'package.json'), 'utf8'));
-    return { name: entry.name, exports };
+  .map(({ name }) => {
+    const entries = publicEntries.filter(
+      ([alias, target]) =>
+        (alias === `#${name}` || alias.startsWith(`#${name}/`)) && target.startsWith(`./src/${name}/`),
+    );
+    if (!entries.length) throw new Error(`Module ${name} has no public entry in root package.json imports.`);
+    return { name, entries };
   });
 
-const entryPattern = (name, target) => `^src/${name}/${target.replace(/^\.\//u, '').replaceAll('.', '\\.')}$`;
+const moduleEntryPoints = moduleEntries.flatMap(({ entries }) => entries.map(([, target]) => pathPattern(target)));
+const sourceConsumers = '^(?:(?:src|scripts|e2e)/|project\\.ts$)';
 
-/** A package export permits access to that entry file, never to the rest of its directory. */
-const moduleEntryPoints = modulePackages.flatMap(({ name, exports }) =>
-  Object.values(exports)
-    .filter((target) => typeof target === 'string')
-    .map((target) => entryPattern(name, target)),
-);
-
-const sharedEntryRules = modulePackages
+const sharedEntryRules = moduleEntries
   .filter(({ name }) => ['core', 'rich-text'].includes(name))
-  .map(({ name, exports }) => ({
+  .map(({ name, entries }) => ({
     name: `${name}-through-public-entries`,
     severity: 'error',
-    comment: `Other packages and tests reach ${name} only through its explicit public entries.`,
-    from: { path: '^(src|scripts|e2e)/', pathNot: `^src/${name}/` },
-    to: {
-      path: `^src/${name}/`,
-      pathNot: Object.values(exports)
-        .filter((target) => typeof target === 'string')
-        .map((target) => entryPattern(name, target)),
-    },
+    comment: `Other modules and tests reach ${name} only through its explicit public entries.`,
+    from: { path: sourceConsumers, pathNot: `^src/${name}/` },
+    to: { path: `^src/${name}/`, pathNot: entries.map(([, target]) => pathPattern(target)) },
   }));
 
-const compositionEntryRules = modulePackages
-  .filter(({ exports }) => typeof exports['./composition'] === 'string')
-  .map(({ name, exports }) => ({
-    name: `${name}-composition-only-in-server`,
-    severity: 'error',
-    comment: 'Transaction participants are wired by server; clients and scripts use ordinary module APIs.',
-    from: { path: '^(src|scripts|e2e)/', pathNot: [`^src/${name}/`, '^src/server/'] },
-    to: { path: entryPattern(name, exports['./composition']) },
-  }));
+const compositionEntryRules = moduleEntries.flatMap(({ name, entries }) => {
+  const entry = entries.find(([alias]) => alias === `#${name}/composition`);
+  return entry
+    ? [
+        {
+          name: `${name}-composition-only-in-server`,
+          severity: 'error',
+          comment: 'Transaction participants are wired by server; clients and scripts use ordinary module APIs.',
+          from: { path: sourceConsumers, pathNot: [`^src/${name}/`, '^src/server/'] },
+          to: { path: pathPattern(entry[1]) },
+        },
+      ]
+    : [];
+});
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
   forbidden: [
     ...sharedEntryRules,
     ...compositionEntryRules,
+    {
+      name: 'project-only-in-server-and-scripts',
+      severity: 'error',
+      comment: 'The project catalog is composition; business modules, web and E2E cannot import it, even as a type.',
+      from: { pathNot: ['^src/server/', '^scripts/'] },
+      to: { path: '^project\\.ts$' },
+    },
+    {
+      name: 'project-declares-applications-only',
+      severity: 'error',
+      comment: 'The root project declares applications through public application entries, without infrastructure.',
+      from: { path: '^project\\.ts$' },
+      to: {
+        pathNot: publicEntries
+          .filter(([alias]) => alias.endsWith('/application'))
+          .map(([, target]) => pathPattern(target)),
+      },
+    },
     {
       name: 'domain-is-pure',
       comment: 'domain/ uses its own domain and public core/rich-text domain entries: no infrastructure or Node APIs.',

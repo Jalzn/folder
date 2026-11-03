@@ -1,5 +1,5 @@
-import type { EmbeddedDrawing, EmbeddedTask } from '@tinyfold/workspace/domain';
 import { describe, expect, it } from 'vitest';
+import type { EmbeddedDrawing, EmbeddedTask } from '#workspace/domain';
 import { embedText } from './embed-text';
 
 const project = { id: 'p1', name: 'Tinyfold', color: 'violet', archived: false } as const;

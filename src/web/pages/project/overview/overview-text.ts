@@ -1,4 +1,4 @@
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
+import type { CivilDate, IsoInstant } from '#core/domain';
 import { shortInstant } from '../../../lib/dates/dates';
 import { shortCivilDate as dayAndMonth } from '../../../lib/dates/task-dates';
 import { countOf, formatCount } from '../../../lib/text/count';

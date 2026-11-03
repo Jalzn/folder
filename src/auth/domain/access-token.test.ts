@@ -1,5 +1,5 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { toIsoInstant } from '#core/domain';
 import {
   accessTokenName,
   accessTokenPrefix,
@@ -41,9 +41,9 @@ describe('personal access token rules', () => {
   });
   it('records the last use at most once per interval', () => {
     const now = new Date(toIsoInstant(new Date('2026-10-31T12:00:00Z')));
-    const before = (ms: number) => toIsoInstant(new Date(now.getTime() - ms));
+    const earlierInstant = (ms: number) => toIsoInstant(new Date(now.getTime() - ms));
     expect(shouldRecordUse(null, now)).toBe(true);
-    expect(shouldRecordUse(before(LAST_USE_INTERVAL_MS - 1), now)).toBe(false);
-    expect(shouldRecordUse(before(LAST_USE_INTERVAL_MS), now)).toBe(true);
+    expect(shouldRecordUse(earlierInstant(LAST_USE_INTERVAL_MS - 1), now)).toBe(false);
+    expect(shouldRecordUse(earlierInstant(LAST_USE_INTERVAL_MS), now)).toBe(true);
   });
 });

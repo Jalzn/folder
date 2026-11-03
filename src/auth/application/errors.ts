@@ -1,4 +1,4 @@
-import { AppError } from '@tinyfold/core/application';
+import { AppError } from '#core/application';
 export const authErrors = {
   wrongCurrentPassword: () => new AppError('VALIDATION', 'A senha atual está incorreta.'),
   samePassword: () => new AppError('VALIDATION', 'Escolha uma senha diferente da atual.'),

@@ -1,4 +1,4 @@
-import type { EmbedKind } from '@tinyfold/rich-text/domain';
+import type { EmbedKind } from '#rich-text/domain';
 import { embedText } from './embed-text';
 import { useEmbedsContext } from './embeds-context';
 

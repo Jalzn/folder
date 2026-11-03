@@ -1,4 +1,4 @@
-import { type DocumentBlock, EMBED_TYPES, type EmbedBlockType, type EmbedKind } from '@tinyfold/rich-text/domain';
+import { type DocumentBlock, EMBED_TYPES, type EmbedBlockType, type EmbedKind } from '#rich-text/domain';
 
 /**
  * Each embed block's item kind and its one property, the item's ID: the names a document's blocks, the editor's

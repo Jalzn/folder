@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import type { Project } from '../../domain/project-models.js';
 import type { ProjectsContext } from '../ports/context.js';
 import type { UpdateProjectInput } from '../schemas/projects.js';

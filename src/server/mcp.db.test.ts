@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
-import { todayIn } from '@tinyfold/core/domain';
 import { sql } from 'kysely';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+import { todayIn } from '#core/domain';
 import { useAppFixture } from './testing/app.js';
 import { drawingFixture } from './testing/workspace/canvas-scenes.js';
 import { pngImage } from './testing/workspace/png.js';

@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import type { TaskAck } from '@tinyfold/board/domain';
-import { INITIAL_COLUMN_IDS } from '@tinyfold/board/domain';
-import { coreModule, type Database } from '@tinyfold/core/infra';
-import { useTempDatabase } from '@tinyfold/core/testing';
-import type { Project } from '@tinyfold/projects/domain';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { TaskAck } from '#board/domain';
+import { INITIAL_COLUMN_IDS } from '#board/domain';
+import { coreModule, type Database } from '#core/infra';
+import { useTempDatabase } from '#core/testing';
+import type { Project } from '#projects/domain';
 import { workspaceModule } from '../../../workspace/infra/module.js';
 import { testProject } from '../../testing/workspace/projects.js';
 import { createWorkspaceService } from '../../workspace/service.js';

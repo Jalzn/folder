@@ -1,4 +1,4 @@
-import { READING_LIMITS } from '@tinyfold/workspace/contracts';
+import { READING_LIMITS } from '#workspace/contracts';
 import { codePointPrefix } from './text-cut.js';
 import type { AgentTool, AgentToolContent, AgentToolResult } from './types.js';
 

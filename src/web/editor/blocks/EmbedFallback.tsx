@@ -1,4 +1,4 @@
-import type { EmbedKind } from '@tinyfold/rich-text/domain';
+import type { EmbedKind } from '#rich-text/domain';
 import { UnavailableEmbed } from './UnavailableEmbed';
 
 const words = {

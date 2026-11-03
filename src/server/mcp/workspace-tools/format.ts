@@ -1,4 +1,4 @@
-import { READING_LIMITS } from '@tinyfold/workspace/contracts';
+import { READING_LIMITS } from '#workspace/contracts';
 import type { AgentToolResult } from './types.js';
 
 export const textResult = (text: string): AgentToolResult => ({ content: [{ type: 'text', text }] });

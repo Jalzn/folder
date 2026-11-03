@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import { TASK_LIMITS } from '../../domain/tasks.js';
 import { boardErrors } from '../errors.js';
 import type { BoardContext } from '../ports/context.js';

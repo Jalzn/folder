@@ -1,5 +1,5 @@
-import { namedCollection, renumber } from '@tinyfold/core/application';
-import type { IsoInstant } from '@tinyfold/core/domain';
+import { namedCollection, renumber } from '#core/application';
+import type { IsoInstant } from '#core/domain';
 import { COLUMN_LIMITS, type Column } from '../../domain/columns.js';
 import { boardErrors } from '../errors.js';
 import type { ColumnRepository } from '../ports/columns.js';

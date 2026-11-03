@@ -1,5 +1,5 @@
-import type { NavFolder } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
+import type { NavFolder } from '#workspace/domain';
 import type { Project } from '../../../lib/types';
 import { focusPageTitle, focusWhenPresent, useToast } from '../../../ui';
 import type { FolderMenuAction } from '../../folders/FolderMenu';

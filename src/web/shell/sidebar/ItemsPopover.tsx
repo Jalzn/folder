@@ -1,7 +1,7 @@
 import './tree/tree.css';
-import type { NavTree } from '@tinyfold/workspace/domain';
 import { FolderTree } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import type { NavTree } from '#workspace/domain';
 import { countOf, formatCount } from '../../lib/text/count';
 import type { Project } from '../../lib/types';
 import { IconButton, Popover, PopoverTrigger, returnFocus } from '../../ui';

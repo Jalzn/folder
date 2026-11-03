@@ -1,6 +1,6 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
-import type { NavFolder, NavItem, NavTree } from '@tinyfold/workspace/domain';
 import { describe, expect, it } from 'vitest';
+import { toIsoInstant } from '#core/domain';
+import type { NavFolder, NavItem, NavTree } from '#workspace/domain';
 import { type FolderNode, treeRows } from './tree-rows';
 
 const item = (id: string, folderId: string | null = null, pinned = false): NavItem => ({

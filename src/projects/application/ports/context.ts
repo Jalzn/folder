@@ -1,5 +1,5 @@
-import type { ModuleContext } from '@tinyfold/core/application';
-import type { CivilDate } from '@tinyfold/core/domain';
+import type { ModuleContext } from '#core/application';
+import type { CivilDate } from '#core/domain';
 import type { FolderRepository } from './folders.js';
 import type { ProjectRepository } from './projects.js';
 export type ProjectsRepository = ProjectRepository &

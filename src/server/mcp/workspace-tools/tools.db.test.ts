@@ -1,6 +1,6 @@
-import { INITIAL_COLUMN_IDS } from '@tinyfold/board/domain';
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '#board/domain';
 import { READING_LIMITS } from '../../../workspace/domain/reading-limits.js';
 import { missingId, paragraph, request, useAgentTools } from '../../testing/workspace/agent-tools.js';
 import { shape } from '../../testing/workspace/canvas-scenes.js';

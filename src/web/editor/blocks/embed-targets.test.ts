@@ -1,7 +1,7 @@
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import type { Node } from '@tiptap/pm/model';
 import { EditorState, NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { describe, expect, it } from 'vitest';
+import type { DocumentBlock } from '#rich-text/domain';
 import { setupBlockNoteEditor } from '../../testing/blocknote-editor';
 import { blockPlaces } from './embed-places';
 import { embedSelectionOf, isEmbedSelected } from './embed-selection';

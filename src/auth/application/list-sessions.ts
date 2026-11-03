@@ -1,4 +1,4 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
+import { toIsoInstant } from '#core/domain';
 import type { AuthContext } from './ports.js';
 
 export async function listSessions(deps: AuthContext, currentId: string) {

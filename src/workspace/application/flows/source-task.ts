@@ -1,6 +1,6 @@
-import { AppError, type ModuleContext } from '@tinyfold/core/application';
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import { AppError, type ModuleContext } from '#core/application';
+import type { CivilDate, IsoInstant } from '#core/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 
 /** The complete validated input is kept intact until the outer write fingerprints it. */
 export interface SourceTaskInput {

@@ -1,4 +1,4 @@
-import { operation } from '@tinyfold/core/application';
+import { operation } from '#core/application';
 import type { NavigationContext } from '../../application/navigation/ports.js';
 import { projectNavigation } from '../../application/navigation/project-navigation.js';
 import { projectOverview } from '../../application/navigation/project-overview.js';

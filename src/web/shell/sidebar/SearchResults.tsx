@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
-import type { NavFolder } from '@tinyfold/workspace/domain';
 import { FileText, Folder, Search, Shapes } from 'lucide-react';
 import type { Ref } from 'react';
+import type { NavFolder } from '#workspace/domain';
 import { errorMessage } from '../../lib/api';
 import type { SearchResult } from '../../lib/queries';
 import { formatCount } from '../../lib/text/count';

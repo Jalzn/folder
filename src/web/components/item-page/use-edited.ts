@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 import { useApp, useOwnerToday } from '../../shell';
 import { editedPhrase, savedTime } from './edited-phrase';
 import type { EditedDetail } from './SaveState';

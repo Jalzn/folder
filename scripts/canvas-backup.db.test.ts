@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { emptyCanvasScene } from '@tinyfold/drawings/domain';
 import { expect, test } from 'vitest';
+import { emptyCanvasScene } from '#drawings/domain';
 import { migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
 import { createWorkspaceService } from '../src/server/workspace/index.js';

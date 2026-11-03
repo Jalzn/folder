@@ -1,5 +1,5 @@
-import { emptyCanvasScene } from '@tinyfold/drawings/domain';
 import { describe, expect, it } from 'vitest';
+import { emptyCanvasScene } from '#drawings/domain';
 import { draftDownload, localDrafts } from './local-drafts';
 
 /** Local storage with only the reads the drafts use. */

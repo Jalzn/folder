@@ -1,5 +1,5 @@
-import type { CivilDate } from '@tinyfold/core/domain';
 import { type RefObject, useEffect, useId, useRef, useState } from 'react';
+import type { CivilDate } from '#core/domain';
 import { doneAndFirstOpen } from '../../lib/board-order';
 import { useColumns, useLabels, useProjects } from '../../lib/queries';
 import { useCommandSlot } from '../../lib/react/use-command-slot';

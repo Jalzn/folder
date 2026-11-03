@@ -1,5 +1,5 @@
-import { isOverdue } from '@tinyfold/board/domain';
-import type { CivilDate } from '@tinyfold/core/domain';
+import { isOverdue } from '#board/domain';
+import type { CivilDate } from '#core/domain';
 import { inBoardOrder } from '../../lib/board-order';
 import type { ColumnSummary } from '../../lib/queries';
 import type { Task } from '../../lib/types';

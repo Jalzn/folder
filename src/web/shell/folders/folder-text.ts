@@ -1,4 +1,4 @@
-import { MAX_PINNED } from '@tinyfold/workspace/domain';
+import { MAX_PINNED } from '#workspace/domain';
 import { countOf, formatCount } from '../../lib/text/count';
 
 /** "Pasta “MCP” excluída. 1 item foi para a raiz.", with the pins that did not fit, or "Estava vazia." */

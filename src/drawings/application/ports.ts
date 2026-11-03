@@ -1,5 +1,5 @@
-import type { ModuleContext } from '@tinyfold/core/application';
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { ModuleContext } from '#core/application';
+import type { IsoInstant } from '#core/domain';
 import type { Canvas, CanvasSummary } from '../domain/index.js';
 
 /** Facts supplied by the server from the organization module in this same transaction. */

@@ -1,8 +1,8 @@
-import type { TaskListing } from '@tinyfold/board/contracts';
-import { ListTasksForAgentInput as ListTasksInput } from '@tinyfold/board/contracts';
-import type { Column } from '@tinyfold/board/domain';
-import { isOverdue } from '@tinyfold/board/domain';
-import type { CivilDate } from '@tinyfold/core/domain';
+import type { TaskListing } from '#board/contracts';
+import { ListTasksForAgentInput as ListTasksInput } from '#board/contracts';
+import type { Column } from '#board/domain';
+import { isOverdue } from '#board/domain';
+import type { CivilDate } from '#core/domain';
 import { keysetJsonResult } from './paged-result.js';
 import type { AgentQueries } from './queries.js';
 import { defineTool, readOnlyAnnotations } from './types.js';

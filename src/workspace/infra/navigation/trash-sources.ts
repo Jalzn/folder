@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
 import { type Kysely, sql } from 'kysely';
+import type { IsoInstant } from '#core/domain';
 import type { TrashItemType } from '../../application/schemas/trash.js';
 import { itemTable } from '../sql/item-tables.js';
 import type { WorkspaceTables } from '../sql/tables.js';

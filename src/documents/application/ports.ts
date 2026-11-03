@@ -1,6 +1,6 @@
-import type { ModuleContext } from '@tinyfold/core/application';
-import type { IsoInstant } from '@tinyfold/core/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import type { ModuleContext } from '#core/application';
+import type { IsoInstant } from '#core/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 import type { Document, DocumentSummary } from '../domain/index.js';
 
 /** Organization facts arrive through the server, bound to the same transaction. */

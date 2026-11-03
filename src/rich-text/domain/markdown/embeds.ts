@@ -1,4 +1,4 @@
-import { collapseWhitespace, visibleText } from '@tinyfold/core/domain';
+import { collapseWhitespace, visibleText } from '#core/domain';
 import type { DocumentBlock } from '../document-models.js';
 import { type EmbedKind, embedOf } from '../embeds.js';
 import { inlineMarkdown } from './inline.js';

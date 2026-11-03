@@ -1,7 +1,7 @@
 import './label-picker.css';
-import { displayName, nameKey } from '@tinyfold/core/domain';
 import { Plus } from 'lucide-react';
 import { type RefObject, useState } from 'react';
+import { displayName, nameKey } from '#core/domain';
 import type { LabelSummary } from '../../lib/queries';
 import { matchesAllWords } from '../../lib/text/highlight';
 import { MenuItem, MenuSection, PopoverSurface, SearchableMenu } from '../../ui';

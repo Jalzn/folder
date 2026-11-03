@@ -1,6 +1,6 @@
 import './tree/tree.css';
-import type { NavTree } from '@tinyfold/workspace/domain';
 import { type RefObject, useRef } from 'react';
+import type { NavTree } from '#workspace/domain';
 import type { Project } from '../../lib/types';
 import { useMoveToFolder } from '../folders/use-move-to-folder';
 import { ItemsHeader } from './ItemsHeader';

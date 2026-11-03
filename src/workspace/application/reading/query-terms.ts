@@ -1,4 +1,4 @@
-import { searchTerms } from '@tinyfold/core/domain';
+import { searchTerms } from '#core/domain';
 import { workspaceErrors } from '../errors.js';
 
 /** The words of an optional query. A query made only of accents, marks and punctuation would match everything. */

@@ -1,4 +1,4 @@
-import { AppError } from '@tinyfold/core/application';
+import { AppError } from '#core/application';
 import { MAX_PINNED } from '../domain/project.js';
 export const workspaceErrors = {
   drawingMissing: () => new AppError('NOT_FOUND', 'O desenho não está disponível.'),

@@ -1,5 +1,5 @@
-import { authedProcedure, pub } from '@tinyfold/core/infra';
 import { z } from 'zod';
+import { authedProcedure, pub } from '#core/infra';
 import type { AuthService } from '../application/service.js';
 import { PASSWORD_LIMITS } from '../domain/index.js';
 import type { AccessTokenService } from './access-tokens.js';

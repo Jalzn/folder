@@ -1,5 +1,5 @@
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import type { CivilDate, IsoInstant } from '#core/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 import type { LabelColor } from '../../domain/labels.js';
 import type { BoardKey } from '../../domain/paging.js';
 import type { TaskSource } from '../../domain/task-models.js';

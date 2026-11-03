@@ -1,4 +1,4 @@
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
+import type { CivilDate, IsoInstant } from '#core/domain';
 import type { LabelColor } from '../../domain/labels.js';
 
 export interface TaskRow {

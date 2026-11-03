@@ -1,7 +1,7 @@
-import { coreModule, migrate } from '@tinyfold/core/infra';
-import { createTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
 import { expect, it } from 'vitest';
+import { coreModule, migrate } from '#core/infra';
+import { createTempDatabase } from '#core/testing';
 import { workspaceModule } from '../../../workspace/infra/module.js';
 
 const kinds = ['table', 'index', 'trigger', 'view'];

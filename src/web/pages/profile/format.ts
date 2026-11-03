@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 
 const relativeTime = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'always' });
 const units: [Intl.RelativeTimeFormatUnit, number][] = [

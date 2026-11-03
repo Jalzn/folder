@@ -3,7 +3,7 @@ RUN npm install --global pnpm@11.22.0
 WORKDIR /app
 
 FROM base AS build
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
 RUN pnpm fetch
 COPY . .

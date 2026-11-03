@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import type { TaskTextAck } from '../../domain/tasks.js';
 import type { BoardContext } from '../ports/context.js';
 import type { SaveTaskTextInput } from '../schemas/tasks.js';

@@ -1,4 +1,4 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
+import { toIsoInstant } from '#core/domain';
 import {
   ACCESS_TOKEN_SCOPE,
   accessTokenName,

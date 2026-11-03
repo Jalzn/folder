@@ -1,10 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { type AnyProcedure, isProcedure } from '@orpc/server';
-import { createAccessTokens } from '@tinyfold/auth';
-import { emptyCanvasScene } from '@tinyfold/drawings/domain';
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { createAccessTokens } from '#auth';
+import { emptyCanvasScene } from '#drawings/domain';
 import { createRouter } from './router.js';
 import { useAppFixture } from './testing/app.js';
 import { createWorkspace } from './workspace/index.js';

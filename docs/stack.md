@@ -4,7 +4,7 @@
 
 | Área | Implementação | Relação com Orbis |
 | --- | --- | --- |
-| Linguagem e pacotes | TypeScript estrito, workspace pnpm 11.22.0 | Mesmo padrão |
+| Linguagem e pacotes | TypeScript estrito, pnpm 11.22.0 com um pacote na raiz | Módulos em camadas; configuração centralizada na etapa 14 |
 | Execução | Node 26.12.1 e tsx | Mesmo padrão |
 | Interface | React 19.3.1 e Vite 8.3.5 | Mesmo padrão |
 | Navegação e dados | TanStack Router e Query | Mesmo padrão |

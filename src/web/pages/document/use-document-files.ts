@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import { useState } from 'react';
+import type { DocumentBlock } from '#rich-text/domain';
 import { besidePlace, createBeside, DRAFT_DOWNLOADED, downloadDraft, oneAtATime } from '../../components/item-page';
 import type { AnyBlockEditor } from '../../editor/types';
 import { api, errorMessage, refreshWorkspace } from '../../lib/api';

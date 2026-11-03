@@ -2,25 +2,18 @@ import { randomUUID } from 'node:crypto';
 import { copyFile, mkdtemp, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { toIsoInstant } from '@tinyfold/core/domain';
-import {
-  coreModule,
-  type Database,
-  executeMigrationScript,
-  migrate,
-  setForeignKeys,
-  tables,
-} from '@tinyfold/core/infra';
-import { type CanvasScene, canvasPlainText, emptyCanvasScene } from '@tinyfold/drawings/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
-import { documentPlainText } from '@tinyfold/rich-text/domain';
+import type { IsoInstant } from '#core/domain';
+import { toIsoInstant } from '#core/domain';
+import { coreModule, type Database, executeMigrationScript, migrate, setForeignKeys, tables } from '#core/infra';
+import { type CanvasScene, canvasPlainText, emptyCanvasScene } from '#drawings/domain';
+import type { DocumentBlock } from '#rich-text/domain';
+import { documentPlainText } from '#rich-text/domain';
 
 /** A task's status before migration 007 replaced it with a column. */
 type LegacyStatus = 'todo' | 'doing' | 'done';
 
-import { searchText } from '@tinyfold/core/domain';
-import { workspaceModule } from '@tinyfold/workspace';
+import { searchText } from '#core/domain';
+import { workspaceModule } from '#workspace';
 
 /**
  * Applies the workspace migrations up to `version` only, as an installation of an earlier stage

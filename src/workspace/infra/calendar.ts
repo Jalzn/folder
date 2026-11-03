@@ -1,4 +1,4 @@
-import { isTimeZone, todayIn } from '@tinyfold/core/domain';
+import { isTimeZone, todayIn } from '#core/domain';
 import type { Calendar } from '../application/calendar.js';
 
 /** Where the owner's time zone comes from: the server reads it from auth; tests use a fixed one. */

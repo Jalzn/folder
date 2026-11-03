@@ -1,6 +1,6 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import type { IsoInstant } from '#core/domain';
+import { readIsoInstant } from '#core/domain';
 import type { NavItem } from './navigation.js';
 import { navTree } from './navigation-tree.js';
 

@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { compareCodeUnits } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
+import { compareCodeUnits } from '#core/domain';
 import { SEARCH_ITEM_TYPES, type SearchItemType, type SearchKey } from './paging.js';
 
 export const searchTypeRankOf = (type: SearchItemType) => SEARCH_ITEM_TYPES.indexOf(type);

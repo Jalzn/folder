@@ -1,5 +1,5 @@
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
+import type { DocumentBlock } from '#rich-text/domain';
 import { sanitizeEmbeds, validEmbed } from './sanitize-embeds';
 
 const paragraph = (id: string, children: DocumentBlock[] = []): DocumentBlock => ({

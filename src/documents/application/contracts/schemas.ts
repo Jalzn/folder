@@ -1,6 +1,6 @@
-import { domainIssue, edit, id, request, visible } from '@tinyfold/core/application';
-import { type DocumentContentOptions, readDocumentContent } from '@tinyfold/rich-text/domain';
 import { z } from 'zod';
+import { domainIssue, edit, id, request, visible } from '#core/application';
+import { type DocumentContentOptions, readDocumentContent } from '#rich-text/domain';
 
 /** Empty, or of only characters that draw nothing, it becomes "Sem título". */
 const title = visible(z.string().max(300));

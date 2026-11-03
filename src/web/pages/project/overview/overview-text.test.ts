@@ -1,5 +1,5 @@
-import { readCivilDate, toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { readCivilDate, toIsoInstant } from '#core/domain';
 import { leftOutLine, overviewSummary } from './overview-text';
 
 const now = new Date(2026, 9, 31, 15, 0);

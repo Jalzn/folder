@@ -1,5 +1,5 @@
-import { afterKeyset, type Database, tables, versionedUpdate } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
+import { afterKeyset, type Database, tables, versionedUpdate } from '#core/infra';
 import type { BoardExternalPorts } from '../../application/ports/external.js';
 import type { TaskRepository } from '../../application/ports/tasks.js';
 import { taskFieldsRow, taskModel, taskRow, taskTextRow } from '../sql/mappers.js';

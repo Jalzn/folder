@@ -1,6 +1,6 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import type { DocumentContent } from '@tinyfold/rich-text/domain';
-import { checklistProgress, documentPlainText, withBlockIds } from '@tinyfold/rich-text/domain';
+import type { IsoInstant } from '#core/domain';
+import type { DocumentContent } from '#rich-text/domain';
+import { checklistProgress, documentPlainText, withBlockIds } from '#rich-text/domain';
 import type { Column } from '../../domain/columns.js';
 import type { TaskAck } from '../../domain/task-models.js';
 import { TASK_LIMITS } from '../../domain/tasks.js';

@@ -1,8 +1,8 @@
-import type { CivilDate } from '@tinyfold/core/domain';
+import type { CivilDate } from '#core/domain';
 import './item-row.css';
-import { isOverdue } from '@tinyfold/board/domain';
 import { Clock } from 'lucide-react';
 import { Button } from 'react-aria-components';
+import { isOverdue } from '#board/domain';
 import { inBoardOrder } from '../../lib/board-order';
 import { shortCivilDate } from '../../lib/dates/task-dates';
 import type { ColumnSummary, LabelSummary } from '../../lib/queries';

@@ -1,5 +1,6 @@
-import type { EventDraft, RuntimeModule, TransactionScope } from '@tinyfold/core/application';
-import { createEventChannel, type SqliteUnitOfWork } from '@tinyfold/core/infra';
+import type { EventDraft, TransactionScope } from '#core/application';
+import { defineModule } from '#core/application';
+import { createEventChannel, type SqliteUnitOfWork } from '#core/infra';
 import type { DocumentEvent } from '../application/contracts/events.js';
 import { requireDocumentSource } from '../application/lookups.js';
 import type { DocumentOrganization, DocumentSourceInput, DocumentsRepository } from '../application/ports.js';
@@ -113,31 +114,15 @@ function runtime(dependencies: DocumentsDependencies) {
   };
 }
 
-const runtimes = new WeakMap<DocumentsModule, ReturnType<typeof runtime>>();
+const definition = defineModule({
+  id: 'documents',
+  setup: runtime,
+  api: (state) => ({ ...documentApi(state.operations, state.context), events: state.channel.source }),
+});
 
-export class DocumentsModule implements RuntimeModule<object, object, DocumentEvent> {
-  readonly id = 'documents';
-  readonly commands;
-  readonly queries;
-  readonly events;
-
-  constructor(dependencies: DocumentsDependencies) {
-    const built = runtime(dependencies);
-    runtimes.set(this, built);
-    const api = documentApi(built.operations, built.context);
-    this.commands = api.commands;
-    this.queries = api.queries;
-    this.events = built.channel.source;
-  }
-}
-
-function runtimeOf(module: DocumentsModule) {
-  const built = runtimes.get(module);
-  if (!built) throw new Error('Unknown documents module.');
-  return built;
-}
+export class DocumentsModule extends definition.Module {}
 
 export const documentsParticipant = (module: DocumentsModule, scope: TransactionScope) =>
-  runtimeOf(module).participant(scope);
-export const documentsOperations = (module: DocumentsModule) => runtimeOf(module).operations;
-export const disposeDocuments = (module: DocumentsModule) => runtimeOf(module).channel.dispose();
+  definition.stateOf(module).participant(scope);
+export const documentsOperations = (module: DocumentsModule) => definition.stateOf(module).operations;
+export const disposeDocuments = (module: DocumentsModule) => definition.stateOf(module).channel.dispose();

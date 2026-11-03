@@ -1,4 +1,4 @@
-import { type Database, tables } from '@tinyfold/core/infra';
+import { type Database, tables } from '#core/infra';
 import type { DrawingPreviewPolicy } from '../../application/embeds/ports.js';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
 import type { WorkspaceTables } from '../sql/tables.js';

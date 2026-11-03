@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
-import { MAX_CANVAS_BYTES } from '@tinyfold/drawings/domain';
 import { useState } from 'react';
+import { MAX_CANVAS_BYTES } from '#drawings/domain';
 import { besidePlace, createBeside, DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page';
 import { api, errorMessage, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';

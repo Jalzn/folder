@@ -1,4 +1,4 @@
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
+import type { CivilDate, IsoInstant } from '#core/domain';
 
 /** Column metadata used to order and group the workspace's aggregate task projections. */
 export interface BoardColumn {

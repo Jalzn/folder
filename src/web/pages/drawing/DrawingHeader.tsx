@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
 import { ArrowUpFromLine } from 'lucide-react';
+import type { IsoInstant } from '#core/domain';
 import { SaveState, useEdited } from '../../components/item-page';
 import type { SaveStatus } from '../../lib/autosave';
 import { ItemMenu } from '../../shell';

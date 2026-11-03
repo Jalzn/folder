@@ -1,5 +1,5 @@
-import { DEFAULT_ACCESS_TOKEN_NAME } from '@tinyfold/auth/domain';
 import { type FormEvent, useRef, useState } from 'react';
+import { DEFAULT_ACCESS_TOKEN_NAME } from '#auth/domain';
 import { api, errorMessage } from '../../lib/api';
 import { Button, Dialog, DialogActions, TextField } from '../../ui';
 import { reloadAccessTokens } from './access-tokens';

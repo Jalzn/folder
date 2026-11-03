@@ -1,4 +1,4 @@
-import type { JsonValue } from '@tinyfold/core/domain';
+import type { JsonValue } from '#core/domain';
 import type { DocumentBlock } from '../document-models.js';
 import { isEmbedType } from '../embeds.js';
 import { type EmbedResolver, embedLine } from './embeds.js';

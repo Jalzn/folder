@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import type { Database } from '@tinyfold/core/infra';
-import type { Project } from '@tinyfold/projects/domain';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { Database } from '#core/infra';
+import type { Project } from '#projects/domain';
 import { request } from '../../testing/workspace/builders.js';
 import { useWorkspaceDb } from '../../testing/workspace/database.js';
 import { testFolder } from '../../testing/workspace/folders.js';
@@ -280,14 +280,14 @@ describe('folders', () => {
       const deletedAt = async (id: string) =>
         (await sql<{ deleted_at: string }>`select deleted_at from workspace_folders where id = ${id}`.execute(db))
           .rows[0]?.deleted_at ?? '';
-      const after = (instant: string) => new Date(Date.parse(instant) + 1).toISOString();
+      const nextInstant = (instant: string) => new Date(Date.parse(instant) + 1).toISOString();
       const mcp = await testFolder(service, project.id, 'MCP');
       const [earlier, withFolder] = [await newDocument(mcp.id, 'Antes'), await newDocument(mcp.id, 'Junto')];
       // Trashed from the folder before the folder: same origin and version, another instant.
       const trashedEarlier = await service.deleteDocument({ ...request(), id: earlier.id, expectedVersion: 1 });
       const deleted = await service.deleteFolder({ ...request(), id: mcp.id, expectedVersion: 1, withItems: true });
       expect(deleted.trashed.map((item) => item.id)).toEqual([withFolder.id]);
-      const late = after(await deletedAt(mcp.id));
+      const late = nextInstant(await deletedAt(mcp.id));
       const forged = { type: 'document' as const, id: earlier.id, version: trashedEarlier.version, pinnedAt: late };
       expect(
         await service.restoreFolder({
@@ -321,7 +321,7 @@ describe('folders', () => {
           id: arquitetura.id,
           expectedVersion: toRoot.version,
           moved: [
-            { type: 'document', id: tarde.id, pinnedAt: after(instant), keptPin: false },
+            { type: 'document', id: tarde.id, pinnedAt: nextInstant(instant), keptPin: false },
             { type: 'document', id: naHora.id, pinnedAt: instant, keptPin: false },
           ],
           trashed: [],

@@ -1,4 +1,4 @@
-import type { CanvasElement, CanvasScene } from '@tinyfold/drawings/domain';
+import type { CanvasElement, CanvasScene } from '#drawings/domain';
 
 export function shape(id: string, type = 'rectangle', patch: Partial<CanvasElement> = {}): CanvasElement {
   return {

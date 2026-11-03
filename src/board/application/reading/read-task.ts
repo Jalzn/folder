@@ -1,4 +1,4 @@
-import { documentToMarkdown } from '@tinyfold/rich-text/domain';
+import { documentToMarkdown } from '#rich-text/domain';
 import { readDocumentCursor } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { boardErrors } from '../errors.js';

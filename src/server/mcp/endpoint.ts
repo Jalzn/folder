@@ -1,7 +1,7 @@
 import { createMcpHandler } from '@modelcontextprotocol/server';
-import type { AccessTokenService } from '@tinyfold/auth';
-import { createSlidingWindow } from '@tinyfold/core/infra';
 import type { Hono } from 'hono';
+import type { AccessTokenService } from '#auth';
+import { createSlidingWindow } from '#core/infra';
 import { clientIp } from '../client-ip.js';
 import type { Config } from '../config.js';
 import type { AgentTool } from '../workspace/index.js';

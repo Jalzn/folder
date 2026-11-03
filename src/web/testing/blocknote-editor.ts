@@ -1,8 +1,8 @@
 import { registerHooks } from 'node:module';
 import { BlockNoteEditor, BlockNoteSchema, createBlockSpec } from '@blocknote/core';
-import { type DocumentContent, readDocumentContent } from '@tinyfold/rich-text/domain';
 import { Window } from 'happy-dom';
 import { afterAll, beforeAll, vi } from 'vitest';
+import { type DocumentContent, readDocumentContent } from '#rich-text/domain';
 
 // The package imports KaTeX CSS at runtime. Node validates its real schema/parser without needing stylesheets.
 const cssModules = registerHooks({

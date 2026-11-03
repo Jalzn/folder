@@ -1,4 +1,4 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
+import { toIsoInstant } from '#core/domain';
 import { type AccessTokenScope, shouldRecordUse } from '../../domain/access-token.js';
 import type { AccessTokenDeps } from './ports.js';
 

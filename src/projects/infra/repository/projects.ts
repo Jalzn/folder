@@ -1,4 +1,4 @@
-import { type Database, tables, versionedUpdate } from '@tinyfold/core/infra';
+import { type Database, tables, versionedUpdate } from '#core/infra';
 import type { ProjectRepository } from '../../application/ports/projects.js';
 import { projectModel, projectRow } from '../sql/mappers.js';
 import type { ProjectsTables } from '../sql/tables.js';

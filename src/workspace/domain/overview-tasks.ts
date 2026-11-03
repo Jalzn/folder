@@ -1,5 +1,5 @@
-import type { CivilDate } from '@tinyfold/core/domain';
-import { addDays, byPosition, isPastDue } from '@tinyfold/core/domain';
+import type { CivilDate } from '#core/domain';
+import { addDays, byPosition, isPastDue } from '#core/domain';
 import type { BoardColumn } from './read-models.js';
 
 /** What "Agora" needs of a task: its column, place and due date. */

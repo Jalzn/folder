@@ -1,5 +1,5 @@
-import { readCivilDate, toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { readCivilDate, toIsoInstant } from '#core/domain';
 import { civilDateIn } from './civil-date';
 import { daysBetween, longDate, relativeDay, shortCivilDate } from './task-dates';
 

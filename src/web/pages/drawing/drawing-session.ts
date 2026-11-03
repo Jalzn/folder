@@ -1,4 +1,4 @@
-import { type Canvas, type CanvasScene, canvasPlainText, readCanvasScene } from '@tinyfold/drawings/domain';
+import { type Canvas, type CanvasScene, canvasPlainText, readCanvasScene } from '#drawings/domain';
 import type { ItemAdapter } from '../../components/item-page';
 import { api, queryClient } from '../../lib/api';
 import {

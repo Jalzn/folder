@@ -1,5 +1,5 @@
-import { bindOperation, operation } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { bindOperation, operation } from '#core/application';
 import { createDocument } from '../application/commands/create.js';
 import { restoreDocument } from '../application/commands/restore.js';
 import { saveDocument } from '../application/commands/save.js';

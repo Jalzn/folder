@@ -1,5 +1,5 @@
-import type { ModuleContext } from '@tinyfold/core/application';
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { ModuleContext } from '#core/application';
+import type { IsoInstant } from '#core/domain';
 import type { Folder } from '../../domain/folders.js';
 import type { FiledItem, FiledItemType } from '../../domain/items.js';
 

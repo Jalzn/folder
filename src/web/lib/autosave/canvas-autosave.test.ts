@@ -1,13 +1,13 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { readIsoInstant } from '@tinyfold/core/domain';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { IsoInstant } from '#core/domain';
+import { readIsoInstant } from '#core/domain';
 import {
   type CanvasScene,
   compactCanvasScene,
   emptyCanvasScene,
   MAX_CANVAS_BYTES,
   readCanvasScene,
-} from '@tinyfold/drawings/domain';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+} from '#drawings/domain';
 import { type CanvasSnapshot, canvasFile, parseCanvasDraft, readCanvasImport, withCleanLinks } from './canvas-autosave';
 import { withDraftProject } from './draft-project';
 import { AutosaveController, type SaveInput } from './index';

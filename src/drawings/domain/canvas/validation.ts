@@ -1,4 +1,4 @@
-import { assertContentJson, boundedLimit, validColor as color, object } from '@tinyfold/core/domain';
+import { assertContentJson, boundedLimit, validColor as color, object } from '#core/domain';
 import { assertElement, assertPoints, bindableTypes, finite, identifier, invalid, textContainers } from './elements.js';
 import {
   type CanvasElement,

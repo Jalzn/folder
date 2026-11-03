@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 import './item-row.css';
 import { Link } from '@tanstack/react-router';
 import { shortInstant } from '../../lib/dates/dates';

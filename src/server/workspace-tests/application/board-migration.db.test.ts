@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { INITIAL_COLUMN_IDS } from '@tinyfold/board/domain';
-import { searchText } from '@tinyfold/core/domain';
-import { coreModule, type Database, migrate } from '@tinyfold/core/infra';
-import { useTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '#board/domain';
+import { searchText } from '#core/domain';
+import { coreModule, type Database, migrate } from '#core/infra';
+import { useTempDatabase } from '#core/testing';
 import { workspaceModule } from '../../../workspace/infra/module.js';
 import { loadStage09Fixture, migrateWorkspaceTo } from '../../testing/workspace/legacy-workspace.js';
 import { createWorkspaceService } from '../../workspace/service.js';

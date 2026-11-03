@@ -1,5 +1,5 @@
-import type { LabelColor } from '@tinyfold/board/domain';
 import { type KeyboardEvent, type Ref, useId } from 'react';
+import type { LabelColor } from '#board/domain';
 import type { LabelSummary } from '../../lib/queries/labels';
 import { type LabelCommand, LabelMenu } from './LabelMenu';
 import { type LabelFieldExit, LabelNameField } from './LabelNameField';

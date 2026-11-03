@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { type Database, tables } from '@tinyfold/core/infra';
+import type { IsoInstant } from '#core/domain';
+import { type Database, tables } from '#core/infra';
 import type { AccessTokenRecord, AccessTokenRepository } from '../application/access-tokens/ports.js';
 import type { AccessTokenScope } from '../domain/access-token.js';
 

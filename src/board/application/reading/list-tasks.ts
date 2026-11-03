@@ -1,4 +1,4 @@
-import { nameKey } from '@tinyfold/core/domain';
+import { nameKey } from '#core/domain';
 import { boardKey } from '../../domain/list-order.js';
 import { boardCursor, readBoardCursor } from '../../domain/paging.js';
 import { boardErrors } from '../errors.js';

@@ -1,5 +1,5 @@
-import { edit, id, request, visible } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { edit, id, request, visible } from '#core/application';
 import { PROJECT_COLORS } from '../../domain/project.js';
 
 const name = visible(z.string().min(1).max(100));

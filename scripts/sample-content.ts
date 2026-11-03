@@ -19,9 +19,9 @@
  * or BlockNote changes this again.
  */
 
-import type { JsonValue } from '@tinyfold/core/domain';
-import type { CanvasElement, CanvasScene } from '@tinyfold/drawings/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import type { JsonValue } from '#core/domain';
+import type { CanvasElement, CanvasScene } from '#drawings/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 
 const text = (value: string): JsonValue => [{ type: 'text', text: value, styles: {} }];
 /**

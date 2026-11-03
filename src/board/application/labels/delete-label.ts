@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import type { BoardContext } from '../ports/context.js';
 import type { DeleteLabelInput } from '../schemas/labels.js';
 import { requireActiveLabel } from './label-rules.js';

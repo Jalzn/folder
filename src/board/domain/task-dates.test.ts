@@ -1,5 +1,5 @@
-import { readCivilDate, readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { readCivilDate, readIsoInstant } from '#core/domain';
 import { DONE_WINDOW_DAYS, doneWindowStart, isCivilDate, isOverdue } from './task-dates.js';
 
 describe('task dates', () => {

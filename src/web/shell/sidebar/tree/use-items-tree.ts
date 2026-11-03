@@ -1,6 +1,6 @@
 import { useLocation } from '@tanstack/react-router';
-import type { NavTree } from '@tinyfold/workspace/domain';
 import { useMemo } from 'react';
+import type { NavTree } from '#workspace/domain';
 import type { Project } from '../../../lib/types';
 import { parseProjectPath } from '../../../navigation/paths';
 import { useOpenItem } from '../use-open-item';

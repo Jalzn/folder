@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 export const ITEM_TYPES = ['document', 'drawing', 'task'] as const;
 export const FILED_ITEM_TYPES = ['document', 'drawing'] as const;
 export type ItemType = (typeof ITEM_TYPES)[number];

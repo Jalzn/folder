@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 import { requireLiveItem } from '../items/require-item.js';
 import { assertRoomForPin } from '../moves/pin-scope.js';
 import type { PinPorts, WorkspaceFlowContext } from '../ports/context.js';

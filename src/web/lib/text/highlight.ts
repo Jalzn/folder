@@ -1,4 +1,4 @@
-import { searchText } from '@tinyfold/core/domain';
+import { searchText } from '#core/domain';
 
 export interface TextPart {
   text: string;

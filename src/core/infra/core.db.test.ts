@@ -7,7 +7,7 @@ import { sql } from 'kysely';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createDatabase, type Database, writeTransaction } from './db.js';
 import { migrate } from './migrate.js';
-import { coreModule, defineModule } from './module.js';
+import { coreModule, defineMigrationModule } from './module.js';
 import { idempotentWrite } from './write.js';
 
 const resources: { db: Database; folder?: string }[] = [];
@@ -38,7 +38,7 @@ describe('SQLite foundation', () => {
       file,
       "create table example (id text primary key); insert into example values ('semicolon;inside');",
     );
-    const module = defineModule({ id: 'example', migrations: pathToFileURL(`${folder}/`) });
+    const module = defineMigrationModule({ id: 'example', migrations: pathToFileURL(`${folder}/`) });
     await migrate(db, [module]);
     expect((await sql<{ id: string }>`select id from example`.execute(db)).rows[0]?.id).toBe('semicolon;inside');
     await writeFile(file, `${await readFile(file, 'utf8')}\n-- modified`);

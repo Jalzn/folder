@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { INITIAL_COLUMN_IDS } from '@tinyfold/board/domain';
-import type { Database } from '@tinyfold/core/infra';
-import { sceneFingerprint } from '@tinyfold/drawings/domain';
-import type { Project } from '@tinyfold/projects/domain';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '#board/domain';
+import type { Database } from '#core/infra';
+import { sceneFingerprint } from '#drawings/domain';
+import type { Project } from '#projects/domain';
 import { request } from '../../testing/workspace/builders.js';
 import { drawingFixture } from '../../testing/workspace/canvas-scenes.js';
 import { useWorkspaceDb } from '../../testing/workspace/database.js';

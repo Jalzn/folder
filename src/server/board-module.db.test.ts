@@ -1,15 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import { BoardModule } from '@tinyfold/board';
-import { type BoardExternalPorts, boardParticipant } from '@tinyfold/board/composition';
-import { CreateTaskInput } from '@tinyfold/board/contracts';
-import { AppError, assertVersion, type TransactionScope } from '@tinyfold/core/application';
-import { readCivilDate } from '@tinyfold/core/domain';
-import { coreModule, createUnitOfWork } from '@tinyfold/core/infra';
-import { useTestDatabases } from '@tinyfold/core/testing';
-import { excerptPresent } from '@tinyfold/rich-text/domain';
-import { workspaceModule } from '@tinyfold/workspace';
 import { sql } from 'kysely';
 import { describe, expect, it, vi } from 'vitest';
+import { BoardModule } from '#board';
+import { type BoardExternalPorts, boardParticipant } from '#board/composition';
+import { CreateTaskInput } from '#board/contracts';
+import { AppError, assertVersion, type TransactionScope } from '#core/application';
+import { readCivilDate } from '#core/domain';
+import { coreModule, createUnitOfWork } from '#core/infra';
+import { useTestDatabases } from '#core/testing';
+import { excerptPresent } from '#rich-text/domain';
+import { workspaceModule } from '#workspace';
 
 const databases = useTestDatabases([coreModule, workspaceModule], 'tinyfold-board-module-');
 const instant = '2026-11-03T12:00:00.000Z';

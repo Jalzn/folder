@@ -1,8 +1,8 @@
-import { coreModule, type Database } from '@tinyfold/core/infra';
-import { useTempDatabase } from '@tinyfold/core/testing';
-import type { Project } from '@tinyfold/projects/domain';
-import { workspaceModule } from '@tinyfold/workspace';
 import { beforeEach, vi } from 'vitest';
+import { coreModule, type Database } from '#core/infra';
+import { useTempDatabase } from '#core/testing';
+import type { Project } from '#projects/domain';
+import { workspaceModule } from '#workspace';
 import { createWorkspaceTools } from '../../workspace/index.js';
 import { createWorkspaceService } from '../../workspace/service.js';
 import { testProject } from './projects.js';

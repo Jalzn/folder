@@ -1,6 +1,6 @@
 # Tinyfold — Arquitetura
 
-**Estado:** o código da [etapa 13](etapas/13-modulos.md) separa os módulos e preserva os contratos externos. A verificação integrada dessa etapa está concluída localmente; os resultados executados e a versão publicada ficam em [validação](validacao.md). A etapa foi integrada na `main`; a publicação segue o CI e o deploy automático do Railway.
+**Estado:** a [etapa 14](etapas/14-definicoes.md) centraliza configuração e definições de composição; está concluída e validada localmente em `refactor/stage14-root-definitions`. A [etapa 13](etapas/13-modulos.md) está integrada na `main`. Resultados executados e versão publicada ficam em [validação](validacao.md); a publicação segue o CI e o deploy automático do Railway.
 
 ## Base e módulos
 
@@ -20,30 +20,33 @@ src/
 └── web/           React: shell, páginas, editores, quadro e Perfil
 ```
 
-Cada pasta é um pacote `@tinyfold/<nome>`. Os módulos de negócio separam `domain/`, `application/` e `infra/`. O domínio é puro; a aplicação usa portas locais; a infraestrutura implementa persistência e montagem. `rich-text` é uma biblioteca pura, sem classe, SQL, HTTP ou React. Auth conserva sua API existente.
+As pastas são módulos arquiteturais de um único pacote na raiz. `package.json` reúne dependências, scripts e o mapa `imports`, com entradas exatas e sem curingas. Os módulos de negócio separam `domain/`, `application/` e `infra/`. O domínio é puro; a aplicação usa portas locais; a infraestrutura implementa persistência e montagem. `rich-text` é uma biblioteca pura, sem classe, SQL, HTTP ou React. Auth conserva sua API existente.
 
-`ProjectsModule`, `DocumentsModule`, `DrawingsModule`, `BoardModule` e `WorkspaceModule` expõem `id`, `commands`, `queries` e `events`. Cada composição possui suas instâncias; as classes vinculam casos de uso e dependências, sem herança de uma classe-base e sem migração no construtor. `RuntimeModule`, em `core/application`, descreve esse contrato e é distinto de `ModuleDefinition`, o registro histórico de migrações.
+`ProjectsModule`, `DocumentsModule`, `DrawingsModule`, `BoardModule` e `WorkspaceModule` expõem `id`, `commands`, `queries` e `events`. Cada classe estende a classe `.Module` produzida por uma definição privada `defineModule({ id, setup, api })`. A base `Module` mantém a API pública; a definição guarda o estado de cada instância e só o próprio módulo usa `stateOf(instance)`. `RuntimeModule` descreve o contrato, sem acrescentar SQL ou migrações ao construtor.
 
 | Entrada pública | Uso |
 | --- | --- |
-| `.` | Classe do módulo e tipos da API |
-| `./domain` | Regras puras e tipos selecionados; permitidos no navegador |
-| `./contracts` | Schemas, entradas, resultados e eventos; a web importa somente tipos |
-| `./composition` | Participantes e montagem, acessíveis ao próprio módulo e ao servidor |
+| `#<módulo>` | Classe do módulo e tipos da API |
+| `#<módulo>/domain` | Regras puras e tipos selecionados; permitidos no navegador |
+| `#<módulo>/contracts` | Schemas, entradas, resultados e eventos; a web importa somente tipos |
+| `#<módulo>/composition` | Participantes e montagem, acessíveis ao próprio módulo e ao servidor |
 
-Essas quatro entradas pertencem aos cinco módulos novos. `rich-text` exporta somente `./domain`; `core` e `auth` mantêm suas entradas explícitas nos respectivos `package.json`.
+Essas quatro entradas pertencem aos cinco módulos de negócio. `rich-text` possui somente `#rich-text/domain`; `core` e `auth` têm suas entradas explícitas no mesmo mapa da raiz. Imports entre módulos usam esses aliases; caminhos privados continuam proibidos mesmo sem manifests separados.
 
-Dependency-cruiser verifica estas regras em `src`, `scripts` e `e2e`:
+`tsconfig.base.json` guarda as opções comuns. `tsconfig.json` verifica Node, backend, scripts, `.railway` e `project.ts`; `tsconfig.web.json` usa DOM, JSX e resolução Bundler; `tsconfig.e2e.json` cobre os testes de navegador. `pnpm typecheck` executa os três. O `pnpm-workspace.yaml` mantém apenas o pacote raiz e as políticas de build/patch do pnpm, incluindo a correção do Excalidraw.
+
+Dependency-cruiser lê o mapa `imports` da raiz e verifica estas regras em `project.ts`, `src`, `scripts` e `e2e`:
 
 - módulos de negócio não importam outros módulos de negócio, nem por `import type` ou reexportação; definem suas próprias portas e projeções, ligadas pelo servidor;
 - domínio e aplicação não importam infraestrutura; as dependências compartilhadas usam apenas entradas públicas de `core` e `rich-text`;
-- servidor e web alcançam módulos por entradas exportadas; `./composition` não pode ser consumido pela web, por scripts ou por outro módulo;
+- servidor e web alcançam módulos por entradas declaradas; `#<módulo>/composition` não pode ser consumido pela web, por scripts ou por outro módulo;
 - o navegador executa somente código próprio e domínio puro; contratos e APIs do servidor entram somente como tipos;
 - só `src/server/mcp/` importa o SDK MCP; auxiliares `testing/` ficam nos testes, e o E2E importa de `src` somente tipos;
 - scripts reutilizam a composição de `server` e entradas permitidas; testes que ligam vários módulos ficam no servidor;
+- `project.ts` declara aplicações por entradas públicas; somente servidor e scripts podem importá-lo, e módulos de negócio, web e E2E não podem acessá-lo nem como tipo;
 - na web, `ui/` e `lib/` permanecem nas camadas inferiores, `pages/` é consumida pelas rotas/outras páginas, o shell usa entradas públicas e rotas não concentram lógica de navegação.
 
-A exclusão do grafo cobre apenas `src/*/dist`; pacotes npm continuam visíveis. `scripts/module-policy.test.ts` verifica importações permitidas e proibidas em fixtures isoladas, incluindo tipos, reexports, entradas privadas e a pureza de `rich-text`.
+A exclusão do grafo cobre apenas `src/*/dist`; dependências npm continuam visíveis. A configuração recusa pastas de módulo sem entradas declaradas. `scripts/module-policy.test.ts` verifica importações permitidas e proibidas em fixtures isoladas, incluindo aliases, caminhos relativos, tipos, reexports, acesso ao catálogo do projeto, entradas privadas e a pureza de `rich-text`.
 
 ## Propriedade dos dados
 
@@ -58,7 +61,7 @@ A exclusão do grafo cobre apenas `src/*/dist`; pacotes npm continuam visíveis.
 
 `workspace` coordena escritas pelos participantes dos donos, inclusive localização e fixados. Seus leitores agregados consultam tabelas de várias áreas, com DTOs locais e dependência explícita do esquema; não escrevem nem importam repositórios dos outros módulos. Cascatas e gatilhos SQLite continuam relacionando essas tabelas, com as mesmas regras.
 
-Os arquivos `workspace/infra/migrations/001_workspace.sql` a `007_board.sql` permanecem registrados sob o ID `workspace`, junto da função SQL `workspace_search_text`. A extração não renomeia tabelas, copia migrações para os novos pacotes ou cria pastas de migração vazias. O servidor registra os descritores históricos em `server/modules.ts`, separadamente das instâncias de execução.
+Os arquivos `workspace/infra/migrations/001_workspace.sql` a `007_board.sql` permanecem registrados sob o ID `workspace`, junto da função SQL `workspace_search_text`. Os descritores `coreModule`, `authModule` e `workspaceModule` usam `MigrationModuleDefinition`/`defineMigrationModule`, de `#core/infra`; o servidor os registra em `server/modules.ts`. Esse histórico é separado de `ModuleDefinition`/`defineModule`, de `#core/application`, que tratam das instâncias de execução.
 
 ## Execução e SQLite
 
@@ -73,6 +76,12 @@ As migrações pendentes rodam numa só transação. Desde a etapa 10, o executo
 A implantação prevê uma instância e um volume local ao processo. Não há réplica nem banco compartilhado por múltiplos hosts.
 
 ## Composição e contratos internos
+
+`project.ts` chama `defineProject({ id: 'tinyfold', applications: { server: serverApplication } })`. Esse `Project` representa o software, não os projetos criados pelo usuário. O catálogo contém receitas de aplicação; importá-lo não abre banco, executa migrações nem cria módulos.
+
+`serverApplication`, em `server/application.ts`, usa `defineApplication({ id, setup })`. A chamada `project.applications.server.create(context)` cria uma `Application` com mapas de módulos e serviços tipados. Chaves dos mapas de módulos/aplicações devem coincidir com os IDs das definições. O mapa de serviços pode conter instâncias de classes como valores; não substitui a API dessas instâncias.
+
+`Application.dispose()` é síncrono e idempotente, dedicado à liberação das assinaturas em memória. Seu callback retorna `undefined`, recusando descarte assíncrono no contrato de tipos. O host HTTP continua responsável por aguardar requisições/ferramentas aceitas e por fechar o banco. As definições atuais de módulo montam closures e canais em memória; recursos assíncronos pertencem ao host.
 
 `composeWorkspace`, em `server/workspace/operations.ts`, cria uma unidade de trabalho e as cinco instâncias, liga portas e monta o registro de operações. `createWorkspace(db, { clock, timeZone, logError })`, em `server/workspace/index.ts`, acrescenta `router`, `service`, `tools` e `files`. A mesma instância atende RPC, MCP e prévias; scripts e fixtures usam `createWorkspaceService` do servidor. O encerramento aguarda requisições aceitas e ferramentas MCP em execução, mesmo após desconexão ou resposta SSE, libera assinaturas dos módulos e só então fecha o banco; novas requisições são recusadas durante essa liberação. Os nomes externos `workspace.*` continuam no RPC e no registro idempotente.
 

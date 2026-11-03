@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach } from 'vitest';
-import { createDatabase, type Database, type ModuleDefinition, migrate } from '../infra/index.js';
+import { createDatabase, type Database, type MigrationModuleDefinition, migrate } from '../infra/index.js';
 export interface TempDatabase {
   readonly db: Database;
   readonly folder: string;
@@ -14,7 +14,7 @@ export interface OwnedTempDatabase extends TempDatabase {
 }
 /** Every handle opened here belongs to an isolated temporary folder, including restart and migration tests. */
 export async function createTempDatabase(
-  modules: readonly ModuleDefinition[] = [],
+  modules: readonly MigrationModuleDefinition[] = [],
   prefix = 'tinyfold-test-',
 ): Promise<OwnedTempDatabase> {
   const folder = await mkdtemp(join(tmpdir(), prefix));
@@ -42,20 +42,23 @@ export async function createTempDatabase(
   return { db, folder, path, open, dispose };
 }
 /** Multiple independently isolated databases in one test, disposed even when setup fails. */
-export function useTestDatabases(modules: readonly ModuleDefinition[] = [], prefix = 'tinyfold-test-') {
+export function useTestDatabases(modules: readonly MigrationModuleDefinition[] = [], prefix = 'tinyfold-test-') {
   const resources: OwnedTempDatabase[] = [];
   afterEach(async () => {
     for (const resource of resources.splice(0)) await resource.dispose();
   });
   return {
-    async create(options: { modules?: readonly ModuleDefinition[]; prefix?: string } = {}) {
+    async create(options: { modules?: readonly MigrationModuleDefinition[]; prefix?: string } = {}) {
       const resource = await createTempDatabase(options.modules ?? modules, options.prefix ?? prefix);
       resources.push(resource);
       return resource;
     },
   };
 }
-export function useTempDatabase(modules: readonly ModuleDefinition[], prefix = 'tinyfold-test-'): TempDatabase {
+export function useTempDatabase(
+  modules: readonly MigrationModuleDefinition[],
+  prefix = 'tinyfold-test-',
+): TempDatabase {
   const databases = useTestDatabases(modules, prefix);
   let current: TempDatabase;
   beforeEach(async () => {

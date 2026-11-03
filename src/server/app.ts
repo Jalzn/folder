@@ -1,7 +1,8 @@
-import { type AccessTokenService, type AuthService, createAccessTokens, createAuthService } from '@tinyfold/auth';
-import type { Database } from '@tinyfold/core/infra';
 import { Hono } from 'hono';
 import { sql } from 'kysely';
+import type { AccessTokenService, AuthService } from '#auth';
+import type { Database } from '#core/infra';
+import { project } from '#project';
 import type { Config } from './config.js';
 import { mountCanvasPreviewRoute } from './files/canvas-preview-route.js';
 import { mountMcp } from './mcp/endpoint.js';
@@ -9,7 +10,6 @@ import { createRouter } from './router.js';
 import { mountRpc } from './rpc.js';
 import { mountSecurityHeaders } from './security-headers.js';
 import { mountSpa } from './spa.js';
-import { createWorkspace } from './workspace/index.js';
 
 export interface AppDependencies {
   db: Database;
@@ -28,9 +28,14 @@ export function createApp({
   clock = () => new Date(),
   logError = console.error,
 }: AppDependencies) {
-  const authService = auth ?? createAuthService(db, { clock });
-  const accessTokenService = accessTokens ?? createAccessTokens(db, { clock, logError });
-  const workspace = createWorkspace(db, { clock, logError, timeZone: () => authService.timeZone() });
+  const application = project.applications.server.create({
+    db,
+    ...(auth ? { auth } : {}),
+    ...(accessTokens ? { accessTokens } : {}),
+    clock,
+    logError,
+  });
+  const { auth: authService, accessTokens: accessTokenService, workspace } = application.services;
   try {
     const app = new Hono();
     const pending = new Set<Promise<unknown>>();
@@ -89,13 +94,13 @@ export function createApp({
         disposal ??= (async () => {
           while (pending.size) await Promise.allSettled([...pending]);
           disposed = true;
-          workspace.dispose();
+          application.dispose();
         })();
         return disposal;
       },
     });
   } catch (error) {
-    workspace.dispose();
+    application.dispose();
     throw error;
   }
 }

@@ -2,6 +2,28 @@
 
 Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. A publicação anterior no Railway está registrada adiante; a integração posterior na `main` utiliza o deploy automático descrito no roteiro de operação.
 
+## Etapa 14: configuração na raiz e definições
+
+Executada em 2026-11-03, na branch `refactor/stage14-root-definitions`, a partir de `41e159a`. Três subagentes participaram da centralização, adaptação das classes e revisão cruzada. O agente principal integrou aplicação/projeto, validou a composição e corrigiu o encerramento do desenvolvimento. A [etapa 14](etapas/14-definicoes.md) descreve o escopo. Estes resultados são locais; esta branch ainda não foi integrada nem publicada.
+
+| Verificação executada | Resultado |
+| --- | --- |
+| `mise exec -- pnpm check` | Lint e tipos Node/web/E2E aprovados; 1.248 módulos e 5.143 dependências sem violações; 808 unitários em 131 arquivos, 2,65 s |
+| `mise exec -- pnpm test:db` | 331 testes em 56 arquivos, 7,45 s; todos com SQLite temporário |
+| `mise exec -- pnpm build` | Aprovado, 1,57 s; fontes e patch do Excalidraw carregados da instalação raiz |
+| Instalação limpa | Cópia sem `node_modules`, instalação `--offline --frozen-lockfile` e build aprovados; versões diretas e blocos `packages`/`snapshots` do lockfile preservados |
+| Comando `dev` na cópia limpa | Vite, fonte TypeScript e `/ready` responderam; SIGTERM e Ctrl+C encerraram os filhos e liberaram ambas as portas, com bancos temporários |
+| Auditoria de compatibilidade | 57 contratos RPC, 78 objetos SQLite e 11 registros de migração/checksums idênticos à evidência final da etapa 13 |
+| E2E completo | 227 aprovados em 6,4 min: 138 desktop, 48 Pixel 7 emulado e 41 de timing; sem falhas, pulados ou retries |
+| Comparação visual | 40 capturas em quatro combinações de tema/dispositivo aprovadas em 22,7 s; referência `2090dea` preservada da etapa 13, que também havia aprovado as mesmas capturas; sem atualizar snapshots |
+| Chrome no Herdr | Projeto, pasta, documento, movimento para pasta, tarefa e desenho criados pela interface e preservados após recarga; capturas desktop e tela estreita em tema escuro inspecionadas, sem overflow horizontal ou erros de página |
+
+**Contratos e política.** Dez testes novos cobrem inferência, isolamento das instâncias, estado privado, assinatura de eventos sem publicador, registros consistentes e descarte síncrono idempotente. O mapa de serviços aceita instâncias como valores, preservando seus métodos. A checagem de tipos recusa cleanup assíncrono: quem aguarda HTTP/MCP e fecha o SQLite continua sendo o host. Os 34 cenários de política exercitam o mapa de entradas da raiz, imports por alias/caminho relativo, tipos, reexports, ausência de entradas, curingas e restrição de acesso a `project.ts`. O guard do bundle ganhou oito testes e considera todos os domínios públicos, manifests, lockfile, patch e configurações usados no build.
+
+**Revisão do desenvolvimento.** Vite e `tsx watch` executam como filhos separados, em grupos POSIX próprios, com um único sinal encaminhado a cada CLI. Isso evita que o handler interno do Vite encerre o host cedo e que o segundo SIGINT force o encerramento do servidor. O runner aguarda os dois filhos. O watcher conserva o comportamento anterior de continuar aberto após um erro da aplicação, permitindo corrigir e salvar. A centralização tornou a detecção de React/Vitest do Biome comum ao repositório; as regras de hooks React foram delimitadas à web, e as de hooks/foco de testes aos testes. Três helpers de datas foram renomeados para não serem confundidos com hooks pelo linter.
+
+**Herdr e evidências.** Sessão `herdr-preview-0afb51d5-fa8d-4ab2-9100-d44499bd484a`, no espaço Tinyfold, em `http://localhost:63676`, com banco temporário e dados fictícios. A navegação usou a página Chrome do Content Viewer, por `herdr-preview` e CDP confirmado dessa sessão. Preview e servidor temporário foram encerrados. Logs em `/tmp/tinyfold-stage14-{check,db,build,e2e,visual,herdr}.log`, instalação/build limpos em `/tmp/tinyfold-stage14-clean-{install,build}.log`, encerramento em `/tmp/tinyfold-stage14-dev-{SIGTERM,SIGINT}.log`, capturas em `/tmp/tinyfold-stage14-herdr-{document,board,drawing,narrow}.png` e auditoria em `/tmp/tinyfold-stage14-audit/current.json`. Não houve rebuild Docker nem deploy nesta etapa.
+
 ## Etapa 13: módulos e contratos públicos
 
 Executada em 2026-11-03, na branch `refactor/stage13-modules`, partindo de `2090dea`. Plano em `b084c1f`; implementação integrada em `59f6306`. Três subagentes trabalharam em fundações/Board, texto/Drawings e política/Documents, com revisão cruzada; o agente principal implementou Projects, composição, migração dos consumidores e integração. As evidências abaixo são do fechamento local. Depois dele, o usuário autorizou a integração na `main`: fast-forward de `2090dea` até `39d5e33`, preservando exatamente o código validado `59f6306`. A publicação é feita pelo CI e pelo gatilho automático do Railway; os resultados hospedados ficam no [GitHub Actions](https://github.com/Jalzn/folder/actions) e no [Railway](https://railway.com/project/f42f84f1-c14a-423e-83d7-f05f9ddd6d54), separados das medições locais.

@@ -1,5 +1,5 @@
 import type { RouterClient } from '@orpc/server';
-import { type AccessTokenService, type AuthService, createAuthRouter } from '@tinyfold/auth';
+import { type AccessTokenService, type AuthService, createAuthRouter } from '#auth';
 
 import type { Workspace } from './workspace/index.js';
 

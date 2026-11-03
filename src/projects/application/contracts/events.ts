@@ -1,4 +1,4 @@
-import type { ModuleEvent } from '@tinyfold/core/application';
+import type { ModuleEvent } from '#core/application';
 
 interface ProjectEventPayloads {
   'project.created': { version: number };

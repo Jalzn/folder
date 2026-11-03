@@ -1,4 +1,4 @@
-import { operation } from '@tinyfold/core/application';
+import { operation } from '#core/application';
 import { readCanvasPreviewImage, saveCanvasPreview } from '../application/canvas-previews.js';
 import { createCanvas } from '../application/commands/create-canvas.js';
 import { deleteCanvas, purgeCanvas, restoreCanvas } from '../application/commands/lifecycle.js';

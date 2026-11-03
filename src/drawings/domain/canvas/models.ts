@@ -1,4 +1,4 @@
-import type { IsoInstant, JsonValue } from '@tinyfold/core/domain';
+import type { IsoInstant, JsonValue } from '#core/domain';
 
 /**
  * The IDs the server gives drawings (randomUUID): lowercase UUIDs of the RFC 9562 layout, the only

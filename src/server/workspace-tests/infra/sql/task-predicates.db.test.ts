@@ -1,7 +1,7 @@
-import { isOverdue } from '@tinyfold/board/domain';
-import { readCivilDate, readIsoInstant } from '@tinyfold/core/domain';
 import { sql } from 'kysely';
 import { expect, it } from 'vitest';
+import { isOverdue } from '#board/domain';
+import { readCivilDate, readIsoInstant } from '#core/domain';
 import { openTask, overdueOn } from '../../../../workspace/infra/sql/task-predicates.js';
 import { useWorkspaceDb } from '../../../testing/workspace/database.js';
 

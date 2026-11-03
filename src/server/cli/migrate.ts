@@ -1,4 +1,4 @@
-import { createDatabase, migrate } from '@tinyfold/core/infra';
+import { createDatabase, migrate } from '#core/infra';
 import { readConfig } from '../config.js';
 import { modules } from '../modules.js';
 

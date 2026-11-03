@@ -1,7 +1,7 @@
-import type { DocumentBlock, DocumentContent } from '@tinyfold/rich-text/domain';
 import { GapCursor } from '@tiptap/pm/gapcursor';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { afterEach, describe, expect, it } from 'vitest';
+import type { DocumentBlock, DocumentContent } from '#rich-text/domain';
 import { type MountedBlockNoteEditor, setupBlockNoteEditor } from '../../testing/blocknote-editor';
 import { createEmbedKeys } from './embed-keys';
 import { blockPlaces } from './embed-places';

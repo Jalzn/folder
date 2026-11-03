@@ -1,5 +1,5 @@
-import { displayName, nameKey } from '@tinyfold/core/domain';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { displayName, nameKey } from '#core/domain';
 import { InlineNameField, whenPresent } from '../../ui';
 
 /** "Já existe uma coluna Revisão." */

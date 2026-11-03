@@ -1,5 +1,5 @@
-import { searchText } from '@tinyfold/core/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import { searchText } from '#core/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 import type { Document, DocumentSummary } from '../../domain/index.js';
 import type { DocumentRow } from './table.js';
 

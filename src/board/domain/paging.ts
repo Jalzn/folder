@@ -1,4 +1,4 @@
-import { DomainError, type IsoInstant } from '@tinyfold/core/domain';
+import { DomainError, type IsoInstant } from '#core/domain';
 import { COLUMN_LIMITS } from './columns.js';
 
 const invalidCursor = () => new DomainError('Cursor inválido. Repita a consulta sem cursor.');

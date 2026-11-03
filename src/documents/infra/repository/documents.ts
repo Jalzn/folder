@@ -1,6 +1,6 @@
-import { type Database, tables, versionedUpdate } from '@tinyfold/core/infra';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import { sql } from 'kysely';
+import { type Database, tables, versionedUpdate } from '#core/infra';
+import type { DocumentBlock } from '#rich-text/domain';
 import type { DocumentRepository } from '../../application/ports.js';
 import { documentModel, documentRow, documentSummary } from '../sql/mappers.js';
 import type { DocumentTables } from '../sql/table.js';

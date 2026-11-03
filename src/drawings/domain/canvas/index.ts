@@ -1,4 +1,4 @@
-import { object } from '@tinyfold/core/domain';
+import { object } from '#core/domain';
 import type { CanvasScene } from './models.js';
 
 export {

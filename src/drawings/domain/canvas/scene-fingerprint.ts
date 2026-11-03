@@ -1,4 +1,4 @@
-import { textFingerprint } from '@tinyfold/core/domain';
+import { textFingerprint } from '#core/domain';
 import type { CanvasScene } from './index.js';
 
 /**

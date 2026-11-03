@@ -1,5 +1,5 @@
-import type { JsonValue } from '@tinyfold/core/domain';
-import { object } from '@tinyfold/core/domain';
+import type { JsonValue } from '#core/domain';
+import { object } from '#core/domain';
 import type { DocumentBlock } from './document-models.js';
 import { isEmbedType } from './embeds.js';
 

@@ -1,5 +1,5 @@
-import { reorder, restoredPosition } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { reorder, restoredPosition } from '#core/domain';
 import { folderName, folderNameKey } from './folders.js';
 
 describe('folders', () => {

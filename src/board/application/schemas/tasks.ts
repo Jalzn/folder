@@ -1,6 +1,6 @@
-import { domainMessage, edit, id, request, version, visible } from '@tinyfold/core/application';
-import { type CivilDate, isCivilDate } from '@tinyfold/core/domain';
 import { z } from 'zod';
+import { domainMessage, edit, id, request, version, visible } from '#core/application';
+import { type CivilDate, isCivilDate } from '#core/domain';
 import { TASK_LIMITS } from '../../domain/tasks.js';
 import { descriptionContent } from './description.js';
 

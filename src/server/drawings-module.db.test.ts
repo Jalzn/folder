@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { type IsoInstant, readIsoInstant } from '@tinyfold/core/domain';
-import { coreModule, createUnitOfWork, tables } from '@tinyfold/core/infra';
-import { useTestDatabases } from '@tinyfold/core/testing';
-import { DrawingsModule } from '@tinyfold/drawings';
-import { drawingsParticipant } from '@tinyfold/drawings/composition';
-import { CreateCanvasInput } from '@tinyfold/drawings/contracts';
-import { emptyCanvasScene } from '@tinyfold/drawings/domain';
-import { workspaceModule } from '@tinyfold/workspace';
 import { describe, expect, it } from 'vitest';
+import { type IsoInstant, readIsoInstant } from '#core/domain';
+import { coreModule, createUnitOfWork, tables } from '#core/infra';
+import { useTestDatabases } from '#core/testing';
+import { DrawingsModule } from '#drawings';
+import { drawingsParticipant } from '#drawings/composition';
+import { CreateCanvasInput } from '#drawings/contracts';
+import { emptyCanvasScene } from '#drawings/domain';
+import { workspaceModule } from '#workspace';
 import { pngImage } from '../drawings/testing/png.js';
 
 const databases = useTestDatabases([coreModule, workspaceModule], 'tinyfold-drawings-module-');

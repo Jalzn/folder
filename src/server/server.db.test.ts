@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { isProcedure, type RouterClient } from '@orpc/server';
-import { createAccessTokens } from '@tinyfold/auth';
-import { emptyCanvasScene, sceneFingerprint } from '@tinyfold/drawings/domain';
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
+import { createAccessTokens } from '#auth';
+import { emptyCanvasScene, sceneFingerprint } from '#drawings/domain';
 import { readConfig } from './config.js';
 import { type AppRouter, createRouter } from './router.js';
 import { useAppFixture } from './testing/app.js';

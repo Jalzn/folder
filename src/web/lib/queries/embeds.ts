@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import type { EmbeddedDrawing, EmbeddedTask } from '@tinyfold/workspace/domain';
+import type { EmbeddedDrawing, EmbeddedTask } from '#workspace/domain';
 import { api } from '../api';
 import { keys } from './keys';
 
@@ -10,7 +10,7 @@ export type {
   EmbeddedTask,
   EmbedPreview,
   EmbedProject,
-} from '@tinyfold/workspace/domain';
+} from '#workspace/domain';
 export type LiveTask = Extract<EmbeddedTask, { state: 'live' }>;
 export type LiveDrawing = Extract<EmbeddedDrawing, { state: 'live' }>;
 

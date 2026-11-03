@@ -1,4 +1,4 @@
-import { DomainError } from '@tinyfold/core/domain';
+import { DomainError } from '#core/domain';
 
 const invalidCursor = () => new DomainError('Cursor inválido. Repita a consulta sem cursor.');
 

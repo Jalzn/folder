@@ -1,5 +1,5 @@
-import type { DocumentContent } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
+import type { DocumentContent } from '#rich-text/domain';
 import { setupBlockNoteEditor } from '../../testing/blocknote-editor';
 import { blockAfter, blockBefore, blockPlaces } from './embed-places';
 

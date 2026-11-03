@@ -1,4 +1,3 @@
-import type { CivilDate } from '@tinyfold/core/domain';
 import { ChevronDown, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { useContext, useLayoutEffect, useRef, useState } from 'react';
 import {
@@ -12,6 +11,7 @@ import {
   Heading,
   I18nProvider,
 } from 'react-aria-components';
+import type { CivilDate } from '#core/domain';
 import { longDate, relativeDay } from '../../lib/dates/task-dates';
 import { Button, Popover } from '../../ui';
 

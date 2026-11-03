@@ -1,5 +1,5 @@
-import { type CanvasScene, MAX_PREVIEW_SIDE, sceneFingerprint } from '@tinyfold/drawings/domain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { type CanvasScene, MAX_PREVIEW_SIDE, sceneFingerprint } from '#drawings/domain';
 import { pngFile } from '../../../server/testing/workspace/png.js';
 import {
   type CanvasPreviewOptions,

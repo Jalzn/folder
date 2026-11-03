@@ -1,7 +1,7 @@
-import type { Database } from '@tinyfold/core/infra';
-import type { TimeZoneSource } from '@tinyfold/workspace/composition';
-import { utc } from '@tinyfold/workspace/composition';
 import type { z } from 'zod';
+import type { Database } from '#core/infra';
+import type { TimeZoneSource } from '#workspace/composition';
+import { utc } from '#workspace/composition';
 import type { WorkspaceOperations } from './operations.js';
 import { type Operation, workspaceOperations } from './operations.js';
 

@@ -1,4 +1,4 @@
-import { bindOperation, operation } from '@tinyfold/core/application';
+import { bindOperation, operation } from '#core/application';
 import type { BoardContext } from '../../application/ports/context.js';
 import { PurgeTaskInput } from '../../application/schemas/purge.js';
 import { purgeTask } from '../../application/tasks/purge-task.js';

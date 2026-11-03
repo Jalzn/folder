@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { coreModule, type Database, migrate, tables } from '@tinyfold/core/infra';
-import { sceneFingerprint } from '@tinyfold/drawings/domain';
-import type { Project } from '@tinyfold/projects/domain';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { coreModule, type Database, migrate, tables } from '#core/infra';
+import { sceneFingerprint } from '#drawings/domain';
+import type { Project } from '#projects/domain';
 import { workspaceModule } from '../../../workspace/infra/module.js';
 import { request } from '../../testing/workspace/builders.js';
 import { drawingFixture } from '../../testing/workspace/canvas-scenes.js';

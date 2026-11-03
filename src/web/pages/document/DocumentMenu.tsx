@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
 import { ArrowDownToLine, ArrowUpFromLine, Plus } from 'lucide-react';
+import type { IsoInstant } from '#core/domain';
 import { ARCHIVED_NOTE } from '../../lib/text/project-text';
 import { ItemMenu, type ItemMenuAction } from '../../shell';
 import { KEYS } from '../../shell/keyboard';

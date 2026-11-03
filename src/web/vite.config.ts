@@ -9,7 +9,7 @@ function excalidrawFonts(): Plugin {
     name: 'tinyfold-excalidraw-fonts',
     async configResolved(config) {
       await cp(
-        fileURLToPath(new URL('./node_modules/@excalidraw/excalidraw/dist/prod/fonts/', import.meta.url)),
+        fileURLToPath(new URL('../../node_modules/@excalidraw/excalidraw/dist/prod/fonts/', import.meta.url)),
         resolve(config.publicDir, 'excalidraw/fonts'),
         { recursive: true },
       );
@@ -41,10 +41,15 @@ function preloadInter(): Plugin {
   };
 }
 
+const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url));
+const webRoot = fileURLToPath(new URL('./', import.meta.url));
+
 export default defineConfig(({ mode }) => {
-  const env = { ...loadEnv(mode, '../..', ''), ...process.env };
+  const env = { ...loadEnv(mode, repositoryRoot, ''), ...process.env };
   const server = `http://127.0.0.1:${env.PORT ?? 3370}`;
   return {
+    root: webRoot,
+    envDir: repositoryRoot,
     plugins: [react(), excalidrawFonts(), preloadInter()],
     server: {
       host: 'localhost',

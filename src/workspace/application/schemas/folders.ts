@@ -1,5 +1,5 @@
-import { edit, id, instant, version } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { edit, id, instant, version } from '#core/application';
 import { FOLDER_LIMITS } from '../../domain/folders.js';
 import { NAV_ITEM_TYPES } from '../../domain/navigation.js';
 

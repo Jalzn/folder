@@ -1,7 +1,7 @@
-import { matchesAllTerms, searchText } from '@tinyfold/core/domain';
-import { afterKeyset, type Database, tables } from '@tinyfold/core/infra';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import { sql } from 'kysely';
+import { matchesAllTerms, searchText } from '#core/domain';
+import { afterKeyset, type Database, tables } from '#core/infra';
+import type { DocumentBlock } from '#rich-text/domain';
 import type { BoardExternalPorts } from '../application/ports/external.js';
 import type { BoardReader } from '../application/reading/ports.js';
 import type { TaskLabel, TaskListing } from '../application/reading/read-models.js';

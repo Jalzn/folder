@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { firstUnused } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
+import { firstUnused } from '#core/domain';
 /** A label, the same for every project. A deleted label keeps its row and its links to tasks. */
 export interface Label {
   id: string;

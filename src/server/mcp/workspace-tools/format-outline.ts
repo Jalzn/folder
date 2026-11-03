@@ -6,8 +6,8 @@ import type {
   OutlineEndpoint,
   OutlineNode,
   OutlineNodeKind,
-} from '@tinyfold/drawings/domain';
-import { READING_LIMITS } from '@tinyfold/workspace/contracts';
+} from '#drawings/domain';
+import { READING_LIMITS } from '#workspace/contracts';
 
 const nodeNames: Record<OutlineNodeKind, string> = {
   rectangle: 'retângulo',

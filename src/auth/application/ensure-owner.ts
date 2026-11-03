@@ -1,4 +1,4 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
+import { toIsoInstant } from '#core/domain';
 import { ownerName, validatePassword } from '../domain/index.js';
 import type { AuthContext, StoredOwner } from './ports.js';
 

@@ -1,4 +1,4 @@
-import { NAV_SORTS, type NavSort } from '@tinyfold/workspace/domain';
+import { NAV_SORTS, type NavSort } from '#workspace/domain';
 
 /** One project's items on this device: their order and the folders left open. */
 export interface ProjectPrefs {

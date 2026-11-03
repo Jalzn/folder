@@ -1,6 +1,6 @@
-import { domainMessage } from '@tinyfold/core/application';
-import { EMBED_ID, EMBED_LIMITS } from '@tinyfold/rich-text/domain';
 import { z } from 'zod';
+import { domainMessage } from '#core/application';
+import { EMBED_ID, EMBED_LIMITS } from '#rich-text/domain';
 
 /** The IDs embed blocks take (EMBED_ID), so every block the validator accepts can be resolved. */
 const embedIds = z

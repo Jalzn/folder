@@ -1,7 +1,7 @@
 import './label-chip.css';
 import './labels.css';
-import type { LabelColor } from '@tinyfold/board/domain';
 import type { CSSProperties } from 'react';
+import type { LabelColor } from '#board/domain';
 import { labelColorVar } from './label-colors';
 
 /** A label's 8 px square of color, as in menus; without a color, the outline of a label yet to be named. */

@@ -1,7 +1,9 @@
+import { execFile } from 'node:child_process';
 import { copyFile, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
+import { promisify } from 'node:util';
 import { cruise, type IConfiguration, type ICruiseResult } from 'dependency-cruiser';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -10,6 +12,7 @@ interface Edge {
   from: string;
   to: string;
   syntax?: 'type' | 'reexport';
+  specifier?: string;
   forbidden?: string;
 }
 
@@ -130,11 +133,76 @@ const edges: Edge[] = [
     from: 'scripts/seed.ts',
     to: 'src/server/workspace/compose.ts',
   },
+  {
+    name: 'business importing the project catalog through an alias',
+    from: 'src/documents/infra/project.ts',
+    to: 'project.ts',
+    specifier: '#project',
+    forbidden: 'project-only-in-server-and-scripts',
+  },
+  {
+    name: 'domain importing project types through a relative path',
+    from: 'src/documents/domain/project.ts',
+    to: 'project.ts',
+    syntax: 'type',
+    specifier: '../../../project.js',
+    forbidden: 'project-only-in-server-and-scripts',
+  },
+  {
+    name: 'web importing the project catalog as a type',
+    from: 'src/web/project.ts',
+    to: 'project.ts',
+    syntax: 'type',
+    specifier: '#project',
+    forbidden: 'project-only-in-server-and-scripts',
+  },
+  {
+    name: 'E2E importing the project catalog',
+    from: 'e2e/project.ts',
+    to: 'project.ts',
+    specifier: '#project',
+    forbidden: 'project-only-in-server-and-scripts',
+  },
+  { name: 'server using the project catalog', from: 'src/server/project.ts', to: 'project.ts', specifier: '#project' },
+  { name: 'scripts using the project catalog', from: 'scripts/project.ts', to: 'project.ts', specifier: '#project' },
+  {
+    name: 'the project declaring a public application',
+    from: 'project.ts',
+    to: 'src/server/application.ts',
+    specifier: '#server/application',
+  },
+  {
+    name: 'an unexported deep alias',
+    from: 'src/server/private-alias.ts',
+    to: 'src/documents/infra/private.ts',
+    specifier: '#documents/infra/private',
+    forbidden: 'not-to-unresolvable',
+  },
 ];
 
 describe('module dependency policy', () => {
   let directory: string;
   let result: ICruiseResult;
+  let configuration: IConfiguration;
+  let configPath: string;
+  let imports: Record<string, string>;
+  const require = createRequire(import.meta.url);
+  const projectSource =
+    "export { value } from '#server/application'; export type { Model } from '#core/application';\n";
+  const inspect = async (paths: string[]) => {
+    const { output } = await cruise(paths, {
+      ...configuration.options,
+      baseDir: directory,
+      validate: true,
+      outputType: 'json',
+      ruleSet: { forbidden: configuration.forbidden ?? [] },
+    });
+    return typeof output === 'string' ? (JSON.parse(output) as ICruiseResult) : output;
+  };
+  const loadConfiguration = () => {
+    delete require.cache[configPath];
+    return require(configPath) as IConfiguration;
+  };
 
   const write = async (path: string, content: string) => {
     const target = join(directory, path);
@@ -163,14 +231,29 @@ describe('module dependency policy', () => {
         ]),
       ),
     };
-    for (const [name, exports] of Object.entries(packages)) {
-      await write(`src/${name}/package.json`, JSON.stringify({ name: `@tinyfold/${name}`, type: 'module', exports }));
-    }
+    imports = {
+      ...Object.fromEntries(
+        Object.entries(packages).flatMap(([name, entries]) =>
+          Object.entries(entries).map(([entry, target]) => [
+            `#${name}${entry === '.' ? '' : entry.slice(1)}`,
+            `./src/${name}/${target.slice(2)}`,
+          ]),
+        ),
+      ),
+      '#server/application': './src/server/application.ts',
+      '#project': './project.ts',
+    };
+    await write('package.json', JSON.stringify({ type: 'module', imports }));
+    for (const target of Object.values(imports))
+      await write(target, 'export const value = 1; export type Model = { id: string };\n');
     for (const target of new Set(edges.map((edge) => edge.to).filter((path) => !path.startsWith('node:')))) {
       await write(target, 'export const value = 1; export type Model = { id: string };\n');
     }
-    for (const { from, to, syntax } of edges) {
-      const target = to.startsWith('node:') ? to : `./${relative(dirname(from), to).replace(/\.ts$/u, '.js')}`;
+    for (const { from, to, syntax, specifier } of edges) {
+      const alias = Object.entries(imports).find(([, target]) => target === `./${to}`)?.[0];
+      const target =
+        specifier ??
+        (to.startsWith('node:') ? to : (alias ?? `./${relative(dirname(from), to).replace(/\.ts$/u, '.js')}`));
       const source =
         syntax === 'reexport'
           ? `export { value } from '${target}';\n`
@@ -179,19 +262,17 @@ describe('module dependency policy', () => {
             : `import * as dependency from '${target}'; export const value = dependency;\n`;
       await write(from, source);
     }
-    // Execute the real configuration against an isolated package tree, including its export discovery.
-    const configPath = join(directory, '.dependency-cruiser.cjs');
+    await write('project.ts', projectSource);
+    // The real root imports catalog drives both Node resolution and the policy.
+    configPath = join(directory, '.dependency-cruiser.cjs');
     await copyFile(new URL('../.dependency-cruiser.cjs', import.meta.url), configPath);
-    const configuration = createRequire(import.meta.url)(configPath) as IConfiguration;
-    const { output } = await cruise(['src', 'scripts'], {
-      ...configuration.options,
-      baseDir: directory,
-      validate: true,
-      outputType: 'json',
-      ruleSet: { forbidden: configuration.forbidden ?? [] },
-    });
-    result = typeof output === 'string' ? (JSON.parse(output) as ICruiseResult) : output;
-    expect(result.summary.violations.filter((violation) => violation.rule.name === 'not-to-unresolvable')).toEqual([]);
+    configuration = loadConfiguration();
+    result = await inspect(['project.ts', 'src', 'scripts', 'e2e']);
+    expect(
+      result.summary.violations
+        .filter((violation) => violation.rule.name === 'not-to-unresolvable')
+        .map((violation) => violation.from),
+    ).toEqual(['src/server/private-alias.ts']);
   }, 20_000);
 
   afterAll(async () => {
@@ -207,4 +288,59 @@ describe('module dependency policy', () => {
       else expect(violations).toEqual([]);
     });
   }
+
+  it('resolves public aliases at runtime and refuses private aliases despite existing files', async () => {
+    await write(
+      'scripts/alias-runtime.mjs',
+      `
+      import { value } from '#documents/domain';
+      import { value as projectValue } from '#project';
+      if (value !== 1 || projectValue !== 1) throw new Error('Public alias resolved incorrectly.');
+      try { await import('#documents/infra/private'); }
+      catch (error) { if (error.code === 'ERR_PACKAGE_IMPORT_NOT_DEFINED') process.exit(0); throw error; }
+      throw new Error('A private alias was exposed.');
+    `,
+    );
+    await expect(
+      promisify(execFile)(process.execPath, [join(directory, 'scripts/alias-runtime.mjs')], { cwd: directory }),
+    ).resolves.toMatchObject({ stderr: '' });
+  });
+
+  it.each([
+    ['core infrastructure', '#core/infra'],
+    ['transaction participants', '#documents/composition'],
+    ['relative private application files', './src/server/private.js'],
+  ])('rejects the project importing %s', async (_name, specifier) => {
+    await write('src/server/private.ts', 'export const value = 1;');
+    await write('project.ts', `export { value } from '${specifier}';`);
+    try {
+      const inspected = await inspect(['project.ts']);
+      expect(inspected.summary.violations.map((violation) => violation.rule.name)).toContain(
+        'project-declares-applications-only',
+      );
+    } finally {
+      await write('project.ts', projectSource);
+    }
+  });
+
+  it('refuses a new source module without a declared public entry', async () => {
+    await write('src/unregistered/domain/index.ts', 'export const value = 1;');
+    try {
+      expect(loadConfiguration).toThrow('Module unregistered has no public entry');
+    } finally {
+      await rm(join(directory, 'src/unregistered'), { recursive: true, force: true });
+    }
+  });
+
+  it('refuses wildcard public entries', async () => {
+    await write(
+      'package.json',
+      JSON.stringify({ type: 'module', imports: { ...imports, '#documents/*': './src/documents/*.ts' } }),
+    );
+    try {
+      expect(loadConfiguration).toThrow('without wildcards');
+    } finally {
+      await write('package.json', JSON.stringify({ type: 'module', imports }));
+    }
+  });
 });

@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 import type { ProjectColor } from '../../domain/project.js';
 export interface ProjectRow {
   id: string;

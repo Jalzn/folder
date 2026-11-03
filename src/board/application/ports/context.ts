@@ -1,4 +1,4 @@
-import type { ModuleContext } from '@tinyfold/core/application';
+import type { ModuleContext } from '#core/application';
 import type { Calendar } from '../calendar.js';
 import type { BoardRepository } from './board.js';
 import type { ColumnRepository } from './columns.js';

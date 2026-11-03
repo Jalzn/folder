@@ -1,5 +1,5 @@
-import { readCivilDate } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { readCivilDate } from '#core/domain';
 import type { EmbeddedDrawing, EmbeddedTask } from '../../lib/queries/embeds';
 import { drawingEmbedView, taskEmbedView } from './embed-view';
 

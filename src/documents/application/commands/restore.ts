@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import type { RestoreAck } from '../../domain/index.js';
 import type { RestoreDocumentInput } from '../contracts/schemas.js';
 import { folderAfterRestore, requireDocument } from '../lookups.js';

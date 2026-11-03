@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 /**
  * A board column. Columns are the same for every project: the board of a project is its tasks in
  * them. There is always one done column and at least one open column. A deleted column keeps its

@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import { boardErrors } from '../errors.js';
 import type { BoardContext } from '../ports/context.js';
 import type { PurgeTaskInput } from '../schemas/purge.js';

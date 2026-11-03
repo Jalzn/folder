@@ -1,9 +1,9 @@
-import type { TaskForReading } from '@tinyfold/board/contracts';
-import { isOverdue } from '@tinyfold/board/domain';
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
-import { collapseWhitespace } from '@tinyfold/core/domain';
-import type { OriginTask, ProjectReference } from '@tinyfold/workspace/contracts';
-import { READING_LIMITS } from '@tinyfold/workspace/contracts';
+import type { TaskForReading } from '#board/contracts';
+import { isOverdue } from '#board/domain';
+import type { CivilDate, IsoInstant } from '#core/domain';
+import { collapseWhitespace } from '#core/domain';
+import type { OriginTask, ProjectReference } from '#workspace/contracts';
+import { READING_LIMITS } from '#workspace/contracts';
 import { codePointPrefix } from './text-cut.js';
 
 /** User text placed in a header line: a line break inside it could forge more header lines. */
@@ -146,8 +146,8 @@ export function taskHeader(
   return [...lines, ...closing].join('\n');
 }
 
-import type { DrawingsModule } from '@tinyfold/drawings';
-import type { DrawingImage } from '@tinyfold/drawings/contracts';
+import type { DrawingsModule } from '#drawings';
+import type { DrawingImage } from '#drawings/contracts';
 
 type ReadDrawing = DrawingsModule['queries']['readForAgent'];
 

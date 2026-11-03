@@ -1,5 +1,5 @@
-import { displayName, nameKey, nameTakenBy } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { displayName, nameKey, nameTakenBy } from '#core/domain';
 
 describe('names of folders, columns and labels', () => {
   it('stores a name on one line, without what draws nothing', () => {

@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import type { DocumentAck } from '../../domain/index.js';
 import type { DeleteDocumentInput } from '../contracts/schemas.js';
 import { requireDocument } from '../lookups.js';

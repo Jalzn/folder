@@ -1,5 +1,5 @@
-import { ReadDrawingInput } from '@tinyfold/drawings/contracts';
-import { READING_LIMITS } from '@tinyfold/workspace/contracts';
+import { ReadDrawingInput } from '#drawings/contracts';
+import { READING_LIMITS } from '#workspace/contracts';
 import { formatCanvasOutline } from './format-outline.js';
 import { drawingHeader } from './headers.js';
 import type { AgentQueries } from './queries.js';

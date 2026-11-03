@@ -1,4 +1,4 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
+import { toIsoInstant } from '#core/domain';
 import { deviceLabel, PASSWORD_LIMITS, sessionLifetimeMs } from '../domain/index.js';
 import { authErrors } from './errors.js';
 import type { AuthContext } from './ports.js';

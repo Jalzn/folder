@@ -25,12 +25,15 @@
       "preset": "recommended",
       "correctness": {
         "noPlaywrightMissingAwait": "error",
+        "useHookAtTopLevel": "off",
         "useExhaustiveDependencies": {
           "level": "error",
           "options": { "hooks": [{ "name": "useLatest", "stableResult": true }] }
         }
       },
       "suspicious": {
+        "noFocusedTests": "off",
+        "noDuplicateTestHooks": "off",
         "noPlaywrightWaitForTimeout": "warn"
       },
       "style": {
@@ -40,10 +43,21 @@
   },
   "overrides": [
     {
+      "includes": ["src/web/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useHookAtTopLevel": "error"
+          }
+        }
+      }
+    },
+    {
       "includes": ["e2e/**", "**/*.test.ts", "**/*.test.tsx"],
       "linter": {
         "rules": {
           "suspicious": {
+            "noDuplicateTestHooks": "error",
             "noFocusedTests": "error"
           }
         }

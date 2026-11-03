@@ -1,5 +1,5 @@
-import { id } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { id } from '#core/application';
 import { NAV_ITEM_TYPES } from '../../domain/navigation.js';
 
 /** Pinning repeats safely, so it carries no requestId. */

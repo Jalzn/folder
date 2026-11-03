@@ -1,4 +1,4 @@
-import type { TransactionScope } from '@tinyfold/core/application';
+import type { TransactionScope } from '#core/application';
 import type { DrawingOrganization } from '../application/ports.js';
 import { type DrawingsModule, drawingRuntime } from './module.js';
 import { operationsFrom, queriesFrom } from './operations.js';

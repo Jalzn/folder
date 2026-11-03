@@ -1,4 +1,4 @@
-export interface ModuleDefinition {
+export interface MigrationModuleDefinition {
   id: string;
   migrations: URL;
   /**
@@ -7,6 +7,6 @@ export interface ModuleDefinition {
    */
   sqlFunctions?: Record<string, (value: string) => string>;
 }
-export const defineModule = (module: ModuleDefinition): ModuleDefinition => module;
+export const defineMigrationModule = (module: MigrationModuleDefinition): MigrationModuleDefinition => module;
 
-export const coreModule = defineModule({ id: 'core', migrations: new URL('./migrations/', import.meta.url) });
+export const coreModule = defineMigrationModule({ id: 'core', migrations: new URL('./migrations/', import.meta.url) });

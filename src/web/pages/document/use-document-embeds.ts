@@ -1,5 +1,5 @@
-import { type DocumentBlock, embedIds, figureNumbers } from '@tinyfold/rich-text/domain';
 import { useEffect, useMemo, useState } from 'react';
+import { type DocumentBlock, embedIds, figureNumbers } from '#rich-text/domain';
 import { embedBlock } from '../../editor/blocks/embed-blocks';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
 import { validEmbed } from '../../lib/files/sanitize-embeds';

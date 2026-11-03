@@ -1,5 +1,5 @@
-import { edit, request } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { edit, request } from '#core/application';
 import { LABEL_COLORS, LABEL_LIMITS } from '../../domain/labels.js';
 
 /** The raw name, bounded before displayName tidies it; readName checks the rest. */

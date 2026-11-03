@@ -1,5 +1,5 @@
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import type { Kysely } from 'kysely';
+import type { DocumentBlock } from '#rich-text/domain';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
 import { folderColumns, folderReference } from '../sql/folders.js';
 import { columnRank, projectColumns, projectReference } from '../sql/references.js';

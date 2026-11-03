@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from '@tanstack/react-router';
-import type { NavItem } from '@tinyfold/workspace/domain';
+import type { NavItem } from '#workspace/domain';
 import { canvasQuery, documentQuery } from '../../lib/queries';
 import { parseProjectPath } from '../../navigation/paths';
 

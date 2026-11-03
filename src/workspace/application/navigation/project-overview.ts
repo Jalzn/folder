@@ -1,4 +1,4 @@
-import { civilWindowStart, isPastDue } from '@tinyfold/core/domain';
+import { civilWindowStart, isPastDue } from '#core/domain';
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
 import { overviewTasks } from '../../domain/overview-tasks.js';
 import { requireProject } from '../projects/project-lookups.js';

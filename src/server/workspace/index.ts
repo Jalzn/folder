@@ -1,5 +1,5 @@
-import type { Database } from '@tinyfold/core/infra';
-import type { TimeZoneSource } from '@tinyfold/workspace/composition';
+import type { Database } from '#core/infra';
+import type { TimeZoneSource } from '#workspace/composition';
 import { toolsFromQueries } from '../mcp/workspace-tools/index.js';
 import { composeWorkspace } from './operations.js';
 import { routerFromOperations } from './rpc.js';

@@ -1,5 +1,5 @@
-import { readIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { readIsoInstant } from '#core/domain';
 import type { Project } from '../../lib/types';
 import { emptyStateKind } from './empty-state-kind';
 

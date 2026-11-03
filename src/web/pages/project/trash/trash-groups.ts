@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 import { daysAgo } from '../../../lib/dates/dates';
 import type { TrashItem } from '../../../lib/queries';
 

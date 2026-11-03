@@ -1,6 +1,6 @@
 # Texto em blocos
 
-Biblioteca pura do formato compartilhado por documentos e descrições de tarefas. A única entrada pública é `@tinyfold/rich-text/domain`. Não tem classe de módulo, banco, HTTP, React ou dependência de módulos de negócio; usa apenas regras puras públicas de `core/domain`.
+Biblioteca pura do formato compartilhado por documentos e descrições de tarefas. A única entrada pública é `#rich-text/domain`. Não tem classe de módulo, banco, HTTP, React ou dependência de módulos de negócio; usa apenas regras puras públicas de `#core/domain`. A entrada está no mapa `imports` do `package.json` da raiz; a biblioteca não tem manifesto ou configuração TypeScript próprios.
 
 Reúne blocos, validação estrutural, texto simples, IDs, checklist, trechos, incorporados e serialização/paginação Markdown. Os limites persistidos são 1 MiB e 5.000 blocos; a recuperação local usa limites próprios maiores sem ampliar o servidor. Documentos habilitam incorporados pela opção existente; descrições de tarefas continuam recusando-os. O chamador resolve os dados das entidades e fornece `EmbedResolver`: a biblioteca não consulta a persistência.
 

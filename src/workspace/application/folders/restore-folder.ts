@@ -1,6 +1,6 @@
-import { assertVersion } from '@tinyfold/core/application';
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { restoredPosition } from '@tinyfold/core/domain';
+import { assertVersion } from '#core/application';
+import type { IsoInstant } from '#core/domain';
+import { restoredPosition } from '#core/domain';
 import { MAX_PINNED } from '../../domain/project.js';
 import { workspaceErrors } from '../errors.js';
 import type { FolderLifecyclePorts, WorkspaceFlowContext } from '../ports/context.js';

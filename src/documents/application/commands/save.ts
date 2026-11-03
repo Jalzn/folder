@@ -1,5 +1,5 @@
-import { assertVersion } from '@tinyfold/core/application';
-import { documentPlainText, withBlockIds } from '@tinyfold/rich-text/domain';
+import { assertVersion } from '#core/application';
+import { documentPlainText, withBlockIds } from '#rich-text/domain';
 import type { DocumentAck } from '../../domain/index.js';
 import type { SaveDocumentInput } from '../contracts/schemas.js';
 import { requireDocument } from '../lookups.js';

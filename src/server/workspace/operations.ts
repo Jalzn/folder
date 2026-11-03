@@ -1,16 +1,16 @@
-import { BoardModule } from '@tinyfold/board';
-import { boardOperations, boardParticipant, disposeBoard } from '@tinyfold/board/composition';
-import { CreateTaskInput } from '@tinyfold/board/contracts';
-import type { Operation, TransactionScope } from '@tinyfold/core/application';
-import { createUnitOfWork, type Database } from '@tinyfold/core/infra';
-import { DocumentsModule } from '@tinyfold/documents';
-import { disposeDocuments, documentsOperations, documentsParticipant } from '@tinyfold/documents/composition';
-import { DrawingsModule } from '@tinyfold/drawings';
-import { disposeDrawings, drawingsOperations, drawingsParticipant } from '@tinyfold/drawings/composition';
-import { previewShowsStoredScene } from '@tinyfold/drawings/domain';
-import { ProjectsModule } from '@tinyfold/projects';
-import { disposeProjects, projectsOperations, projectsParticipant } from '@tinyfold/projects/composition';
-import { WorkspaceModule } from '@tinyfold/workspace';
+import { BoardModule } from '#board';
+import { boardOperations, boardParticipant, disposeBoard } from '#board/composition';
+import { CreateTaskInput } from '#board/contracts';
+import type { Operation, TransactionScope } from '#core/application';
+import { createUnitOfWork, type Database } from '#core/infra';
+import { DocumentsModule } from '#documents';
+import { disposeDocuments, documentsOperations, documentsParticipant } from '#documents/composition';
+import { DrawingsModule } from '#drawings';
+import { disposeDrawings, drawingsOperations, drawingsParticipant } from '#drawings/composition';
+import { previewShowsStoredScene } from '#drawings/domain';
+import { ProjectsModule } from '#projects';
+import { disposeProjects, projectsOperations, projectsParticipant } from '#projects/composition';
+import { WorkspaceModule } from '#workspace';
 import {
   calendarOf,
   disposeWorkspace,
@@ -22,7 +22,7 @@ import {
   workspaceOperationsFrom,
   workspaceReader,
   workspaceSourceTaskOperation,
-} from '@tinyfold/workspace/composition';
+} from '#workspace/composition';
 
 export type { Operation };
 export function composeWorkspace(

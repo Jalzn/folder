@@ -1,4 +1,4 @@
-import { AppError } from '@tinyfold/core/application';
+import { AppError } from '#core/application';
 import { TASK_LIMITS } from '../domain/tasks.js';
 export const boardErrors = {
   columnMissing: () => new AppError('NOT_FOUND', 'A coluna não está disponível.'),

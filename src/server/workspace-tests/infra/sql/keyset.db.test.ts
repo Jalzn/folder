@@ -1,7 +1,7 @@
-import { afterKeyset, tables } from '@tinyfold/core/infra';
-import { useTempDatabase } from '@tinyfold/core/testing';
 import { sql } from 'kysely';
 import { expect, it } from 'vitest';
+import { afterKeyset, tables } from '#core/infra';
+import { useTempDatabase } from '#core/testing';
 
 type Row = { rank: number; edited: string; type: number; id: string };
 const temp = useTempDatabase([]);

@@ -1,4 +1,4 @@
-import { operation } from '@tinyfold/core/application';
+import { operation } from '#core/application';
 import { resolveEmbeds } from '../../application/embeds/resolve-embeds.js';
 import type { ReadingContext } from '../../application/reading/ports.js';
 import { ResolveEmbedsInput } from '../../application/schemas/embeds.js';

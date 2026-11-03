@@ -1,4 +1,4 @@
-import { ListProjectsInput } from '@tinyfold/workspace/contracts';
+import { ListProjectsInput } from '#workspace/contracts';
 import { keysetJsonResult } from './paged-result.js';
 import type { AgentQueries } from './queries.js';
 import { defineTool, readOnlyAnnotations } from './types.js';

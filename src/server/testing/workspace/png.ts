@@ -1,4 +1,4 @@
-import { crc32 } from '@tinyfold/drawings/domain';
+import { crc32 } from '#drawings/domain';
 
 export interface PngHeaderOptions {
   bitDepth?: number;

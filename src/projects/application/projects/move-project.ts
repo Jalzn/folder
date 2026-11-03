@@ -1,5 +1,5 @@
-import { renumber } from '@tinyfold/core/application';
-import { reorderById } from '@tinyfold/core/domain';
+import { renumber } from '#core/application';
+import { reorderById } from '#core/domain';
 import type { Project } from '../../domain/project-models.js';
 import { workspaceErrors } from '../errors.js';
 import type { ProjectsContext } from '../ports/context.js';

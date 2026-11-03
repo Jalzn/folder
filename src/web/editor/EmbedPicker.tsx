@@ -1,9 +1,9 @@
 import { KEYS } from '../shell/keyboard';
 import './embed-picker.css';
-import { nameKey } from '@tinyfold/core/domain';
-import type { EmbedKind } from '@tinyfold/rich-text/domain';
 import { Plus } from 'lucide-react';
 import { type RefObject, useEffect, useRef, useState } from 'react';
+import { nameKey } from '#core/domain';
+import type { EmbedKind } from '#rich-text/domain';
 import { type SearchResult, useProjects, useSearch } from '../lib/queries';
 import { displayTitle } from '../lib/types';
 import { MenuItem, MenuSection, PopoverSurface, ProjectMark, SearchableMenu } from '../ui';

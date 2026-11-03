@@ -1,5 +1,5 @@
-import type { AccessToken } from '@tinyfold/auth';
 import { useState } from 'react';
+import type { AccessToken } from '#auth';
 import { api, errorMessage } from '../../lib/api';
 import { AlertDialog, useToast } from '../../ui';
 import { reloadAccessTokens } from './access-tokens';

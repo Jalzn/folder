@@ -1,6 +1,6 @@
-import { domainIssue } from '@tinyfold/core/application';
-import { readDocumentContent } from '@tinyfold/rich-text/domain';
 import { z } from 'zod';
+import { domainIssue } from '#core/application';
+import { readDocumentContent } from '#rich-text/domain';
 export const descriptionContent = z.unknown().transform((value, ctx) => {
   try {
     return readDocumentContent(value, {}, {});

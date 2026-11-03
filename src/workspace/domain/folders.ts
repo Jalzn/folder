@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 
 /** Bounds of folders: the name, the active folders of a project, and the items a restore takes back. */
 export const FOLDER_LIMITS = {

@@ -1,4 +1,4 @@
-import { reorderById } from '@tinyfold/core/domain';
+import { reorderById } from '#core/domain';
 import { workspaceErrors } from '../errors.js';
 import type { ProjectsContext } from '../ports/context.js';
 import type { MoveFolderInput } from '../schemas/folders.js';

@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import type { BoardContext } from '../ports/context.js';
 import type { RenameColumnInput } from '../schemas/columns.js';
 import { assertColumnNameFree, readColumnName, requireActiveColumn } from './column-rules.js';

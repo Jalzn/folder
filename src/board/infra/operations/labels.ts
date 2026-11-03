@@ -1,4 +1,4 @@
-import { operation } from '@tinyfold/core/application';
+import { operation } from '#core/application';
 import { createLabel, deleteLabel, listLabels, restoreLabel, updateLabel } from '../../application/labels/index.js';
 import type { BoardContext } from '../../application/ports/context.js';
 import {

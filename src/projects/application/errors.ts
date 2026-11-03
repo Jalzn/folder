@@ -1,4 +1,4 @@
-import { AppError } from '@tinyfold/core/application';
+import { AppError } from '#core/application';
 export const workspaceErrors = {
   folderMissing: () => new AppError('NOT_FOUND', 'A pasta não está disponível.'),
   folderProjectMismatch: () => new AppError('VALIDATION', 'A pasta não é deste projeto.'),

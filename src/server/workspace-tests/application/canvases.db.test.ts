@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
-import { useTempDatabase } from '@tinyfold/core/testing';
-import { emptyCanvasScene } from '@tinyfold/drawings/domain';
-import type { Project } from '@tinyfold/projects/domain';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { coreModule, createDatabase, type Database, migrate, tables } from '#core/infra';
+import { useTempDatabase } from '#core/testing';
+import { emptyCanvasScene } from '#drawings/domain';
+import type { Project } from '#projects/domain';
 import { workspaceModule } from '../../../workspace/infra/module.js';
 import { drawingFixture } from '../../testing/workspace/canvas-scenes.js';
 import { legacyRows, migrateWorkspaceTo } from '../../testing/workspace/legacy-workspace.js';

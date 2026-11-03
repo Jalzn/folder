@@ -1,6 +1,6 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import type { IsoInstant } from '#core/domain';
+import { toIsoInstant } from '#core/domain';
 import { completedItems, completedSummary, groupCompleted, monthLabel } from './completed-groups';
 
 const task = (id: string, completedAt: IsoInstant) => ({ id, completedAt });

@@ -1,6 +1,6 @@
-import type { DocumentContent } from '@tinyfold/rich-text/domain';
 import { Slice } from '@tiptap/pm/model';
 import { describe, expect, it } from 'vitest';
+import type { DocumentContent } from '#rich-text/domain';
 import { setupBlockNoteEditor } from '../../testing/blocknote-editor';
 import { embedPaste } from './embed-paste';
 

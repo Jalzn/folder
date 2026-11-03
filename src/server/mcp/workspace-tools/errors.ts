@@ -1,5 +1,5 @@
-import { AppError } from '@tinyfold/core/application';
-import { DomainError } from '@tinyfold/core/domain';
+import { AppError } from '#core/application';
+import { DomainError } from '#core/domain';
 import type { AgentTool, AgentToolResult } from './types.js';
 
 const toolError = (message: string): AgentToolResult => ({

@@ -1,7 +1,7 @@
-import type { CanvasElement } from '@tinyfold/drawings/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
-import { checklistProgress, embedIds, isEmbedType, readDocumentContent } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
+import type { CanvasElement } from '#drawings/domain';
+import type { DocumentBlock } from '#rich-text/domain';
+import { checklistProgress, embedIds, isEmbedType, readDocumentContent } from '#rich-text/domain';
 import {
   loadScene,
   SAMPLE_DESCRIPTIONS,

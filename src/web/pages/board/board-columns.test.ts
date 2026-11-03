@@ -1,6 +1,6 @@
-import type { CivilDate } from '@tinyfold/core/domain';
-import { readCivilDate } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import type { CivilDate } from '#core/domain';
+import { readCivilDate } from '#core/domain';
 import type { ColumnSummary } from '../../lib/queries';
 import type { Task } from '../../lib/types';
 import { arrangeBoard, keyLayout, lateCount, placeOf } from './board-columns';

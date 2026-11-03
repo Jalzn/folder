@@ -1,4 +1,4 @@
-import { assertVersion } from '@tinyfold/core/application';
+import { assertVersion } from '#core/application';
 import type { TaskAck } from '../../domain/task-models.js';
 import type { BoardContext, BoardRepositories } from '../ports/context.js';
 import type { TaskRecord } from '../ports/tasks.js';

@@ -20,9 +20,11 @@ A unidade de trabalho do core reutiliza `BEGIN IMMEDIATE` e o registro idempoten
 
 A extração não alterou migrações aplicadas, nomes de tabela, gatilhos, índices ou a função `workspace_search_text`. As migrações históricas 001–007 continuam em `workspace/infra/migrations/`; as classes de módulo são independentes desse registro. Consultas agregadas podem ler várias tabelas; escritas continuam nos donos, além das cascatas e gatilhos já existentes.
 
+As definições de execução (`ModuleDefinition`, `Application` e `Project`, em `#core/application`) não aplicam migrações. Os descritores históricos usam `MigrationModuleDefinition`/`defineMigrationModule`, em `#core/infra`, e continuam sendo passados explicitamente ao executor pelo servidor. A centralização de pacotes e aliases da etapa 14 não altera o esquema nem o histórico SQLite.
+
 ## Testes de banco
 
-- **Um banco por teste:** `useTempDatabase(modules, prefix)`, de `@tinyfold/core/testing`, cria um SQLite migrado numa pasta própria na pasta temporária do sistema e o apaga depois do teste. `useWorkspaceDb({ prefix, start })`, de `src/server/testing/workspace/database.ts`, junta o serviço do workspace, no relógio de teste (`testClock`) quando há `start`. O banco real nunca entra num teste.
+- **Um banco por teste:** `useTempDatabase(modules, prefix)`, de `#core/testing`, cria um SQLite migrado numa pasta própria na pasta temporária do sistema e o apaga depois do teste. `useWorkspaceDb({ prefix, start })`, de `src/server/testing/workspace/database.ts`, junta o serviço do workspace, no relógio de teste (`testClock`) quando há `start`. O banco real nunca entra num teste.
 - **Bancos antigos:** os bancos das etapas anteriores vêm de `src/server/testing/workspace/fixtures/stage-09-*.sql` e de `src/server/testing/workspace/legacy-workspace.ts`. As fixtures não são geradas de novo.
 
 ## Gatilhos

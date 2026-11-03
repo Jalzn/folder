@@ -1,4 +1,4 @@
-import { operation } from '@tinyfold/core/application';
+import { operation } from '#core/application';
 import { listTrash } from '../../application/navigation/list-trash.js';
 import type { NavigationContext } from '../../application/navigation/ports.js';
 import type { TrashPorts, WorkspaceFlowContext } from '../../application/ports/context.js';

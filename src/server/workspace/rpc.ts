@@ -1,7 +1,7 @@
-import { authedProcedure, type Database, fileUpload } from '@tinyfold/core/infra';
-import { SaveCanvasPreviewInput } from '@tinyfold/drawings/contracts';
-import type { TimeZoneSource } from '@tinyfold/workspace/composition';
 import { z } from 'zod';
+import { authedProcedure, type Database, fileUpload } from '#core/infra';
+import { SaveCanvasPreviewInput } from '#drawings/contracts';
+import type { TimeZoneSource } from '#workspace/composition';
 import type { WorkspaceOperations } from './operations.js';
 import { type Operation, workspaceOperations } from './operations.js';
 

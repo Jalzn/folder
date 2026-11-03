@@ -1,6 +1,6 @@
-import { readIsoInstant } from '@tinyfold/core/domain';
-import { pageText } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
+import { readIsoInstant } from '#core/domain';
+import { pageText } from '#rich-text/domain';
 import { documentCursor, readDocumentCursor, readSearchCursor, searchCursor } from './paging.js';
 
 describe('text pages', () => {

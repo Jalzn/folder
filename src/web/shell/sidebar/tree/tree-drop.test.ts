@@ -1,6 +1,6 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
-import type { NavFolder, NavItem } from '@tinyfold/workspace/domain';
 import { describe, expect, it } from 'vitest';
+import { toIsoInstant } from '#core/domain';
+import type { NavFolder, NavItem } from '#workspace/domain';
 import { type DragSource, dropResult, dropSpotAt, dropsIntoFolder } from './tree-drop';
 import { treeRows } from './tree-rows';
 

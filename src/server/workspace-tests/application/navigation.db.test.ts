@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { INITIAL_COLUMN_IDS } from '@tinyfold/board/domain';
-import type { Database } from '@tinyfold/core/infra';
-import type { Project } from '@tinyfold/projects/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '#board/domain';
+import type { Database } from '#core/infra';
+import type { Project } from '#projects/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 import { request } from '../../testing/workspace/builders.js';
 import { drawingFixture } from '../../testing/workspace/canvas-scenes.js';
 import { useWorkspaceDb } from '../../testing/workspace/database.js';

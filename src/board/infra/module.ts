@@ -1,6 +1,6 @@
-import type { EventDraft, RuntimeModule, TransactionScope } from '@tinyfold/core/application';
-import { bindOperation, operation } from '@tinyfold/core/application';
-import { createEventChannel, type SqliteUnitOfWork } from '@tinyfold/core/infra';
+import type { EventDraft, TransactionScope } from '#core/application';
+import { bindOperation, defineModule, operation } from '#core/application';
+import { createEventChannel, type SqliteUnitOfWork } from '#core/infra';
 import type { Calendar } from '../application/calendar.js';
 import type { BoardEvent } from '../application/contracts/events.js';
 import type { BoardContext, BoardRepositories } from '../application/ports/context.js';
@@ -192,28 +192,23 @@ function runtime(dependencies: BoardDependencies) {
   };
 }
 
-const runtimes = new WeakMap<BoardModule, ReturnType<typeof runtime>>();
-export class BoardModule implements RuntimeModule<object, object, BoardEvent> {
-  readonly id = 'board';
-  readonly commands;
-  readonly queries;
-  readonly events;
-  constructor(dependencies: BoardDependencies) {
-    const built = runtime(dependencies);
-    runtimes.set(this, built);
-    const api = boardApi(built.operations);
-    this.commands = api.commands;
-    this.queries = { ...api.queries, tasks: { ...api.queries.tasks, ...built.agentQueries } };
-    this.events = built.channel.source;
-  }
-}
-function runtimeOf(module: BoardModule) {
-  const found = runtimes.get(module);
-  if (!found) throw new Error('Unknown board module.');
-  return found;
-}
-export const boardParticipant = (module: BoardModule, scope: TransactionScope) => runtimeOf(module).participant(scope);
-export const boardOperations = (module: BoardModule) => runtimeOf(module).operations;
-export const disposeBoard = (module: BoardModule) => runtimeOf(module).channel.dispose();
+const definition = defineModule({
+  id: 'board',
+  setup: runtime,
+  api: (state) => {
+    const api = boardApi(state.operations);
+    return {
+      commands: api.commands,
+      queries: { ...api.queries, tasks: { ...api.queries.tasks, ...state.agentQueries } },
+      events: state.channel.source,
+    };
+  },
+});
 
-export const boardReader = (module: BoardModule, scope: TransactionScope) => runtimeOf(module).reader(scope);
+export class BoardModule extends definition.Module {}
+
+export const boardParticipant = (module: BoardModule, scope: TransactionScope) =>
+  definition.stateOf(module).participant(scope);
+export const boardOperations = (module: BoardModule) => definition.stateOf(module).operations;
+export const disposeBoard = (module: BoardModule) => definition.stateOf(module).channel.dispose();
+export const boardReader = (module: BoardModule, scope: TransactionScope) => definition.stateOf(module).reader(scope);

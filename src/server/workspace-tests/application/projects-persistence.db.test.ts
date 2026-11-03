@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { coreModule, type Database } from '@tinyfold/core/infra';
-import { useTempDatabase } from '@tinyfold/core/testing';
-import type { Project } from '@tinyfold/projects/domain';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { coreModule, type Database } from '#core/infra';
+import { useTempDatabase } from '#core/testing';
+import type { Project } from '#projects/domain';
 import { workspaceModule } from '../../../workspace/infra/module.js';
 import { testFolder } from '../../testing/workspace/folders.js';
 import { testProject } from '../../testing/workspace/projects.js';

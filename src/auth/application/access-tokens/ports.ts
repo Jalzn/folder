@@ -1,4 +1,4 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
+import type { IsoInstant } from '#core/domain';
 import type { AccessTokenScope } from '../../domain/access-token.js';
 import type { TokenSecrets } from '../token-secrets.js';
 

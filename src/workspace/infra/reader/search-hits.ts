@@ -1,5 +1,5 @@
-import { afterKeyset } from '@tinyfold/core/infra';
 import { type Kysely, type RawBuilder, sql } from 'kysely';
+import { afterKeyset } from '#core/infra';
 import type { SearchHit, SearchQuery } from '../../application/reading/read-models.js';
 import { searchTypeRankOf } from '../../domain/list-order.js';
 import { folderColumns, folderReference } from '../sql/folders.js';

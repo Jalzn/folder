@@ -2,7 +2,7 @@ import { createORPCClient } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import type { RouterClient } from '@orpc/server';
 import { QueryClient } from '@tanstack/react-query';
-import type { AppRouter } from '@tinyfold/server/router';
+import type { AppRouter } from '#server/router';
 import { isSessionError } from './errors';
 import { keys } from './queries/keys';
 import { sessionExpired } from './session-events';

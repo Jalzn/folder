@@ -1,4 +1,4 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
+import { toIsoInstant } from '#core/domain';
 import { renewalIntervalMs, sessionLifetimeMs } from '../domain/index.js';
 import type { AuthContext } from './ports.js';
 

@@ -1,6 +1,6 @@
 import { useLocation } from '@tanstack/react-router';
-import { toIsoInstant } from '@tinyfold/core/domain';
 import { useEffect, useRef } from 'react';
+import { toIsoInstant } from '#core/domain';
 import { recordPath, recordScroll } from './last-location';
 import { loadNavState, saveNavState } from './nav-store';
 import { parseProjectPath } from './paths';

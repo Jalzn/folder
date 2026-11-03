@@ -1,5 +1,5 @@
-import { INITIAL_COLUMN_IDS } from '@tinyfold/board/domain';
 import { describe, expect, it } from 'vitest';
+import { INITIAL_COLUMN_IDS } from '#board/domain';
 import { paragraph, request, useAgentTools } from '../../testing/workspace/agent-tools.js';
 import { drawingFixture } from '../../testing/workspace/canvas-scenes.js';
 

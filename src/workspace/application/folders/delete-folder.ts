@@ -1,5 +1,5 @@
-import { assertVersion } from '@tinyfold/core/application';
-import type { IsoInstant } from '@tinyfold/core/domain';
+import { assertVersion } from '#core/application';
+import type { IsoInstant } from '#core/domain';
 import { FOLDER_LIMITS } from '../../domain/folders.js';
 import { MAX_PINNED } from '../../domain/project.js';
 import type { FolderItem, FolderLifecyclePorts, WorkspaceFlowContext } from '../ports/context.js';

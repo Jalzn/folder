@@ -10,7 +10,9 @@
 
 A composição está em `src/server/workspace/`: cria as cinco classes, seleciona explicitamente as portas e as liga pelo escopo da unidade de trabalho. `createWorkspace` fornece `router`, `service`, `tools` e `files`; scripts e testes usam `createWorkspaceService` do servidor. No RPC, `workspace.createTask` conserva o schema e a entrada completa: o ramo com origem passa pelo coordenador e o sem origem pelo board. Tarefa/origem, pasta/itens, purge/origens e lixeira mista usam uma transação e um registro idempotente, com rollback conjunto. Participantes expiram ao fim do callback.
 
-`.` exporta a classe e o descritor histórico `workspaceModule`; `./domain` contém regras e projeções puras; `./contracts`, schemas/resultados/eventos; `./composition`, montagem e leitores para o servidor. Outros módulos não importam workspace. Os arquivos de migração 001–007 e a função SQL `workspace_search_text` permanecem registrados com o ID `workspace`, sem renomear tabelas nem alterar migrações aplicadas.
+`#workspace` expõe a classe e o descritor histórico `workspaceModule`; `#workspace/domain` contém regras e projeções puras; `#workspace/contracts`, schemas/resultados/eventos; `#workspace/composition`, montagem e leitores para o servidor. As entradas ficam no `package.json` da raiz; outros módulos de negócio não importam workspace.
+
+`WorkspaceModule` estende a classe gerada por uma definição privada `defineModule`, de `#core/application`, com API pública e estado por instância. O descritor histórico usa `defineMigrationModule`, de `#core/infra`: arquivos de migração 001–007 e a função SQL `workspace_search_text` permanecem registrados com o ID `workspace`, sem renomear tabelas nem alterar migrações aplicadas.
 
 ## Regras dos fluxos
 

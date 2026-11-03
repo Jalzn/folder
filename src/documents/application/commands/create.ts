@@ -1,4 +1,4 @@
-import { documentPlainText, withBlockIds } from '@tinyfold/rich-text/domain';
+import { documentPlainText, withBlockIds } from '#rich-text/domain';
 import type { DocumentAck } from '../../domain/index.js';
 
 import type { CreateDocumentInput } from '../contracts/schemas.js';

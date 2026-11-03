@@ -1,4 +1,4 @@
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
+import type { CivilDate, IsoInstant } from '#core/domain';
 /**
  * Where a task was created. A document deleted for good leaves `documentId` null, and the source
  * keeps the title the document had then.

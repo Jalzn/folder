@@ -1,4 +1,4 @@
-import type { JsonValue } from '@tinyfold/core/domain';
+import type { JsonValue } from '#core/domain';
 
 export interface DocumentBlock {
   id?: string;

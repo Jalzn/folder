@@ -1,4 +1,4 @@
-import { bindOperation, operation } from '@tinyfold/core/application';
+import { bindOperation, operation } from '#core/application';
 import { createFolder } from '../application/folders/create-folder.js';
 import { listFolders } from '../application/folders/list-folders.js';
 import { moveFolder } from '../application/folders/move-folder.js';

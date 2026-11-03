@@ -1,5 +1,5 @@
-import type { IsoInstant } from '@tinyfold/core/domain';
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import type { IsoInstant } from '#core/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 
 export interface DocumentSummary {
   id: string;

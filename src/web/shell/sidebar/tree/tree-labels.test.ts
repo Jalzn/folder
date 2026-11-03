@@ -1,5 +1,5 @@
-import { toIsoInstant } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
+import { toIsoInstant } from '#core/domain';
 import { folderLabel, itemLabel, moreLabel } from './tree-labels';
 import type { FolderNode, ItemNode } from './tree-rows';
 

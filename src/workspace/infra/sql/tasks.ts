@@ -1,4 +1,4 @@
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import type { DocumentBlock } from '#rich-text/domain';
 import { taskLabels } from './task-labels.js';
 import { hydrateTaskSource, taskChecklist } from './task-source.js';
 export const taskSummaryColumns = [

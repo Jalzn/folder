@@ -1,6 +1,6 @@
 import { serve } from '@hono/node-server';
-import { createAuthService } from '@tinyfold/auth';
-import { cleanupMutations, createDatabase, migrate } from '@tinyfold/core/infra';
+import { createAuthService } from '#auth';
+import { cleanupMutations, createDatabase, migrate } from '#core/infra';
 import { createApp } from './app.js';
 import { readConfig } from './config.js';
 import { modules } from './modules.js';

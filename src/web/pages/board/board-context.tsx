@@ -1,5 +1,5 @@
-import type { CivilDate } from '@tinyfold/core/domain';
 import { createContext, useContext } from 'react';
+import type { CivilDate } from '#core/domain';
 import type { LabelSummary } from '../../lib/queries';
 import type { ElementRefs } from '../../ui';
 import type { BoardFocus } from './board-keys';

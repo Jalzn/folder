@@ -1,5 +1,5 @@
-import { id } from '@tinyfold/core/application';
 import { z } from 'zod';
+import { id } from '#core/application';
 import { NAV_SORTS } from '../../domain/navigation.js';
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
 

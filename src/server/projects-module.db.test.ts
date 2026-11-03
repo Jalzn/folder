@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { readCivilDate } from '@tinyfold/core/domain';
-import { coreModule, createUnitOfWork, tables } from '@tinyfold/core/infra';
-import { useTestDatabases } from '@tinyfold/core/testing';
-import { ProjectsModule } from '@tinyfold/projects';
-import { projectsParticipant } from '@tinyfold/projects/composition';
-import { workspaceModule } from '@tinyfold/workspace';
 import { describe, expect, it, vi } from 'vitest';
+import { readCivilDate } from '#core/domain';
+import { coreModule, createUnitOfWork, tables } from '#core/infra';
+import { useTestDatabases } from '#core/testing';
+import { ProjectsModule } from '#projects';
+import { projectsParticipant } from '#projects/composition';
+import { workspaceModule } from '#workspace';
 
 const databases = useTestDatabases([coreModule, workspaceModule], 'tinyfold-projects-module-');
 const clock = () => new Date('2026-11-03T12:00:00.000Z');

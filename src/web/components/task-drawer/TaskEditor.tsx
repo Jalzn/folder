@@ -1,6 +1,6 @@
-import { isOverdue } from '@tinyfold/board/domain';
-import { checklistProgress } from '@tinyfold/rich-text/domain';
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { isOverdue } from '#board/domain';
+import { checklistProgress } from '#rich-text/domain';
 import { useAutosaveLifecycle } from '../../lib/autosave/use-autosave-lifecycle';
 import { type ColumnSummary, type TaskWithText, useLabels } from '../../lib/queries';
 import { editableTitle, type Task, UNTITLED } from '../../lib/types';

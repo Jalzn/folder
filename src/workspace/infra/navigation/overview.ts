@@ -1,6 +1,6 @@
-import type { DocumentBlock } from '@tinyfold/rich-text/domain';
-import { documentLead } from '@tinyfold/rich-text/domain';
 import { type Kysely, sql } from 'kysely';
+import type { DocumentBlock } from '#rich-text/domain';
+import { documentLead } from '#rich-text/domain';
 import type { NavigationReader, RecentItem } from '../../application/navigation/ports.js';
 import { excerptFromStart } from '../../domain/excerpt.js';
 import type { NavItemType } from '../../domain/navigation.js';
