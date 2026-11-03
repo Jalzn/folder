@@ -1,25 +1,17 @@
+import { NewLabelRow } from './NewLabelRow';
+import { useLabelFocus } from './use-label-focus';
 import './labels.css';
 import { LABEL_LIMITS } from '@tinyfold/workspace/domain';
 import { Plus } from 'lucide-react';
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent, useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
 import { usesCommandKey } from '../../lib/platform';
 import { type LabelSummary, useLabels } from '../../lib/queries/labels';
 import { useAction } from '../../shell/writes';
-import {
-  Dialog,
-  ErrorNotice,
-  focusIsLost,
-  Spinner,
-  useElementRefs,
-  useToast,
-  useUndoLatest,
-  whenPresent,
-} from '../../ui';
+import { Dialog, ErrorNotice, focusIsLost, Spinner, useToast, useUndoLatest } from '../../ui';
 import type { LabelCommand } from './LabelMenu';
-import { type LabelFieldExit, LabelNameField } from './LabelNameField';
-import { LabelRow, type RowStep } from './LabelRow';
-import { LabelSquare } from './LabelSquare';
+import type { LabelFieldExit } from './LabelNameField';
+import { LabelRow } from './LabelRow';
 import { LABELS_FULL } from './label-text';
 import { useLabelActions } from './use-label-actions';
 
@@ -50,43 +42,11 @@ function LabelsList() {
   const actions = useLabelActions(action);
   const toast = useToast();
   const undoLatest = useUndoLatest();
-  const rows = useElementRefs<HTMLLIElement>();
-  const names = useElementRefs<HTMLButtonElement>();
-  const body = useRef<HTMLDivElement>(null);
-  const add = useRef<HTMLButtonElement>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  /** The label the new row's field created, for its focus once the field leaves. */
-  const created = useRef<string | null>(null);
   const [menu, setMenu] = useState<string | null>(null);
   const list = labels.data ?? [];
-
-  // One focus move waits at a time, and none outlives the dialog.
-  const cancelFocus = useRef<() => void>(() => undefined);
-  useEffect(() => () => cancelFocus.current(), []);
-  function focusOnce(find: () => HTMLElement | null | undefined, when: () => boolean = () => true) {
-    cancelFocus.current();
-    cancelFocus.current = whenPresent(
-      () => {
-        const element = find();
-        return element?.isConnected ? element : null;
-      },
-      (element) => {
-        if (!when()) return;
-        element.focus({ preventScroll: true });
-        element.scrollIntoView({ block: 'nearest' });
-      },
-    );
-  }
-  const focusName = (id: string) => focusOnce(() => names.get(id));
-  const focusAdd = () => focusOnce(() => add.current);
-
-  function step(from: string, to: RowStep) {
-    const at = list.findIndex((label) => label.id === from);
-    const index = { previous: at - 1, next: at + 1, first: 0, last: list.length - 1 }[to];
-    const target = list[Math.max(0, Math.min(index, list.length - 1))];
-    if (target) names.get(target.id)?.focus();
-  }
+  const { rows, names, body, add, focusOnce, focusName, focusAdd, step } = useLabelFocus(list);
 
   /**
    * Excluir at once: the focus goes to the next row's name once the row is gone, or the one before for the
@@ -120,7 +80,6 @@ function LabelsList() {
       toast(LABELS_FULL, 'error');
       return;
     }
-    created.current = null;
     setCreating(true);
   }
 
@@ -164,28 +123,17 @@ function LabelsList() {
             />
           ))}
           {creating && (
-            <li className="label-row" data-editing="">
-              <LabelSquare color={null} />
-              <LabelNameField
-                initial=""
-                label="Nome da nova etiqueta"
-                taken={others(null)}
-                onSubmit={async (name) => {
-                  created.current = (await actions.create(name)) ?? null;
-                  return created.current !== null;
-                }}
-                onDone={(exit) => {
-                  const id = created.current;
-                  created.current = null;
-                  setCreating(false);
-                  // By ↵, to the new label's row; by Esc or an empty name, back to "+ Nova etiqueta".
-                  if (exit === 'key') {
-                    if (id) focusName(id);
-                    else focusAdd();
-                  }
-                }}
-              />
-            </li>
+            <NewLabelRow
+              taken={others(null)}
+              create={actions.create}
+              onDone={(id, exit) => {
+                setCreating(false);
+                if (exit === 'key') {
+                  if (id) focusName(id);
+                  else focusAdd();
+                }
+              }}
+            />
           )}
         </ul>
       ) : (
