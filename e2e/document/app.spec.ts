@@ -61,6 +61,35 @@ test(
     await expect(editor).toContainText('const idea');
     await page.reload();
     await expect(editor).toContainText('Escrever o plano');
+    // The imported code must remain readable on its actual surface in either theme.
+    const code = editor.locator('[data-content-type="codeBlock"] code');
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme });
+      await expect(page.locator('html')).toHaveAttribute('data-theme', colorScheme);
+      await expect
+        .poll(() =>
+          code.evaluate((element) => {
+            const block = element.closest('[data-content-type="codeBlock"]');
+            if (!block) throw new Error('Code block is missing.');
+            const luminance = (rgb: string) => {
+              const values = rgb
+                .match(/\d+(?:\.\d+)?/g)
+                ?.slice(0, 3)
+                .map(Number);
+              if (values?.length !== 3) throw new Error(`Unsupported computed color: ${rgb}`);
+              return values.reduce((sum, value, index) => {
+                const channel = value / 255;
+                const linear = channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+                return sum + linear * ([0.2126, 0.7152, 0.0722][index] ?? 0);
+              }, 0);
+            };
+            const text = luminance(getComputedStyle(element).color);
+            const surface = luminance(getComputedStyle(block).backgroundColor);
+            return (Math.max(text, surface) + 0.05) / (Math.min(text, surface) + 0.05);
+          }),
+        )
+        .toBeGreaterThanOrEqual(4.5);
+    }
     await page.goto(original);
     await expect(editor).toContainText('deve permanecer intacto');
   },

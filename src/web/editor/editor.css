@@ -55,6 +55,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--raised-1);
+  color: var(--text);
 }
 /* Keep equations on the document surface when BlockNote selects their preview. */
 .block-editor [data-content-type="mathBlock"].ProseMirror-selectednode > *::after,
