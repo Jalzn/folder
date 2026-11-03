@@ -1,6 +1,45 @@
 # Tinyfold — Validação local
 
-Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. Nenhuma publicação na nuvem foi realizada.
+Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. A publicação anterior no Railway está registrada adiante; esta retomada de refatoração não realizou deploy.
+
+## Fechamento da etapa 12
+
+Executado em 2026-11-03, partindo de `5ead3a3`, no ramo `refactor/complete-stage12`, worktree `../tinyfold-refactor`. Conclui as pendências obrigatórias de backend, web, CSS e testes. Processo aprovado: commits por assunto, `check` por commit de código, `test:db` no backend e build/E2E completos por lote. Revisão integrada pelo agente, sem delegação nesta retomada.
+
+| Verificação executada | Resultado final |
+| --- | --- |
+| `mise exec -- pnpm check` | Lint e tipos aprovados; 1.155 módulos sem violações de dependência; 745 unitários em 123 arquivos |
+| `mise exec -- pnpm test:db` | 287 testes em 47 arquivos, 15,19 s, SQLite temporário; esquema, RPC e operações idempotentes aprovados |
+| `mise exec -- pnpm build` | Aprovado; permanece o aviso conhecido de chunks grandes |
+| E2E completo no Google Chrome | 227 aprovados em 8 min 1,6 s: 138 desktop, 48 Pixel 7 e 41 de timing; zero falhas, intermitentes, pulados e retries |
+| `VISUAL_BASELINE_DIR=… mise exec -- pnpm e2e:visual` | Quatro combinações de tema/dispositivo aprovadas em 22,7 s, dez capturas cada |
+| Revisão de migrações e contratos | Nenhuma migração aplicada, snapshot de esquema ou contrato existente alterado nesta retomada |
+| `git diff --check` | Aprovado |
+
+Também passaram os portões completos intermediários: 220 E2E ao fechar backend (6,3 min), fundações da web (7,4 min) e funcionalidades da web (7,2 min). O fechamento acrescentou sete casos: dois de peso da descrição, dois de medidas dos filtros, dois de estilo dos campos de nome e um de busca de projetos. A lista anterior de 220 cenários foi conservada. A rodada final levou mais tempo com banco, visual e validação no Herdr simultâneos; a rodada anterior do isolamento levou 6 min 30,9 s. O ponto inicial documentado da etapa levava 23,3 min, com execução sequencial e casos incompatíveis registrados como pulados. As cinco repetições de estabilidade do isolamento estão na seção histórica abaixo; não foram repetidas sem motivo neste fechamento.
+
+**Revisão integrada.** Conferidos contratos e acks compactos, ordem dentro das transações, nomes de operação e idempotência, limites de conteúdo/MCP/HTTP, visibilidade na lixeira, instante/fuso do seed, contexto único do workspace, hidratação SQL e fronteiras de importação. Na web, a revisão focou closures, identidade das ações, presença de comandos opcionais, efeitos passivos, propriedade dos callbacks do documento, criação de tarefas, foco, temporização de teclado e herança/especificidade do CSS. O relógio do seed e a cor do risco de checklist foram corrigidos durante o movimento; os portões posteriores passaram. Sem achados de regressão pendentes na revisão final.
+
+**Correções aprovadas da onda 6.** Os testes falharam antes nos valores esperados: peso escuro 450 em vez de 400, busca de projetos sensível à ordem das palavras, medidas diferentes nos quatro filtros e peso/cor inconsistentes nos três campos de nome. Depois dos commits `a2f342d`, `109978e`, `c5993d6` e `5110e1a`, passaram os sete casos focados e a suíte completa. Ajustes nos roteiros de teste esperam a opção filtrada e acionam o nome da etiqueta pelo teclado; não mudaram o comportamento do produto.
+
+**Retratos visuais.** A referência anterior à refatoração ficou em `/tmp/tinyfold-stage12-visual-reference`; as 40 capturas permaneceram equivalentes durante os movimentos mecânicos. A referência com as quatro mudanças aprovadas ficou em `/tmp/tinyfold-stage12-approved-reference`. Foram inspecionadas as diferenças nas regiões de filtros e descrição. `maxDiffPixels: 0` e limiar de cor 0,05 toleram apenas diferenças pequenas de antialiasing abaixo desse limiar; não se afirma identidade byte a byte. O horário visual é fixo (`2026-11-03T11:00:00Z`) no navegador, seed e servidor, com timers reais. A captura móvel do seletor de etiquetas precisava esperar o posicionamento: as referências anteriores fotografavam o popover ainda transparente. As duas imagens foram corrigidas e inspecionadas; o último portão passou nas 40 cenas. As referências são locais à máquina e não entram no Git.
+
+**Chrome dentro do Herdr.** Usado o Content Viewer, sessão `herdr-preview-tinyfold-final`, no espaço Tinyfold, com servidor em `http://localhost:63175` e SQLite temporário com seed. O agente operou a página visível por `herdr-preview` e pelo CDP retornado pela própria sessão, sem lançar outro browser para essa passagem. O alvo foi trazido à frente para liberar o `requestAnimationFrame`, que estava pausado quando o preview ficava oculto. Houve inspeção das capturas em tela larga e em 390 × 844; a janela estreita não emula toque.
+
+Percursos executados:
+
+- Três cards, três figuras e sequência mista, no começo, meio e fim do documento, com intervalos de 0 e 150 ms: 18 combinações. Setas para baixo/cima atravessaram todos os itens e saíram nos parágrafos esperados.
+- Seleção estendida e reduzida com Shift, Cmd até as pontas, Page Up/Down mantendo o card, Backspace/Delete em duas etapas com Desfazer, digitação, Tab sem aninhar e colagem real. Clique após as teclas e seleção programática pelo DOM ficaram livres da proteção de deriva. Não foi usado VoiceOver ou outro leitor de tela real.
+- Filtros de projeto, pasta, etiqueta e incorporados: texto, setas, Enter, Esc, vazio e nenhum resultado. Projeto encontrou palavras fora de ordem. Pastas foram movidas e desfeitas pelo toast e por ⌘Z.
+- Campos de nome de pasta, coluna e etiqueta em tela larga/clara e estreita/escura: Enter, Esc, blur, duplicidade, peso 500 e foco de retorno. Etiqueta criada, renomeada e excluída com retorno de foco; seletor móvel visível e dentro da tela.
+- Esc fechou paleta, seletor de projetos, lateral e gaveta por camadas. N e ⌘K segurados criaram um documento só, e a digitação foi para o título novo. Nova tarefa conservou o rascunho ao cancelar o descarte e foi criada por ⌘Enter.
+- Tarefa a partir de trecho selecionado: checkbox de incorporar, P contido pela gaveta, Alt↑/Alt↓ alterando sua altura e ⌘Enter criando tarefa e incorporado. Quadro abriu o filtro por F, moveu cards com Shift+setas e consumiu `?tarefa=` abrindo a gaveta. Paleta sobre a gaveta fechou sem fechar a camada inferior.
+- Documento offline preservou texto após reload e salvou quando a rede voltou. Duas abas reais do mesmo Chrome produziram conflito e salvaram o rascunho como cópia; as duas versões persistiram após reload.
+- Markdown importado abriu outro documento; documento excluído com rascunho manteve editor, aviso e cópia/download. Desenho arquivado recusou teclado e arrastar sem emitir salvamento; o campo de arquivo ficou fora de 12 passos de Shift+Tab. Rascunho de desenho sobreviveu à falha/reload e salvou no retry; importação Excalidraw abriu outro desenho.
+
+Registros locais: `/tmp/tinyfold-herdr-manual.log`, `tinyfold-herdr-matrix.log`, `tinyfold-herdr-selection.log`, `tinyfold-herdr-controls.log`, `tinyfold-herdr-persistence.log`, `tinyfold-herdr-keys.log` e `tinyfold-herdr-finish.log`. Os roteiros assistidos tiveram expectativas ajustadas ao contrato: o seletor vazio mantém criar/nenhum resultado; F pertence ao card/coluna do quadro; movimentos com Shift são revertidos por Shift no sentido contrário, enquanto o Desfazer de pasta foi testado separadamente. Essas correções de roteiro não exigiram mudanças no produto. Capturas em `/tmp/tinyfold-herdr-*.png` foram inspecionadas. Relatórios automatizados: `/tmp/tinyfold-final-e2e.json`, `tinyfold-final-e2e.log`, `tinyfold-final-db.log`, `tinyfold-final-visual.log` e `tinyfold-final-harness-check.log`.
+
+O fechamento não inclui os quatro itens opcionais do plano nem as pendências externas de operação. Não houve acesso ao banco principal, deploy ou teste em aparelho físico.
 
 ## Etapa 12: refatoração
 
@@ -41,7 +80,7 @@ O relatório JSON do E2E confirmou a mesma lista anterior e uma execução aprov
 
 **Chrome dentro do Herdr.app:** sessão `herdr-preview-tinyfold-support`, motor Chrome confirmado, servidor e SQLite temporários com o exemplo. Conferidos login, paleta com ⌘K, criação do documento, Enter do título para o editor, texto com aspas e acentos, parágrafos, Desfazer e persistência ao recarregar. O menu `/tarefa` incorporou uma tarefa existente; ↓ saiu do card selecionado para digitar depois dele. A tarefa abriu e fechou a gaveta, e o card e o texto seguinte sobreviveram à recarga. Em 390 × 844, o documento ficou legível sem corte horizontal visível e a lateral abriu e fechou sobre a página; foi redução da janela, sem emulação de toque. Capturas do browser foram inspecionadas, sem erros de página registrados. A sessão e o servidor foram encerrados ao fim.
 
-Essa passagem cobre o lote; a matriz manual completa de teclado entre todos os incorporados continua pendente. As cinco rodadas de estabilidade de W2.11, abaixo, pertencem ao lote anterior.
+Essa passagem cobriu aquele lote; a matriz entre incorporados foi executada no fechamento, registrado acima. As cinco rodadas de estabilidade de W2.11, abaixo, pertencem ao lote anterior.
 
 ### Retomada: isolamento e paralelismo do E2E
 
@@ -84,7 +123,7 @@ A tentativa seguinte encontrou uma corrida antiga de `newItem`: ao criar a parti
 - navegação pela lateral sobreposta e leitura do documento em viewport de 390 × 844, sem corte horizontal visível; essa passagem foi uma redução da janela, sem emulação de toque;
 - inspeção das capturas do browser e ausência de erros de página registrados na sessão.
 
-Essa passagem cobre os fluxos deste lote. A matriz manual completa da etapa 12, inclusive todos os percursos de teclado entre incorporados em ritmo humano, continua pendente.
+Essa passagem cobriu os fluxos daquele lote. A matriz de incorporados e os demais percursos foram executados no [fechamento](#fechamento-da-etapa-12).
 
 ### Revisões
 
@@ -120,10 +159,9 @@ Essa passagem cobre os fluxos deste lote. A matriz manual completa da etapa 12, 
 | Teste original, com a correção, 2 × 10 vezes | 0 |
 | Sonda, com a correção, 10 vezes | Nenhuma página "Esta tarefa não está mais neste projeto." |
 
-### Pendências
+### Pendências daquela entrega
 
-- **Chrome real:** a retomada fez a passagem descrita acima no Chrome do Herdr. A matriz completa prevista, inclusive todos os percursos entre incorporados ao ritmo de uma pessoa, continua pendente.
-- **Arnês de testes:** a adoção direta das fixtures restantes, agrupamento por área e relógio falso estão no [resultado da etapa](etapas/12-refatoracao.md#para-depois).
+A matriz assistida no Chrome, as fixtures restantes, o agrupamento por área, relógios e retratos visuais foram concluídos no [fechamento da etapa 12](#fechamento-da-etapa-12). As limitações de leitor de tela real e aparelho físico estão explicitadas ali.
 
 ## Preparação para Railway e Cloudflare
 

@@ -10,7 +10,7 @@ O planejamento segue o formato do Orbis: produto, arquitetura, stack, identidade
 4. Atualizar documentação e registrar mudanças de decisão.
 5. Marcar conclusão somente com os critérios atendidos.
 
-Quando houver remoto, propor uma branch e PR por entrega, Conventional Commits e integração com CI verde, como no Orbis. Conta do GitHub, remoto, proteção de branch e implantação ainda não foram configurados.
+Quando houver remoto, propor uma branch e PR por entrega, Conventional Commits e integração com CI verde, como no Orbis. O repositório ainda não tem remoto nem CI remoto configurado; a implantação Railway está documentada separadamente.
 
 ## Verificação
 
@@ -25,7 +25,7 @@ Quando houver remoto, propor uma branch e PR por entrega, Conventional Commits e
 
 Os specs importam `test` de `e2e/fixtures.ts`. Cada worker tem processo Node, conta, porta disponível e arquivo SQLite próprios. O processo recebe SIGTERM e encerra antes de apagar seu diretório temporário; uma falha na inicialização não permite usar outro serviço que esteja na porta. Não há servidor de desenvolvimento reutilizado, e `E2E_PORT` deixou de ser necessário.
 
-`signIn` autentica sem criar projetos; `login` abre um projeto novo para cada cenário, preservando as entradas pela interface. As fixtures `api` e `project` oferecem o cliente RPC tipado e um projeto criado pela API. O login independente continua criando outra sessão da mesma conta para os cenários de conflito. Cookies só são reutilizados na mesma origem. O exemplo usa a opção `sample` da fixture e o mesmo ciclo de encerramento.
+`test` ativa automaticamente a fixture `project`, que usa a API pública tipada e abre um projeto novo antes de cada cenário. `isolatedTest` serve aos casos que controlam sua preparação, como o exemplo (`sample: true`). `signIn` só autentica; a sessão independente continua disponível para os conflitos. Cookies só são reutilizados na mesma origem. O exemplo usa o mesmo ciclo de encerramento do servidor.
 
 Os helpers comuns ficam em `e2e/support/`:
 
@@ -40,4 +40,10 @@ Arquivos exclusivos do desktop usam `.desktop.spec.ts`, e os exclusivos do celul
 
 A validação manual usa o Chrome do Content Viewer dentro do Herdr.app, com uma instalação temporária separada. O guia pessoal e os comandos estão em `/Users/standard/.agent-switch/docs/herdr-workspace.md`; não confundir esse browser com as sessões automáticas do Playwright.
 
-Os comandos existem e foram executados localmente; veja `docs/validacao.md`. A implementação usou três subagentes responsáveis por backend, workspace e web, com revisão cruzada e duas rodadas adversariais. Cada falha confirmada recebeu correção e nova verificação.
+`support/pace.ts` nomeia os intervalos reais que exercitam o ritmo de digitação e a deriva do Chrome. Testes de ausência de salvamento podem usar `controlledClock`; editores e interações sensíveis ao tempo continuam no relógio real. Os specs estão agrupados por área.
+
+`e2e:visual` é separado da suíte funcional: captura dez cenas em desktop e Pixel 7, nos temas claro e escuro. As referências pertencem à máquina e ficam fora do Git. Use `VISUAL_BASELINE_DIR=/caminho/absoluto mise exec -- pnpm e2e:visual`; para criar a referência do commit-base, acrescente `--update-snapshots`. Nunca atualize referências para esconder uma diferença: confira as imagens e registre a mudança aprovada. A suíte visual fixa o mesmo instante no navegador, seed e servidor, mantendo os timers reais, e espera fontes, animações e o posicionamento do popover. A comparação recusa qualquer pixel acima do limiar de cor 0,05; pequenas variações de antialiasing abaixo dele não significam identidade binária.
+
+O runner recusa um bundle anterior às fontes da web e dos domínios compartilhados; execute `build` antes de E2E. Testes de banco usam fixtures temporárias compartilhadas, com fechamento de conexões e restauração sempre em outro arquivo.
+
+Os comandos existem e foram executados localmente; veja `docs/validacao.md`. A implementação inicial usou subagentes e revisão cruzada. O fechamento da etapa 12 seguiu o processo abreviado aprovado: commits por assunto, `check` por commit de código, `test:db` nas mudanças de backend e revisão integrada, com build e E2E completos por lote. Não houve delegação nesta retomada.

@@ -1,16 +1,8 @@
 # Etapa 12 — Refatoração
 
-**Estado:** concluída parcialmente, com retomadas até 2026-11-03. Detalhada em 2026-11-02, com as [decisões do usuário](#decisões-do-usuário); o [Resultado](#resultado) diz o que entrou e o que ficou para depois.
+**Estado:** concluída localmente em 2026-11-03. As seis ondas obrigatórias e as correções aprovadas foram fechadas; os opcionais continuam fora do critério de conclusão.
 
-O plano consolida cinco revisões somente leitura de `main` (`4c185b6`), cada uma com IDs próprios:
-
-- backend core (BC-1 a BC-15): `core`, `auth` e o domínio e a aplicação do workspace;
-- infraestrutura do backend (BI-1 a BI-16): SQL, MCP, servidor e migrações;
-- fundações da web (WF-1 a WF-20): shell, `lib`, `ui`, estado e teclado;
-- funcionalidades da web (WP-1 a WP-18): editor, documento, desenho, gaveta e quadro;
-- testes, ferramentas e CSS (TT-1 a TT-19).
-
-Os relatórios completos estão na pasta de rascunho da sessão que os produziu. Esta página guarda os IDs para que cada commit aponte a sua origem. O "Resultado" e os "Desvios do plano" estão no fim.
+As tabelas de ondas e estimativas abaixo preservam o plano original. O processo efetivamente aprovado e executado está em [Critérios de pronto](#critérios-de-pronto), [Resultado](#resultado) e [Desvios](#desvios-do-plano).
 
 ## Objetivo
 
@@ -677,20 +669,22 @@ As revisões concordam nestes pontos. Eles valem para todos os commits.
 
 ## Critérios de pronto
 
-- [ ] Cada commit das seis ondas entrou na `main` com `check`, `test:db`, `build` e `e2e` verdes.
-- [ ] O retrato do esquema e o do contrato RPC e dos nomes de operação são os de B1.2 e B1.3.
-- [ ] A lista de E2E executados é a do começo da etapa, mais os testes de caracterização.
-- [ ] Cada onda passou pela revisão adversarial, e o que foi corrigido passou pelo reteste.
-- [ ] As passagens no Chrome real estão registradas, com a sessão dos incorporados ao ritmo de uma pessoa.
-- [ ] O `deps` cobre `src`, `scripts` e `e2e`, sem `warn`. O teste de convenções de CSS só tem exceções com motivo.
-- [x] O E2E roda isolado e em paralelo, e o tempo medido está na validação.
-- [ ] As 21 correções decididas entraram como commits próprios, cada uma com o seu teste.
+O processo abaixo incorpora a simplificação aprovada pelo usuário; as tabelas das ondas conservam o planejamento original.
+
+- [x] As seis ondas obrigatórias concluídas, com commits por assunto; `check` por commit de código e `test:db` nas mudanças de backend. Build e E2E completos por lote.
+- [x] Esquema, contrato RPC e nomes de operação preservados nesta retomada; os testes dos retratos passaram.
+- [x] Os 220 cenários anteriores preservados, mais sete casos das correções finais: 227 aprovados, sem pulados ou intermitentes.
+- [x] Revisão integrada do resultado, com reteste dos achados; sem revisão adversarial separada por onda, conforme a decisão de processo.
+- [x] Passagens no Chrome real do Herdr registradas, incluindo a matriz dos incorporados com pausas de 150 ms. Seleção por outro meio foi verificada via DOM; não houve ensaio com VoiceOver físico.
+- [x] `deps` cobre `src`, `scripts` e `e2e`, sem violações; exceções de CSS conservam motivos.
+- [x] E2E isolado e em paralelo, com tempos registrados; 40 retratos visuais aprovados.
+- [x] Todas as correções decididas implementadas em commits separados dos movimentos, com testes de regressão; as quatro restantes da onda 6 falharam antes e passaram depois.
 
 ## Documentação ao concluir
 
 | Documento | Atualização |
 | --- | --- |
-| `banco.md` (novo) | Os gatilhos, o que cada um garante e qual teste o cobre; as convenções de migração e o retrato do esquema |
+| `banco.md` | Os gatilhos, o que cada um garante e qual teste o cobre; as convenções de migração e o retrato do esquema |
 | `arquitetura.md` | A raiz de composição, `infra/sql/`, o item arquivado (`FiledItem`), o catálogo de erros e os códigos alinhados, a leitura da lixeira também para documentos, as camadas da web e as regras do dependency-cruiser, e o "Modelo de teclado" (WF-8) |
 | `produto.md` | O documento excluído com texto local mantém o editor, e o desenho de um projeto arquivado só lê |
 | `processo.md` e `AGENTS.md` | `e2e:smoke`, `e2e:visual`, os workers, `@timing`, a recusa do bundle velho e as fixtures |
@@ -701,165 +695,44 @@ As revisões concordam nestes pontos. Eles valem para todos os commits.
 
 ## Resultado
 
-Três levas entraram, cada uma num ramo, integradas em `refactor/integrate` e fechadas em `refactor/final-web`: o backend, as fundações da web e as funcionalidades da web. Depois da onda 1, o processo mudou a pedido do usuário (ver [Desvios](#desvios-do-plano)). Os portões e as revisões estão na [validação](../validacao.md#etapa-12-refatoração).
+O fechamento partiu de `main` em `5ead3a3`, no ramo `refactor/complete-stage12` e no worktree `../tinyfold-refactor`. A implementação anterior e as retomadas dos helpers de E2E foram preservadas. Esta retomada concluiu as pendências obrigatórias das seis ondas, incluindo a onda 6 inteira. As evidências estão em [validação](../validacao.md#fechamento-da-etapa-12).
 
-**Retomada do E2E.** A leva seguinte parte de `48bda92`, no ramo `refactor/e2e-isolation`, e reúne a preparação dos testes por assunto:
+| Área | Entrega final |
+| --- | --- |
+| Guardas e testes | Caracterização do ciclo de vida, leitura de tarefas e recusas de conteúdo; fixtures automáticas de projeto; specs agrupados; helpers de banco, servidor e backup; relógio controlado onde aplicável; ritmos reais nomeados; suíte visual de 40 capturas; teste de todas as rotas de projeto |
+| Domínio e aplicação | Modelos e portas por agregado, `FiledItem`, acks compactos, texto e ordem compartilhados, catálogos de erros, ciclo de vida de documento/desenho, casos de uso por arquivo, coleções nomeadas, paginação e validadores compartilhados com políticas preservadas; auth com porta dos segredos |
+| Infraestrutura | Uma composição `createWorkspace`, fronteiras HTTP separadas, sessão por cookie compartilhada, `infra/sql/`, hidratação de tarefas com políticas explícitas, predicados com teste de paridade, UPDATE versionado, selects estreitos, argumentos nomeados e transações sequenciais; seed por projeto |
+| Shell | Estado por assunto, regiões do layout, criação no projeto, registro comum de comandos, descritores do item aberto, comandos com publicação passiva e handlers atuais; navegação fora de rotas; bibliotecas por assunto e entradas públicas verificadas |
+| Funcionalidades | Callbacks e comandos de documento extraídos; criação ao lado; rascunho, guarda, criação e comandos de tarefa separados; propriedades compartilhadas; menu, filtro e endereço do quadro; foco e nova etiqueta; confirmação/lixeira comum; tipos, nomes e vistas auxiliares compartilhados |
+| CSS e primitivas | `ui-medium`, tokens equivalentes, tipo do editor por host, CSS por componente, `SearchableMenu`, `InlineNameField`, regras comuns das linhas da lateral, `LabelSquare`, larguras nomeadas e estados em `data-*` |
 
-- W2.2: o salvamento de documento usado em `adversarial` e `draft-isolation` tem um helper comum, que espera a resposta com o texto enviado.
-- W2.5: a navegação abre pelo modo de layout; o teste que provoca a falha do shell aciona diretamente o botão, pois a falha substitui a lateral.
-- W2.6 e W2.7: fixtures de API e projeto, sessão por origem e projeto novo em cada `login` principal. O login independente preserva a segunda sessão da mesma conta. Os specs ainda podem usar os helpers existentes, sem herdar o projeto do teste anterior.
-- W2.8: entradas e respostas RPC vêm do contrato do servidor, sem tipos de resposta escolhidos pelo teste. O servidor só ganhou o export de um tipo; seu comportamento não mudou.
-- W2.9: arquivos `.desktop.spec.ts` e tags nos arquivos mistos selecionam o dispositivo antes da execução. A lista mantém os mesmos 220 cenários por título e dispositivo; os 136 casos incompatíveis deixam de aparecer como pulados.
-- W2.10, em parte: `@smoke` seleciona oito cenários nos dois dispositivos.
-- W2.11: quatro workers, cada um com servidor, porta disponível, conta e SQLite próprios. Os 41 casos `@timing` rodam depois, em um worker. O exemplo usa o mesmo ciclo de vida com seed separado. O encerramento espera o processo antes de apagar os arquivos, inclusive quando a inicialização falha.
+As últimas diferenças aprovadas entraram isoladas: descrição escura com peso 400 (`a2f342d`), filtro de projeto por todas as palavras (`109978e`), medidas comuns dos quatro filtros (`c5993d6`) e campos de renomear com peso 500 e erro `--danger` (`5110e1a`). Somam-se às correções de backend e web já entregues e às respostas do usuário ao fim da etapa anterior.
 
-O paralelismo também revelou uma corrida do helper de criação: o editor anterior ainda visível podia receber a preparação do próximo documento. `d06a56c` faz o helper esperar a nova URL antes de devolver o controle ao teste; o cenário que expôs a falha passou 20 vezes com quatro workers. Isso muda a sincronização do teste, sem mudar o produto.
+O último portão funcional aprovou 745 unitários, 287 testes de banco e 227 E2E em 8 min 1,6 s, sem falhas, intermitentes, pulados ou retries. Os 40 retratos passaram nos dois temas e tamanhos. O Chrome do Content Viewer do Herdr foi usado em uma instalação SQLite temporária, incluindo rede, conflito entre abas, teclado e foco. Não houve deploy nesta retomada.
 
-As rodadas de estabilidade, a comparação da lista e a passagem manual pelo Chrome do Herdr estão em [validação](../validacao.md#retomada-isolamento-e-paralelismo-do-e2e).
+### Opcionais fora do fechamento
 
-**Helpers do E2E.** O lote seguinte, em `refactor/e2e-support`, parte de `4a39f18` e conclui W2.2 a W2.4:
+- **W2.12:** sharding em dois runners depende de remoto/CI, ainda ausentes. O paralelismo local já está concluído e validado.
+- **B3.34:** gerador genérico de predicados keyset não foi necessário; os cursores existentes e seus testes foram preservados.
+- **B3.35:** marcas de tipo para datas não foram introduzidas; isso ampliaria os contratos além do movimento necessário.
+- **B3.36:** a divisão obrigatória dos modelos e validadores foi feita; a reorganização opcional de todas as pastas de Markdown/canvas ficou fora.
 
-- `a950468`: nomes explícitos para os atalhos do aplicativo, do sistema e do editor, com as diferenças de plataforma concentradas em `support/keyboard.ts`;
-- `fab7698`: builders tipados para a preparação por API e falhas de rede em `support/builders.ts` e `support/network.ts`, preservando a gravação real antes de perder a resposta, os payloads e as chaves de reenvio;
-- `b870aae`: criação e escrita de documentos compartilhadas, com preenchimento ou digitação real, mantendo os preparativos de foco de cada cenário. A espera pelo texto salvo é armada antes da edição, inclusive nos marcadores de origem.
-
-Os wrappers específicos de conteúdo, seleção e foco continuam nos specs. Nenhum arquivo de produção mudou neste lote. As verificações estão em [validação](../validacao.md#helpers-de-documento-rede-e-teclado).
-
-**Guardas.**
-
-- **Lint:** o lint recusa uma chamada do Playwright sem `await`, um teste focado e a especificidade descendente no CSS, e o CI recusa `test.only`.
-- **E2E:**
-  - recusa um bundle da web mais velho que o código dele, contando a web e os domínios do workspace, do auth e do `core`;
-  - leva o servidor a um banco temporário por rodada.
-- **CSS:** a catraca de convenções recusa fonte em px, variável desconhecida e ponto de quebra fora da escala. As exceções de hoje têm motivo.
-- **Camadas:** o dependency-cruiser percorre `scripts` e `e2e` e impõe as camadas da web, com `web-lib-is-a-leaf` como erro.
-- **Retratos (backend):** o esquema, o contrato RPC e os nomes de operação.
-
-**Fundações da web.**
-
-- **Consultas:** uma fábrica de chaves (`lib/queries/keys.ts`) com `queryOptions`, e o cache mudado por auxiliares (`patchItemPlace`, `isItemPinned` e `invalidateNavigation`).
-- **Autosave:** fica em `lib/autosave/`.
-  - Um controlador sem formato padrão de rascunho.
-  - `watchPage`, com os ouvintes da página.
-  - `defineItemSession`, de que saem as sessões do documento e do desenho.
-  - O estado diz quando a última recusa foi definitiva (`refused`), e a sessão de um item na lixeira segura os envios (`hold`).
-- **Desfazer:** o protocolo tem um núcleo puro, `runUndoableChange` (`lib/undoable-change.ts`), testado sem React. Os movimentos de pasta e de projeto também passam por ele.
-- **Sessão:** a sessão vencida só se detecta no link RPC; há eventos de sessão com nome e um `signOut()`.
-- **Escritas:** `useAction`, `useUndoableChange` e as mudanças dos itens ficam em `shell/writes/`, e com isso `lib/` vira folha.
-- **Teclas:** `useLatest` nos espelhos do shell, e a tabela `KEYS` (`shell/keyboard/keys.ts`).
-- **Provedores:** `AppProvider` se divide em dono, itens novos e diálogo de projeto, com `useApp` como fachada.
-- **E2E:** os localizadores do toast e do editor de documento ficam nos auxiliares.
-
-**Funcionalidades da web.**
-
-- **Teclado dos incorporados:**
-  - `embed-keymap.ts` é uma tabela, da qual saem o mapa de teclas e as teclas seguradas;
-  - `embed-selection.ts` e `embed-targets.ts` são puros e testados no esquema do documento;
-  - `selection-drift.ts` é o único módulo que conhece a deriva do Chrome;
-  - `embed-blocks.ts` nomeia os blocos.
-- **Página do item aberto:** documento e desenho compartilham `useItemEditor`, `ItemEditorDialogs`, `HiddenFileInput` e `item-copy.ts`.
-- **Sessão:** saíram os relatos de sessão repetidos.
-
-**Correções.**
-
-- **Decididas e feitas:**
-  - backend: B3.6a, B3.14a, B3.14b, B3.16a, B3.22a, B3.22b, B3.29a e B3.31a;
-  - web: W4.6a, W4.16a, W5.7a a W5.7c, W5.8a a W5.8d e W5.11a.
-- **Da onda 6, que não entrou:** W6.2a, W6.7a, W6.7b e W6.8a.
-- **Das respostas do fim da etapa** (ver [Decisões do usuário](#decisões-do-usuário)):
-  - o mesmo padrão de nome nos três rascunhos baixados;
-  - a sessão de um item na lixeira que para de tentar salvar;
-  - a rede que volta sem reenviar uma recusa definitiva;
-  - toda frase de esquema escrita para a pessoa.
-- **Achadas pelas revisões:**
-  - o `EmbedBlockType` que a integração perdeu;
-  - a página de aviso da lixeira, que oferecia comandos de um editor ausente;
-  - a corrida da gaveta ao mudar o projeto da tarefa, a intermitência de `task-drawer.spec.ts`.
-
-### Para depois
-
-- **Backend:**
-  - B3.1 e B3.2 (tipos de item e modelos), e B3.4 e B3.5 (o catálogo de erros);
-  - BC-1 (o ciclo de vida de documento e desenho);
-  - BC-2 (nomes e ordem de pastas, colunas e etiquetas);
-  - BI-1 (a raiz de composição);
-  - BI-2 e BI-3 (`infra/sql/`);
-  - BI-9.
-  - O resto da onda 3 está em [Desvios › Backend](#backend).
-- **Web:**
-  - WF-3 (`ShellUiProvider` por assunto);
-  - W4.12 (`useCreateInProject`), W4.14 (regiões do `AppLayout` e `ShellOverlays`), W4.17 (o registro de comandos) e W4.18 (os comandos do item aberto);
-  - de WF-13: `navigation/` separado de `router/` e os subbarris do shell, com a regra de entrada;
-  - de WF-8: a seção "Modelo de teclado" e as teclas dos menus das páginas;
-  - `createBeside` (WP-6);
-  - WP-8 a WP-14 e WP-16 (a gaveta, o quadro e os slots de comandos);
-  - o resto de WP-17 e WP-18.
-- **CSS e E2E:** a onda 6; adotar diretamente as fixtures no restante dos specs; agrupar os specs por área (resto de W2.10); W2.13 (relógio do Playwright e ritmos nomeados). W2.12 continua opcional, condicionado a um remoto. Os retratos visuais W1.4 também continuam pendentes.
+Esses quatro itens eram opcionais no plano aprovado e não representam refatorações obrigatórias pendentes. Backups remotos automáticos e teste em dispositivos físicos pertencem às [pendências de operação](README.md#pendências-de-operação).
 
 ## Desvios do plano
 
-### Backend
+- **Processo aprovado:** depois da primeira onda, o usuário autorizou commits por assunto, movimentos agrupados, `check` por commit de código, `test:db` no backend e build/E2E por lote. Uma revisão integrada substituiu revisões adversariais independentes por onda. As correções de comportamento mantiveram commits próprios e testes de regressão. O fechamento foi realizado sem subagentes.
+- **Ordem e caracterização:** as entregas anteriores corrigiram comportamentos antes de todas as extrações. A retomada caracterizou os contratos já corrigidos antes de mover sua implementação. W4.0a–W4.0c são cobertos pelas tabelas de `watchPage`, `runUndoableChange` e pelos E2E de foco, lixeira e pastas, sem snapshots redundantes.
+- **Exports e contratos:** `folderName`, `folderNameKey`, `documentLead` e `EmbedBlockType` permanecem públicos pelos consumidores existentes. Os retratos de contrato incluem a entrada enviada e a transformada, e o teste de reenvio fixa a impressão digital. O esquema do workspace não inclui o auth, respeitando o limite entre módulos.
+- **Slots:** a primeira tentativa de `useStableHandlers`/`useCommandSlot` foi retirada na revisão anterior. A implementação final mantém presença real de comandos opcionais, leitura atual das funções e publicação passiva, com teste de identidade/ausência e E2E de timing.
+- **E2E:** portas são atribuídas pelo sistema; cada worker possui banco, processo e conta. A adoção gradual de fixtures terminou: cenários comuns recebem um projeto automaticamente; o exemplo usa `isolatedTest`. O teste que criava outro documento agora espera sua URL antes de editar. As cinco rodadas de estabilidade do isolamento já haviam sido executadas; o fechamento fez um portão completo por lote.
+- **Intermitência anterior da gaveta:** a corrida ao mudar uma tarefa de projeto foi corrigida antes desta retomada, seguindo a tarefa assim que a resposta chega. O fechamento preservou a correção e passou o cenário no E2E completo.
+- **Seed:** a revisão detectou que uma chamada extra ao relógio avançável alterava datas do exemplo. O relógio de recibos idempotentes foi separado do relógio de edição do seed (`e5655e0`), preservando as datas esperadas sem alterar o relógio normal do serviço.
+- **CSS:** movimentos preservaram os pixels, incluindo tracking de inputs e a cor original do risco de checklist, sensível à ordem dos imports. Só as quatro mudanças aprovadas atualizaram a referência. Medidas sem equivalência exata ficaram nas exceções documentadas; nenhum `@layer` ou utilitário de tipografia foi introduzido.
+- **Capturas visuais:** o horário real atravessava a data relativa do exemplo. A suíte fixa navegador, seed e servidor no mesmo instante, com timers reais. O retrato móvel de etiquetas inicialmente capturava um popover ainda com opacidade zero; a espera foi corrigida e apenas essas duas referências foram recapturadas após inspeção. Isso corrigiu a cobertura do teste, sem mudança de produto.
+- **Validação assistida:** o agente operou o Chrome já aberto no Herdr por `herdr-preview` e CDP da sessão confirmada, incluindo digitação com pausas. A seleção fora do teclado foi exercitada via DOM, sem afirmar validação de um leitor de tela real. Não houve ensaio em aparelho físico nem deploy.
 
-- **Processo:** a pedido do usuário, depois da onda 1, as regras por commit mudaram para fazer a etapa em poucas horas:
-  - um commit por assunto, que pode juntar movimentos;
-  - `check` e `test:db` em cada commit, e `build` e o E2E completo uma vez, ao fim do lote;
-  - uma revisão só, do resultado combinado, sem revisão adversarial por onda.
-
-  As correções decididas continuaram em commits `fix` próprios, cada uma com um teste que falha antes e passa depois.
-- **Commits juntos:** B2.1 e B2.2 entraram num commit só. B2.2 cobriu os 11 testes de aplicação do workspace com a montagem comum; os de quadro, desenhos, persistência, migrações, MCP, auth e servidor guardam a sua.
-- **Correções antes dos movimentos:**
-  - **B3.14a** entrou logo depois da onda 1, porque W5.7a dependia dele.
-  - **Outras correções sem o seu movimento:** B3.6a, B3.14b, B3.16a, B3.22b, B3.29a e B3.31a também entraram sem os movimentos que as preparariam (catálogo de erros, ciclo de vida, atualização versionada e `infra/sql/`).
-  - **Para os movimentos que ficaram:** eles precisam manter os comportamentos novos, e não os de antes.
-- **B3.22a** entrou como `refactor(core)`, porque `visible-text.ts` vai do workspace para o `core`.
-- **B3.6a, mensagem de validação:** o commit leu a decisão 4 de forma estreita. Só as frases dos validadores de documento e de desenho chegavam à pessoa, marcadas com `domainIssue`. O usuário alargou a decisão: toda frase que um esquema escreve para a pessoa aparece, marcada com `domainMessage`, como o título, o prazo e o projeto da tarefa e os IDs incorporados. As mensagens do próprio Zod continuam com o texto genérico.
-- **B3.14b:** os testes que listavam por texto passaram a usar `search`, com as mesmas expectativas para LaTeX e acentos. Como a busca recusa uma consulta só de pontuação, as conferências de `%` e `_` viraram uma busca por "100%". Os testes que listavam a lixeira passaram a ler o próprio item.
-- **B3.16a:** o ramo da referência de ordem que sumiu também responde à referência de outro projeto, que passou de `NOT_FOUND` a `VERSION_CONFLICT`. O usuário manteve.
-- **B3.22b:** vale só na criação do dono; um dono existente guarda o nome. O usuário manteve.
-- **B1.2:** o retrato guarda o JSON Schema dos dois lados, o que o cliente envia e o que o caso de uso recebe. Além do retrato, o teste reenvia cada escrita contra um registro de pedido com a impressão digital, o que fixa o nome e a impressão digital de cada procedimento.
-- **B1.3:** o retrato cobre o `core` e o workspace. O auth fica de fora, porque o workspace não importa outro módulo.
-- **B1.5:** o teste de `backupDatabase` saiu com a função; a parte das chaves estrangeiras ficou.
-- **B1.7:**
-  - **Exports:** saíram 23 exports do domínio, não 17.
-  - **Ficaram para a web:** `folderName` e `folderNameKey`, que a web importa. `EmbedBlockType` voltou na integração, porque a onda 5 o usa.
-  - **Ficou para um teste:** `documentLead`, que um teste fixa como API pública.
-- **B1.1:** mudou o script `deps` do `package.json`, que é da web, porque é o assunto do commit.
-- **E2E ao fim do lote:** 213 passaram e 1 falhou. A falha (`task-drawer.spec.ts:145`, o foco depois de mudar o projeto pela gaveta) é intermitente: rodando só ela 5 vezes, falhou 2 no ramo; na `main` de partida (`438a9b3`), falhou 3 de 5 numa rodada e 0 de 5 noutra.
-- **Ficaram para depois:**
-  - **Onda 3:**
-    - B3.1 a B3.5 (tipos de item, modelos, texto e ordem, catálogo de erros);
-    - a separação do RPC em B3.6;
-    - B3.8 e B3.9 (coleções nomeadas);
-    - B3.10 a B3.14 (portas, buscas, ciclo de vida e um caso de uso por arquivo);
-    - B3.15 a B3.20 (paginação dos agentes, MCP e validadores);
-    - o auth (B3.21 e B3.22: a porta dos segredos e um caso de uso por arquivo);
-    - B3.23 a B3.30 (servidor, raiz de composição, `infra/sql/`, hidratação, predicados e atualização versionada);
-    - B3.31 a B3.33 e os opcionais.
-  - **Caracterização:** os testes B3.0a a B3.0c, que só valem antes desses movimentos.
-  - **Onda 2:** B2.3 a B2.6.
-
-### Web
-
-- **Processo:** o mesmo do backend.
-  - Um commit por assunto, com `pnpm check` em cada commit.
-  - O `build` e o E2E completo uma vez por lote, e o E2E dos specs tocados nos commits do fim.
-  - Uma revisão só por lote e uma revisão de equivalência do resultado integrado, no lugar da revisão adversarial por onda.
-  - As correções decididas ficaram em commits `fix`, cada uma com um teste que falha antes e passa depois.
-- **Caracterização:** W4.0a a W4.0c não viraram retratos próprios. A tabela de `watchPage` (esconder, rede e saída, em cada estado), os testes de `runUndoableChange` e os E2E de pastas e de lixeira cobrem o mesmo.
-- **Ondas 1 e 2:**
-  - W1.4 (retratos visuais) e W1.7 ficaram de fora;
-  - nas três primeiras levas, só a parte mecânica de W2.1;
-  - a retomada reúne o isolamento, o cliente tipado, a seleção por dispositivo e o smoke num commit por assunto, conforme o processo abreviado. A adoção das fixtures é gradual: `login` também cria um projeto próprio para os specs ainda não convertidos. A porta vem do sistema, em vez da fórmula prevista `E2E_PORT + 2 × índice`.
-- **WF-6:** entrou em duas partes. A fundação (o link, `isSessionError`, os eventos e `signOut`) foi da leva das fundações, e as chamadas das funcionalidades saíram na integração.
-- **WF-7:** ficou só `useLatest`. `useStableHandlers` e `useCommandSlot` entraram e saíram no mesmo lote, porque a revisão mostrou que não serviam aos lugares que os adotariam: "Nesta tarefa" oferece um comando só quando ele existe, e o ⌘↵ da gaveta escreve no slot num efeito passivo. Os slots ficam para WP-11, com o tempo de cada lugar.
-- **W4.6a:** a revisão do lote achou uma regressão do próprio commit. Uma sessão recusada de vez não tentava de novo nem depois de uma edição. Uma edição agora limpa `refused`.
-- **W4.16a:** com a regra do shell, um botão dentro do editor da descrição, como o de uma fórmula, conta como editor, e ⌥↑/⌥↓ não mudam a altura da gaveta ali. O usuário manteve.
-- **W4.22:** a regra `web-lib-is-a-leaf` virou erro no fim, depois da integração com o backend, que a criou como aviso.
-- **Integração:** cada leva passava sozinha, mas o backend tirou do domínio o export de `EmbedBlockType`, que a leva das funcionalidades passou a usar. O export voltou.
-- **E2E intermitente:**
-  - **Causa:** `task-drawer.spec.ts`, "a project change from the drawer…", falhava também na `main`, por uma corrida do aplicativo, não do teste. Entre a resposta da mudança de projeto e a gaveta seguir a tarefa, a lista do projeto antigo já não a tinha, e o editor fechava e abria de novo, perdendo o foco.
-  - **Correção:** a gaveta passa a seguir a tarefa assim que o servidor responde.
-  - **Prova:** 20 repetições sob carga, sem falha.
+As decisões de comportamento e as escolhas mantidas pelo usuário estão abaixo; nenhuma foi reaberta nesta retomada.
 
 ## Decisões do usuário
 

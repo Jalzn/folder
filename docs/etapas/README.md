@@ -13,31 +13,17 @@
 | 09 | [Pastas](09-pastas.md) | Pastas de um nível para documentos e desenhos, árvore na lateral e Desfazer com ⌘Z | Concluída localmente |
 | 10 | [Quadro e tarefa](10-quadro-tarefa.md) | Colunas configuráveis, gaveta da tarefa, descrição, prazo e etiquetas | Concluída localmente |
 | 11 | [Documento e desenho](11-documento-desenho.md) | Tarefas e desenhos incorporados, marcador de origem e novas páginas de documento e desenho | Concluída localmente |
-| 12 | [Refatoração](12-refatoracao.md) | Guardas automáticas, autosave, Desfazer, sessão, escritas e teclas da web com dono, página do item compartilhada, correções decididas e E2E isolado por worker com API tipada, helpers compartilhados e smoke | Concluída parcialmente |
+| 12 | [Refatoração](12-refatoracao.md) | Contratos, composição e SQL compartilhados; shell e funcionalidades separados; CSS/primitivas; fixtures, timing e retratos visuais; correções aprovadas | Concluída localmente |
 
 As evidências executadas estão em [validação](../validacao.md), [revisão de persistência](../revisao-workspace.md) e [revisão de backend](../revisao-backend.md).
 
 As etapas 07 a 11 seguiram essa ordem. Cada uma deixa `check`, `test:db`, `build` e `e2e` verdes antes de entrar na `main`. As cinco estão concluídas localmente.
 
-## Etapa 12: para depois
+## Etapa 12: fechamento
 
-A etapa 12 entrou em parte, com um processo mais curto que o plano ([Desvios](12-refatoracao.md#desvios-do-plano)). Ficaram para depois, com os IDs do plano:
+As seis ondas obrigatórias foram concluídas em 2026-11-03, pelo [processo abreviado aprovado](12-refatoracao.md#desvios-do-plano). O portão final passou com 745 testes unitários, 287 de banco, 227 E2E e 40 retratos visuais. A passagem assistida foi feita no Chrome dentro do Herdr, com a matriz de incorporados, foco, rascunhos e conflito entre abas; veja [validação](../validacao.md#fechamento-da-etapa-12).
 
-- **Backend:**
-  - B3.1 e B3.2 (tipos de item e modelos), e B3.4 e B3.5 (o catálogo de erros);
-  - BC-1 (o ciclo de vida de documento e desenho);
-  - BC-2 (nomes e ordem de pastas, colunas e etiquetas);
-  - BI-1 (a raiz de composição);
-  - BI-2 e BI-3 (`infra/sql/`);
-  - BI-9.
-- **Web:**
-  - WF-3 (`ShellUiProvider` por assunto);
-  - W4.12, W4.14, W4.17 e W4.18 (criar no projeto, regiões do `AppLayout`, registro de comandos e comandos do item aberto);
-  - as partes de WF-13 (`navigation/` e os subbarris do shell) e de WF-8 (o "Modelo de teclado" e as teclas dos menus das páginas);
-  - `createBeside` (WP-6);
-  - WP-8 a WP-14 e WP-16;
-  - o resto de WP-17 e WP-18.
-- **CSS e E2E:** a onda 6 (CSS e primitivas, com as correções W6.2a, W6.7a, W6.7b e W6.8a); adoção direta das fixtures nos outros specs, agrupamento por área (resto de W2.10), relógio e ritmos nomeados (W2.13) e retratos visuais (W1.4). O isolamento por worker, a API tipada, a seleção por dispositivo, o smoke e os helpers W2.2 a W2.4 entraram nas retomadas. W2.12 depende de remoto e continua opcional.
+Somente W2.12 e B3.34–B3.36, opcionais desde o plano, ficaram fora, com [motivos registrados](12-refatoracao.md#opcionais-fora-do-fechamento). Não há refatoração obrigatória pendente desta etapa.
 
 ## Pendências de operação
 

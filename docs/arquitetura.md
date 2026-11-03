@@ -25,6 +25,8 @@ Cada pasta é um pacote `@tinyfold/<nome>`. Auth e workspace seguem domínio, ap
 - o E2E importa de `src` só tipos;
 - na web, `ui/` não importa o shell, os componentes, as páginas, o editor nem as rotas, e só as rotas e outras páginas importam `pages/`. `lib/` é folha: não importa nenhuma outra camada da web, e as escritas que mostram toast ficam em `shell/writes/`.
 
+As regras `workspace-read-models-share-sql-only`, `web-shell-through-public-entries` e `web-router-only-mounts-routes` também impedem dependências entre os modelos de leitura, acesso interno ao shell e lógica de navegação nas rotas.
+
 Desde a etapa 12, `pnpm deps` percorre `src`, `scripts` e `e2e`. A exclusão do build cobre só `src/*/dist`, então as regras também enxergam os pacotes npm.
 
 Projetos, documentos, desenhos e tarefas pertencem ao mesmo módulo para preservar as regras de atribuição e gravar a criação de uma tarefa e seu vínculo documental na mesma transação. Desenhos têm contrato próprio; cenas não são blocos do editor de documentos.
@@ -40,6 +42,16 @@ Migrações SQL numeradas são executadas atomicamente e registradas com checksu
 As migrações pendentes rodam numa só transação. Desde a etapa 10, o executor (`src/core/infra/migrate.ts`) desliga as chaves estrangeiras antes dela, já que o SQLite não muda essa opção dentro de uma transação, para que uma tabela referenciada possa ser reconstruída sem apagar em cascata as linhas que apontam para ela. Antes do `COMMIT`, `foreign_key_check` recusa toda violação que não existia no começo, com a tabela e o `rowid`; as anteriores, deixadas por SQL manual, vão para um aviso no log. As chaves voltam a ser ligadas também em falha. Em troca, nenhuma cascata dispara dentro de uma migração: uma migração que apague um pai precisa apagar os filhos. Um módulo registra as funções SQL que as migrações usam (`sqlFunctions`; o workspace, `workspace_search_text`, o `searchText` do domínio).
 
 A implantação prevê uma instância e um volume local ao processo. Não há réplica nem banco compartilhado por múltiplos hosts.
+
+## Composição e contratos internos
+
+`createWorkspace(db, { clock, timeZone, logError })`, em `workspace/infra/runtime.ts`, monta os contextos e o registro de operações uma vez e fornece `router`, `service`, `tools` e `files`. O servidor usa a mesma instância para RPC, MCP e prévias. Os construtores específicos continuam disponíveis para scripts e testes. A sessão por cookie é compartilhada entre RPC e arquivos; origem, contexto RPC, códigos HTTP, cabeçalhos de segurança e SPA têm módulos próprios.
+
+O domínio separa modelos de documento, desenho, projeto, tarefa e itens. `FiledItem` representa documento ou desenho com pasta; `ItemAck` e `RestoreAck` preservam os retornos compactos de escrita. Portas são divididas por agregado e reexportadas por `application/ports.ts`; `TaskForReading` e os demais modelos de consulta ficam em `application/reading/read-models.ts`. Casos de uso de documentos, desenhos, projetos, pins e auth ficam em arquivos próprios, com ciclo de vida, nomes e ordem compartilhados onde as regras coincidem.
+
+`workspace/infra/sql/` concentra tabelas, mapeadores, referências, pastas, colunas ativas, etiquetas e origens das tarefas. Repositório e leitores compartilham hidratação e predicados SQL, com a visibilidade de itens explicitada pelo consumidor. `versionedUpdate` faz o UPDATE condicional e traduz a falta de uma linha atualizada para conflito. Os selects trazem só as colunas usadas; testes de paridade conferem `openTask` e `overdueOn` contra o domínio. `readTransaction` continua usando `BEGIN IMMEDIATE`, como a escrita; esta refatoração não mudou a reserva do escritor. Chamadas dentro dessas transações são sequenciais.
+
+Os catálogos de erros de aplicação preservam mensagens específicas da operação. Auth recebe a porta `TokenSecrets`, separando geração, hash e leitura da persistência. Os validadores de documento e desenho compartilham guardas básicas, preservando formatos, profundidades e limites próprios. Não houve alteração das migrações aplicadas nem dos retratos do esquema e contrato nesta retomada.
 
 ## Erros e contrato do RPC
 
@@ -107,7 +119,7 @@ Excluir uma pasta, com ou sem os itens, e mover um item entre pastas ou projetos
 
 No cliente, o ⌘Z desfaz a ação do toast na tela (`ToastProvider`, com a guarda `undoKeyAction`): só fora de campos editáveis, do editor, do Excalidraw e de menus e diálogos, e nunca a de um toast que já saiu. Fora de campos e editores, ⌘Z, ⇧⌘Z e Ctrl+Y nunca chegam ao navegador, cujo desfazer reverteria a última edição de um editor já sem foco. Cada Desfazer pertence à sua mudança (`lib/item-changes.ts`): uma mudança mais nova do mesmo item tira o Desfazer do toast anterior. As escritas passam uma de cada vez (`lib/write-queue.ts`), cada intenção guarda o seu ID de pedido, e uma resposta perdida é reenviada uma vez com o mesmo ID (`lib/lost-answer.ts`), que devolve a resposta guardada.
 
-Desde a etapa 12, esse protocolo tem um núcleo só, `runUndoableChange` (`lib/undoable-change.ts`), puro e testado sem React. A mudança começa quando a fila a aceita; o toast oferece o Desfazer; uma mudança mais nova o retira; e o Desfazer espera a escrita em curso e confere que ainda é a mais recente antes de rodar. `useUndoableChange` o liga ao toast, ao anunciador e às mudanças dos itens. Passam por ele as mudanças de tarefa, coluna e etiqueta e os movimentos entre pastas e projetos. Excluir pasta e arquivar projeto guardam o próprio Desfazer, que uma mudança mais nova não retira. Os ganchos de escrita da web (`useAction`, `useUndoableChange` e o provedor das mudanças) ficam em `shell/writes/`.
+Desde a etapa 12, esse protocolo tem um núcleo só, `runUndoableChange` (`lib/writes/undoable-change.ts`), puro e testado sem React. A mudança começa quando a fila a aceita; o toast oferece o Desfazer; uma mudança mais nova o retira; e o Desfazer espera a escrita em curso e confere que ainda é a mais recente antes de rodar. `useUndoableChange` o liga ao toast, ao anunciador e às mudanças dos itens. Passam por ele as mudanças de tarefa, coluna e etiqueta e os movimentos entre pastas e projetos. Excluir pasta e arquivar projeto guardam o próprio Desfazer, que uma mudança mais nova não retira. Os ganchos de escrita da web (`useAction`, `useUndoableChange` e o provedor das mudanças) ficam em `shell/writes/`.
 
 ## Quadro e tarefas
 
@@ -119,7 +131,7 @@ As regras completas estão no [README do workspace](../src/workspace/README.md);
 - **Revisão do quadro:** sobe só com o que muda a ordem (criar, mover, mudar de coluna ou de projeto, lixeira e as escritas de coluna). Prazo, etiquetas e texto não a sobem. O Desfazer move sem revisão, conferindo o lugar pela vizinha.
 - **Datas civis no fuso do dono:** `auth_owner.time_zone` recebe o fuso do navegador na primeira carga e muda no Perfil; até lá, ou se o valor gravado for inválido, vale UTC. O servidor injeta `timeZone()` no workspace e nas ferramentas MCP. Uma tarefa está atrasada a partir do dia seguinte ao prazo, fora da coluna de conclusão, e a coluna de conclusão mostra as concluídas desde o início de hoje − 13 dias.
 - **Leituras:** `projectBoard` (as tarefas do quadro, com a janela de 14 dias, `today` e `olderDone`), `listCompletedTasks` (Concluídas, por cursor `c~<conclusão>~<id>`), `listColumns`, `listLabels` e `getTask` (com a descrição, também da lixeira). `listProjects`, `projectNavigation` e `projectOverview` contam as atrasadas, e a Visão geral traz o Agora e as concluídas recentes.
-- **Gaveta da tarefa:** fica no shell (`TaskDrawerProvider` em `shell/task-drawer-state.tsx` e `DrawerRegion.tsx`), fora das páginas, então ela e o editor da descrição sobrevivem à navegação. Abaixo de 720 px, cobre a página. O texto salva por uma sessão de autosave por tarefa (`components/task-drawer/task-session.ts`), num conjunto (`lib/session-pool.ts`) que a guarda enquanto a gaveta mostra a tarefa ou enquanto o texto não está salvo; solta sem estar salva, ela tenta de novo quando a rede volta e avisa antes de sair da página.
+- **Gaveta da tarefa:** fica no shell (`TaskDrawerProvider` em `shell/task-drawer-state.tsx` e `DrawerRegion.tsx`), fora das páginas, então ela e o editor da descrição sobrevivem à navegação. Abaixo de 720 px, cobre a página. O texto salva por uma sessão de autosave por tarefa (`components/task-drawer/task-session.ts`), num conjunto (`lib/autosave/session-pool.ts`) que a guarda enquanto a gaveta mostra a tarefa ou enquanto o texto não está salvo; solta sem estar salva, ela tenta de novo quando a rede volta e avisa antes de sair da página.
 - **Quadro na web:** um widget com uma parada de Tab (`pages/board/board-keys.ts`), em que as setas andam entre cards e colunas e ⇧ e setas movem; o arrastar é HTML nativo, com o alvo calculado por `board-drop.ts`. Os movimentos passam pela fila de escritas, e cada um tira o Desfazer do toast anterior da mesma tarefa.
 
 ## Documento e incorporados
@@ -167,14 +179,14 @@ O controlador de autosave aceita snapshots e validadores de rascunho específico
 Desde a etapa 12, o autosave fica em `src/web/lib/autosave/`:
 
 - **Controlador:** `AutosaveController`, sem formato de rascunho padrão: cada sessão dá o seu leitor.
-- **Sessões de item:** `defineItemSession` (`item-session.ts`) faz as do documento e do desenho a partir de uma especificação: snapshot, armazenamento, rascunho, conferência, envio, cache, invalidações e o que vive ao lado, como as prévias do desenho. É uma sessão por instalação e item, pela vida da aba, registrada para o ponto "não salvo". A sessão do texto da tarefa fica à parte, no conjunto de `lib/session-pool.ts`.
+- **Sessões de item:** `defineItemSession` (`item-session.ts`) faz as do documento e do desenho a partir de uma especificação: snapshot, armazenamento, rascunho, conferência, envio, cache, invalidações e o que vive ao lado, como as prévias do desenho. É uma sessão por instalação e item, pela vida da aba, registrada para o ponto "não salvo". A sessão do texto da tarefa fica à parte, no conjunto de `lib/autosave/session-pool.ts`.
 - **Página:** `watchPage` (`page-listeners.ts`) dá os mesmos ouvintes a um editor aberto e a uma sessão que sobreviveu a ele.
   - Tenta de novo um salvamento que falhou quando a rede volta.
   - Avisa antes de sair com trabalho não salvo.
   - Salva quando a aba se esconde.
   - Nem a rede que volta nem a aba escondida reenviam uma recusa definitiva (`refused`, em `VALIDATION`, `DOMAIN_RULE`, `BAD_REQUEST`, `PAYLOAD_TOO_LARGE` ou `REFUSED`) enquanto o texto não muda. Uma edição a limpa. Esconder a aba também não reenvia um conflito, que a pessoa resolve.
 - **Lixeira:** um documento ou desenho na lixeira com texto local segura os envios (`hold`). Nada sai, as edições continuam no rascunho do aparelho, e a página mostra só a faixa da lixeira, com a cópia e o download. Sem nada local, a página só leva à lixeira, sem editor, sem comandos no ⌘K e sem o título na aba.
-- **Rascunho baixado:** o arquivo de um rascunho se chama `tinyfold-rascunho-<documento|desenho|tarefa>-<id>.json` (`lib/local-drafts.ts`).
+- **Rascunho baixado:** o arquivo de um rascunho se chama `tinyfold-rascunho-<documento|desenho|tarefa>-<id>.json` (`lib/autosave/local-drafts.ts`).
 
 A sessão vencida só se detecta no link RPC (`lib/api.ts`), em toda resposta 401. Os eventos da sessão têm nome em `lib/session-events.ts`, e sair passa por `signOut()` (`lib/session.ts`).
 
@@ -197,11 +209,27 @@ A SPA usa TanStack Router com endereços em português, sempre dentro de um proj
 
 O shell (`src/web/shell/`) tem a lateral de 256 px a partir de 1.100 px, com a árvore Itens (o `Tree` do React Aria, `treegrid`), em que os atalhos N, P, M e G ganham do typeahead e um arrastar leva itens entre pastas e reordena pastas, a faixa de 52 px (⌘\\) e a lateral sobre a página entre 720 e 1.100 px, e abaixo de 720 px uma barra de 44 px que recebe as ações da página. Buscar filtra na lateral; o ⌘K busca em todos os projetos e lista as ações do item aberto e os comandos. Atalhos de uma tecla não valem em campos editáveis, durante uma composição de IME nem no Excalidraw, e o Esc fecha só a camada mais recente, sem navegar. As teclas de cada atalho têm nome uma vez, em `KEYS` (`shell/keyboard/keys.ts`), que a tabela de Atalhos, a paleta, os menus e as dicas leem. Um teste confere que a tabela de Atalhos lista todas. O quadro, a gaveta e o shell usam a mesma regra de campo (`isTextTarget`): um checkbox, um rádio ou um botão só recebem um toque e deixam valer as teclas da página. Toasts mostram um por vez, o mais novo no lugar do anterior, em regiões vivas que um modal não esconde. A gaveta da tarefa fica abaixo da página, na mesma coluna de trabalho, que ela empurra para cima; é uma camada do Esc e uma região do F6, e a tarefa aberta fica no estado do shell, não no endereço.
 
+O estado do shell é dividido entre sobreposições, pedidos da lateral, página e filtros do quadro; ações estáveis e hooks por assunto evitam assinaturas desnecessárias. `ShellUiProvider` mantém uma fachada para os poucos hosts que combinam assuntos. `SidebarRegion`, `ShellOverlays` e `useSidebarMode` compõem o layout. `useCreateInProject`, o registro de comandos e os descritores do item aberto são usados pela paleta e pelos menus. `router/` só monta rotas; `navigation/` contém caminhos e navegação. `lib/` agrupa React, datas, texto, arquivos, escritas, consultas e autosave. Consumidores chegam aos componentes e ao shell por entradas públicas; módulos puros de exibição não carregam RPC ou React.
+
+## Modelo de teclado
+
+Cada alvo possui suas teclas: primeiro o campo ou editor, depois o widget ou diálogo, e por fim o comando da página ou do shell. Um evento já tratado, uma composição de IME ou uma repetição indevida não dispara outro comando. `isTextTarget` distingue escrita de texto de checkbox, rádio e botão; dentro do BlockNote e do Excalidraw, o editor conserva as teclas que lhe pertencem. N e ⌘K não repetem criações enquanto segurados; durante a criação, o texto segue para o novo título.
+
+Esc limpa primeiro a busca preenchida ou sai do campo, depois fecha uma única camada, da mais recente para a anterior. Rascunho de tarefa pede descarte; Esc na confirmação conserva o texto. Paleta, lateral sobreposta, menus e gaveta devolvem o foco ao alvo apropriado. A tabela `KEYS` fornece nomes de atalhos para execução, menus, dicas e Atalhos; funções de foco e o contrato do DOM ficam compartilhados.
+
+Comandos emprestados por editores usam `useCommandSlot`, com publicação e limpeza em efeito passivo e conferência do dono. `useStableHandlers`/`lateHandlers` preservam identidade e consultam a função mais recente, mantendo a presença real dos comandos opcionais. Isso evita oferecer um comando ausente ou executar uma closure de outro item, sem antecipar a publicação do ⌘↵ da gaveta.
+
+Nos incorporados, `embed-keymap` nomeia as teclas, `embed-selection` e `embed-targets` calculam seleção e destino, e `selection-drift` concentra o contorno do Chrome. A proteção conserva sua janela de 80 ms e só acompanha teclas confiáveis; seleção pelo ponteiro ou por outros meios fica livre. Setas, seleção estendida, remoção em duas etapas, digitação, colagem e Tab mantêm os percursos verificados no esquema e no navegador.
+
 ## Tema, tokens e fontes
 
 `src/web/styles/tokens/` (`palette.ts` e `scale.ts`) é a fonte das cores, sombras, tipos, raios, alturas e durações; `pnpm tokens` grava `tokens.css`, e o `check` falha quando o arquivo diverge, quando um valor difere de `docs/interface/prototipo/tokens.py` ou quando um par de contraste fica abaixo do exigido. O tema Sistema, Claro ou Escuro fica no dispositivo (`tinyfold:theme`); `public/theme.js` aplica `data-theme`, `color-scheme` e a cor da barra antes da primeira pintura, e `useTheme` mantém isso enquanto o aplicativo roda, inclusive entre abas. BlockNote e Excalidraw seguem o tema; a prévia guardada do desenho continua clara, e a figura de um documento a mostra com o filtro do modo escuro do Excalidraw.
 
 Inter vem completa de `inter-ui` (com `cv05`, `ss03`, `case` e `tnum`) e JetBrains Mono da Fontsource, ambas emitidas pelo Vite na própria origem, com o arquivo regular da Inter pré-carregado.
+
+`SearchableMenu` compartilha a estrutura acessível e o campo de filtro entre projetos, pastas, etiquetas e incorporados: altura 28 px, padding interno horizontal de 6 px e externo de 6 px. A busca de projetos exige todas as palavras, sem depender da ordem. `InlineNameField` compartilha campo, erro e associação acessível; cada host conserva sua política de Enter, Esc, blur e foco. Os três campos usam peso 500 e `--danger` no erro. A descrição de tarefa usa peso 400 nos dois temas.
+
+`ui-medium` nomeia o papel 500/13/20. O editor recebe tipo e tracking por variáveis do host; estilos da gaveta, etiquetas, seletor de incorporados e marcadores vivem junto aos componentes. Larguras do layout têm tokens próprios, e estados da árvore usam atributos `data-*`. Valores sem equivalência exata, inclusive a diferença histórica entre os limites 719 px e 719,98 px, permanecem documentados nas exceções das convenções de CSS.
 
 ## Editor e limites
 
