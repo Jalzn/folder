@@ -1,0 +1,17 @@
+name: Prepare browser tests
+description: Install pinned tools, build this checkout and install Google Chrome.
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 26.12.1
+        cache: pnpm
+    - run: pnpm install --frozen-lockfile
+      shell: bash
+    # Build on each runner so the stale-bundle guard checks this checkout's source timestamps.
+    - run: pnpm build
+      shell: bash
+    - run: pnpm exec playwright install --with-deps chrome
+      shell: bash

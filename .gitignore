@@ -16,3 +16,5 @@ backups/
 *.log
 .DS_Store
 /src/web/public/excalidraw/
+blob-report/
+all-blob-reports/

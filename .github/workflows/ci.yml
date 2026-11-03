@@ -2,6 +2,8 @@ name: Check Tinyfold
 on:
   push:
   pull_request:
+permissions:
+  contents: read
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -15,13 +17,62 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm test:db
-      - run: pnpm build
-      - run: pnpm exec playwright install --with-deps chrome
-      - run: pnpm e2e
+
+  e2e:
+    needs: check
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-browser-tests
+      - run: pnpm e2e --project=chrome-desktop --project=chrome-mobile --shard=${{ matrix.shard }}/2 --reporter=list,blob
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: ${{ !cancelled() }}
         with:
-          name: browser-results
-          path: |
-            test-results/
-            playwright-report/
+          name: browser-blob-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 14
+
+  timing:
+    # Timing-sensitive cases run once, in one worker, after both ordinary shards.
+    needs: e2e
+    if: ${{ !cancelled() && (needs.e2e.result == 'success' || needs.e2e.result == 'failure') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-browser-tests
+      - run: pnpm e2e --project=chrome-desktop-timing --no-deps --reporter=list,blob
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: browser-blob-timing
+          path: blob-report/
+          retention-days: 14
+
+  browser-report:
+    needs: [e2e, timing]
+    if: ${{ !cancelled() && needs.e2e.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26.12.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: browser-blob-*
+          path: all-blob-reports/
+          merge-multiple: true
+      - run: pnpm exec playwright merge-reports --reporter=html all-blob-reports/
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: browser-report
+          path: playwright-report/
+          retention-days: 14
