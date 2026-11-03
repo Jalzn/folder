@@ -3,6 +3,7 @@ import { type BrowserContext, expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { moveToTrash, newDrawing } from './support/items.js';
 import { overviewAddress, searchProject } from './support/navigation.js';
+import { abortRpc, holdRpc, loseFirstResponse } from './support/network.js';
 import { answers } from './support/rpc.js';
 import { E2E_PASSWORD, login } from './support/session.js';
 
@@ -173,16 +174,7 @@ test('draw, reload, export PNG and round-trip an editable drawing with local fon
 test('lost save response reuses the exact request and preserves newer edits', async ({ page }, info) => {
   await login(page);
   await createCanvas(page, `Antes do reenvio ${info.project.name} ${Date.now()}`);
-  let first = true;
-  const requests: string[] = [];
-  await page.route('**/rpc/workspace/saveCanvas', async (route) => {
-    requests.push(route.request().postData() ?? '');
-    if (first) {
-      first = false;
-      expect((await route.fetch()).status()).toBe(200);
-      await route.abort('failed');
-    } else await route.continue();
-  });
+  const { requests } = await loseFirstResponse(page, 'workspace/saveCanvas');
   await titleField(page).fill('Versao cujo retorno foi perdido');
   await expect(page.getByRole('button', { name: 'Tentar salvar', exact: true })).toBeVisible();
   await titleField(page).fill('Versao mais nova preservada');
@@ -200,13 +192,13 @@ test('reload recovers a failed canvas draft without losing the server scene', as
   await createCanvas(page, `Rascunho ${info.project.name} ${Date.now()}`);
   await drawRectangle(page);
   const scene = (await exportDrawing(page)).data.elements;
-  await page.route('**/rpc/workspace/saveCanvas', (route) => route.abort('failed'));
+  const restoreSaves = await abortRpc(page, 'workspace/saveCanvas');
   await titleField(page).fill('Rascunho de desenho recuperado');
   await expect(page.getByRole('button', { name: 'Tentar salvar', exact: true })).toBeVisible();
   await page.reload();
   await expect(titleField(page)).toHaveValue('Rascunho de desenho recuperado');
   expect((await exportDrawing(page)).data.elements).toEqual(scene);
-  await page.unroute('**/rpc/workspace/saveCanvas');
+  await restoreSaves();
   const retry = page.getByRole('button', { name: 'Tentar salvar', exact: true });
   await expect(retry).toBeVisible();
   await retry.click();
@@ -227,20 +219,10 @@ test('independent sessions preserve a conflicting drawing as a separate copy', a
     await login(other, { independent: true });
     await other.goto(original);
     await expect(titleField(other)).toBeVisible();
-    let announce = () => {};
-    const intercepted = new Promise<void>((resolve) => {
-      announce = resolve;
-    });
-    const held = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    await other.route('**/rpc/workspace/saveCanvas', async (route) => {
-      announce();
-      await held;
-      await route.continue();
-    });
+    const held = await holdRpc(other, 'workspace/saveCanvas');
+    release = held.release;
     await titleField(other).fill('Minha variacao do desenho');
-    await intercepted;
+    await held.intercepted;
     await saveTitle(page, 'Versao principal do desenho');
     release();
     await expect(other.getByRole('button', { name: 'Salvar meu rascunho como cópia', exact: true })).toBeVisible();
@@ -305,7 +287,7 @@ test('a duplicated canvas tab keeps its own failed draft after the original save
   }, inherited);
   await duplicate.goto(original);
   await expect(titleField(duplicate)).toBeVisible();
-  await duplicate.route('**/rpc/workspace/saveCanvas', (route) => route.abort('failed'));
+  await abortRpc(duplicate, 'workspace/saveCanvas');
   await titleField(duplicate).fill('Rascunho exclusivo da aba de desenho');
   await expect(duplicate.getByText('Não salvou', { exact: true })).toBeVisible();
   await saveTitle(page, 'Desenho confirmado na aba original');
@@ -321,7 +303,7 @@ test('a remote deletion leaves the local draft available for recovery as a copy'
   const original = await createCanvas(page, `Exclusao remota ${info.project.name} ${Date.now()}`);
   await drawRectangle(page);
   const scene = (await exportDrawing(page)).data.elements;
-  await page.route('**/rpc/workspace/saveCanvas', (route) => route.abort('failed'));
+  const restoreSaves = await abortRpc(page, 'workspace/saveCanvas');
   await titleField(page).fill('Rascunho mantido apos exclusao remota');
   await expect(page.getByText('Não salvou', { exact: true })).toBeVisible();
   const other = await context.newPage();
@@ -329,7 +311,7 @@ test('a remote deletion leaves the local draft available for recovery as a copy'
   await expect(titleField(other)).toBeVisible();
   await moveToTrash(other, 'desenho');
   await expect(other).toHaveURL(overviewAddress);
-  await page.unroute('**/rpc/workspace/saveCanvas');
+  await restoreSaves();
   await page.reload();
   await expect(titleField(page)).toHaveValue('Rascunho mantido apos exclusao remota');
   await page.getByRole('button', { name: 'Salvar meu rascunho como cópia', exact: true }).click();

@@ -10,6 +10,7 @@ import {
 import { moveToTrash, newDocument, restoreFromTrash } from './support/items.js';
 import { hostShortcut } from './support/keyboard.js';
 import { openBoard, overviewAddress } from './support/navigation.js';
+import { holdRpc, loseFirstResponse } from './support/network.js';
 import { login } from './support/session.js';
 
 async function createDocument(page: Page, title: string, text: string) {
@@ -42,20 +43,10 @@ test('two independent sessions keep both versions when a conflicting draft is sa
     await login(other, { independent: true });
     await other.goto(documentUrl);
     await expect(editor(other)).toContainText('Ideia original compartilhada.');
-    let announce = () => {};
-    const intercepted = new Promise<void>((resolve) => {
-      announce = resolve;
-    });
-    const held = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    await other.route('**/rpc/workspace/saveDocument', async (route) => {
-      announce();
-      await held;
-      await route.continue();
-    });
+    const held = await holdRpc(other, 'workspace/saveDocument');
+    release = held.release;
     await editor(other).fill('Rascunho do segundo dispositivo preservado.');
-    await intercepted;
+    await held.intercepted;
     await writeAndSave(page, 'Versao principal confirmada no primeiro dispositivo.');
     release();
     await expect(other.getByText('Este documento mudou em outro dispositivo.', { exact: true })).toBeVisible();
@@ -116,19 +107,7 @@ test('retrying after a committed task response is lost creates only one task', a
   await login(page);
   await openBoard(page);
   const title = `Reenvio unico ${info.project.name} ${Date.now()}`;
-  let loseFirstResponse = true;
-  const requests: string[] = [];
-  await page.route('**/rpc/workspace/createTask', async (route) => {
-    requests.push(route.request().postData() ?? '');
-    if (loseFirstResponse) {
-      loseFirstResponse = false;
-      const committed = await route.fetch();
-      expect(committed.status()).toBe(200);
-      await route.abort('failed');
-    } else {
-      await route.continue();
-    }
-  });
+  const { requests } = await loseFirstResponse(page, 'workspace/createTask');
   await page.getByRole('button', { name: 'Nova tarefa', exact: true }).click();
   const form = newTaskDrawer(page);
   await expect(form.getByRole('textbox', { name: 'Título da nova tarefa' })).toBeFocused();

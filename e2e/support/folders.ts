@@ -1,6 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { projectNavigation, showSidebar } from './navigation.js';
-import { rpc } from './rpc.js';
 
 /** The current project's Itens tree in the sidebar. */
 export const itemsTree = (page: Page) => projectNavigation(page).getByRole('treegrid', { name: /^Itens de / });
@@ -49,21 +48,6 @@ export async function moveToFolder(page: Page, rowName: string, target: string) 
   await expect(menu).toBeVisible();
   await menu.getByRole('menuitem', { name: new RegExp(`^${escapeRegExp(target)}`) }).click();
   await expect(menu).toBeHidden();
-}
-
-/** Creates a document by RPC, in a folder or at the root, as another device would. */
-export async function rpcDocument(page: Page, projectId: string, title: string, folderId?: string) {
-  return rpc(page, 'workspace/createDocument', {
-    requestId: crypto.randomUUID(),
-    projectId,
-    title,
-    ...(folderId ? { folderId } : {}),
-  });
-}
-
-/** Creates a folder by RPC; returns its id. */
-export async function rpcFolder(page: Page, projectId: string, name: string) {
-  return (await rpc(page, 'workspace/createFolder', { requestId: crypto.randomUUID(), projectId, name })).id;
 }
 
 /**

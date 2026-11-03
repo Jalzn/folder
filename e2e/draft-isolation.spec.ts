@@ -9,6 +9,7 @@ import {
 } from './support/document.js';
 import { newDocument } from './support/items.js';
 import { hostShortcut } from './support/keyboard.js';
+import { abortRpc } from './support/network.js';
 import { login } from './support/session.js';
 
 async function createDocument(page: Page, title: string) {
@@ -33,7 +34,7 @@ test('a duplicated tab keeps its unsaved draft when the original tab saves and t
   }, inheritedSession);
   await duplicate.goto(url);
   await expect(editor(duplicate)).toContainText('Ideia original antes de duplicar a aba.');
-  await duplicate.route('**/rpc/workspace/saveDocument', (route) => route.abort('failed'));
+  const restoreSaves = await abortRpc(duplicate, 'workspace/saveDocument');
   await editor(duplicate).fill('Rascunho exclusivo da aba duplicada.');
   await expect(duplicate.getByText('Não salvou', { exact: true })).toBeVisible();
 
@@ -42,7 +43,7 @@ test('a duplicated tab keeps its unsaved draft when the original tab saves and t
   await expect(editor(duplicate)).toContainText('Rascunho exclusivo da aba duplicada.');
   await expect(editor(page)).toContainText('Versao confirmada na aba original.');
   await duplicate.screenshot({ path: info.outputPath('rascunho-aba-duplicada.png'), fullPage: true });
-  await duplicate.unroute('**/rpc/workspace/saveDocument');
+  await restoreSaves();
   await duplicate.close({ runBeforeUnload: false });
 });
 

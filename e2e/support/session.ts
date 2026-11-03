@@ -1,6 +1,6 @@
 import { type Cookie, expect, type Page } from '@playwright/test';
+import { seedProject } from './builders.js';
 import { projectAddress } from './navigation.js';
-import { rpc } from './rpc.js';
 import { E2E_PASSWORD } from './server.js';
 
 export { E2E_PASSWORD };
@@ -15,8 +15,7 @@ const sessions = new Map<string, Cookie[]>();
 export async function login(page: Page, { independent = false } = {}) {
   await signIn(page, { independent });
   if (!independent) {
-    const project = await rpc(page, 'workspace/createProject', {
-      requestId: crypto.randomUUID(),
+    const project = await seedProject(page, {
       name: `Projeto de teste ${crypto.randomUUID()}`,
     });
     await page.goto(`/projetos/${project.id}`);

@@ -1,7 +1,8 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
+import { seedDocument, seedFolder } from './support/builders.js';
 import { toast } from './support/feedback.js';
-import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
+import { drag, folderRow, itemsTree, treeRow } from './support/folders.js';
 import { appShortcut } from './support/keyboard.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
@@ -21,8 +22,8 @@ async function intact(page: Page, title: string, level: '1' | '2') {
 async function openInFolder(page: Page) {
   await login(page);
   const projectId = await createProject(page, `Item aberto ${Date.now()}`);
-  const folder = await rpcFolder(page, projectId, 'Leituras');
-  const { id } = await rpcDocument(page, projectId, 'Artigo', folder);
+  const folder = await seedFolder(page, { projectId, name: 'Leituras' });
+  const { id } = await seedDocument(page, { projectId, title: 'Artigo', folderId: folder });
   await page.goto(`/projetos/${projectId}/documentos/${id}`);
   await intact(page, 'Artigo', '2');
   return { projectId, folder, id };

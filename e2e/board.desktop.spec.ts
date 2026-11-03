@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { card, cardMenu, closeDrawer, column, createInDrawer, drawer, openDrawer } from './support/board.js';
+import { seedTask } from './support/builders.js';
 import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
 import { appShortcut, hostShortcut } from './support/keyboard.js';
@@ -55,8 +56,7 @@ async function freshBoard(page: Page, name: string) {
 async function seedTasks(page: Page, projectId: string, titles: string[], columnId?: string) {
   const ids: string[] = [];
   for (const title of titles) {
-    const input = { requestId: crypto.randomUUID(), title, projectId, ...(columnId ? { columnId } : {}) };
-    ids.push((await rpc(page, 'workspace/createTask', input)).id);
+    ids.push((await seedTask(page, { title, projectId, ...(columnId ? { columnId } : {}) })).id);
   }
   await page.reload();
   for (const title of titles) await expect(cardTitle(page, title)).toBeVisible();

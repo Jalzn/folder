@@ -1,15 +1,8 @@
 import { expect, type Page, type Request } from '@playwright/test';
 import { test } from './fixtures.js';
+import { seedDocument, seedFolder } from './support/builders.js';
 import { toast } from './support/feedback.js';
-import {
-  createFolder,
-  folderRow,
-  itemsTree,
-  moveToFolder,
-  rpcDocument,
-  rpcFolder,
-  treeRow,
-} from './support/folders.js';
+import { createFolder, folderRow, itemsTree, moveToFolder, treeRow } from './support/folders.js';
 import { appShortcut, runCommand } from './support/keyboard.js';
 import { createProject, currentProjectId, openTrash, projectNavigation } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
@@ -94,7 +87,7 @@ test('folders are created, renamed and reordered in place, by the mouse and the 
 
 test('a new folder started by the keyboard keeps its name field: ⌘K, N and the "+" of Itens', async ({ page }) => {
   const projectId = await freshProject(page, 'Teclado');
-  await rpcDocument(page, projectId, 'Solto');
+  await seedDocument(page, { projectId, title: 'Solto' });
   await page.reload();
   const draft = itemsTree(page).getByRole('textbox', { name: 'Nome da nova pasta' });
   /** The field holds the focus with "Nova pasta" selected, so typing replaces it; nothing is created yet. */
@@ -142,12 +135,12 @@ test('a new folder started by the keyboard keeps its name field: ⌘K, N and the
 
 test('M moves an item between folders, with Desfazer and ⌘Z, and a full folder takes it unpinned', async ({ page }) => {
   const projectId = await freshProject(page, 'Mover');
-  const full = await rpcFolder(page, projectId, 'Cheia');
+  const full = await seedFolder(page, { projectId, name: 'Cheia' });
   for (let index = 1; index <= 8; index += 1) {
-    const { id } = await rpcDocument(page, projectId, `Fixado ${index}`, full);
+    const { id } = await seedDocument(page, { projectId, title: `Fixado ${index}`, folderId: full });
     await rpc(page, 'workspace/pinItem', { type: 'document', id });
   }
-  const { id: loose } = await rpcDocument(page, projectId, 'Solto fixado');
+  const { id: loose } = await seedDocument(page, { projectId, title: 'Solto fixado' });
   await rpc(page, 'workspace/pinItem', { type: 'document', id: loose });
   await page.reload();
   await expect(treeRow(page, 'Solto fixado, documento, fixado')).toBeVisible();
@@ -191,9 +184,9 @@ test('deleting a folder moves its items to the root, and Desfazer brings back th
   page,
 }) => {
   const projectId = await freshProject(page, 'Excluir');
-  const first = await rpcFolder(page, projectId, 'Primeira');
-  await rpcFolder(page, projectId, 'Segunda');
-  const { id } = await rpcDocument(page, projectId, 'Nota da primeira', first);
+  const first = await seedFolder(page, { projectId, name: 'Primeira' });
+  await seedFolder(page, { projectId, name: 'Segunda' });
+  const { id } = await seedDocument(page, { projectId, title: 'Nota da primeira', folderId: first });
   await rpc(page, 'workspace/pinItem', { type: 'document', id });
   await page.reload();
 
@@ -246,8 +239,8 @@ test('deleting a folder moves its items to the root, and Desfazer brings back th
 test('the trash names an item’s folder, and restores it to the root once the folder is gone', async ({ page }) => {
   const projectId = await freshProject(page, 'Origem');
   const project = (await page.getByRole('heading', { level: 1 }).textContent()) ?? '';
-  const folder = await rpcFolder(page, projectId, 'Antiga');
-  const { id } = await rpcDocument(page, projectId, 'Lembrete', folder);
+  const folder = await seedFolder(page, { projectId, name: 'Antiga' });
+  const { id } = await seedDocument(page, { projectId, title: 'Lembrete', folderId: folder });
   const document = await rpc(page, 'workspace/getDocument', { id });
   await rpc(page, 'workspace/deleteDocument', {
     requestId: crypto.randomUUID(),
@@ -276,9 +269,9 @@ test('the trash names an item’s folder, and restores it to the root once the f
 async function pagesProject(page: Page, name: string) {
   const projectId = await freshProject(page, name);
   const project = (await page.getByRole('heading', { level: 1 }).textContent()) ?? '';
-  const mcp = await rpcFolder(page, projectId, 'MCP');
-  const { id } = await rpcDocument(page, projectId, 'Leitura', mcp);
-  await rpcDocument(page, projectId, 'Solto');
+  const mcp = await seedFolder(page, { projectId, name: 'MCP' });
+  const { id } = await seedDocument(page, { projectId, title: 'Leitura', folderId: mcp });
+  await seedDocument(page, { projectId, title: 'Solto' });
   // The sidebar reads what came by RPC.
   await page.reload();
   return { projectId, project, mcp, leitura: id };

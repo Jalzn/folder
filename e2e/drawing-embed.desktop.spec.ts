@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
+import { seedCanvas, seedDocument } from './support/builders.js';
 import { documentEditor, embedFigure, pickEmbed, slash } from './support/document.js';
 import { newDocument } from './support/items.js';
 import { createProject } from './support/navigation.js';
@@ -45,8 +46,7 @@ const scene = {
 
 /** A drawing with the rectangle and no preview yet, as one made on another device whose tab closed early. */
 async function rpcDrawing(page: Page, projectId: string, title: string) {
-  return rpc(page, 'workspace/createCanvas', {
-    requestId: crypto.randomUUID(),
+  return seedCanvas(page, {
     projectId,
     title,
     scene,
@@ -122,8 +122,7 @@ test('dragging the figure drops none of its text into the document', async ({ pa
   await login(page);
   const projectId = await createProject(page, `Arrastar a figura ${Date.now()}`);
   const drawing = await rpcDrawing(page, projectId, 'Figura arrastada');
-  const { id } = await rpc(page, 'workspace/createDocument', {
-    requestId: crypto.randomUUID(),
+  const { id } = await seedDocument(page, {
     projectId,
     title: 'Arrastar',
     content: [

@@ -1,8 +1,10 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures.js';
 import { drawer, openDrawer } from './support/board.js';
+import { seedTask } from './support/builders.js';
 import { createProject, openBoard } from './support/navigation.js';
-import { answers, rpc } from './support/rpc.js';
+import { loseFirstResponse } from './support/network.js';
+import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The decided fix W5.11a (docs/etapas/12-refatoracao.md, "Correções decididas").
@@ -11,19 +13,12 @@ test('W5.11a: the drawer resends a lost trash answer once, with the same request
   await login(page);
   const projectId = await createProject(page, `Lixeira reenviada ${Date.now()}`);
   const title = `Tarefa da resposta perdida ${Date.now()}`;
-  await rpc(page, 'workspace/createTask', { requestId: crypto.randomUUID(), projectId, title });
+  await seedTask(page, { projectId, title });
   await openBoard(page);
   await openDrawer(page, title);
 
   // The first answer is lost on the way back, after the server applied the write.
-  const sent: string[] = [];
-  await page.route('**/rpc/workspace/deleteTask', async (route) => {
-    sent.push(JSON.parse(route.request().postData() ?? '{}').json?.requestId);
-    if (sent.length === 1) {
-      await route.fetch();
-      await route.abort('failed');
-    } else await route.continue();
-  });
+  const { inputs } = await loseFirstResponse(page, 'workspace/deleteTask');
   const answered = page.waitForResponse((response) => answers(response, 'workspace/deleteTask'));
   await drawer(page).getByRole('button', { name: 'Mais ações da tarefa' }).click();
   await page.getByRole('menuitem', { name: 'Mover para a lixeira' }).click();
@@ -32,6 +27,6 @@ test('W5.11a: the drawer resends a lost trash answer once, with the same request
 
   await expect(page.locator('.toast').filter({ hasText: 'Tarefa movida para a lixeira.' })).toBeVisible();
   await expect(drawer(page)).toHaveCount(0);
-  expect(sent).toHaveLength(2);
-  expect(sent[1]).toBe(sent[0]);
+  expect(inputs).toHaveLength(2);
+  expect(inputs[1]?.requestId).toBe(inputs[0]?.requestId);
 });

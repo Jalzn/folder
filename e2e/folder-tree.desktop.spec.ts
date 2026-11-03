@@ -1,8 +1,10 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
-import { escapeRegExp, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
+import { seedDocument, seedFolder } from './support/builders.js';
+import { escapeRegExp, folderRow, itemsTree, treeRow } from './support/folders.js';
 import { appShortcut } from './support/keyboard.js';
 import { createProject, projectNavigation } from './support/navigation.js';
+import { holdRpc } from './support/network.js';
 import { login } from './support/session.js';
 
 // The keyboard of a fixed sidebar; narrow.spec.ts covers the tree over the page on a phone.
@@ -14,12 +16,12 @@ const focusedRow = (page: Page) =>
 async function sampleProject(page: Page) {
   await login(page);
   const projectId = await createProject(page, `Árvore ${Date.now()}`);
-  await rpcFolder(page, projectId, 'Vazia');
-  const arquitetura = await rpcFolder(page, projectId, 'Arquitetura');
-  await rpcDocument(page, projectId, 'Notas', arquitetura);
-  const fluxo = await rpcDocument(page, projectId, 'Fluxo', arquitetura);
-  await rpcDocument(page, projectId, 'Zebra');
-  await rpcDocument(page, projectId, 'Visão');
+  await seedFolder(page, { projectId, name: 'Vazia' });
+  const arquitetura = await seedFolder(page, { projectId, name: 'Arquitetura' });
+  await seedDocument(page, { projectId, title: 'Notas', folderId: arquitetura });
+  const fluxo = await seedDocument(page, { projectId, title: 'Fluxo', folderId: arquitetura });
+  await seedDocument(page, { projectId, title: 'Zebra' });
+  await seedDocument(page, { projectId, title: 'Visão' });
   await page.reload();
   await expect(folderRow(page, 'Arquitetura')).toBeVisible();
   return { projectId, arquitetura, fluxo: fluxo.id };
@@ -151,11 +153,13 @@ test('open folders persist per project, and arriving at an item opens its folder
 test('a large folder shows eight items and "Ver todos", which opens the Índice filtered by it', async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Grande ${Date.now()}`);
-  const folder = await rpcFolder(page, projectId, 'Muitos');
+  const folder = await seedFolder(page, { projectId, name: 'Muitos' });
   const ids: string[] = [];
   for (let index = 1; index <= 10; index += 1)
-    ids.push((await rpcDocument(page, projectId, `Item ${String(index).padStart(2, '0')}`, folder)).id);
-  for (let index = 1; index <= 9; index += 1) await rpcDocument(page, projectId, `Raiz ${index}`);
+    ids.push(
+      (await seedDocument(page, { projectId, title: `Item ${String(index).padStart(2, '0')}`, folderId: folder })).id,
+    );
+  for (let index = 1; index <= 9; index += 1) await seedDocument(page, { projectId, title: `Raiz ${index}` });
   await page.reload();
 
   // The first item, edited longest ago, is not among the eight: opened, it shows as a ninth row.
@@ -185,7 +189,7 @@ test('a closed folder and the rail show the dot of an item not yet saved, and th
   await page.keyboard.press('ArrowLeft');
 
   // Saves wait, so the edit stays pending.
-  await page.route('**/rpc/workspace/saveDocument', () => undefined);
+  const pendingSave = await holdRpc(page, 'workspace/saveDocument');
   await page.locator('[contenteditable="true"]').first().click();
   await page.keyboard.type('Ainda não salvo.');
   await expect(folderRow(page, 'Arquitetura')).toHaveAttribute(
@@ -207,6 +211,6 @@ test('a closed folder and the rail show the dot of an item not yet saved, and th
     popover.getByRole('row', { name: /^Arquitetura, pasta, 2 itens, 1 item não salvo, contém o item aberto$/ }),
   ).toBeVisible();
   await page.keyboard.press('Escape');
-  await page.unroute('**/rpc/workspace/saveDocument');
+  await pendingSave.restore();
   await appShortcut(page, 'Backslash');
 });

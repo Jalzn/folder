@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
+import { seedCanvas, seedDocument, seedTask } from './support/builders.js';
 
 import { clickText, documentEditor, embedCard } from './support/document.js';
 import { appShortcut, hostKey } from './support/keyboard.js';
@@ -21,12 +22,11 @@ const textOf = (block: Block) =>
   Array.isArray(block.content) ? block.content.map((each: { text?: string }) => each.text ?? '').join('') : '';
 
 /** A task of the project, made over RPC. */
-const task = async (page: Page, projectId: string, title: string) =>
-  (await rpc(page, 'workspace/createTask', { requestId: crypto.randomUUID(), projectId, title })).id;
+const task = async (page: Page, projectId: string, title: string) => (await seedTask(page, { projectId, title })).id;
 
 /** A drawing of the project, made over RPC. */
 const drawing = async (page: Page, projectId: string, title: string) =>
-  (await rpc(page, 'workspace/createCanvas', { requestId: crypto.randomUUID(), projectId, title })).id;
+  (await seedCanvas(page, { projectId, title })).id;
 
 /**
  * Where the editor's caret is: "[id]" for the block selected as a node, "gap" for ProseMirror's gap cursor,
@@ -73,8 +73,7 @@ const paces = { 'with no pause': 0, 'at a person’s pace': 200 } as const;
 
 /** A document with these blocks, made over RPC as the editor saves them, and opened. */
 async function openDocument(page: Page, projectId: string, blocks: Block[]) {
-  const { id } = await rpc(page, 'workspace/createDocument', {
-    requestId: crypto.randomUUID(),
+  const { id } = await seedDocument(page, {
     projectId,
     title: 'Teclas e incorporados',
     content: blocks,
@@ -213,8 +212,7 @@ test('Restaurar gives the focus to the card it brings back, selected in the edit
 }) => {
   await login(page);
   const projectId = await createProject(page, `Restaurar e foco ${Date.now()}`);
-  const trashed = await rpc(page, 'workspace/createTask', {
-    requestId: crypto.randomUUID(),
+  const trashed = await seedTask(page, {
     projectId,
     title: 'Tarefa de volta',
   });
@@ -332,10 +330,7 @@ test('after Restaurar pressed with an embed selected, the arrows still go a bloc
   await login(page);
   const projectId = await createProject(page, `Setas depois de restaurar ${Date.now()}`);
   const tasks: { id: string; version: number }[] = [];
-  for (const index of [1, 2, 3, 4, 5])
-    tasks.push(
-      await rpc(page, 'workspace/createTask', { requestId: crypto.randomUUID(), projectId, title: `Card ${index}` }),
-    );
+  for (const index of [1, 2, 3, 4, 5]) tasks.push(await seedTask(page, { projectId, title: `Card ${index}` }));
   const trashed = tasks[2] as { id: string; version: number };
   await rpc(page, 'workspace/deleteTask', {
     id: trashed.id,

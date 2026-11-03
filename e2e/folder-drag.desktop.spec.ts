@@ -1,7 +1,8 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
+import { seedDocument, seedFolder } from './support/builders.js';
 import { toast } from './support/feedback.js';
-import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
+import { drag, folderRow, itemsTree, treeRow } from './support/folders.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -15,10 +16,10 @@ const folderNames = (page: Page) =>
 async function sampleProject(page: Page) {
   await login(page);
   const projectId = await createProject(page, `Arrastar ${Date.now()}`);
-  const segunda = await rpcFolder(page, projectId, 'Segunda');
-  const primeira = await rpcFolder(page, projectId, 'Primeira');
-  await rpcDocument(page, projectId, 'Dentro', segunda);
-  await rpcDocument(page, projectId, 'Solto');
+  const segunda = await seedFolder(page, { projectId, name: 'Segunda' });
+  const primeira = await seedFolder(page, { projectId, name: 'Primeira' });
+  await seedDocument(page, { projectId, title: 'Dentro', folderId: segunda });
+  await seedDocument(page, { projectId, title: 'Solto' });
   await page.reload();
   await expect(folderRow(page, 'Primeira')).toBeVisible();
   return { projectId, primeira, segunda };

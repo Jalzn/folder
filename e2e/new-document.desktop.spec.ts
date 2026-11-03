@@ -1,9 +1,10 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
-
+import { seedDocument } from './support/builders.js';
 import { documentEditor } from './support/document.js';
 import { appShortcut } from './support/keyboard.js';
 import { createProject, projectNavigation, showSidebar } from './support/navigation.js';
+import { delayRpc } from './support/network.js';
 import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -23,8 +24,7 @@ type Block = { content?: { text?: string }[] };
 /** An open document, "Antigo", to make the new one from. */
 async function openOld(page: Page) {
   const projectId = await createProject(page, `Criação ${Date.now()}`);
-  const old = await rpc(page, 'workspace/createDocument', {
-    requestId: crypto.randomUUID(),
+  const old = await seedDocument(page, {
     projectId,
     title: 'Antigo',
     content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Texto antigo', styles: {} }] }],
@@ -84,10 +84,7 @@ for (const [platform, userAgent] of [
         await login(page);
         const old = await openOld(page);
         // The document takes a moment to be made, as on a slow network: the old page stays meanwhile.
-        await page.route('**/rpc/workspace/createDocument', async (route) => {
-          await new Promise((resolve) => setTimeout(resolve, 400));
-          await route.continue();
-        });
+        await delayRpc(page, 'workspace/createDocument', 400);
         await askForNew(page, path);
         // At machine speed, while the old page is still the one shown: a mistake taken back with ⌫, too.
         await page.keyboard.type('Plano da semx');

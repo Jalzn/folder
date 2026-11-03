@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { drawer, drawerOf, newTaskDrawer } from './support/board.js';
+import { seedCanvas, seedDocument, seedTask } from './support/builders.js';
 import { clickText, documentEditor, embedCard, embedFigure, pickEmbed, slash } from './support/document.js';
 import { toast } from './support/feedback.js';
 import { newDocument } from './support/items.js';
@@ -26,8 +27,7 @@ const expectSavedEmbeds = (page: Page, count: number) =>
 
 /** A task made over RPC in a project, as another tab would. */
 async function rpcTask(page: Page, projectId: string, title: string) {
-  return rpc(page, 'workspace/createTask', {
-    requestId: crypto.randomUUID(),
+  return seedTask(page, {
     projectId,
     title,
   });
@@ -262,8 +262,7 @@ test('an embedded task in the trash offers Restaurar; one deleted for good, Remo
 test('/desenho embeds a drawing as a numbered figure, and "Novo desenho" makes one', async ({ page }) => {
   await login(page);
   const here = await createProject(page, `Figuras ${Date.now()}`);
-  await rpc(page, 'workspace/createCanvas', {
-    requestId: crypto.randomUUID(),
+  await seedCanvas(page, {
     projectId: here,
     title: 'Fluxo do autosave',
   });
@@ -331,8 +330,7 @@ test('the card follows the drawer’s labels and checklist, and names another pr
 test('figures renumber when a drawing moves above another', async ({ page }) => {
   await login(page);
   const here = await createProject(page, `Numeração ${Date.now()}`);
-  for (const title of ['Primeira figura', 'Segunda figura'])
-    await rpc(page, 'workspace/createCanvas', { requestId: crypto.randomUUID(), projectId: here, title });
+  for (const title of ['Primeira figura', 'Segunda figura']) await seedCanvas(page, { projectId: here, title });
   await writeDocument(page, 'Figuras.');
   await pickEmbed(page, await slash(page, 'desenho'), 'Primeira', 'Primeira figura');
   await page.keyboard.press('ArrowDown');
@@ -353,8 +351,7 @@ test('a document of an archived project shows its embeds with no Restaurar or Re
     expectedVersion: task.version,
     requestId: crypto.randomUUID(),
   });
-  const document = await rpc(page, 'workspace/createDocument', {
-    requestId: crypto.randomUUID(),
+  const document = await seedDocument(page, {
     projectId: here,
     title: 'Documento guardado',
     content: [{ id: 'e1', type: 'taskEmbed', props: { taskId: task.id }, children: [] }],
@@ -381,8 +378,7 @@ test('⌘C on a card copies its words and its link, and a paste in a description
   await login(page);
   const projectId = await createProject(page, `Copiar o card ${Date.now()}`);
   const task = await rpcTask(page, projectId, 'Card copiado');
-  const { id } = await rpc(page, 'workspace/createDocument', {
-    requestId: crypto.randomUUID(),
+  const { id } = await seedDocument(page, {
     projectId,
     title: 'Copiar',
     content: [
@@ -426,8 +422,7 @@ test('a pasted embed with an ID the server refuses never lands, and the document
   await login(page);
   const projectId = await createProject(page, `Colar forjado ${Date.now()}`);
   const task = await rpcTask(page, projectId, 'Card legítimo');
-  const { id } = await rpc(page, 'workspace/createDocument', {
-    requestId: crypto.randomUUID(),
+  const { id } = await seedDocument(page, {
     projectId,
     title: 'Colar',
     content: [

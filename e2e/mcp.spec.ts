@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer } from './support/board.js';
+import { seedDocument, seedTask } from './support/builders.js';
 import { createTaskFromSelection } from './support/document.js';
 import { createFolder, folderRow } from './support/folders.js';
 import { moveToTrash, newDocument, newDrawing } from './support/items.js';
@@ -328,7 +329,7 @@ test(
     await page.getByRole('menuitem', { name: 'Documento', exact: true }).click();
     await page.getByRole('textbox', { name: 'Título do documento' }).fill(`Dentro ${marker}`);
     await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
-    await rpc(page, 'workspace/createDocument', { requestId: crypto.randomUUID(), projectId, title: `Fora ${marker}` });
+    await seedDocument(page, { projectId, title: `Fora ${marker}` });
 
     type Found = { items: { title: string; folder: { id: string; name: string } | null }[] };
     const all = jsonOf<Found>(await mcp.call('search', { query: marker }));
@@ -353,14 +354,12 @@ test('Claude Code reads the tasks a document embeds as links, and follows one to
   await page.goto('/');
   await expect(page).toHaveURL(projectAddress);
   const projectId = new URL(page.url()).pathname.split('/')[2] as string;
-  const task = await rpc(page, 'workspace/createTask', {
-    requestId: crypto.randomUUID(),
+  const task = await seedTask(page, {
     projectId,
     title: `Tarefa ${mark}`,
   });
   // As the interface saves a document with a card: an embed block with the task's ID.
-  const document = await rpc(page, 'workspace/createDocument', {
-    requestId: crypto.randomUUID(),
+  const document = await seedDocument(page, {
     projectId,
     title: `Plano ${mark}`,
     content: [

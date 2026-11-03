@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer } from './support/board.js';
+import { seedTask } from './support/builders.js';
 import {
   createTaskFromSelection,
   documentEditor as editor,
@@ -169,8 +170,7 @@ test('Exportar Markdown writes an embedded task as a link to the app, and the im
 }) => {
   await login(page);
   const projectId = await createProject(page, `Markdown com incorporados ${Date.now()}`);
-  const task = await rpc(page, 'workspace/createTask', {
-    requestId: crypto.randomUUID(),
+  const task = await seedTask(page, {
     projectId,
     title: 'Revisar o orçamento',
   });

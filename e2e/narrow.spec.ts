@@ -1,7 +1,8 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { cardMenu, column, drawer, openDrawer } from './support/board.js';
-import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
+import { seedCanvas, seedDocument, seedFolder, seedTask } from './support/builders.js';
+import { folderRow, treeRow } from './support/folders.js';
 import { moveToTrash, newDocument, newTask } from './support/items.js';
 import { createProject, hideSidebar, showSidebar } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
@@ -66,9 +67,9 @@ test('on a phone the tree opens over the page: a tap opens a folder, its tools s
 }, async ({ page }) => {
   await login(page);
   const project = await createProject(page, `Celular ${Date.now()}`);
-  const folder = await rpcFolder(page, project, 'Leituras');
-  await rpcDocument(page, project, 'Artigo', folder);
-  const { id } = await rpcDocument(page, project, 'Rascunho');
+  const folder = await seedFolder(page, { projectId: project, name: 'Leituras' });
+  await seedDocument(page, { projectId: project, title: 'Artigo', folderId: folder });
+  const { id } = await seedDocument(page, { projectId: project, title: 'Rascunho' });
   await page.reload();
 
   await showSidebar(page);
@@ -127,13 +128,11 @@ test('on a phone the embeds take the width: a tap opens the card in the drawer, 
 }, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Incorporados no celular ${Date.now()}`);
-  const task = await rpc(page, 'workspace/createTask', {
-    requestId: crypto.randomUUID(),
+  const task = await seedTask(page, {
     projectId,
     title: 'Card no celular',
   });
-  const trashed = await rpc(page, 'workspace/createTask', {
-    requestId: crypto.randomUUID(),
+  const trashed = await seedTask(page, {
     projectId,
     title: 'Na lixeira do celular',
   });
@@ -142,13 +141,11 @@ test('on a phone the embeds take the width: a tap opens the card in the drawer, 
     expectedVersion: trashed.version,
     requestId: crypto.randomUUID(),
   });
-  const drawing = await rpc(page, 'workspace/createCanvas', {
-    requestId: crypto.randomUUID(),
+  const drawing = await seedCanvas(page, {
     projectId,
     title: 'Figura no celular',
   });
-  const document = await rpc(page, 'workspace/createDocument', {
-    requestId: crypto.randomUUID(),
+  const document = await seedDocument(page, {
     projectId,
     title: 'Documento com incorporados',
     content: [

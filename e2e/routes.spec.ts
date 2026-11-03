@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures.js';
-import { rpcDocument, rpcFolder } from './support/folders.js';
+import { seedDocument, seedFolder } from './support/builders.js';
 import { createProject, currentProjectId } from './support/navigation.js';
+import { replyRpc } from './support/network.js';
 import { login } from './support/session.js';
 
 test('a broken or unknown address shows a page in Portuguese inside the shell', async ({ page }) => {
@@ -48,9 +49,9 @@ test('a stored last place that would leave the app is dropped', async ({ page })
 test('the Índice reads ?pasta=: a folder, the root, and anything else as Todas', async ({ page }) => {
   await login(page);
   const project = await createProject(page, `Rotas ${Date.now()}`);
-  const folder = await rpcFolder(page, project, 'Notas');
-  await rpcDocument(page, project, 'Na pasta', folder);
-  await rpcDocument(page, project, 'Na raiz');
+  const folder = await seedFolder(page, { projectId: project, name: 'Notas' });
+  await seedDocument(page, { projectId: project, title: 'Na pasta', folderId: folder });
+  await seedDocument(page, { projectId: project, title: 'Na raiz' });
 
   await page.goto(`/projetos/${project}/indice?pasta=${folder}`);
   await expect(page.getByRole('button', { name: 'Pasta: Notas' })).toBeVisible();
@@ -74,19 +75,11 @@ test('the Índice reads ?pasta=: a folder, the root, and anything else as Todas'
 test('a failure in the shell itself still shows the error page in Portuguese', async ({ page, isMobile }) => {
   await login(page);
   // A sidebar answer the shell cannot draw.
-  await page.route('**/rpc/workspace/projectNavigation', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        json: {
-          tree: { total: 1, pinned: null, folders: [], loose: { total: 0, items: [] } },
-          openTasks: 0,
-          trashCount: 0,
-        },
-      }),
-    }),
-  );
+  await replyRpc(page, 'workspace/projectNavigation', 200, {
+    tree: { total: 1, pinned: null, folders: [], loose: { total: 0, items: [] } },
+    openTasks: 0,
+    trashCount: 0,
+  });
   await page.reload();
   // On a phone the tree draws when the sidebar opens over the page.
   if (isMobile) await page.getByRole('button', { name: 'Abrir navegação', exact: true }).click();

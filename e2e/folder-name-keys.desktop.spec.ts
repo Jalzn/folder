@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
-import { folderRow, itemsTree, rpcFolder } from './support/folders.js';
+import { seedFolder } from './support/builders.js';
+import { folderRow, itemsTree } from './support/folders.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -15,7 +16,7 @@ const serverFolders = async (page: Page, projectId: string) =>
 test('in the rename field the arrows move the caret, and only Enter saves', async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Teclas ${Date.now()}`);
-  await rpcFolder(page, projectId, 'Arquitetura');
+  await seedFolder(page, { projectId, name: 'Arquitetura' });
   await page.reload();
 
   await folderRow(page, 'Arquitetura').focus();
@@ -49,7 +50,7 @@ test('the new folder field selects with ⇧ and the arrows, and keeps its spaces
 }) => {
   await login(page);
   const projectId = await createProject(page, `Teclas novas ${Date.now()}`);
-  await rpcFolder(page, projectId, 'Arquivo');
+  await seedFolder(page, { projectId, name: 'Arquivo' });
   await page.reload();
 
   await projectNavigation(page).getByRole('button', { name: 'Novo item', exact: true }).click();

@@ -1,7 +1,9 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
+import { seedCanvas, seedProject } from './support/builders.js';
 import { newDocument } from './support/items.js';
 import { appShortcut } from './support/keyboard.js';
+import { abortRpc } from './support/network.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -40,11 +42,11 @@ test('W5.7a: a document trashed elsewhere keeps its editor while it holds unsave
   await login(page);
   const kept = await savedDocument(page, `Excluído com rascunho ${Date.now()}`, 'Primeira versão salva.');
   // Text that never reaches the server, then the document goes to the trash from elsewhere.
-  await page.route('**/rpc/workspace/saveDocument', (route) => route.abort('failed'));
+  const restoreSaves = await abortRpc(page, 'workspace/saveDocument');
   await editor(page).fill('Texto que não chegou ao servidor.');
   await expect(page.getByText('Não salvou', { exact: true })).toBeVisible();
   await trashDocument(page, kept);
-  await page.unroute('**/rpc/workspace/saveDocument');
+  await restoreSaves();
   await page.reload();
 
   await expect(editor(page)).toContainText('Texto que não chegou ao servidor.');
@@ -133,9 +135,8 @@ test('E2: a trashed document or drawing with nothing local offers ⌘K no comman
 
 /** An empty drawing made over RPC in a new project, with the project's ID. */
 async function drawingInProject(page: Page, name: string) {
-  const project = await rpc(page, 'workspace/createProject', { requestId: crypto.randomUUID(), name });
-  const created = await rpc(page, 'workspace/createCanvas', {
-    requestId: crypto.randomUUID(),
+  const project = await seedProject(page, { name });
+  const created = await seedCanvas(page, {
     projectId: project.id,
     title: 'Planta',
   });

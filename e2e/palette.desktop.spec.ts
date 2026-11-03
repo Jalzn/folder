@@ -1,8 +1,10 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
-import { itemsTree, rpcDocument } from './support/folders.js';
+import { seedDocument } from './support/builders.js';
+import { itemsTree } from './support/folders.js';
 import { appShortcut } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
+import { delayRpc } from './support/network.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -14,10 +16,7 @@ const row = (page: Page, name: string) => palette(page).getByRole('menuitem').fi
 
 /** The item search for `text` answers 800 ms late, so it replaces the rows after the typing is over. */
 async function slowSearchFor(page: Page, text: string) {
-  await page.route('**/rpc/workspace/search', async (route) => {
-    if (route.request().postData()?.includes(text)) await new Promise((done) => setTimeout(done, 800));
-    await route.continue();
-  });
+  await delayRpc(page, 'workspace/search', 800, (request) => Boolean(request.postData()?.includes(text)));
 }
 
 /**
@@ -42,7 +41,7 @@ async function typeAtOnce(page: Page, text: string, recent: string, whileSearchi
 test('⌘K typed at once runs the command on screen, even when the item search answers later', async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Paleta ${Date.now()}`);
-  await rpcDocument(page, projectId, 'Recente da paleta');
+  await seedDocument(page, { projectId, title: 'Recente da paleta' });
   await page.reload();
   await slowSearchFor(page, 'Nova pasta');
 
@@ -61,9 +60,9 @@ test('⌘K typed at once opens the item its late search found, not a row of the 
   await login(page);
   const token = `tardio${Date.now()}`;
   const projectId = await createProject(page, `Busca ${Date.now()}`);
-  const { id: target } = await rpcDocument(page, projectId, `Relatório ${token}`);
+  const { id: target } = await seedDocument(page, { projectId, title: `Relatório ${token}` });
   // Edited last, so it leads the list before any text.
-  await rpcDocument(page, projectId, 'Mais recente da busca');
+  await seedDocument(page, { projectId, title: 'Mais recente da busca' });
   await page.reload();
   await slowSearchFor(page, token);
 
@@ -85,8 +84,8 @@ test('⌘K Enter on a query with no results runs nothing, and ↓ then Enter run
   await login(page);
   const token = `setas${Date.now()}`;
   const projectId = await createProject(page, `Setas ${Date.now()}`);
-  const { id: first } = await rpcDocument(page, projectId, `Primeiro ${token}`);
-  const { id: second } = await rpcDocument(page, projectId, `Segundo ${token}`);
+  const { id: first } = await seedDocument(page, { projectId, title: `Primeiro ${token}` });
+  const { id: second } = await seedDocument(page, { projectId, title: `Segundo ${token}` });
   await page.reload();
 
   await appShortcut(page, 'k');

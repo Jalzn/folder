@@ -1,9 +1,11 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
+import { seedDocument, seedFolder } from './support/builders.js';
 import { toast } from './support/feedback.js';
-import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
+import { drag, folderRow, itemsTree, treeRow } from './support/folders.js';
 import { appShortcut } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
+import { holdRpc, loseFirstResponse, replyRpc } from './support/network.js';
 import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -19,8 +21,8 @@ async function folderVersion(page: Page, projectId: string, folderId: string) {
 test('a draft saved as a copy goes to the root when its folder was deleted elsewhere', async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Cópia ${Date.now()}`);
-  const folder = await rpcFolder(page, projectId, 'Efêmera');
-  const { id } = await rpcDocument(page, projectId, 'Rascunho', folder);
+  const folder = await seedFolder(page, { projectId, name: 'Efêmera' });
+  const { id } = await seedDocument(page, { projectId, title: 'Rascunho', folderId: folder });
   await page.goto(`/projetos/${projectId}/documentos/${id}`);
   await expect(page.getByRole('button', { name: 'Pasta Efêmera. Mover para pasta (M)' })).toBeVisible();
 
@@ -56,21 +58,19 @@ test('a draft saved as a copy goes to the root when its folder was deleted elsew
 test('an undo the server refuses says so in its own words, and the folder stays deleted', async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Desfazer ${Date.now()}`);
-  await rpcFolder(page, projectId, 'Antiga');
+  await seedFolder(page, { projectId, name: 'Antiga' });
   await page.reload();
   await folderRow(page, 'Antiga').focus();
   await page.keyboard.press('Shift+F10');
   await page.getByRole('menuitem', { name: /^Excluir pasta/ }).click();
   await expect(toast(page)).toContainText('Pasta “Antiga” excluída.');
-  await page.route('**/rpc/workspace/restoreFolder', (route) =>
-    route.fulfill({
-      status: 400,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        json: { defined: false, code: 'BAD_REQUEST', status: 400, message: 'Mensagem crua do servidor.', data: {} },
-      }),
-    }),
-  );
+  await replyRpc(page, 'workspace/restoreFolder', 400, {
+    defined: false,
+    code: 'BAD_REQUEST',
+    status: 400,
+    message: 'Mensagem crua do servidor.',
+    data: {},
+  });
   await toast(page).getByRole('button', { name: 'Desfazer' }).click();
   await expect(
     page.getByRole('alert').filter({ hasText: 'Não foi possível desfazer a exclusão da pasta.' }),
@@ -82,8 +82,8 @@ test('an undo the server refuses says so in its own words, and the folder stays 
 test('⌘Z pressed while a rename is on its way undoes the deletion once the rename is done', async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Fila ${Date.now()}`);
-  await rpcFolder(page, projectId, 'Segunda');
-  await rpcFolder(page, projectId, 'Primeira');
+  await seedFolder(page, { projectId, name: 'Segunda' });
+  await seedFolder(page, { projectId, name: 'Primeira' });
   await page.reload();
 
   await folderRow(page, 'Primeira').focus();
@@ -94,14 +94,7 @@ test('⌘Z pressed while a rename is on its way undoes the deletion once the ren
   await expect(folderRow(page, 'Segunda')).toBeFocused();
 
   // The rename waits at the network while ⌘Z comes.
-  let release = () => {};
-  const held = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  await page.route('**/rpc/workspace/renameFolder', async (route) => {
-    await held;
-    await route.continue();
-  });
+  const { release } = await holdRpc(page, 'workspace/renameFolder');
   await folderRow(page, 'Segunda').focus();
   await page.keyboard.press('F2');
   const field = itemsTree(page).getByRole('textbox', { name: 'Novo nome da pasta Segunda' });
@@ -121,25 +114,17 @@ test('a deletion whose answer was lost is sent again with its request, and its D
 }) => {
   await login(page);
   const projectId = await createProject(page, `Perdida ${Date.now()}`);
-  const folder = await rpcFolder(page, projectId, 'Efêmera');
-  await rpcDocument(page, projectId, 'Dentro', folder);
+  const folder = await seedFolder(page, { projectId, name: 'Efêmera' });
+  await seedDocument(page, { projectId, title: 'Dentro', folderId: folder });
   await page.reload();
   // The first deletion reaches the server, which applies it, but its answer never comes back.
-  let sent = 0;
-  const ids: string[] = [];
-  await page.route('**/rpc/workspace/deleteFolder', async (route) => {
-    sent += 1;
-    ids.push((route.request().postDataJSON() as { json: { requestId: string } }).json.requestId);
-    if (sent > 1) return route.continue();
-    await route.fetch();
-    await route.abort('failed');
-  });
+  const { inputs } = await loseFirstResponse(page, 'workspace/deleteFolder');
   await folderRow(page, 'Efêmera').focus();
   await page.keyboard.press('Shift+F10');
   await page.getByRole('menuitem', { name: /^Excluir pasta(?! e)/ }).click();
   await expect(toast(page)).toContainText('Pasta “Efêmera” excluída. 1 item foi para a raiz.');
-  expect(sent).toBe(2);
-  expect(ids[1]).toBe(ids[0]);
+  expect(inputs).toHaveLength(2);
+  expect(inputs[1]?.requestId).toBe(inputs[0]?.requestId);
   await toast(page).getByRole('button', { name: 'Desfazer' }).click();
   await expect(folderRow(page, 'Efêmera')).toHaveAttribute('aria-label', /, 1 item$/);
 });
@@ -147,9 +132,9 @@ test('a deletion whose answer was lost is sent again with its request, and its D
 test('an undo applies only to its own move: a newer move of the item takes the Desfazer away', async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Vaivém ${Date.now()}`);
-  await rpcFolder(page, projectId, 'Dois');
-  await rpcFolder(page, projectId, 'Um');
-  await rpcDocument(page, projectId, 'Vai e vem');
+  await seedFolder(page, { projectId, name: 'Dois' });
+  await seedFolder(page, { projectId, name: 'Um' });
+  await seedDocument(page, { projectId, title: 'Vai e vem' });
   await page.reload();
   const moveTo = async (target: string) => {
     await treeRow(page, 'Vai e vem').focus();
@@ -164,14 +149,7 @@ test('an undo applies only to its own move: a newer move of the item takes the D
   await expect(toast(page).getByRole('button', { name: 'Desfazer' })).toBeVisible();
 
   // The second move waits at the network; the first toast loses its Desfazer as it starts, and ⌘Z does nothing.
-  let release = () => {};
-  const held = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  await page.route('**/rpc/workspace/moveItem', async (route) => {
-    await held;
-    await route.continue();
-  });
+  const { release, restore } = await holdRpc(page, 'workspace/moveItem');
   await moveTo('Dois');
   await expect(toast(page).getByRole('button', { name: 'Desfazer' })).toHaveCount(0);
   await page.getByRole('main').getByRole('heading', { level: 1 }).focus();
@@ -180,7 +158,7 @@ test('an undo applies only to its own move: a newer move of the item takes the D
   await expect(toast(page)).toContainText('Movido para Dois.');
   await expect(folderRow(page, 'Dois')).toHaveAttribute('aria-label', /, 1 item$/);
   // This toast's own Desfazer takes it back to Um, where the first move left it.
-  await page.unroute('**/rpc/workspace/moveItem');
+  await restore();
   await toast(page).getByRole('button', { name: 'Desfazer' }).click();
   await expect(folderRow(page, 'Um')).toHaveAttribute('aria-label', /, 1 item$/);
   await expect(folderRow(page, 'Dois')).toHaveAttribute('aria-label', /, 0 itens$/);
@@ -189,23 +167,16 @@ test('an undo applies only to its own move: a newer move of the item takes the D
 test('a second move refused while another write runs leaves the first toast its Desfazer', async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Recusa ${Date.now()}`);
-  await rpcFolder(page, projectId, 'Dois');
-  await rpcFolder(page, projectId, 'Um');
-  await rpcDocument(page, projectId, 'Outro');
-  await rpcDocument(page, projectId, 'Vai e vem');
+  await seedFolder(page, { projectId, name: 'Dois' });
+  await seedFolder(page, { projectId, name: 'Um' });
+  await seedDocument(page, { projectId, title: 'Outro' });
+  await seedDocument(page, { projectId, title: 'Vai e vem' });
   await page.reload();
   // Dragging uses one set of writes for the tree: the first move goes through.
   await drag(page, treeRow(page, 'Vai e vem'), folderRow(page, 'Um'));
   await expect(toast(page)).toContainText('Movido para Um.');
   // A move of another item waits at the network; a second move of the first item is refused meanwhile.
-  let release = () => {};
-  const held = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  await page.route('**/rpc/workspace/moveItem', async (route) => {
-    await held;
-    await route.continue();
-  });
+  const { release } = await holdRpc(page, 'workspace/moveItem');
   await drag(page, treeRow(page, 'Outro'), folderRow(page, 'Dois'));
   await drag(page, treeRow(page, 'Vai e vem'), folderRow(page, 'Dois'));
   await expect(toast(page)).toContainText('Movido para Um.');
@@ -223,9 +194,9 @@ test('Desfazer of a move to another project puts the item back in its folder, or
   await createProject(page, target);
   const projectId = await createProject(page, `Origem ${Date.now()}`);
   const project = (await page.getByRole('heading', { level: 1 }).textContent()) ?? '';
-  const folder = await rpcFolder(page, projectId, 'Casa');
-  await rpcDocument(page, projectId, 'Viajante', folder);
-  await rpcDocument(page, projectId, 'Sem volta', folder);
+  const folder = await seedFolder(page, { projectId, name: 'Casa' });
+  await seedDocument(page, { projectId, title: 'Viajante', folderId: folder });
+  await seedDocument(page, { projectId, title: 'Sem volta', folderId: folder });
   await page.reload();
   const toProject = async (title: string) => {
     await folderRow(page, 'Casa').focus();

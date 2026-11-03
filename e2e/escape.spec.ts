@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
-import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
+import { seedDocument, seedFolder } from './support/builders.js';
+import { folderRow, treeRow } from './support/folders.js';
 import { newDocument } from './support/items.js';
 import { appShortcut } from './support/keyboard.js';
 import { createProject, openBoard } from './support/navigation.js';
@@ -164,8 +165,8 @@ test('Esc leaves a folder’s rename, then the move menu, one at a time, and nev
 }, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Esc pastas ${Date.now()}`);
-  const folder = await rpcFolder(page, projectId, 'Leituras');
-  await rpcDocument(page, projectId, 'Artigo', folder);
+  const folder = await seedFolder(page, { projectId, name: 'Leituras' });
+  await seedDocument(page, { projectId, title: 'Artigo', folderId: folder });
   await page.reload();
   const row = folderRow(page, 'Leituras');
   await row.focus();

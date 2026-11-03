@@ -1,7 +1,8 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
+import { seedDocument, seedFolder } from './support/builders.js';
 
-import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
+import { folderRow, treeRow } from './support/folders.js';
 import { appShortcut } from './support/keyboard.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
@@ -16,13 +17,13 @@ const focusedRow = (page: Page) =>
 async function sampleProject(page: Page) {
   await login(page);
   const projectId = await createProject(page, `Revisão ${Date.now()}`);
-  await rpcFolder(page, projectId, 'Vazia');
-  const arquitetura = await rpcFolder(page, projectId, 'Arquitetura');
-  await rpcDocument(page, projectId, 'Notas', arquitetura);
-  const fluxo = await rpcDocument(page, projectId, 'Fluxo', arquitetura);
-  await rpcDocument(page, projectId, 'Zebra');
-  await rpcDocument(page, projectId, 'Opções de layout');
-  await rpcDocument(page, projectId, 'Visão');
+  await seedFolder(page, { projectId, name: 'Vazia' });
+  const arquitetura = await seedFolder(page, { projectId, name: 'Arquitetura' });
+  await seedDocument(page, { projectId, title: 'Notas', folderId: arquitetura });
+  const fluxo = await seedDocument(page, { projectId, title: 'Fluxo', folderId: arquitetura });
+  await seedDocument(page, { projectId, title: 'Zebra' });
+  await seedDocument(page, { projectId, title: 'Opções de layout' });
+  await seedDocument(page, { projectId, title: 'Visão' });
   await page.reload();
   await expect(folderRow(page, 'Arquitetura')).toBeVisible();
   return { projectId, fluxo: fluxo.id };
