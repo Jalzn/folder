@@ -1,7 +1,8 @@
 import { AppError } from '@tinyfold/core/application';
 import { COLUMN_LIMITS, columnDeletionBlocker } from '../../domain/columns.js';
 import { assertVersion } from '../helpers.js';
-import type { TaskRecord, WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
+import type { TaskRecord } from '../ports/tasks.js';
 import type { DeleteColumnInput } from '../schemas/columns.js';
 import { renumberColumns, requireActiveColumn } from './column-rules.js';
 

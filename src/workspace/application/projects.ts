@@ -1,8 +1,8 @@
 import { AppError } from '@tinyfold/core/application';
-import type { Project } from '../domain/models.js';
 import { defaultProjectColor } from '../domain/project.js';
+import type { Project } from '../domain/project-models.js';
 import { assertVersion, requireProject } from './helpers.js';
-import type { WorkspaceContext } from './ports.js';
+import type { WorkspaceContext } from './ports/context.js';
 import type {
   CreateProjectInput,
   ListProjectsInput,

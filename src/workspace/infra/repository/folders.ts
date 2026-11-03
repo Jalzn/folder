@@ -1,6 +1,6 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
-import type { FolderItem, FolderRepository } from '../../application/ports.js';
+import type { FolderItem, FolderRepository } from '../../application/ports/folders.js';
 import type { NavItemType } from '../../domain/navigation.js';
 import type { WorkspaceTables } from '../db.js';
 import { itemTable } from '../item-tables.js';

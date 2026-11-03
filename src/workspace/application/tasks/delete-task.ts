@@ -1,5 +1,5 @@
 import { assertVersion, requireTask } from '../helpers.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { DeleteTaskInput } from '../schemas/tasks.js';
 
 /** Sends a task to the trash with its column, due date, labels, description and completion. */

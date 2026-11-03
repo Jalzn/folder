@@ -1,6 +1,6 @@
 import { requireLiveItem } from './helpers.js';
 import { assertRoomForPin } from './moves/pin-scope.js';
-import type { WorkspaceContext } from './ports.js';
+import type { WorkspaceContext } from './ports/context.js';
 import type { PinItemInput } from './schemas/pins.js';
 
 /**

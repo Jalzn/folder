@@ -1,7 +1,8 @@
 import { FOLDER_LIMITS } from '../../domain/folders.js';
 import { MAX_PINNED } from '../../domain/project.js';
 import { assertVersion } from '../helpers.js';
-import type { FolderItem, WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
+import type { FolderItem } from '../ports/folders.js';
 import type { DeleteFolderInput } from '../schemas/folders.js';
 import { renumberFolders, requireActiveFolder, requireProjectForFolders } from './folder-rules.js';
 

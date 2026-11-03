@@ -1,6 +1,6 @@
 import { doneWindowStart } from '../../domain/task-dates.js';
 import { requireProject } from '../helpers.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { ProjectBoardInput } from '../schemas/tasks.js';
 
 /**

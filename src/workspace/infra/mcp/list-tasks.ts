@@ -1,5 +1,6 @@
 import { listTasks } from '../../application/reading/list-tasks.js';
-import type { ReadingContext, TaskListing } from '../../application/reading/ports.js';
+import type { ReadingContext } from '../../application/reading/ports.js';
+import type { TaskListing } from '../../application/reading/read-models.js';
 import { ListTasksInput } from '../../application/reading/schemas.js';
 import type { Column } from '../../domain/columns.js';
 import { isOverdue } from '../../domain/task-dates.js';

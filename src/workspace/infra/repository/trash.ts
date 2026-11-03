@@ -1,5 +1,5 @@
 import { type Database, tables } from '@tinyfold/core/infra';
-import type { TrashRepository } from '../../application/ports.js';
+import type { TrashRepository } from '../../application/ports/trash.js';
 import type { WorkspaceTables } from '../db.js';
 
 export function trashRepository(connection: Database): TrashRepository {

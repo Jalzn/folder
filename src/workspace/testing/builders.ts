@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { DocumentBlock } from '../domain/models.js';
+import type { DocumentBlock } from '../domain/document-models.js';
 
 /** A write's request ID, new each time. */
 export const request = () => ({ requestId: randomUUID() });

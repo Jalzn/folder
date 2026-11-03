@@ -1,4 +1,4 @@
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 
 /** The active columns in board order, with the live tasks of every project in each, and the revision. */
 export function listColumns(ctx: WorkspaceContext) {

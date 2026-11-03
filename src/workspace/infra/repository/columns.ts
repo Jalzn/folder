@@ -1,6 +1,6 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import type { Kysely } from 'kysely';
-import type { ColumnRepository } from '../../application/ports.js';
+import type { ColumnRepository } from '../../application/ports/columns.js';
 import type { WorkspaceTables } from '../db.js';
 import { columnModel, columnRow, taskModel } from './mappers.js';
 import { expectUpdated } from './versioned-update.js';

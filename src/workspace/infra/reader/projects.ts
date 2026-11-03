@@ -1,5 +1,6 @@
 import { type Kysely, sql } from 'kysely';
-import type { FolderWithCount, ItemCounts, WorkspaceReader } from '../../application/reading/ports.js';
+import type { WorkspaceReader } from '../../application/reading/ports.js';
+import type { FolderWithCount, ItemCounts } from '../../application/reading/read-models.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import type { WorkspaceTables } from '../db.js';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DocumentBlock } from './models.js';
+import type { DocumentBlock } from './document-models.js';
 import { excerptEnd, excerptPresent } from './task-source.js';
 
 const paragraph = (id: string, text: string): DocumentBlock => ({

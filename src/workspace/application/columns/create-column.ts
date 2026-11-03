@@ -1,5 +1,5 @@
 import { newColumnPosition } from '../../domain/columns.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { CreateColumnInput } from '../schemas/columns.js';
 import { assertColumnNameFree, assertRoomForColumn, readColumnName, renumberColumns } from './column-rules.js';
 

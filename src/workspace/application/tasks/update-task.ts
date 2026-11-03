@@ -1,6 +1,7 @@
-import type { TaskAck } from '../../domain/models.js';
+import type { TaskAck } from '../../domain/task-models.js';
 import { assertVersion, projectForEditedItem, requireTask } from '../helpers.js';
-import type { TaskRecord, WorkspaceContext, WorkspaceRepository } from '../ports.js';
+import type { WorkspaceContext, WorkspaceRepository } from '../ports/context.js';
+import type { TaskRecord } from '../ports/tasks.js';
 import type { UpdateTaskInput } from '../schemas/tasks.js';
 import { columnFor, completionIn, placeIn, requireTaskLabels, taskAck } from './task-rules.js';
 

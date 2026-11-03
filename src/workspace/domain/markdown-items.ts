@@ -1,4 +1,4 @@
-import type { JsonValue } from './models.js';
+import type { JsonValue } from './json.js';
 
 export type Mark = 'bold' | 'italic' | 'strike';
 /** Nesting order, outermost first, when marks start and end together. */

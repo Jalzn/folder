@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyCanvasScene } from '../domain/canvas.js';
-import type { Project } from '../domain/models.js';
+import type { Project } from '../domain/project-models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { drawingFixture } from '../testing/canvas-scenes.js';

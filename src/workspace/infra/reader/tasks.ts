@@ -1,7 +1,8 @@
 import { type Kysely, sql } from 'kysely';
-import type { TaskLabel, TaskListing, WorkspaceReader } from '../../application/reading/ports.js';
+import type { WorkspaceReader } from '../../application/reading/ports.js';
+import type { TaskLabel, TaskListing } from '../../application/reading/read-models.js';
+import type { DocumentBlock } from '../../domain/document-models.js';
 import { byLabelName } from '../../domain/labels.js';
-import type { DocumentBlock } from '../../domain/models.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
 import { excerptPresent } from '../../domain/task-source.js';
 import type { WorkspaceTables } from '../db.js';

@@ -1,4 +1,4 @@
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { CreateFolderInput } from '../schemas/folders.js';
 import {
   assertFolderNameFree,

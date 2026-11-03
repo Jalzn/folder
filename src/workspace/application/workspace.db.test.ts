@@ -6,7 +6,9 @@ import { coreModule, createDatabase, type Database, migrate, tables } from '@tin
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
-import type { DocumentBlock, Project, TaskAck } from '../domain/models.js';
+import type { DocumentBlock } from '../domain/document-models.js';
+import type { Project } from '../domain/project-models.js';
+import type { TaskAck } from '../domain/task-models.js';
 import { workspaceModule } from '../infra/module.js';
 import { workspaceRepository } from '../infra/repository/index.js';
 import { createWorkspaceService } from '../infra/service.js';

@@ -1,5 +1,5 @@
 import { type BoardKey, SEARCH_ITEM_TYPES, type SearchItemType, type SearchKey } from '../../domain/paging.js';
-import type { SearchHit, TaskListing } from './ports.js';
+import type { SearchHit, TaskListing } from './read-models.js';
 
 export const searchTypeRankOf = (type: SearchItemType) => SEARCH_ITEM_TYPES.indexOf(type);
 

@@ -1,4 +1,4 @@
-import type { Page } from './ports.js';
+import type { Page } from './read-models.js';
 
 /**
  * The items of a keyset page and the cursor after the first `shown` of them: a tool may show fewer

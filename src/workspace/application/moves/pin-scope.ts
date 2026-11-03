@@ -1,6 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
 import { MAX_PINNED } from '../../domain/project.js';
-import type { FolderRepository, PinRepository } from '../ports.js';
+import type { FolderRepository } from '../ports/folders.js';
+import type { PinRepository } from '../ports/pins.js';
 
 /** The pin an item keeps when it changes scope: its own while the destination has room, none otherwise. */
 export async function keepPinIfRoom(

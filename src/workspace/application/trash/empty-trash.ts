@@ -1,4 +1,4 @@
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { EmptyTrashInput, TrashItemType } from '../schemas/trash.js';
 import { canvasRemoval } from './purge-canvas.js';
 import { documentRemoval } from './purge-document.js';

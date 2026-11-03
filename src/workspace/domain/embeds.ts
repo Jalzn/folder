@@ -1,4 +1,4 @@
-import type { DocumentBlock } from './models.js';
+import type { DocumentBlock } from './document-models.js';
 
 /**
  * Tasks and drawings embedded in a document: a block with the item's ID, resolved at each read, with

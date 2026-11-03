@@ -1,4 +1,5 @@
-import type { ReadingContext, SearchHit } from '../../application/reading/ports.js';
+import type { ReadingContext } from '../../application/reading/ports.js';
+import type { SearchHit } from '../../application/reading/read-models.js';
 import { SearchInput } from '../../application/reading/schemas.js';
 import { search } from '../../application/reading/search.js';
 import { compactJson, fitItems, textResult } from './format.js';

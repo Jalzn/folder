@@ -1,6 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
 import { reorder } from '../../domain/order.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { MoveColumnInput } from '../schemas/columns.js';
 import { renumberColumns, requireActiveColumn } from './column-rules.js';
 

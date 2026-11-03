@@ -1,4 +1,4 @@
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { ListTasksInput } from '../schemas/tasks.js';
 
 /** The live tasks of a project, or of those created from a document, with the board revision. */

@@ -1,4 +1,4 @@
-import type { OriginTask, ProjectReference, TaskDetail } from '../../application/reading/ports.js';
+import type { OriginTask, ProjectReference, TaskForReading } from '../../application/reading/read-models.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { isOverdue } from '../../domain/task-dates.js';
 import type { AgentToolResult } from './types.js';
@@ -106,7 +106,7 @@ function quotedWithin(text: string, maxChars: number): string {
 }
 
 /** As many label names as fit `maxChars`, the rest counted. */
-function labelNames(labels: TaskDetail['labels'], maxChars: number): string {
+function labelNames(labels: TaskForReading['labels'], maxChars: number): string {
   if (!labels.length) return 'nenhuma';
   const names = labels.map((label) => singleLine(label.name));
   for (let shown = names.length; shown > 0; shown -= 1) {
@@ -118,7 +118,7 @@ function labelNames(labels: TaskDetail['labels'], maxChars: number): string {
 }
 
 /** Where the source document stands: readable, in the trash, or purged with the title it had. */
-function sourceDocumentText(source: NonNullable<TaskDetail['source']>): string {
+function sourceDocumentText(source: NonNullable<TaskForReading['source']>): string {
   const title = JSON.stringify(shortTitle(singleLine(source.documentTitle ?? '')));
   if (source.available && source.documentId) return `documento ${title} (id ${source.documentId})`;
   if (source.documentId) return `documento na lixeira (id ${source.documentId})`;
@@ -133,7 +133,7 @@ const MIN_CUT_ROOM = 200;
  * excerpt are cut to fit. Dates are civil dates in the owner's time zone, `today` among them.
  */
 export function taskHeader(
-  input: { task: Omit<TaskDetail, 'description'>; today: string; empty: boolean },
+  input: { task: Omit<TaskForReading, 'description'>; today: string; empty: boolean },
   maxChars: number = READING_LIMITS.task.headerChars,
 ): string {
   const { task, today } = input;

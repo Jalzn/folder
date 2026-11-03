@@ -1,7 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
 import { TASK_LIMITS } from '../../domain/tasks.js';
 import { assertVersion } from '../helpers.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { RestoreLabelInput } from '../schemas/labels.js';
 import { assertLabelNameFree, assertRoomForLabel } from './label-rules.js';
 

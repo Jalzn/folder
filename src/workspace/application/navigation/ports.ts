@@ -1,6 +1,7 @@
 import type { Column } from '../../domain/columns.js';
-import type { Project, Task } from '../../domain/models.js';
 import type { NavItem, NavItemType } from '../../domain/navigation.js';
+import type { Project } from '../../domain/project-models.js';
+import type { Task } from '../../domain/task-models.js';
 import type { Calendar } from '../calendar.js';
 import type { TrashItemType } from '../schemas/trash.js';
 

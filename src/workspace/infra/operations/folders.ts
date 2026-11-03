@@ -6,7 +6,7 @@ import {
   renameFolder,
   restoreFolder,
 } from '../../application/folders/index.js';
-import type { WorkspaceContext } from '../../application/ports.js';
+import type { WorkspaceContext } from '../../application/ports/context.js';
 import {
   CreateFolderInput,
   DeleteFolderInput,

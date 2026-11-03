@@ -1,5 +1,5 @@
 import { createLabel, deleteLabel, listLabels, restoreLabel, updateLabel } from '../../application/labels/index.js';
-import type { WorkspaceContext } from '../../application/ports.js';
+import type { WorkspaceContext } from '../../application/ports/context.js';
 import {
   CreateLabelInput,
   DeleteLabelInput,

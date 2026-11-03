@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checklistProgress } from './checklist.js';
-import type { DocumentBlock } from './models.js';
+import type { DocumentBlock } from './document-models.js';
 
 const item = (checked: boolean, children: DocumentBlock[] = []): DocumentBlock => ({
   type: 'checkListItem',

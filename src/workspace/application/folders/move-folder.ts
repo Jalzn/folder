@@ -1,6 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
 import { reorder } from '../../domain/order.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { MoveFolderInput } from '../schemas/folders.js';
 import { renumberFolders, requireActiveFolder, requireProjectForFolders } from './folder-rules.js';
 

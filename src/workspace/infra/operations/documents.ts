@@ -6,7 +6,7 @@ import {
   restoreDocument,
   saveDocument,
 } from '../../application/documents.js';
-import type { WorkspaceContext } from '../../application/ports.js';
+import type { WorkspaceContext } from '../../application/ports/context.js';
 import {
   CreateDocumentInput,
   DeleteDocumentInput,

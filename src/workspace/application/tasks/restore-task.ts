@@ -1,7 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
-import type { TaskAck } from '../../domain/models.js';
+import type { TaskAck } from '../../domain/task-models.js';
 import { assertVersion } from '../helpers.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { RestoreTaskInput } from '../schemas/tasks.js';
 import { taskAck } from './task-rules.js';
 

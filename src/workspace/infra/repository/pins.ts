@@ -1,6 +1,6 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
-import type { PinRepository } from '../../application/ports.js';
+import type { PinRepository } from '../../application/ports/pins.js';
 import type { NavItemType } from '../../domain/navigation.js';
 import type { WorkspaceTables } from '../db.js';
 import { itemTable } from '../item-tables.js';

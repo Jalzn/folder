@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
-import type { Project } from '../domain/models.js';
+import type { Project } from '../domain/project-models.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';
 import { testProject } from '../testing/projects.js';

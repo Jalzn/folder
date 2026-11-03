@@ -1,6 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
 import { COLUMN_LIMITS } from '../../domain/columns.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { SetDoneColumnInput } from '../schemas/columns.js';
 import { assertPastCompletions, requireActiveColumn } from './column-rules.js';
 

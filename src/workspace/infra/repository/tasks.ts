@@ -1,8 +1,8 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import type { Kysely } from 'kysely';
-import type { TaskRecord, TaskRepository } from '../../application/ports.js';
+import type { TaskRecord, TaskRepository } from '../../application/ports/tasks.js';
 import { byLabelName } from '../../domain/labels.js';
-import type { Task } from '../../domain/models.js';
+import type { Task } from '../../domain/task-models.js';
 import { excerptPresent } from '../../domain/task-source.js';
 import type { TaskRow, WorkspaceTables } from '../db.js';
 import { documentModel, taskFieldsRow, taskModel, taskRow, taskTextRow } from './mappers.js';

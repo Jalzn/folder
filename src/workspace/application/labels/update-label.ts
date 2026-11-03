@@ -1,5 +1,5 @@
 import { assertVersion } from '../helpers.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { UpdateLabelInput } from '../schemas/labels.js';
 import { assertLabelNameFree, readLabelName, requireActiveLabel } from './label-rules.js';
 

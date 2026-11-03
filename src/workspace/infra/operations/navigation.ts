@@ -1,7 +1,8 @@
 import type { NavigationContext } from '../../application/navigation/ports.js';
 import { projectNavigation } from '../../application/navigation/project-navigation.js';
 import { projectOverview } from '../../application/navigation/project-overview.js';
-import type { ReadingContext, SearchHit } from '../../application/reading/ports.js';
+import type { ReadingContext } from '../../application/reading/ports.js';
+import type { SearchHit } from '../../application/reading/read-models.js';
 import { SearchInput } from '../../application/reading/schemas.js';
 import { search } from '../../application/reading/search.js';
 import { ProjectNavigationInput, ProjectOverviewInput } from '../../application/schemas/navigation.js';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import type { DocumentBlock } from './document-models.js';
 import { EMBED_LIMITS, embedIds, figureNumbers } from './embeds.js';
-import type { DocumentBlock } from './models.js';
 
 const [taskA, taskB, canvasA, canvasB] = [
   '7d1b6c1e-1f3e-4a8b-9c2d-0a1b2c3d4e5f',

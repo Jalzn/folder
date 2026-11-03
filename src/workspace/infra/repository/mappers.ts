@@ -1,10 +1,11 @@
-import type { TaskRecord } from '../../application/ports.js';
+import type { TaskRecord } from '../../application/ports/tasks.js';
 import type { Canvas, CanvasSummary } from '../../domain/canvas.js';
 import type { Column } from '../../domain/columns.js';
+import type { Document, DocumentBlock, DocumentSummary } from '../../domain/document-models.js';
 import type { Folder } from '../../domain/folders.js';
 import type { Label } from '../../domain/labels.js';
-import type { Document, DocumentBlock, DocumentSummary, Project } from '../../domain/models.js';
 import { nameKey } from '../../domain/names.js';
+import type { Project } from '../../domain/project-models.js';
 import { searchText } from '../../domain/search-text.js';
 import type { CanvasRow, ColumnRow, DocumentRow, FolderRow, LabelRow, ProjectRow, TaskRow } from '../db.js';
 

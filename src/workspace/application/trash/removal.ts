@@ -1,6 +1,6 @@
 import { AppError } from '@tinyfold/core/application';
 import { assertVersion } from '../helpers.js';
-import type { WorkspaceContext, WorkspaceRepository } from '../ports.js';
+import type { WorkspaceContext, WorkspaceRepository } from '../ports/context.js';
 import type { PurgeItemInput } from '../schemas/trash.js';
 
 /** What deleting an item for good needs to know of it, whatever its type. */

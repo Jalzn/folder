@@ -1,5 +1,5 @@
 import { type Database, tables } from '@tinyfold/core/infra';
-import type { ProjectRepository } from '../../application/ports.js';
+import type { ProjectRepository } from '../../application/ports/projects.js';
 import type { WorkspaceTables } from '../db.js';
 import { projectModel, projectRow } from './mappers.js';
 import { expectUpdated } from './versioned-update.js';

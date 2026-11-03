@@ -8,8 +8,8 @@ import {
   readDocumentContent,
   withBlockIds,
 } from './document.js';
+import type { DocumentBlock } from './document-models.js';
 import { EMBED_LIMITS } from './embeds.js';
-import type { DocumentBlock } from './models.js';
 import { excerptPresent } from './task-source.js';
 
 const text = (value: string) => [{ type: 'text', text: value, styles: {} }];

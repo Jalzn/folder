@@ -1,7 +1,8 @@
 import { AppError } from '@tinyfold/core/application';
 import { outlineCanvasScene } from '../../domain/canvas-outline.js';
 import { previewShowsScene } from '../../domain/canvas-preview.js';
-import type { ReadingContext, StoredPreview } from './ports.js';
+import type { ReadingContext } from './ports.js';
+import type { StoredPreview } from './read-models.js';
 import type { ReadDrawingInput } from './schemas.js';
 
 /** What the agent gets as the drawing's image: the stored preview, possibly of an older version, or why there is none. */

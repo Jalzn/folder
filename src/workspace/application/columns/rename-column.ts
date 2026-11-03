@@ -1,5 +1,5 @@
 import { assertVersion } from '../helpers.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { RenameColumnInput } from '../schemas/columns.js';
 import { assertColumnNameFree, readColumnName, requireActiveColumn } from './column-rules.js';
 

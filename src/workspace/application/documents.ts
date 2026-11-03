@@ -1,8 +1,8 @@
 import { documentPlainText, withBlockIds } from '../domain/document.js';
-import type { DocumentAck, RestoreAck } from '../domain/models.js';
+import type { DocumentAck, RestoreAck } from '../domain/items.js';
 import { folderAfterRestore, requireFolderInProject } from './folders/folder-rules.js';
 import { assertVersion, requireActiveProject, requireDocument } from './helpers.js';
-import type { WorkspaceContext } from './ports.js';
+import type { WorkspaceContext } from './ports/context.js';
 import type {
   CreateDocumentInput,
   DeleteDocumentInput,

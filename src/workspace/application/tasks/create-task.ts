@@ -1,9 +1,10 @@
 import { AppError } from '@tinyfold/core/application';
 import { firstOpenColumn } from '../../domain/columns.js';
-import type { TaskAck } from '../../domain/models.js';
+import type { TaskAck } from '../../domain/task-models.js';
 import { excerptPresent } from '../../domain/task-source.js';
 import { assertVersion, requireActiveProject, requireDocument } from '../helpers.js';
-import type { TaskRecord, TaskSourceRecord, WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
+import type { TaskRecord, TaskSourceRecord } from '../ports/tasks.js';
 import type { CreateTaskInput } from '../schemas/tasks.js';
 import { columnFor, completionIn, placeIn, requireTaskLabels, taskAck, taskText } from './task-rules.js';
 

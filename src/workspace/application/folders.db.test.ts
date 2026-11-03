@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Database } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Project } from '../domain/models.js';
+import type { Project } from '../domain/project-models.js';
 import type { WorkspaceService } from '../infra/service.js';
 import { request } from '../testing/builders.js';
 import { useWorkspaceDb } from '../testing/database.js';

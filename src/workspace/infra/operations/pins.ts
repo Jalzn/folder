@@ -1,5 +1,5 @@
 import { pinItem, unpinItem } from '../../application/pins.js';
-import type { WorkspaceContext } from '../../application/ports.js';
+import type { WorkspaceContext } from '../../application/ports/context.js';
 import { PinItemInput } from '../../application/schemas/pins.js';
 import { operation } from './operation.js';
 

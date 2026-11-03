@@ -1,7 +1,9 @@
-/** The item types the sidebar's tree lists, which are also the ones that can be pinned and filed. */
-export const NAV_ITEM_TYPES = ['document', 'drawing'] as const;
+import type { FiledItemType } from './items.js';
 
-export type NavItemType = (typeof NAV_ITEM_TYPES)[number];
+/** The item types the sidebar's tree lists, which are also the ones that can be pinned and filed. */
+export { FILED_ITEM_TYPES as NAV_ITEM_TYPES } from './items.js';
+
+export type NavItemType = FiledItemType;
 
 /** How the sidebar's tree orders unpinned items: last edited, A–Z, or last created first. */
 export const NAV_SORTS = ['recent', 'title', 'created'] as const;

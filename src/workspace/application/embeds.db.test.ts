@@ -3,7 +3,7 @@ import type { Database } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { INITIAL_COLUMN_IDS } from '../domain/columns.js';
-import type { Project } from '../domain/models.js';
+import type { Project } from '../domain/project-models.js';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
 import type { WorkspaceService } from '../infra/service.js';
 import { request } from '../testing/builders.js';

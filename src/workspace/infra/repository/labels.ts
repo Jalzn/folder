@@ -1,5 +1,5 @@
 import { type Database, tables } from '@tinyfold/core/infra';
-import type { LabelRepository } from '../../application/ports.js';
+import type { LabelRepository } from '../../application/ports/labels.js';
 import { byLabelName } from '../../domain/labels.js';
 import type { WorkspaceTables } from '../db.js';
 import { labelModel, labelRow } from './mappers.js';

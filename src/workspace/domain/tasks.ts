@@ -1,4 +1,5 @@
-import type { DocumentContent, Task } from './models.js';
+import type { DocumentContent } from './document-models.js';
+import type { Task } from './task-models.js';
 
 export type { Task };
 

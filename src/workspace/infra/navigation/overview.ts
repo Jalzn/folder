@@ -1,8 +1,8 @@
 import { type Kysely, sql } from 'kysely';
 import type { NavigationReader, RecentItem } from '../../application/navigation/ports.js';
 import { documentLead } from '../../domain/document.js';
+import type { DocumentBlock } from '../../domain/document-models.js';
 import { excerptFromStart } from '../../domain/excerpt.js';
-import type { DocumentBlock } from '../../domain/models.js';
 import type { NavItemType } from '../../domain/navigation.js';
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
 import type { WorkspaceTables } from '../db.js';

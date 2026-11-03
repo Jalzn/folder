@@ -1,6 +1,6 @@
 import { listTrash } from '../../application/navigation/list-trash.js';
 import type { NavigationContext } from '../../application/navigation/ports.js';
-import type { WorkspaceContext } from '../../application/ports.js';
+import type { WorkspaceContext } from '../../application/ports/context.js';
 import { EmptyTrashInput, ListTrashInput, PurgeItemInput } from '../../application/schemas/trash.js';
 import { emptyTrash, purgeCanvas, purgeDocument, purgeTask } from '../../application/trash/index.js';
 import { operation } from './operation.js';

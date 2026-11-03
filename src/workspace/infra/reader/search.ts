@@ -1,6 +1,7 @@
 import { type Kysely, type RawBuilder, sql } from 'kysely';
 import { compareSearchKeys, searchKey, searchTypeRankOf } from '../../application/reading/list-order.js';
-import type { SearchHit, SearchQuery, WorkspaceReader } from '../../application/reading/ports.js';
+import type { WorkspaceReader } from '../../application/reading/ports.js';
+import type { SearchHit, SearchQuery } from '../../application/reading/read-models.js';
 import { excerptAround } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import type { WorkspaceTables } from '../db.js';

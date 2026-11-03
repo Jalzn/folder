@@ -1,7 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
 import { COLUMN_LIMITS, type Column } from '../../domain/columns.js';
 import { assertNameFree, readName } from '../name-rules.js';
-import type { ColumnRepository } from '../ports.js';
+import type { ColumnRepository } from '../ports/columns.js';
 
 /** An active column: a deleted one takes no task and cannot change. */
 export async function requireActiveColumn(repo: Pick<ColumnRepository, 'findColumn'>, id: string): Promise<Column> {

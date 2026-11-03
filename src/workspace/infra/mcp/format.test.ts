@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TaskDetail } from '../../application/reading/ports.js';
+import type { TaskForReading } from '../../application/reading/read-models.js';
 import type { CanvasOutline } from '../../domain/canvas-outline.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { compactJson, documentHeader, fitItems, taskHeader } from './format.js';
@@ -202,7 +202,7 @@ describe('tool text helpers', () => {
       available: true,
       blockAvailable: true,
     };
-    const task: Omit<TaskDetail, 'description'> = {
+    const task: Omit<TaskForReading, 'description'> = {
       id: 't1',
       title: 'Configurar backup externo',
       column: { id: 'c1', name: 'Em andamento', isDone: false },
@@ -265,7 +265,7 @@ describe('tool text helpers', () => {
     });
 
     it('says where a source document went and when the excerpt left it', () => {
-      const lines = (source: TaskDetail['source']) =>
+      const lines = (source: TaskForReading['source']) =>
         taskHeader({ task: { ...task, dueOn: null, source }, today: '2026-11-01', empty: false })
           .split('\n')
           .filter((line) => line.startsWith('- Origem') || line.startsWith('  - Trecho') || line.startsWith('- Prazo'));

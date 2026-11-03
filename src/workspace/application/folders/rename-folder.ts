@@ -1,5 +1,5 @@
 import { assertVersion } from '../helpers.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { RenameFolderInput } from '../schemas/folders.js';
 import { assertFolderNameFree, readFolderName, requireActiveFolder, requireProjectForFolders } from './folder-rules.js';
 

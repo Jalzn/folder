@@ -1,9 +1,10 @@
 import { AppError } from '@tinyfold/core/application';
 import { FOLDER_LIMITS, type Folder } from '../../domain/folders.js';
-import type { Project } from '../../domain/models.js';
+import type { Project } from '../../domain/project-models.js';
 import { requireProject } from '../helpers.js';
 import { assertNameFree, readName } from '../name-rules.js';
-import type { FolderRepository, WorkspaceRepository } from '../ports.js';
+import type { WorkspaceRepository } from '../ports/context.js';
+import type { FolderRepository } from '../ports/folders.js';
 
 /** An active folder: a deleted one takes nothing new and cannot change. */
 export async function requireActiveFolder(repo: Pick<FolderRepository, 'findFolder'>, id: string): Promise<Folder> {

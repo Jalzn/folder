@@ -1,10 +1,10 @@
 import { AppError } from '@tinyfold/core/application';
 import { type Canvas, type CanvasAck, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
 import { previewShowsScene } from '../domain/canvas-preview.js';
-import type { RestoreAck } from '../domain/models.js';
+import type { RestoreAck } from '../domain/items.js';
 import { folderAfterRestore, requireFolderInProject } from './folders/folder-rules.js';
 import { assertVersion, requireActiveProject } from './helpers.js';
-import type { WorkspaceContext, WorkspaceRepository } from './ports.js';
+import type { WorkspaceContext, WorkspaceRepository } from './ports/context.js';
 import type {
   CreateCanvasInput,
   DeleteCanvasInput,

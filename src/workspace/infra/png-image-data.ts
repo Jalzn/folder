@@ -1,5 +1,5 @@
 import { inflateSync } from 'node:zlib';
-import type { PngImageData } from '../application/ports.js';
+import type { PngImageData } from '../application/ports/canvases.js';
 
 /** zlib inflation bounded by the size the PNG header declares, so a crafted file cannot exhaust memory. */
 export const zlibImageData: PngImageData = {

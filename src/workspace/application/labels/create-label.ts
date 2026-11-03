@@ -1,5 +1,5 @@
 import { nextLabelColor } from '../../domain/labels.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { CreateLabelInput } from '../schemas/labels.js';
 import { assertLabelNameFree, assertRoomForLabel, readLabelName } from './label-rules.js';
 

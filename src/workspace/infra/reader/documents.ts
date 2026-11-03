@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
-import type { DocumentBlock } from '../../domain/models.js';
+import type { DocumentBlock } from '../../domain/document-models.js';
 import type { WorkspaceTables } from '../db.js';
 import { folderColumns, folderReference } from './folders.js';
 import { columnRank, projectColumns, projectReference } from './shared.js';

@@ -1,5 +1,6 @@
 import type { Kysely } from 'kysely';
-import type { FolderReference, WorkspaceReader } from '../../application/reading/ports.js';
+import type { WorkspaceReader } from '../../application/reading/ports.js';
+import type { FolderReference } from '../../application/reading/read-models.js';
 import type { WorkspaceTables } from '../db.js';
 
 type FolderReads = Pick<WorkspaceReader, 'folder'>;

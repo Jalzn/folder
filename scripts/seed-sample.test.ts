@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { CanvasElement } from '../src/workspace/domain/canvas.js';
 import { checklistProgress } from '../src/workspace/domain/checklist.js';
 import { readDocumentContent } from '../src/workspace/domain/document.js';
+import type { DocumentBlock } from '../src/workspace/domain/document-models.js';
 import { embedIds, isEmbedType } from '../src/workspace/domain/embeds.js';
-import type { DocumentBlock } from '../src/workspace/domain/models.js';
 import {
   loadScene,
   SAMPLE_DESCRIPTIONS,

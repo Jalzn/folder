@@ -3,7 +3,8 @@ import { isCanvasId } from '../domain/canvas.js';
 import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas-preview.js';
 import { hasValidRowFilters, readPngInfo } from '../domain/png.js';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
-import type { PngImageData, WorkspaceContext } from './ports.js';
+import type { PngImageData } from './ports/canvases.js';
+import type { WorkspaceContext } from './ports/context.js';
 import type { SaveCanvasPreviewInput } from './schemas/canvases.js';
 
 /** A live drawing's stored preview, as the document's figure loads it. */

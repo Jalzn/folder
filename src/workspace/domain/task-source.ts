@@ -1,5 +1,5 @@
 import { documentPlainText, findBlock } from './document.js';
-import type { Document } from './models.js';
+import type { Document } from './document-models.js';
 
 const collapseSpaces = (text: string) => text.replace(/\s+/gu, ' ').trim();
 

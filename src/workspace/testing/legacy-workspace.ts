@@ -12,7 +12,7 @@ import {
 } from '@tinyfold/core/infra';
 import { type CanvasScene, canvasPlainText, emptyCanvasScene } from '../domain/canvas.js';
 import { documentPlainText } from '../domain/document.js';
-import type { DocumentBlock } from '../domain/models.js';
+import type { DocumentBlock } from '../domain/document-models.js';
 
 /** A task's status before migration 007 replaced it with a column. */
 type LegacyStatus = 'todo' | 'doing' | 'done';

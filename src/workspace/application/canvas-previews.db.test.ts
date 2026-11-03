@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Project } from '../domain/models.js';
+import type { Project } from '../domain/project-models.js';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService, type WorkspaceService } from '../infra/service.js';

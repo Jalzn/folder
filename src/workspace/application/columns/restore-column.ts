@@ -1,7 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
 import { restoredPosition } from '../../domain/order.js';
 import { assertVersion } from '../helpers.js';
-import type { WorkspaceContext } from '../ports.js';
+import type { WorkspaceContext } from '../ports/context.js';
 import type { RestoreColumnInput } from '../schemas/columns.js';
 import { assertColumnNameFree, assertPastCompletions, assertRoomForColumn, renumberColumns } from './column-rules.js';
 

@@ -2,9 +2,11 @@ import { AppError } from '@tinyfold/core/application';
 import { checklistProgress } from '../../domain/checklist.js';
 import type { Column } from '../../domain/columns.js';
 import { documentPlainText, withBlockIds } from '../../domain/document.js';
-import type { DocumentContent, TaskAck } from '../../domain/models.js';
+import type { DocumentContent } from '../../domain/document-models.js';
+import type { TaskAck } from '../../domain/task-models.js';
 import { TASK_LIMITS } from '../../domain/tasks.js';
-import type { TaskRecord, WorkspaceRepository } from '../ports.js';
+import type { WorkspaceRepository } from '../ports/context.js';
+import type { TaskRecord } from '../ports/tasks.js';
 
 /** The answer of a task write, without its title (see TaskAck). */
 export const taskAck = (task: TaskRecord, revision: number): TaskAck => ({

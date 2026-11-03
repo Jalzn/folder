@@ -1,4 +1,4 @@
-import type { DocumentBlock } from './models.js';
+import type { DocumentBlock } from './document-models.js';
 
 /** How many check items a description has and how many are checked, nested ones included. */
 export function checklistProgress(content: readonly DocumentBlock[]): { done: number; total: number } {

@@ -1,6 +1,6 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
-import type { CanvasRepository } from '../../application/ports.js';
+import type { CanvasRepository } from '../../application/ports/canvases.js';
 import type { WorkspaceTables } from '../db.js';
 import { canvasModel, canvasRow, canvasSummary } from './mappers.js';
 import { expectUpdated } from './versioned-update.js';

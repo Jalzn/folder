@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { coreModule, createDatabase, type Database, migrate } from '@tinyfold/core/infra';
 import { afterEach, beforeEach, vi } from 'vitest';
-import type { Project } from '../domain/models.js';
+import type { Project } from '../domain/project-models.js';
 import { createWorkspaceTools } from '../infra/mcp/index.js';
 import { workspaceModule } from '../infra/module.js';
 import { createWorkspaceService } from '../infra/service.js';

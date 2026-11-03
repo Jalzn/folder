@@ -1,5 +1,6 @@
 import { DomainError } from '@tinyfold/core/domain';
 import { COLUMN_LIMITS } from './columns.js';
+import { type ItemType, ITEM_TYPES as SEARCH_ITEM_TYPES } from './items.js';
 
 const invalidCursor = () => new DomainError('Cursor inválido. Repita a consulta sem cursor.');
 
@@ -52,9 +53,9 @@ export function readDocumentCursor(cursor: string): { textPrint: string; offset:
 }
 
 /** Item types in the order search lists them when the title rank and the edit time tie. */
-export const SEARCH_ITEM_TYPES = ['document', 'drawing', 'task'] as const;
+export { ITEM_TYPES as SEARCH_ITEM_TYPES } from './items.js';
 
-export type SearchItemType = (typeof SEARCH_ITEM_TYPES)[number];
+export type SearchItemType = ItemType;
 
 /**
  * Lists page by keyset: a cursor holds the sort key of the last item shown, so edits elsewhere in

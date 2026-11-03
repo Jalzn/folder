@@ -7,7 +7,7 @@ import {
   restoreCanvas,
   saveCanvas,
 } from '../../application/canvases.js';
-import type { WorkspaceContext } from '../../application/ports.js';
+import type { WorkspaceContext } from '../../application/ports/context.js';
 import {
   CreateCanvasInput,
   DeleteCanvasInput,

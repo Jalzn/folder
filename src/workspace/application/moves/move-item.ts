@@ -1,9 +1,9 @@
 import { AppError } from '@tinyfold/core/application';
 import type { Canvas } from '../../domain/canvas.js';
-import type { Document } from '../../domain/models.js';
+import type { Document } from '../../domain/document-models.js';
 import { requireFolderInProject, requireProjectForFolders } from '../folders/folder-rules.js';
 import { assertVersion, requireActiveProject, requireLiveItem } from '../helpers.js';
-import type { WorkspaceContext, WorkspaceRepository } from '../ports.js';
+import type { WorkspaceContext, WorkspaceRepository } from '../ports/context.js';
 import type { MoveItemInput } from '../schemas/moves.js';
 import { keepPinIfRoom } from './pin-scope.js';
 

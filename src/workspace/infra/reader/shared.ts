@@ -1,5 +1,5 @@
 import { sql } from 'kysely';
-import type { ProjectReference, SourceDocument } from '../../application/reading/ports.js';
+import type { ProjectReference, SourceDocument } from '../../application/reading/read-models.js';
 
 /**
  * The project columns every read query selects, from `item` joined to `project`. The join is inner:

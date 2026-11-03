@@ -1,8 +1,11 @@
 import { AppError } from '@tinyfold/core/application';
 import type { Canvas } from '../domain/canvas.js';
-import type { Document, Project } from '../domain/models.js';
+import type { Document } from '../domain/document-models.js';
 import type { NavItemType } from '../domain/navigation.js';
-import type { ProjectRepository, TaskRecord, WorkspaceRepository } from './ports.js';
+import type { Project } from '../domain/project-models.js';
+import type { WorkspaceRepository } from './ports/context.js';
+import type { ProjectRepository } from './ports/projects.js';
+import type { TaskRecord } from './ports/tasks.js';
 
 /** The one answer to a stale version, whether the write sees it before or during its UPDATE. */
 export const versionConflict = () =>

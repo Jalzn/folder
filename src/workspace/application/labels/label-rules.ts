@@ -1,7 +1,7 @@
 import { AppError } from '@tinyfold/core/application';
 import { LABEL_LIMITS, type Label } from '../../domain/labels.js';
 import { assertNameFree, readName } from '../name-rules.js';
-import type { LabelRepository } from '../ports.js';
+import type { LabelRepository } from '../ports/labels.js';
 
 /** An active label: a deleted one is in no read, and only a restore brings it back. */
 export async function requireActiveLabel(repo: Pick<LabelRepository, 'findLabel'>, id: string): Promise<Label> {
