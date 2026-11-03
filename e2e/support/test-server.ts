@@ -23,20 +23,31 @@ async function availablePort() {
 }
 
 /** A real server with a new SQLite file; no application database is opened. */
-export async function startTestServer({ sample = false } = {}) {
+export async function startTestServer({
+  sample = false,
+  fixedTime,
+}: {
+  sample?: boolean;
+  fixedTime?: string | undefined;
+} = {}) {
   const port = await availablePort();
   const directory = await mkdtemp(join(tmpdir(), 'tinyfold-e2e-worker-'));
   const databasePath = join(directory, 'tinyfold.sqlite');
   const origin = `http://localhost:${port}`;
   const env = { ...process.env, ...serverEnv({ port, databasePath }) };
+  const clockArgs = fixedTime ? ['--import', './e2e/support/fixed-time.ts'] : [];
+  if (fixedTime) Object.assign(env, { TINYFOLD_E2E_FIXED_TIME: fixedTime });
   let stop = () => rm(directory, { recursive: true, force: true });
   try {
     if (sample)
-      await promisify(execFile)(process.execPath, ['--import', 'tsx', 'scripts/seed-sample.ts'], {
+      await promisify(execFile)(process.execPath, ['--import', 'tsx', ...clockArgs, 'scripts/seed-sample.ts'], {
         env,
         timeout: 30_000,
       });
-    const child = spawn(process.execPath, ['--import', 'tsx', 'src/server/main.ts'], { env, stdio: 'pipe' });
+    const child = spawn(process.execPath, ['--import', 'tsx', ...clockArgs, 'src/server/main.ts'], {
+      env,
+      stdio: 'pipe',
+    });
     let output = '';
     const collect = (data: Buffer) => {
       output = (output + data.toString()).slice(-8000);

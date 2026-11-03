@@ -10,16 +10,21 @@ type Fixtures = {
 };
 
 /** Files may run together; each worker owns its server, account and SQLite file. */
-export const isolatedTest = base.extend<Fixtures, { testServer: TestServer; sample: boolean }>({
+export const isolatedTest = base.extend<
+  Fixtures,
+  { testServer: TestServer; sample: boolean; fixedTime: string | undefined }
+>({
   controlledClock: [false, { option: true }],
-  page: async ({ page, controlledClock }, use) => {
+  page: async ({ page, controlledClock, fixedTime }, use) => {
+    if (fixedTime) await page.clock.setFixedTime(new Date(fixedTime));
     if (controlledClock) await page.clock.install();
     await use(page);
   },
   sample: [false, { scope: 'worker', option: true }],
+  fixedTime: [undefined, { scope: 'worker', option: true }],
   testServer: [
-    async ({ sample }, use) => {
-      const server = await startTestServer({ sample });
+    async ({ sample, fixedTime }, use) => {
+      const server = await startTestServer({ sample, fixedTime });
       try {
         await use(server);
       } finally {
