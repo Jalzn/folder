@@ -52,7 +52,7 @@ describe('localDrafts', () => {
 describe('draftDownload', () => {
   it('gives a document draft as it was saved, in JSON', async () => {
     const { blob, fileName } = draftDownload('document', 'doc', '{"a":1}');
-    expect(fileName).toBe('tinyfold-rascunho-doc.json');
+    expect(fileName).toBe('tinyfold-rascunho-documento-doc.json');
     expect(blob.type).toBe('application/json');
     expect(await blob.text()).toBe('{"a":1}');
   });

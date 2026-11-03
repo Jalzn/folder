@@ -1,17 +1,7 @@
 import { downloadFile } from '../../lib/download';
+import { type DraftKind, draftFileName } from '../../lib/local-drafts';
 
-/** What a draft that could not open is downloaded from. */
-export type DraftKind = 'document' | 'drawing' | 'task';
-
-/**
- * The file a draft is downloaded as, one pattern for the three items (decision 7): `tinyfold-rascunho-<id>.json`
- * for a document, as the not-found page names it too, and `tinyfold-rascunho-desenho-` or `-tarefa-` before the
- * ID for the others.
- */
-export const draftFileName = (kind: DraftKind, id: string) =>
-  kind === 'document'
-    ? `tinyfold-rascunho-${id}.json`
-    : `tinyfold-rascunho-${kind === 'drawing' ? 'desenho' : 'tarefa'}-${id}.json`;
+export { type DraftKind, draftFileName };
 
 /** What every draft download says. */
 export const DRAFT_DOWNLOADED = 'Uma cópia do rascunho foi baixada.';

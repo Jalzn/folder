@@ -16,15 +16,26 @@ export function localDrafts(storage: Storage, installationId: string, type: Item
   return drafts;
 }
 
+/** What a draft is downloaded from. */
+export type DraftKind = 'document' | 'drawing' | 'task';
+
+const draftNames: Record<DraftKind, string> = { document: 'documento', drawing: 'desenho', task: 'tarefa' };
+
+/**
+ * The file a draft is downloaded as, one pattern for the three items, from their pages and from the not-found
+ * page alike: `tinyfold-rascunho-<documento|desenho|tarefa>-<id>.json`.
+ */
+export const draftFileName = (kind: DraftKind, id: string) => `tinyfold-rascunho-${draftNames[kind]}-${id}.json`;
+
 /**
  * A draft as the recovery formats save it: a document's draft as JSON, a drawing as an editable
  * `.excalidraw` file, or its raw JSON when the scene no longer reads.
  */
 export function draftDownload(type: ItemType, id: string, raw: string): { blob: Blob; fileName: string } {
-  const json = { blob: new Blob([raw], { type: 'application/json' }), fileName: `tinyfold-rascunho-${id}.json` };
+  const json = { blob: new Blob([raw], { type: 'application/json' }), fileName: draftFileName(type, id) };
   if (type === 'document') return json;
   const draft = parseCanvasDraft(raw);
-  if (!draft) return { ...json, fileName: `tinyfold-rascunho-desenho-${id}.json` };
+  if (!draft) return json;
   return {
     blob: new Blob([canvasFile(draft.snapshot)], { type: 'application/vnd.excalidraw+json' }),
     fileName: canvasFileName(draft.snapshot.title, 'excalidraw'),
