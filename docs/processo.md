@@ -36,6 +36,15 @@ Os helpers comuns ficam em `e2e/support/`:
 
 São quatro workers para arquivos distintos; os testes de cada arquivo continuam sequenciais. Colunas e fuso pertencem à instalação: os testes que os alteram continuam restaurando o estado. Casos de teclado, digitação e ausência de salvamento marcados com `@timing` rodam no projeto `chrome-desktop-timing`, em um worker, depois dos projetos comuns. Para rodar só esse grupo: `mise exec -- pnpm e2e --project=chrome-desktop-timing --no-deps`.
 
+O workflow `.github/workflows/ci.yml` prepara dois runners com a matriz `shard: [1, 2]`. Cada um instala as versões fixadas, constrói o próprio bundle e executa:
+
+```sh
+pnpm e2e --project=chrome-desktop --project=chrome-mobile --shard=1/2 --reporter=list,blob
+# No segundo runner: --shard=2/2.
+```
+
+O sharding distribui arquivos, mantendo cada arquivo sequencial. Depois dos dois shards, um job separado executa `chrome-desktop-timing --no-deps` uma única vez, em um worker. Os três blobs são publicados por 14 dias e reunidos por `playwright merge-reports --reporter=html`; o relatório também é gerado quando os testes falham. A divisão segue o [sharding do Playwright](https://playwright.dev/docs/test-sharding), e `--no-deps` evita repetir os projetos comuns. Sem remoto configurado, a execução hospedada ainda não ocorreu; a divisão e a união dos relatórios são verificáveis localmente.
+
 Arquivos exclusivos do desktop usam `.desktop.spec.ts`, e os exclusivos do celular podem usar `.mobile.spec.ts`. Num arquivo misto, o caso recebe `@desktop` ou `@mobile`. A configuração seleciona o dispositivo antes da execução, sem registrar como pulados os casos que não se aplicam. `e2e:smoke` seleciona os oito cenários de captura, Markdown, tarefas e recuperação offline, nos dois dispositivos. A lista completa continua verificável com `mise exec -- pnpm e2e --list`.
 
 A validação manual usa o Chrome do Content Viewer dentro do Herdr.app, com uma instalação temporária separada. O guia pessoal e os comandos estão em `/Users/standard/.agent-switch/docs/herdr-workspace.md`; não confundir esse browser com as sessões automáticas do Playwright.

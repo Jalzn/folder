@@ -51,6 +51,12 @@ O domínio separa modelos de documento, desenho, projeto, tarefa e itens. `Filed
 
 `workspace/infra/sql/` concentra tabelas, mapeadores, referências, pastas, colunas ativas, etiquetas e origens das tarefas. Repositório e leitores compartilham hidratação e predicados SQL, com a visibilidade de itens explicitada pelo consumidor. `versionedUpdate` faz o UPDATE condicional e traduz a falta de uma linha atualizada para conflito. Os selects trazem só as colunas usadas; testes de paridade conferem `openTask` e `overdueOn` contra o domínio. `readTransaction` continua usando `BEGIN IMMEDIATE`, como a escrita; esta refatoração não mudou a reserva do escritor. Chamadas dentro dessas transações são sequenciais.
 
+`afterKeyset`, em `workspace/infra/sql/keyset.ts`, constrói a comparação lexicográfica de chaves não nulas, com direção ascendente ou descendente por campo e valores parametrizados. Projetos, busca, tarefas e concluídas compartilham esse predicado, mantendo suas ordens e cursores. O teste SQLite cobre empates, ranks constantes por tipo e todas as posições de cursor.
+
+`CivilDate` e `IsoInstant` são strings com marcas distintas em `core/domain`: a primeira representa um dia do calendário (`YYYY-MM-DD`); a segunda, um instante UTC. Relógios usam `toIsoInstant(Date)`; `todayIn` e `addDays` produzem datas civis, e `startOfDayIn` produz um instante. As marcas atravessam domínio, portas, modelos de leitura, tabelas tipadas e interface, mas não alteram JSON, SQLite nem a validação existente dos cursores. `readCivilDate` e `readIsoInstant` validam construções explícitas; os schemas mantêm suas mensagens e representações públicas.
+
+O domínio agrupa o serializador e as páginas em `workspace/domain/markdown/`, e modelos, validação, PNG, prévias e impressão digital em `workspace/domain/canvas/`. Os testes acompanham os arquivos; os exports públicos continuam no mesmo ponto de entrada.
+
 Os catálogos de erros de aplicação preservam mensagens específicas da operação. Auth recebe a porta `TokenSecrets`, separando geração, hash e leitura da persistência. Os validadores de documento e desenho compartilham guardas básicas, preservando formatos, profundidades e limites próprios. Não houve alteração das migrações aplicadas nem dos retratos do esquema e contrato nesta retomada.
 
 ## Erros e contrato do RPC
@@ -308,7 +314,7 @@ O editor gera a prévia ao abrir um desenho sem prévia atual, ao adotar uma ver
 ### Módulos e portas
 
 - **auth:** `domain/access-token.ts`, os casos de uso em `application/access-tokens/` e, na infraestrutura, o repositório, os segredos e `createAccessTokens`.
-- **workspace:** no domínio, o serializador Markdown, as páginas, a estrutura da cena, `png.ts`, `scene-fingerprint.ts` e os limites; na aplicação, `reading/` e `canvas-previews.ts`, que valida a prévia pela porta `PngImageData`; na infraestrutura, `reader/`, `mcp/` (ferramentas e formatação) e `png-image-data.ts`.
+- **workspace:** no domínio, `markdown/` reúne serializador e páginas; `canvas/` reúne estrutura da cena, `png.ts`, `scene-fingerprint.ts` e limites; na aplicação, `reading/` e `canvas-previews.ts`, que valida a prévia pela porta `PngImageData`; na infraestrutura, `reader/`, `mcp/` (ferramentas e formatação) e `png-image-data.ts`.
 - **server:** serve a prévia aos documentos em `src/server/files/canvas-preview-route.ts`, antes do fallback da SPA, e compõe o MCP em `src/server/mcp/`, com `bearer.ts`, `request-body.ts`, `mcp-server.ts` (registro das ferramentas no SDK) e `endpoint.ts` (`mountMcp`), e o IP do cliente em `client-ip.ts`.
 - **Migrações:** `auth/002_access_tokens.sql`, `workspace/003_canvas_previews.sql` e `workspace/004_canvas_preview_fingerprint.sql`.
 

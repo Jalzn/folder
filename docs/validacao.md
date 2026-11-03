@@ -2,6 +2,34 @@
 
 Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. A publicação anterior no Railway está registrada adiante; esta retomada de refatoração não realizou deploy.
 
+## Complemento da etapa 12
+
+Executado em 2026-11-03, a partir de `704978d`, no ramo `refactor/stage12-optionals`. O usuário pediu os quatro itens antes opcionais: W2.12 e B3.34–B3.36. A configuração de CI, o predicado SQL, as marcas de data e os movimentos de arquivos entraram em commits separados. A revisão integrada consultou o CI e as datas civis do Orbis, verificou parâmetros/ordens dos cursores, fronteiras de tipos e exports públicos. Sem delegação.
+
+| Verificação executada | Resultado |
+| --- | --- |
+| `mise exec -- pnpm check` | Aprovado por commit de código; último resultado: 747 unitários em 124 arquivos, tipos/lint aprovados e 1.159 módulos sem violações de dependência |
+| `mise exec -- pnpm test:db` | 288 testes em 48 arquivos, 4,77 s no último portão de backend; SQLite temporário |
+| `mise exec -- pnpm build` | Aprovado, inclusive depois da correção de contraste; permanece o aviso de chunks grandes |
+| E2E final, incluindo a correção de contraste | 93 + 93 + 41 = 227 aprovados: 101,5 s, 138,9 s, 162,8 s; zero falhas, intermitentes, pulados ou retries |
+| Relatório unificado | Os três arquivos blob produziram um HTML único por `playwright merge-reports` |
+| Regressão de contraste | Antes: falhou no tema claro com razão 1:1. Depois: os dois casos de importação Markdown passaram em desktop e Pixel 7, conferindo claro e escuro, em 6,0 s |
+| `VISUAL_BASELINE_DIR=… mise exec -- pnpm e2e:visual` | 40 capturas aprovadas em 22,8 s, nos quatro projetos de tema/dispositivo, sem atualizar a referência |
+| Movimento do domínio | 24 arquivos movidos; ASTs dos 57 arquivos afetados equivalentes após remover imports, reexports com origem e metadados de posição |
+| Contratos e migrações | Nenhuma migração aplicada ou snapshot de esquema/RPC alterado |
+
+A primeira rodada completa, antes da correção visual, também passou com 227 casos em 379,6 s e gerou o relatório unificado. A rodada final acima foi executada novamente após o novo build.
+
+**Sharding.** A listagem dos dois shards e do grupo de timing contém exatamente os 227 casos da listagem completa, sem interseção. Localmente, os shards foram executados em sequência com quatro workers cada, seguidos dos 41 casos de timing em um worker; isso valida a partição, o isolamento e os blobs, sem alegar medição de dois runners simultâneos. No workflow, os shards estão em uma matriz de dois runners, e o timing roda uma só vez depois deles. Cada runner faz seu próprio build. O YAML foi lido localmente; a execução hospedada não ocorreu porque não há remoto configurado.
+
+**Datas e SQL.** O novo teste SQLite verifica cada sufixo da ordenação com empates, direções diferentes, rank constante por tipo e uma chave com aspas, sem repetir/pular linhas nem interpolar valores. As marcas `CivilDate`/`IsoInstant` têm verificação de incompatibilidade em TypeScript, formatos inválidos e preservação do JSON; os testes existentes de fuso, cursores, RPC, idempotência e migrações continuam aprovados. Fixtures usam datas válidas; a representação persistida e as políticas de validação existentes não mudaram.
+
+**Chrome dentro do Herdr.** A passagem assistida usou a sessão `herdr-preview-a091930a-7110-474b-a619-a8d9892396f7`, no espaço Tinyfold, em `http://localhost:58912`, com SQLite temporário. O agente operou a página visível por `herdr-preview` e pelo CDP confirmado da sessão. Criou projeto e tarefa pela interface, escolheu amanhã pelo teclado, recarregou e verificou o prazo; concluiu a tarefa e conferiu o agrupamento por mês. Importou Markdown com ênfase, checklist, fórmula e código, recarregou e exportou mantendo o conteúdo. Desenhou um retângulo, recarregou, exportou PNG e Excalidraw, reimportou e conferiu a cena novamente. A lista de concluídas também foi vista em 390 × 844, tema escuro, sem overflow horizontal. Não houve erros de página na passagem inicial.
+
+**Achado visual corrigido.** A inspeção das capturas revelou texto branco sobre fundo branco nos blocos de código do tema claro. A regra de fundo já estava assim em `704978d`; não foi uma mudança dos quatro opcionais. O commit `77c5503` aplica `color: var(--text)` ao bloco, preservando a superfície do tema. O teste existente de importação agora verifica contraste mínimo de 4,5 nos dois temas, depois de aguardar a troca efetiva. No Herdr, as capturas finais mostram texto `rgb(24, 25, 28)` sobre branco no claro, e `rgb(236, 240, 248)` sobre `rgb(25, 29, 34)` no escuro. Os seletores de dois passos do roteiro assistido foram ajustados aos nomes acessíveis reais; isso não exigiu mudanças de produto. As 40 referências visuais anteriores não contêm esse bloco e permaneceram intactas; a regressão específica é coberta pela medida de contraste e pelas capturas assistidas.
+
+Registros locais: `/tmp/tinyfold-optionals-*-check.log`, `tinyfold-optionals-folders-db.log`, `tinyfold-optionals-browser/` e `tinyfold-optionals-final-browser/` (JSONs, blobs e relatórios das duas rodadas), `tinyfold-optionals-contrast-{before,after}.log`, `tinyfold-optionals-final-visual.log`, `tinyfold-optionals-move-audit.log`, `tinyfold-optionals-herdr.log` e `tinyfold-optionals-herdr-contrast.log`. Capturas em `/tmp/tinyfold-optionals-herdr-*.png` foram inspecionadas. O preview e o servidor temporário foram encerrados ao terminar a passagem. Não houve acesso ao banco principal, deploy nem teste em aparelho físico.
+
 ## Fechamento da etapa 12
 
 Executado em 2026-11-03, partindo de `5ead3a3`, no ramo `refactor/complete-stage12`, worktree `../tinyfold-refactor`. Conclui as pendências obrigatórias de backend, web, CSS e testes. Processo aprovado: commits por assunto, `check` por commit de código, `test:db` no backend e build/E2E completos por lote. Revisão integrada pelo agente, sem delegação nesta retomada.
@@ -39,7 +67,7 @@ Percursos executados:
 
 Registros locais: `/tmp/tinyfold-herdr-manual.log`, `tinyfold-herdr-matrix.log`, `tinyfold-herdr-selection.log`, `tinyfold-herdr-controls.log`, `tinyfold-herdr-persistence.log`, `tinyfold-herdr-keys.log` e `tinyfold-herdr-finish.log`. Os roteiros assistidos tiveram expectativas ajustadas ao contrato: o seletor vazio mantém criar/nenhum resultado; F pertence ao card/coluna do quadro; movimentos com Shift são revertidos por Shift no sentido contrário, enquanto o Desfazer de pasta foi testado separadamente. Essas correções de roteiro não exigiram mudanças no produto. Capturas em `/tmp/tinyfold-herdr-*.png` foram inspecionadas. Relatórios automatizados: `/tmp/tinyfold-final-e2e.json`, `tinyfold-final-e2e.log`, `tinyfold-final-db.log`, `tinyfold-final-visual.log` e `tinyfold-final-harness-check.log`.
 
-O fechamento não inclui os quatro itens opcionais do plano nem as pendências externas de operação. Não houve acesso ao banco principal, deploy ou teste em aparelho físico.
+Esse portão precede os quatro opcionais, concluídos no complemento acima; as pendências externas de operação permanecem. Não houve acesso ao banco principal, deploy ou teste em aparelho físico.
 
 ## Etapa 12: refatoração
 

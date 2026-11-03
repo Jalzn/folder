@@ -1,6 +1,6 @@
 # Etapa 12 — Refatoração
 
-**Estado:** concluída localmente em 2026-11-03. As seis ondas obrigatórias e as correções aprovadas foram fechadas; os opcionais continuam fora do critério de conclusão.
+**Estado:** concluída localmente em 2026-11-03. As seis ondas obrigatórias, as correções aprovadas e os quatro opcionais W2.12/B3.34–B3.36 foram implementados. O complemento e seus portões estão registrados abaixo.
 
 As tabelas de ondas e estimativas abaixo preservam o plano original. O processo efetivamente aprovado e executado está em [Critérios de pronto](#critérios-de-pronto), [Resultado](#resultado) e [Desvios](#desvios-do-plano).
 
@@ -710,14 +710,22 @@ As últimas diferenças aprovadas entraram isoladas: descrição escura com peso
 
 O último portão funcional aprovou 745 unitários, 287 testes de banco e 227 E2E em 8 min 1,6 s, sem falhas, intermitentes, pulados ou retries. Os 40 retratos passaram nos dois temas e tamanhos. O Chrome do Content Viewer do Herdr foi usado em uma instalação SQLite temporária, incluindo rede, conflito entre abas, teclado e foco. Não houve deploy nesta retomada.
 
-### Opcionais fora do fechamento
+### Complemento: quatro opcionais
 
-- **W2.12:** sharding em dois runners depende de remoto/CI, ainda ausentes. O paralelismo local já está concluído e validado.
-- **B3.34:** gerador genérico de predicados keyset não foi necessário; os cursores existentes e seus testes foram preservados.
-- **B3.35:** marcas de tipo para datas não foram introduzidas; isso ampliaria os contratos além do movimento necessário.
-- **B3.36:** a divisão obrigatória dos modelos e validadores foi feita; a reorganização opcional de todas as pastas de Markdown/canvas ficou fora.
+Depois do fechamento obrigatório, o usuário pediu também os quatro opcionais. O complemento parte de `704978d`, no ramo `refactor/stage12-optionals`, no mesmo worktree. As tabelas acima preservam a classificação opcional do plano original.
 
-Esses quatro itens eram opcionais no plano aprovado e não representam refatorações obrigatórias pendentes. Backups remotos automáticos e teste em dispositivos físicos pertencem às [pendências de operação](README.md#pendências-de-operação).
+| Item | Implementação |
+| --- | --- |
+| **W2.12** | `d245bfd`: CI com dois shards dos projetos desktop/celular, timing separado em um worker e relatório HTML unificado dos três blobs. Cada runner constrói seu próprio bundle. |
+| **B3.34** | `f4d17b1`: `afterKeyset` parametrizado, com direção por chave; projetos, busca, tarefas e concluídas compartilham o predicado. SQLite temporário cobre empates, ranks constantes e todas as posições do cursor. |
+| **B3.35** | `b714e5d`: marcas `CivilDate` e `IsoInstant`, propagadas por domínio, portas, tabelas e interface. Relógios e validadores estabelecem os tipos; JSON, SQLite, mensagens e contratos mantêm suas representações. |
+| **B3.36** | `ee95dea`: 24 arquivos de domínio e testes agrupados em `markdown/` e `canvas/`, com imports atualizados e exports públicos preservados. |
+
+O Orbis foi consultado para datas civis e CI; seu alias de data virou uma marca nominal no Tinyfold, mantendo o cálculo existente por `Intl`. Migrações aplicadas e snapshots de contratos não foram alterados. Os portões deste complemento estão em [validação](../validacao.md#complemento-da-etapa-12).
+
+A conferência no Chrome do Herdr revelou ainda texto branco sobre fundo branco nos blocos de código. A regra já estava na base; `77c5503` corrige a cor com o token do tema, em commit próprio, com regressão que falhou antes e passou depois em desktop/celular e claro/escuro.
+
+A execução hospedada do workflow depende de um remoto ainda não configurado. Backups remotos automáticos e teste em dispositivos físicos continuam nas [pendências de operação](README.md#pendências-de-operação).
 
 ## Desvios do plano
 
