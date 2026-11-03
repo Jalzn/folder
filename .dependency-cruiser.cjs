@@ -108,8 +108,8 @@ module.exports = {
     {
       name: 'web-lib-is-a-leaf',
       comment:
-        'web/lib holds helpers and hooks below the interface: it imports no other web layer. A warning until use-action.ts leaves lib (stage 12, W4.22).',
-      severity: 'warn',
+        'web/lib holds helpers and hooks below the interface: it imports no other web layer. The write hooks that need the toast live in shell/writes.',
+      severity: 'error',
       from: { path: '^src/web/lib/' },
       to: { path: '^src/web/(ui|shell|components|pages|editor|router)/' },
     },
