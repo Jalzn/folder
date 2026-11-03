@@ -30,7 +30,7 @@ Na sequência, o usuário pediu também W2.12 e B3.34–B3.36. Os quatro foram i
 
 A [etapa 13](13-modulos.md) foi concluída localmente em `refactor/stage13-modules`, com implementação em `59f6306`, três subagentes e revisão cruzada. Projects, Documents, Drawings e Board têm classes e donos de persistência próprios; Workspace coordena fluxos e leituras agregadas; `rich-text` concentra texto puro. A composição transacional e os eventos após commit preservam as 57 operações, seis ferramentas MCP e migrações históricas.
 
-Passaram 776 unitários, 331 testes SQLite, build, 227 E2E após a revisão final e 40 capturas comparadas à referência anterior. A validação assistida usou Chrome dentro do Herdr e banco temporário. O [registro de execução](13-modulos.md#registro-de-execução) e as [evidências](../validacao.md#etapa-13-módulos-e-contratos-públicos) detalham as correções e os limites. Não houve publicação desta etapa; `main` e o Railway permanecem no código anterior.
+Passaram 776 unitários, 331 testes SQLite, build, 227 E2E após a revisão final e 40 capturas comparadas à referência anterior. A validação assistida usou Chrome dentro do Herdr e banco temporário. O [registro de execução](13-modulos.md#registro-de-execução) e as [evidências](../validacao.md#etapa-13-módulos-e-contratos-públicos) detalham as correções e os limites. Em seguida, a pedido do usuário, a branch foi integrada por fast-forward na `main`. A publicação segue o CI e o deploy automático existente; os resultados ficam no [GitHub Actions](https://github.com/Jalzn/folder/actions) e no [histórico do Railway](https://railway.com/project/f42f84f1-c14a-423e-83d7-f05f9ddd6d54).
 
 ## Pendências de operação
 

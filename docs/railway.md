@@ -1,6 +1,8 @@
 # Tinyfold — Railway e Cloudflare
 
-**Estado:** serviço implantado no Railway, atualizado para a etapa 12 pelo GitHub em 2026-11-03, disponível em [folder.jalzn.com](https://folder.jalzn.com). A instalação começou vazia, sem importar dados locais. DNS, certificado HTTPS, rotas da SPA e login pelo subdomínio foram verificados. O segundo deploy preservou a sessão do primeiro. As verificações executadas estão em [validação](validacao.md#preparação-para-railway-e-cloudflare).
+**Estado:** serviço implantado no Railway e conectado à `main` do GitHub, disponível em [folder.jalzn.com](https://folder.jalzn.com). A instalação começou vazia, sem importar dados locais. DNS, certificado HTTPS, rotas da SPA e login pelo subdomínio foram verificados. O segundo deploy preservou a sessão do primeiro. As verificações executadas estão em [validação](validacao.md#preparação-para-railway-e-cloudflare).
+
+A etapa 13 foi integrada na `main` em 2026-11-03, mantendo o mesmo serviço, volume e pipeline de publicação. O estado de cada versão é registrado no GitHub Actions e no histórico de deployments do serviço.
 
 ## Esta instalação
 

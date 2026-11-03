@@ -1,6 +1,6 @@
 # Etapa 13 — Módulos de negócio e contratos públicos
 
-**Estado:** concluída localmente em `refactor/stage13-modules`. Código em `59f6306`; validação automática, comparação visual e passagem assistida no Chrome do Herdr aprovadas. O registro abaixo distingue o plano original da execução.
+**Estado:** concluída em `refactor/stage13-modules` e integrada por fast-forward na `main`, a pedido do usuário. Código em `59f6306`; validação automática, comparação visual e passagem assistida no Chrome do Herdr aprovadas. O registro abaixo distingue o plano original da execução.
 
 **Referência para o inventário:** `2090dea`, em 2026-11-03. A [etapa 12](12-refatoracao.md) está concluída. Esta etapa amplia a separação arquitetural, preservando o comportamento do produto.
 
@@ -438,4 +438,4 @@ A pedido do usuário, três subagentes dividiram implementação e revisão. Fou
 | M3.1–M6.3 | Quatro donos extraídos, com classes/contratos/participantes; antigos consumidores e testes migrados. |
 | M7.1–M7.4 | Workspace restrito a coordenação e leituras agregadas; repositório universal, adaptadores antigos e reexports de transição removidos. |
 | M8.1–M8.4 | Código `59f6306` revisado; 776 unitários, 331 SQLite, build, 227 E2E finais e 40 capturas aprovados; passagem no Chrome do Herdr concluída. Comandos, artefatos e limites em [validação](../validacao.md#etapa-13-módulos-e-contratos-públicos). |
-| Publicação | Nenhum push, merge em `main` ou deploy desta etapa. |
+| Integração | Em 2026-11-03, autorização do usuário para juntar na `main`; fast-forward de `2090dea` até `39d5e33`, contendo o código validado `59f6306`. Publicação pelo pipeline GitHub → CI → Railway, sem deploy manual. |

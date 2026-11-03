@@ -2,9 +2,9 @@
 
 Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar, sempre dentro de um projeto. Interface Sumário, limpa e tipográfica, em tema claro e escuro, com dados em SQLite no servidor e autenticação por senha.
 
-**Código:** [etapa 13](docs/etapas/13-modulos.md) concluída e validada localmente: projetos, documentos, desenhos e quadro têm módulos próprios; workspace coordena os fluxos conjuntos. A [etapa 12](docs/etapas/12-refatoracao.md), incluindo os quatro opcionais, é a referência anterior. Repositório público: [jalzn/folder](https://github.com/jalzn/folder).
+**Código:** [etapa 13](docs/etapas/13-modulos.md) concluída, validada e integrada na `main`: projetos, documentos, desenhos e quadro têm módulos próprios; workspace coordena os fluxos conjuntos. A [etapa 12](docs/etapas/12-refatoracao.md), incluindo os quatro opcionais, é a referência anterior. Repositório público: [jalzn/folder](https://github.com/jalzn/folder).
 
-**Implantação:** [etapa 12](docs/etapas/12-refatoracao.md) no Railway, com deploy automático de `main` após o CI, com SQLite persistente e uma instalação iniciada vazia. Disponível em [folder.jalzn.com](https://folder.jalzn.com), com DNS, HTTPS e login verificados. Snapshot remoto baixado e restauração verificada; backups automáticos externos continuam pendentes. Ver [operação no Railway](docs/railway.md).
+**Implantação:** Railway, com deploy automático de `main` após o CI, com SQLite persistente e uma instalação iniciada vazia. Disponível em [folder.jalzn.com](https://folder.jalzn.com), com DNS, HTTPS e login verificados. Snapshot remoto baixado e restauração verificada; backups automáticos externos continuam pendentes. Ver [operação no Railway](docs/railway.md).
 
 ## O que funciona
 

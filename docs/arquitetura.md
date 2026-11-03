@@ -1,6 +1,6 @@
 # Tinyfold — Arquitetura
 
-**Estado:** o código da [etapa 13](etapas/13-modulos.md) separa os módulos e preserva os contratos externos. A verificação integrada dessa etapa está concluída localmente; os resultados executados e a versão publicada ficam em [validação](validacao.md). A implantação no Railway continua independente da refatoração local.
+**Estado:** o código da [etapa 13](etapas/13-modulos.md) separa os módulos e preserva os contratos externos. A verificação integrada dessa etapa está concluída localmente; os resultados executados e a versão publicada ficam em [validação](validacao.md). A etapa foi integrada na `main`; a publicação segue o CI e o deploy automático do Railway.
 
 ## Base e módulos
 

@@ -1,10 +1,10 @@
 # Tinyfold — Validação local
 
-Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. A publicação anterior no Railway está registrada adiante; esta retomada de refatoração não realizou deploy.
+Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. A publicação anterior no Railway está registrada adiante; a integração posterior na `main` utiliza o deploy automático descrito no roteiro de operação.
 
 ## Etapa 13: módulos e contratos públicos
 
-Executada em 2026-11-03, na branch `refactor/stage13-modules`, partindo de `2090dea`. Plano em `b084c1f`; implementação integrada em `59f6306`. Três subagentes trabalharam em fundações/Board, texto/Drawings e política/Documents, com revisão cruzada; o agente principal implementou Projects, composição, migração dos consumidores e integração. As evidências abaixo são locais; não houve push, merge em `main` ou deploy desta etapa.
+Executada em 2026-11-03, na branch `refactor/stage13-modules`, partindo de `2090dea`. Plano em `b084c1f`; implementação integrada em `59f6306`. Três subagentes trabalharam em fundações/Board, texto/Drawings e política/Documents, com revisão cruzada; o agente principal implementou Projects, composição, migração dos consumidores e integração. As evidências abaixo são do fechamento local. Depois dele, o usuário autorizou a integração na `main`: fast-forward de `2090dea` até `39d5e33`, preservando exatamente o código validado `59f6306`. A publicação é feita pelo CI e pelo gatilho automático do Railway; os resultados hospedados ficam no [GitHub Actions](https://github.com/Jalzn/folder/actions) e no [Railway](https://railway.com/project/f42f84f1-c14a-423e-83d7-f05f9ddd6d54), separados das medições locais.
 
 | Verificação executada | Resultado |
 | --- | --- |
