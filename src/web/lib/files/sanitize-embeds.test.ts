@@ -1,4 +1,4 @@
-import type { DocumentBlock } from '@tinyfold/workspace/domain';
+import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
 import { sanitizeEmbeds, validEmbed } from './sanitize-embeds';
 

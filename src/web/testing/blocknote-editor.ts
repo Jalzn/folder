@@ -1,6 +1,6 @@
 import { registerHooks } from 'node:module';
 import { BlockNoteEditor, BlockNoteSchema, createBlockSpec } from '@blocknote/core';
-import { type DocumentContent, readDocumentContent } from '@tinyfold/workspace/domain';
+import { type DocumentContent, readDocumentContent } from '@tinyfold/rich-text/domain';
 import { Window } from 'happy-dom';
 import { afterAll, beforeAll, vi } from 'vitest';
 

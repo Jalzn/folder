@@ -1,7 +1,7 @@
+import { id } from '@tinyfold/core/application';
 import { z } from 'zod';
 import { NAV_SORTS } from '../../domain/navigation.js';
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
-import { id } from './common.js';
 
 const { defaultItems, maxItems } = NAVIGATION_LIMITS.sidebar;
 

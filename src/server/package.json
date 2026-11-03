@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./router": "./router.ts"
+    "./router": "./router.ts",
+    "./workspace": "./workspace/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",
@@ -19,7 +20,12 @@
     "hono": "4.13.13",
     "kysely": "0.29.7",
     "tsx": "4.23.15",
-    "zod": "4.6.7"
+    "zod": "4.6.7",
+    "@tinyfold/projects": "workspace:*",
+    "@tinyfold/documents": "workspace:*",
+    "@tinyfold/drawings": "workspace:*",
+    "@tinyfold/board": "workspace:*",
+    "@tinyfold/rich-text": "workspace:*"
   },
   "devDependencies": {
     "@orpc/client": "1.16.1"

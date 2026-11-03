@@ -1,16 +1,28 @@
+import { assertVersion } from '@tinyfold/core/application';
 import type { IsoInstant } from '@tinyfold/core/domain';
-import { restoredPosition } from '../../domain/order.js';
+import { restoredPosition } from '@tinyfold/core/domain';
 import { MAX_PINNED } from '../../domain/project.js';
 import { workspaceErrors } from '../errors.js';
-import type { WorkspaceContext } from '../ports/context.js';
+import type { FolderLifecyclePorts, WorkspaceFlowContext } from '../ports/context.js';
 import type { RestoreFolderInput } from '../schemas/folders.js';
-import { assertVersion } from '../version.js';
 import {
   assertFolderNameFree,
   assertRoomForFolder,
   renumberFolders,
   requireProjectForFolders,
 } from './folder-rules.js';
+
+type RestoreFolderPorts = Pick<
+  FolderLifecyclePorts,
+  | 'findFolder'
+  | 'findProject'
+  | 'activeFolders'
+  | 'saveFolder'
+  | 'setFolderPosition'
+  | 'findItem'
+  | 'placeItem'
+  | 'restoreItem'
+>;
 
 /**
  * Undoes deleteFolder with the lists it answered. The folder comes back at the position it had, or
@@ -29,7 +41,7 @@ import {
  * clock set back between the pin and the deletion): that item comes back without it. Pins come back
  * while the folder has room for them. Every other item, changed since, is skipped.
  */
-export function restoreFolder(ctx: WorkspaceContext, input: RestoreFolderInput) {
+export function restoreFolder(ctx: WorkspaceFlowContext<RestoreFolderPorts>, input: RestoreFolderInput) {
   return ctx.write('workspace.restoreFolder', input, async (repo) => {
     const folder = await repo.findFolder(input.id);
     if (!folder) throw workspaceErrors.folderMissing();

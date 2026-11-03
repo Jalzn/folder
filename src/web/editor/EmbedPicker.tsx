@@ -1,6 +1,7 @@
 import { KEYS } from '../shell/keyboard';
 import './embed-picker.css';
-import { type EmbedKind, nameKey } from '@tinyfold/workspace/domain';
+import { nameKey } from '@tinyfold/core/domain';
+import type { EmbedKind } from '@tinyfold/rich-text/domain';
 import { Plus } from 'lucide-react';
 import { type RefObject, useEffect, useRef, useState } from 'react';
 import { type SearchResult, useProjects, useSearch } from '../lib/queries';

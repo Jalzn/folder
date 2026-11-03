@@ -1,4 +1,4 @@
-import type { EmbedKind } from '@tinyfold/workspace/domain';
+import type { EmbedKind } from '@tinyfold/rich-text/domain';
 import { type ReactNode, type RefObject, useMemo, useRef, useState } from 'react';
 import { type EmbedText, embedText } from '../../editor/blocks/embed-text';
 import { EmbedsProvider, type EmbedsValue } from '../../editor/blocks/embeds-context';

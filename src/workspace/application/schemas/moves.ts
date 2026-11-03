@@ -1,6 +1,6 @@
+import { id, request, version } from '@tinyfold/core/application';
 import { z } from 'zod';
 import { NAV_ITEM_TYPES } from '../../domain/navigation.js';
-import { id, request, version } from './common.js';
 
 /**
  * Moves a document or drawing to another project, at the version the caller saw, or files it in a

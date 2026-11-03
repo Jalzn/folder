@@ -16,3 +16,9 @@ export interface EmbedReader {
 export interface EmbedContext {
   read<T>(work: (reader: EmbedReader) => Promise<T>): Promise<T>;
 }
+
+/** The drawing owner compares an encoded stored scene with its preview. */
+export type DrawingPreviewPolicy = (
+  preview: { sceneVersion: number; sceneFingerprint: string | null },
+  canvas: { version: number; scene: string },
+) => boolean;

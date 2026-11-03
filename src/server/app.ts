@@ -1,6 +1,5 @@
 import { type AccessTokenService, type AuthService, createAccessTokens, createAuthService } from '@tinyfold/auth';
 import type { Database } from '@tinyfold/core/infra';
-import { createWorkspace } from '@tinyfold/workspace';
 import { Hono } from 'hono';
 import { sql } from 'kysely';
 import type { Config } from './config.js';
@@ -10,6 +9,7 @@ import { createRouter } from './router.js';
 import { mountRpc } from './rpc.js';
 import { mountSecurityHeaders } from './security-headers.js';
 import { mountSpa } from './spa.js';
+import { createWorkspace } from './workspace/index.js';
 
 export interface AppDependencies {
   db: Database;
@@ -31,33 +31,71 @@ export function createApp({
   const authService = auth ?? createAuthService(db, { clock });
   const accessTokenService = accessTokens ?? createAccessTokens(db, { clock, logError });
   const workspace = createWorkspace(db, { clock, logError, timeZone: () => authService.timeZone() });
-  const app = new Hono();
-  mountSecurityHeaders(app);
-  app.get('/health', (c) => c.json({ status: 'ok' }));
-  app.get('/ready', async (c) => {
-    await sql`select 1`.execute(db);
-    return c.json({ status: 'ok' });
-  });
-  mountRpc(app, {
-    router: createRouter(authService, accessTokenService, workspace.router),
-    auth: authService,
-    config,
-    clock,
-    logError,
-  });
-  mountCanvasPreviewRoute(app, {
-    auth: authService,
-    files: workspace.files,
-    secureCookie: config.secureCookie,
-    clock,
-  });
-  mountMcp(app, {
-    accessTokens: accessTokenService,
-    tools: workspace.tools,
-    config,
-    clock,
-    logError,
-  });
-  mountSpa(app, config.webDir);
-  return app;
+  try {
+    const app = new Hono();
+    const pending = new Set<Promise<unknown>>();
+    let disposal: Promise<void> | undefined;
+    let disposed = false;
+    const track = <T>(work: () => T | Promise<T>): Promise<T> => {
+      const result = Promise.resolve().then(work);
+      pending.add(result);
+      void result.then(
+        () => pending.delete(result),
+        () => pending.delete(result),
+      );
+      return result;
+    };
+    mountSecurityHeaders(app);
+    app.get('/health', (c) => c.json({ status: 'ok' }));
+    app.get('/ready', async (c) => {
+      await sql`select 1`.execute(db);
+      return c.json({ status: 'ok' });
+    });
+    mountRpc(app, {
+      router: createRouter(authService, accessTokenService, workspace.router),
+      auth: authService,
+      config,
+      clock,
+      logError,
+    });
+    mountCanvasPreviewRoute(app, {
+      auth: authService,
+      files: workspace.files,
+      secureCookie: config.secureCookie,
+      clock,
+    });
+    mountMcp(app, {
+      accessTokens: accessTokenService,
+      tools: workspace.tools.map((tool) => ({
+        ...tool,
+        handler(input) {
+          if (disposed) return Promise.reject(new Error('Servidor encerrando.'));
+          // Legacy SSE and aborted modern requests can finish their HTTP fetch before the tool.
+          return track(() => tool.handler(input));
+        },
+      })),
+      config,
+      clock,
+      logError,
+    });
+    mountSpa(app, config.webDir);
+    const fetch = app.fetch;
+    app.fetch = (...args) => {
+      if (disposal) return Promise.resolve(new Response('Servidor encerrando.', { status: 503 }));
+      return track(() => fetch(...args));
+    };
+    return Object.assign(app, {
+      dispose() {
+        disposal ??= (async () => {
+          while (pending.size) await Promise.allSettled([...pending]);
+          disposed = true;
+          workspace.dispose();
+        })();
+        return disposal;
+      },
+    });
+  } catch (error) {
+    workspace.dispose();
+    throw error;
+  }
 }

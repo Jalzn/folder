@@ -1,4 +1,4 @@
-import type { DocumentBlock } from '@tinyfold/workspace/domain';
+import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import type { Node } from '@tiptap/pm/model';
 import { EditorState, NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { describe, expect, it } from 'vitest';

@@ -1,6 +1,6 @@
 import type { IsoInstant } from '@tinyfold/core/domain';
+import { compareCodeUnits } from '@tinyfold/core/domain';
 import type { FiledItemType } from './items.js';
-import { compareCodeUnits } from './order.js';
 
 /** The item types the sidebar's tree lists, which are also the ones that can be pinned and filed. */
 export { FILED_ITEM_TYPES as NAV_ITEM_TYPES } from './items.js';

@@ -1,3 +1,4 @@
+import { operation } from '@tinyfold/core/application';
 import type { NavigationContext } from '../../application/navigation/ports.js';
 import { projectNavigation } from '../../application/navigation/project-navigation.js';
 import { projectOverview } from '../../application/navigation/project-overview.js';
@@ -6,7 +7,6 @@ import type { SearchHit } from '../../application/reading/read-models.js';
 import { SearchInput } from '../../application/reading/schemas.js';
 import { search } from '../../application/reading/search.js';
 import { ProjectNavigationInput, ProjectOverviewInput } from '../../application/schemas/navigation.js';
-import { operation } from './operation.js';
 
 /** A search result as the interface gets it: the title rank only orders the results. */
 const searchItem = ({ titleRank: _, ...item }: SearchHit) => item;

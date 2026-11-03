@@ -1,4 +1,4 @@
-import { LABEL_COLORS, type LabelColor } from '@tinyfold/workspace/domain';
+import { LABEL_COLORS, type LabelColor } from '@tinyfold/board/domain';
 import { Ellipsis, Pencil, Trash2 } from 'lucide-react';
 import { KEYS } from '../../shell/keyboard';
 import { IconButton, Menu, MenuItem, MenuSection, MenuSeparator, MenuTrigger, SubmenuTrigger } from '../../ui';

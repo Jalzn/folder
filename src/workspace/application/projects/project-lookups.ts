@@ -1,20 +1,24 @@
-import type { Project } from '../../domain/project-models.js';
 import { workspaceErrors } from '../errors.js';
-import type { WorkspaceRepository } from '../ports/context.js';
-import type { ProjectRepository } from '../ports/projects.js';
+import type { ProjectFacts, ProjectLookup } from '../ports/context.js';
 
 /**
  * The project, archived or not, or NOT_FOUND. Writes look it up in the repository; navigation
  * queries in their reader, which finds projects the same way.
  */
-export async function requireProject(source: Pick<ProjectRepository, 'findProject'>, id: string): Promise<Project> {
+export async function requireProject<Project extends ProjectFacts>(
+  source: ProjectLookup<Project>,
+  id: string,
+): Promise<Project> {
   const project = await source.findProject(id);
   if (!project) throw workspaceErrors.projectMissing();
   return project;
 }
 
 /** Items are only added to an existing project that is not archived. */
-export async function requireActiveProject(repo: WorkspaceRepository, id: string): Promise<Project> {
+export async function requireActiveProject<Project extends ProjectFacts>(
+  repo: ProjectLookup<Project>,
+  id: string,
+): Promise<Project> {
   const project = await requireProject(repo, id);
   if (project.archivedAt) throw workspaceErrors.projectArchived();
   return project;
@@ -22,7 +26,7 @@ export async function requireActiveProject(repo: WorkspaceRepository, id: string
 
 /** The project an edited item ends up in. Leaving it out keeps the current one; another must be active. */
 export async function projectForEditedItem(
-  repo: WorkspaceRepository,
+  repo: ProjectLookup,
   current: string,
   requested: string | undefined,
 ): Promise<string> {

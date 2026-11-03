@@ -1,10 +1,8 @@
-import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
-import type { CanvasScene } from '../../domain/canvas/index.js';
-import type { DocumentBlock } from '../../domain/document-models.js';
-import type { LabelColor } from '../../domain/labels.js';
-import type { BoardKey, ProjectKey, SearchItemType, SearchKey } from '../../domain/paging.js';
+import type { IsoInstant } from '@tinyfold/core/domain';
+import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import type { ProjectKey, SearchItemType, SearchKey } from '../../domain/paging.js';
 import type { ProjectColor } from '../../domain/project.js';
-import type { TaskSource } from '../../domain/task-models.js';
+import type { BoardLabelColor } from '../../domain/read-models.js';
 
 /** A task's column as agents see it. */
 export interface TaskColumn {
@@ -17,7 +15,7 @@ export interface TaskColumn {
 export interface TaskLabel {
   id: string;
   name: string;
-  color: LabelColor;
+  color: BoardLabelColor;
 }
 
 /** The folder a document or drawing is in. */
@@ -122,72 +120,4 @@ export interface OriginTask {
   title: string;
   /** The name of its column. */
   column: string;
-}
-
-export interface CanvasForReading extends ProjectReference {
-  id: string;
-  title: string;
-  /** The folder it is in, or null at the project's root. */
-  folder: FolderReference | null;
-  scene: CanvasScene;
-  version: number;
-  updatedAt: IsoInstant;
-  preview: StoredPreview | null;
-}
-
-export interface StoredPreview {
-  sceneVersion: number;
-  /** Null for previews saved before fingerprints. */
-  sceneFingerprint: string | null;
-  width: number;
-  height: number;
-  png: Uint8Array;
-}
-
-export interface TaskQuery {
-  projectId: string | undefined;
-  documentId: string | undefined;
-  /** Only tasks in any of these columns. */
-  columnIds: readonly string[] | undefined;
-  /** Only tasks with all of these labels. */
-  labelIds: readonly string[] | undefined;
-  /** Normalized words from searchTerms, all required in the title. */
-  terms: readonly string[];
-  limit: number;
-  /** The key of the last task of the previous page. */
-  after: BoardKey | undefined;
-}
-
-/**
- * Where a task came from, as agents see it: a live document with its title; a trashed one without,
- * as if missing; and one deleted for good, with a null ID and the title it had then.
- */
-export interface SourceDocument {
-  documentId: string | null;
-  documentTitle: string | null;
-  available: boolean;
-}
-
-export interface TaskListing extends ProjectReference {
-  id: string;
-  title: string;
-  column: TaskColumn;
-  /** The position of the task's column among the active ones, which orders the board. */
-  columnPosition: number;
-  position: number;
-  dueOn: CivilDate | null;
-  completedAt: IsoInstant | null;
-  /** The active labels, in alphabetical order. */
-  labels: TaskLabel[];
-  checklist: { done: number; total: number } | null;
-  updatedAt: IsoInstant;
-  source: SourceDocument | null;
-}
-
-export interface TaskForReading extends Omit<TaskListing, 'source'> {
-  createdAt: IsoInstant;
-  version: number;
-  textVersion: number;
-  description: DocumentBlock[];
-  source: (Omit<TaskSource, keyof SourceDocument> & SourceDocument) | null;
 }

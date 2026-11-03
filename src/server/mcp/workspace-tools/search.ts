@@ -1,0 +1,55 @@
+import type { SearchHit } from '@tinyfold/workspace/contracts';
+import { SearchInput } from '@tinyfold/workspace/contracts';
+import { keysetJsonResult } from './paged-result.js';
+import type { AgentQueries } from './queries.js';
+import { defineTool, readOnlyAnnotations } from './types.js';
+
+const hitView = ({ projectId, projectName, projectArchived, updatedAt, titleRank: _rank, ...hit }: SearchHit) =>
+  hit.type === 'task'
+    ? {
+        type: hit.type,
+        id: hit.id,
+        title: hit.title,
+        column: hit.column,
+        projectId,
+        projectName,
+        projectArchived,
+        updatedAt,
+        excerpt: hit.excerpt,
+      }
+    : {
+        type: hit.type,
+        id: hit.id,
+        title: hit.title,
+        projectId,
+        projectName,
+        projectArchived,
+        updatedAt,
+        pinned: hit.pinned,
+        folder: hit.folder,
+        excerpt: hit.excerpt,
+      };
+
+export const searchTool = (queries: AgentQueries) =>
+  defineTool({
+    name: 'search',
+    title: 'Buscar no Tinyfold',
+    description:
+      'Busca documentos, desenhos e tarefas por palavras: todas precisam aparecer, em qualquer ordem, no título ' +
+      'ou no texto (a descrição, nas tarefas), sem diferenciar caixa e acentos. Hífens separam palavras, e a pontuação em volta delas é ' +
+      'ignorada. Itens com mais palavras no título vêm primeiro e, depois, ' +
+      'os editados mais recentemente. Sem query, lista os itens editados mais recentemente. Documentos e desenhos ' +
+      'trazem pinned, que diz se estão fixados no topo da lateral do projeto, e folder, a pasta em que estão, ou ' +
+      'null na raiz do projeto; tarefas trazem column, a coluna do quadro em que estão, com isDone na de ' +
+      'conclusão. folderId limita a busca aos documentos e desenhos de uma pasta. Passe o ' +
+      'nextCursor para ver a próxima página. Leia os itens com read_document, read_drawing ou read_task.',
+    inputSchema: SearchInput,
+    annotations: readOnlyAnnotations,
+    async handler(input) {
+      const page = await queries.search(input);
+      return keysetJsonResult(page.items, (shown) => ({
+        items: shown.map(hitView),
+        nextCursor: page.nextCursor(shown.length),
+      }));
+    },
+  });

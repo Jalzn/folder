@@ -1,7 +1,7 @@
 import { NewLabelRow } from './NewLabelRow';
 import { useLabelFocus } from './use-label-focus';
 import './labels.css';
-import { LABEL_LIMITS } from '@tinyfold/workspace/domain';
+import { LABEL_LIMITS } from '@tinyfold/board/domain';
 import { Plus } from 'lucide-react';
 import { type KeyboardEvent, useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';

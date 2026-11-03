@@ -4,7 +4,7 @@ import { expect, test } from 'vitest';
 import { createAuthService } from '../src/auth/index.js';
 import { migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
-import { createWorkspaceService } from '../src/workspace/index.js';
+import { createWorkspaceService } from '../src/server/workspace/index.js';
 import { seedSample } from './seed-sample.js';
 import { backupRoundTrip } from './testing/backup-round-trip.js';
 

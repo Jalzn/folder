@@ -1,4 +1,4 @@
-import type { WorkspaceContext } from '../ports/context.js';
+import type { TrashPorts, WorkspaceFlowContext } from '../ports/context.js';
 import type { EmptyTrashInput, TrashItemType } from '../schemas/trash.js';
 import { canvasRemoval } from './purge-canvas.js';
 import { documentRemoval } from './purge-document.js';
@@ -15,7 +15,7 @@ const removals: Record<TrashItemType, ItemRemoval> = {
  * Deletes for good the items the trash showed, in one transaction. An item restored, edited or
  * moved on another device since then is no longer as shown: it is kept and counted as skipped.
  */
-export function emptyTrash(ctx: WorkspaceContext, input: EmptyTrashInput) {
+export function emptyTrash(ctx: WorkspaceFlowContext<TrashPorts>, input: EmptyTrashInput) {
   return ctx.write('workspace.emptyTrash', input, async (repo) => {
     let purged = 0;
     for (const shown of input.items) {

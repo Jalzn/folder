@@ -1,9 +1,7 @@
+import type { CanvasElement } from '@tinyfold/drawings/domain';
+import type { DocumentBlock } from '@tinyfold/rich-text/domain';
+import { checklistProgress, embedIds, isEmbedType, readDocumentContent } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
-import type { CanvasElement } from '../src/workspace/domain/canvas/index.js';
-import { checklistProgress } from '../src/workspace/domain/checklist.js';
-import { readDocumentContent } from '../src/workspace/domain/document.js';
-import type { DocumentBlock } from '../src/workspace/domain/document-models.js';
-import { embedIds, isEmbedType } from '../src/workspace/domain/embeds.js';
 import {
   loadScene,
   SAMPLE_DESCRIPTIONS,

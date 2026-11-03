@@ -5,7 +5,7 @@ import {
   MAX_PREVIEW_SIDE,
   readPngInfo,
   sceneFingerprint,
-} from '@tinyfold/workspace/domain';
+} from '@tinyfold/drawings/domain';
 
 /** Every side but the last must fit this; the last one may use up to MAX_PREVIEW_BYTES. */
 const PREVIEW_TARGET_BYTES = 200 * 1024;

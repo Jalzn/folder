@@ -1,47 +1,92 @@
 // Dependency rules from docs/arquitetura.md ("Regras de dependência").
-// A module is any folder in src/ except server and web.
+// Business modules are folders in src/ except server, web and the shared core/rich-text packages.
 // `pnpm deps` cruises src, scripts and e2e.
 
 const { existsSync, readdirSync, readFileSync } = require('node:fs');
 const { join } = require('node:path');
 
-/** The files each module's package.json exports, as path patterns: the only way into a module. */
-const moduleEntryPoints = readdirSync(join(__dirname, 'src'), { withFileTypes: true })
+const modulePackages = readdirSync(join(__dirname, 'src'), { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && !['server', 'web'].includes(entry.name))
   .filter((entry) => existsSync(join(__dirname, 'src', entry.name, 'package.json')))
-  .flatMap((entry) => {
+  .map((entry) => {
     const { exports = {} } = JSON.parse(readFileSync(join(__dirname, 'src', entry.name, 'package.json'), 'utf8'));
-    return Object.values(exports)
-      .filter((target) => typeof target === 'string')
-      .map((target) => `^src/${entry.name}/${target.replace(/^\.\//u, '').replaceAll('.', '\\.')}$`);
+    return { name: entry.name, exports };
   });
+
+const entryPattern = (name, target) => `^src/${name}/${target.replace(/^\.\//u, '').replaceAll('.', '\\.')}$`;
+
+/** A package export permits access to that entry file, never to the rest of its directory. */
+const moduleEntryPoints = modulePackages.flatMap(({ name, exports }) =>
+  Object.values(exports)
+    .filter((target) => typeof target === 'string')
+    .map((target) => entryPattern(name, target)),
+);
+
+const sharedEntryRules = modulePackages
+  .filter(({ name }) => ['core', 'rich-text'].includes(name))
+  .map(({ name, exports }) => ({
+    name: `${name}-through-public-entries`,
+    severity: 'error',
+    comment: `Other packages and tests reach ${name} only through its explicit public entries.`,
+    from: { path: '^(src|scripts|e2e)/', pathNot: `^src/${name}/` },
+    to: {
+      path: `^src/${name}/`,
+      pathNot: Object.values(exports)
+        .filter((target) => typeof target === 'string')
+        .map((target) => entryPattern(name, target)),
+    },
+  }));
+
+const compositionEntryRules = modulePackages
+  .filter(({ exports }) => typeof exports['./composition'] === 'string')
+  .map(({ name, exports }) => ({
+    name: `${name}-composition-only-in-server`,
+    severity: 'error',
+    comment: 'Transaction participants are wired by server; clients and scripts use ordinary module APIs.',
+    from: { path: '^(src|scripts|e2e)/', pathNot: [`^src/${name}/`, '^src/server/'] },
+    to: { path: entryPattern(name, exports['./composition']) },
+  }));
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
   forbidden: [
+    ...sharedEntryRules,
+    ...compositionEntryRules,
     {
       name: 'domain-is-pure',
-      comment: 'domain/ only imports its own domain and @tinyfold/core/domain: no database, HTTP, React or Node APIs.',
+      comment: 'domain/ uses its own domain and public core/rich-text domain entries: no infrastructure or Node APIs.',
       severity: 'error',
       from: { path: '^src/([^/]+)/domain/', pathNot: '\\.test\\.tsx?$' },
-      to: { pathNot: ['^src/$1/domain/', '^src/core/domain/'] },
+      to: { pathNot: ['^src/$1/domain/', '^src/core/domain/', '^src/rich-text/domain/index\\.ts$'] },
     },
     {
       name: 'application-stays-inside',
-      comment:
-        'application/ imports its domain, @tinyfold/core application/domain and Zod; never infra, Kysely or oRPC.',
+      comment: 'application/ uses its domain, public core/rich-text entries and Zod; never infra, Kysely or oRPC.',
       severity: 'error',
       from: { path: '^src/([^/]+)/application/', pathNot: '\\.test\\.tsx?$' },
       to: {
-        pathNot: ['^src/$1/(application|domain)/', '^src/core/(application|domain)/', 'node_modules/zod/'],
+        pathNot: [
+          '^src/$1/(application|domain)/',
+          '^src/core/(application|domain)/',
+          '^src/rich-text/domain/index\\.ts$',
+          'node_modules/zod/',
+        ],
       },
     },
     {
       name: 'modules-do-not-know-each-other',
-      comment: 'A module never imports another module; only server composes them. Every module may use core.',
+      comment: 'Business modules never import each other, including types; server composes them through ports.',
       severity: 'error',
       from: { path: '^src/([^/]+)/', pathNot: '^src/(server|web)/' },
-      to: { path: '^src/', pathNot: ['^src/$1/', '^src/core/'] },
+      to: { path: '^src/', pathNot: ['^src/$1/', '^src/core/', '^src/rich-text/domain/index\\.ts$'] },
+    },
+    {
+      name: 'rich-text-is-pure',
+      severity: 'error',
+      comment:
+        'Shared text code contains only pure domain rules and never reaches a business module or infrastructure.',
+      from: { path: '^src/rich-text/', pathNot: ['\\.test\\.tsx?$', '^src/rich-text/testing/'] },
+      to: { pathNot: ['^src/rich-text/domain/', '^src/core/domain/index\\.ts$'] },
     },
     {
       name: 'web-runtime-imports',

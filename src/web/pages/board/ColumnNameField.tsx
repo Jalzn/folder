@@ -1,4 +1,4 @@
-import { displayName, nameKey } from '@tinyfold/workspace/domain';
+import { displayName, nameKey } from '@tinyfold/core/domain';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { InlineNameField, whenPresent } from '../../ui';
 

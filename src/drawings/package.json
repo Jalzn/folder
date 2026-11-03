@@ -1,0 +1,20 @@
+{
+  "name": "@tinyfold/drawings",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./domain": "./domain/index.ts",
+    "./contracts": "./application/contracts/index.ts",
+    "./composition": "./infra/composition.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@tinyfold/core": "workspace:*",
+    "kysely": "0.29.7",
+    "zod": "4.6.7"
+  }
+}

@@ -2,14 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { isProcedure, type RouterClient } from '@orpc/server';
 import { createAccessTokens } from '@tinyfold/auth';
-import { createWorkspace } from '@tinyfold/workspace';
-import { emptyCanvasScene, sceneFingerprint } from '@tinyfold/workspace/domain';
+import { emptyCanvasScene, sceneFingerprint } from '@tinyfold/drawings/domain';
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
-import { pngImage } from '../workspace/testing/png.js';
 import { readConfig } from './config.js';
 import { type AppRouter, createRouter } from './router.js';
 import { useAppFixture } from './testing/app.js';
+import { pngImage } from './testing/workspace/png.js';
+import { createWorkspace } from './workspace/index.js';
 
 const origin = 'http://localhost:5170';
 const password = 'tinyfold-server-password';

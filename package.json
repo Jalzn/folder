@@ -40,6 +40,12 @@
     "railway": "3.16.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "@tinyfold/rich-text": "workspace:*",
+    "@tinyfold/board": "workspace:*",
+    "@tinyfold/documents": "workspace:*",
+    "@tinyfold/drawings": "workspace:*",
+    "@tinyfold/projects": "workspace:*",
+    "@tinyfold/core": "workspace:*"
   }
 }

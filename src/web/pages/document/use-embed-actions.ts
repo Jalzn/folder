@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import type { EmbedKind } from '@tinyfold/workspace/domain';
+import type { EmbedKind } from '@tinyfold/rich-text/domain';
 import { embedBlock } from '../../editor/blocks/embed-blocks';
 import type { EmbedActions } from '../../editor/blocks/embeds-context';
 import { selectEmbedBlock } from '../../editor/blocks/selection-drift';

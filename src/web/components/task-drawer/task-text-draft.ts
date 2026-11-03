@@ -1,4 +1,5 @@
-import { RECOVERY_DOCUMENT_LIMITS, readDocumentContent, TASK_LIMITS } from '@tinyfold/workspace/domain';
+import { TASK_LIMITS } from '@tinyfold/board/domain';
+import { RECOVERY_DOCUMENT_LIMITS, readDocumentContent } from '@tinyfold/rich-text/domain';
 import type { SavedDraft } from '../../lib/autosave';
 import type { DocumentContent } from '../../lib/types';
 

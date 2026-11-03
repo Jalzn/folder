@@ -1,4 +1,4 @@
-import type { LabelColor } from '@tinyfold/workspace/domain';
+import type { LabelColor } from '@tinyfold/board/domain';
 import { api, requestId } from '../../lib/api';
 import type { LabelSummary } from '../../lib/queries/labels';
 import { onceMoreIfLost } from '../../lib/writes/lost-answer';

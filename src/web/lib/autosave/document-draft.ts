@@ -1,4 +1,4 @@
-import { RECOVERY_DOCUMENT_LIMITS, readDocumentContent } from '@tinyfold/workspace/domain';
+import { RECOVERY_DOCUMENT_LIMITS, readDocumentContent } from '@tinyfold/rich-text/domain';
 import { sanitizeEmbeds } from '../files/sanitize-embeds';
 import type { DocumentContent } from '../types';
 import type { Legacy, SavedDraft } from './types';

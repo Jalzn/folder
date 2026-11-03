@@ -1,5 +1,5 @@
 import type { DefaultReactSuggestionItem } from '@blocknote/react';
-import type { EmbedKind } from '@tinyfold/workspace/domain';
+import type { EmbedKind } from '@tinyfold/rich-text/domain';
 import { ListTodo, Shapes } from 'lucide-react';
 
 /**

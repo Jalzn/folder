@@ -1,7 +1,7 @@
 import type { IsoInstant } from '@tinyfold/core/domain';
 import { requireLiveItem } from '../items/require-item.js';
 import { assertRoomForPin } from '../moves/pin-scope.js';
-import type { WorkspaceContext } from '../ports/context.js';
+import type { PinPorts, WorkspaceFlowContext } from '../ports/context.js';
 import type { PinItemInput } from '../schemas/pins.js';
 
 /**
@@ -10,7 +10,10 @@ import type { PinItemInput } from '../schemas/pins.js';
  * Pinning is not an edit: version and dates stay, so it never conflicts with the autosave of an
  * open page. Repeating it changes nothing, so it keeps no request record.
  */
-export function pinItem(ctx: WorkspaceContext, input: PinItemInput): Promise<{ pinnedAt: IsoInstant | null }> {
+export function pinItem(
+  ctx: WorkspaceFlowContext<PinPorts>,
+  input: PinItemInput,
+): Promise<{ pinnedAt: IsoInstant | null }> {
   return ctx.writeWithoutRequestRecord(async (repo) => {
     const item = await requireLiveItem(repo, input.type, input.id);
     if (item.pinnedAt) return { pinnedAt: item.pinnedAt };

@@ -1,5 +1,5 @@
+import { searchText } from '@tinyfold/core/domain';
 import { defineModule } from '@tinyfold/core/infra';
-import { searchText } from '../domain/search-text.js';
 
 /**
  * The workspace module. Migration 007 computes the tasks' search text with workspace_search_text,

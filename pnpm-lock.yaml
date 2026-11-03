@@ -26,6 +26,24 @@ importers:
       '@swc/core':
         specifier: 1.16.20
         version: 1.16.20(@swc/helpers@0.5.23)
+      '@tinyfold/board':
+        specifier: workspace:*
+        version: link:src/board
+      '@tinyfold/core':
+        specifier: workspace:*
+        version: link:src/core
+      '@tinyfold/documents':
+        specifier: workspace:*
+        version: link:src/documents
+      '@tinyfold/drawings':
+        specifier: workspace:*
+        version: link:src/drawings
+      '@tinyfold/projects':
+        specifier: workspace:*
+        version: link:src/projects
+      '@tinyfold/rich-text':
+        specifier: workspace:*
+        version: link:src/rich-text
       '@types/better-sqlite3':
         specifier: 9.6.0
         version: 9.6.0
@@ -63,6 +81,21 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
+  src/board:
+    dependencies:
+      '@tinyfold/core':
+        specifier: workspace:*
+        version: link:../core
+      '@tinyfold/rich-text':
+        specifier: workspace:*
+        version: link:../rich-text
+      kysely:
+        specifier: 0.29.7
+        version: 0.29.7
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
   src/core:
     dependencies:
       '@orpc/server':
@@ -74,10 +107,58 @@ importers:
       kysely:
         specifier: 0.29.7
         version: 0.29.7
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/better-sqlite3':
         specifier: 9.6.0
         version: 9.6.0
+
+  src/documents:
+    dependencies:
+      '@tinyfold/core':
+        specifier: workspace:*
+        version: link:../core
+      '@tinyfold/rich-text':
+        specifier: workspace:*
+        version: link:../rich-text
+      kysely:
+        specifier: 0.29.7
+        version: 0.29.7
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
+  src/drawings:
+    dependencies:
+      '@tinyfold/core':
+        specifier: workspace:*
+        version: link:../core
+      kysely:
+        specifier: 0.29.7
+        version: 0.29.7
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
+  src/projects:
+    dependencies:
+      '@tinyfold/core':
+        specifier: workspace:*
+        version: link:../core
+      kysely:
+        specifier: 0.29.7
+        version: 0.29.7
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
+  src/rich-text:
+    dependencies:
+      '@tinyfold/core':
+        specifier: workspace:*
+        version: link:../core
 
   src/server:
     dependencies:
@@ -93,9 +174,24 @@ importers:
       '@tinyfold/auth':
         specifier: workspace:*
         version: link:../auth
+      '@tinyfold/board':
+        specifier: workspace:*
+        version: link:../board
       '@tinyfold/core':
         specifier: workspace:*
         version: link:../core
+      '@tinyfold/documents':
+        specifier: workspace:*
+        version: link:../documents
+      '@tinyfold/drawings':
+        specifier: workspace:*
+        version: link:../drawings
+      '@tinyfold/projects':
+        specifier: workspace:*
+        version: link:../projects
+      '@tinyfold/rich-text':
+        specifier: workspace:*
+        version: link:../rich-text
       '@tinyfold/workspace':
         specifier: workspace:*
         version: link:../workspace
@@ -151,6 +247,24 @@ importers:
       '@tanstack/react-router':
         specifier: 1.170.46
         version: 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@tinyfold/board':
+        specifier: workspace:*
+        version: link:../board
+      '@tinyfold/core':
+        specifier: workspace:*
+        version: link:../core
+      '@tinyfold/documents':
+        specifier: workspace:*
+        version: link:../documents
+      '@tinyfold/drawings':
+        specifier: workspace:*
+        version: link:../drawings
+      '@tinyfold/projects':
+        specifier: workspace:*
+        version: link:../projects
+      '@tinyfold/rich-text':
+        specifier: workspace:*
+        version: link:../rich-text
       '@tiptap/pm':
         specifier: 3.32.0
         version: 3.32.0
@@ -185,9 +299,6 @@ importers:
       '@tinyfold/auth':
         specifier: workspace:*
         version: link:../auth
-      '@tinyfold/core':
-        specifier: workspace:*
-        version: link:../core
       '@tinyfold/server':
         specifier: workspace:*
         version: link:../server
@@ -212,12 +323,12 @@ importers:
 
   src/workspace:
     dependencies:
-      '@orpc/server':
-        specifier: 1.16.1
-        version: 1.16.1(ws@8.22.0)
       '@tinyfold/core':
         specifier: workspace:*
         version: link:../core
+      '@tinyfold/rich-text':
+        specifier: workspace:*
+        version: link:../rich-text
       kysely:
         specifier: 0.29.7
         version: 0.29.7

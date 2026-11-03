@@ -1,5 +1,5 @@
+import { byPosition, compareCodeUnits } from '@tinyfold/core/domain';
 import { byPinOrder, bySort, type NavItem, type NavSort } from './navigation.js';
-import { byPosition, compareCodeUnits } from './order.js';
 
 /** An active folder of the sidebar's tree, with its first children. */
 export interface NavFolder {

@@ -1,6 +1,6 @@
 import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
-import type { LabelColor } from '../../domain/labels.js';
 import type { ProjectColor } from '../../domain/project.js';
+import type { BoardLabelColor as LabelColor } from '../../domain/read-models.js';
 
 export interface ProjectRow {
   id: string;

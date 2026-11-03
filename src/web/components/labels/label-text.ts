@@ -1,4 +1,4 @@
-import { LABEL_LIMITS, type LabelColor, TASK_LIMITS } from '@tinyfold/workspace/domain';
+import { LABEL_LIMITS, type LabelColor, TASK_LIMITS } from '@tinyfold/board/domain';
 import { countOf } from '../../lib/text/count';
 import { labelColorNames } from './label-colors';
 

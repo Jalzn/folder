@@ -1,6 +1,6 @@
+import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import type { Kysely } from 'kysely';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
-import type { DocumentBlock } from '../../domain/document-models.js';
 import { folderColumns, folderReference } from '../sql/folders.js';
 import { columnRank, projectColumns, projectReference } from '../sql/references.js';
 import type { WorkspaceTables } from '../sql/tables.js';

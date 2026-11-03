@@ -1,8 +1,12 @@
 import type { IsoInstant } from '@tinyfold/core/domain';
 import { type Kysely, sql } from 'kysely';
-import type { EmbeddedDrawing, EmbeddedTask, EmbedPreview, EmbedProject } from '../../application/embeds/ports.js';
-import type { CanvasScene } from '../../domain/canvas/index.js';
-import { previewShowsScene } from '../../domain/canvas/preview.js';
+import type {
+  DrawingPreviewPolicy,
+  EmbeddedDrawing,
+  EmbeddedTask,
+  EmbedPreview,
+  EmbedProject,
+} from '../../application/embeds/ports.js';
 import type { WorkspaceTables } from '../sql/tables.js';
 import { taskLabels } from '../sql/task-labels.js';
 import { taskChecklist } from '../sql/task-source.js';
@@ -74,7 +78,11 @@ export async function tasks(db: Kysely<WorkspaceTables>, asked: readonly string[
     };
   });
 }
-export async function drawings(db: Kysely<WorkspaceTables>, asked: readonly string[]): Promise<EmbeddedDrawing[]> {
+export async function drawings(
+  db: Kysely<WorkspaceTables>,
+  asked: readonly string[],
+  previewShowsScene: DrawingPreviewPolicy,
+): Promise<EmbeddedDrawing[]> {
   const ids = distinct(asked);
   if (!ids.length) return [];
   const rows = await db
@@ -120,9 +128,9 @@ export async function drawings(db: Kysely<WorkspaceTables>, asked: readonly stri
               toCompare.map((row) => row.id),
             )
             .execute()
-        ).map((row) => [row.id, JSON.parse(row.scene) as CanvasScene]),
+        ).map((row) => [row.id, row.scene]),
       )
-    : new Map<string, CanvasScene>();
+    : new Map<string, string>();
   const byId = new Map(rows.map((row) => [row.id, row]));
   return ids.map((id): EmbeddedDrawing => {
     const row = byId.get(id);

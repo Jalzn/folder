@@ -1,6 +1,6 @@
 import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
-import type { LabelColor } from './labels.js';
 import type { ProjectColor } from './project.js';
+import type { BoardLabelColor as LabelColor } from './read-models.js';
 
 /**
  * The states of embedded items, as the editor reads them through resolveEmbeds and the MCP through

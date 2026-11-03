@@ -1,8 +1,8 @@
 import type { AuthService } from '@tinyfold/auth';
 import { AppError } from '@tinyfold/core/application';
-import type { WorkspaceFiles } from '@tinyfold/workspace';
 import type { Hono } from 'hono';
 import { cookieSession } from '../cookie-session.js';
+import type { WorkspaceFiles } from '../workspace/index.js';
 
 export interface CanvasPreviewRouteOptions {
   auth: AuthService;

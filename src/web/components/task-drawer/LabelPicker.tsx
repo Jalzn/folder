@@ -1,5 +1,5 @@
 import './label-picker.css';
-import { displayName, nameKey } from '@tinyfold/workspace/domain';
+import { displayName, nameKey } from '@tinyfold/core/domain';
 import { Plus } from 'lucide-react';
 import { type RefObject, useState } from 'react';
 import type { LabelSummary } from '../../lib/queries';

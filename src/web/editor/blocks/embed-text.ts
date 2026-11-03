@@ -1,12 +1,5 @@
-import {
-  type DocumentBlock,
-  documentToMarkdown,
-  type EmbeddedDrawing,
-  type EmbeddedTask,
-  type EmbedKind,
-  embedResolver,
-  UNAVAILABLE_EMBED,
-} from '@tinyfold/workspace/domain';
+import { type DocumentBlock, documentToMarkdown, type EmbedKind, UNAVAILABLE_EMBED } from '@tinyfold/rich-text/domain';
+import { type EmbeddedDrawing, type EmbeddedTask, embedResolver } from '@tinyfold/workspace/domain';
 import { embedBlock } from './embed-blocks';
 
 /**

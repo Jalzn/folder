@@ -5,15 +5,17 @@
   "type": "module",
   "exports": {
     ".": "./index.ts",
-    "./domain": "./domain/index.ts"
+    "./domain": "./domain/index.ts",
+    "./composition": "./infra/composition.ts",
+    "./contracts": "./application/contracts/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p ."
   },
   "dependencies": {
     "@tinyfold/core": "workspace:*",
-    "@orpc/server": "1.16.1",
     "kysely": "0.29.7",
-    "zod": "4.6.7"
+    "zod": "4.6.7",
+    "@tinyfold/rich-text": "workspace:*"
   }
 }

@@ -1,4 +1,4 @@
-import type { DocumentContent } from '@tinyfold/workspace/domain';
+import type { DocumentContent } from '@tinyfold/rich-text/domain';
 import { Slice } from '@tiptap/pm/model';
 import { describe, expect, it } from 'vitest';
 import { setupBlockNoteEditor } from '../../testing/blocknote-editor';

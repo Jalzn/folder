@@ -1,4 +1,4 @@
-import type { DocumentContent } from '@tinyfold/workspace/domain';
+import type { DocumentContent } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
 import { setupBlockNoteEditor } from '../testing/blocknote-editor';
 import { markerPlaces, type OriginMarker } from './origin-places';

@@ -1,4 +1,4 @@
-import { searchText } from './search-text.js';
+import { searchText } from '@tinyfold/core/domain';
 
 const ellipsis = '…';
 const chunkCodePoints = 256;

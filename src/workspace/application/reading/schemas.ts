@@ -1,7 +1,4 @@
-import { domainMessage } from '@tinyfold/core/application';
 import { z } from 'zod';
-import { COLUMN_LIMITS } from '../../domain/columns.js';
-import { LABEL_LIMITS } from '../../domain/labels.js';
 import { SEARCH_ITEM_TYPES } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 
@@ -52,48 +49,6 @@ export const ReadDocumentInput = z.object(
   pt,
 );
 
-export const ReadDrawingInput = z
-  .object(
-    {
-      id,
-      image: flag().default(true).describe('Inclui a imagem PNG do desenho.'),
-      structure: flag().default(true).describe('Inclui a lista de elementos e ligações.'),
-    },
-    pt,
-  )
-  .refine((input) => input.image || input.structure, domainMessage('Peça a imagem, a estrutura ou as duas.'));
-
-export const ListTasksInput = z.object(
-  {
-    projectId: id.optional().describe('Limita a um projeto.'),
-    documentId: id.optional().describe('Só as tarefas criadas a partir deste documento.'),
-    columns: z
-      .array(z.string(pt).trim().min(1).max(COLUMN_LIMITS.nameChars), pt)
-      .min(1)
-      .max(COLUMN_LIMITS.active)
-      .optional()
-      .describe('Nomes de colunas, como aparecem no Tinyfold; vale qualquer uma delas.'),
-    labels: z
-      .array(z.string(pt).trim().min(1).max(LABEL_LIMITS.nameChars), pt)
-      .min(1)
-      .max(10)
-      .optional()
-      .describe('Nomes de etiquetas, como aparecem no Tinyfold; a tarefa precisa ter todas.'),
-    query: query.optional().describe('Palavras que precisam aparecer no título, em qualquer ordem.'),
-    limit: pageSize(READING_LIMITS.tasks.maxPageSize, READING_LIMITS.tasks.defaultPageSize),
-    cursor: cursor.optional(),
-  },
-  pt,
-);
-
-export const ReadTaskInput = z.object(
-  { id, cursor: cursor.optional().describe('O cursor indicado no fim da página anterior.') },
-  pt,
-);
-
 export type ListProjectsInput = z.infer<typeof ListProjectsInput>;
 export type SearchInput = z.infer<typeof SearchInput>;
 export type ReadDocumentInput = z.infer<typeof ReadDocumentInput>;
-export type ReadDrawingInput = z.infer<typeof ReadDrawingInput>;
-export type ListTasksInput = z.infer<typeof ListTasksInput>;
-export type ReadTaskInput = z.infer<typeof ReadTaskInput>;

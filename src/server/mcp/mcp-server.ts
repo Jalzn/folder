@@ -1,5 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/server';
-import type { AgentTool } from '@tinyfold/workspace';
+import type { AgentTool } from '../workspace/index.js';
 
 /** Sent in `initialize`; it frames everything the tools return as the user's data. */
 export const MCP_INSTRUCTIONS =

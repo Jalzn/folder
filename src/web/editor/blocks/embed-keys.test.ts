@@ -1,4 +1,4 @@
-import type { DocumentBlock, DocumentContent } from '@tinyfold/workspace/domain';
+import type { DocumentBlock, DocumentContent } from '@tinyfold/rich-text/domain';
 import { GapCursor } from '@tiptap/pm/gapcursor';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { afterEach, describe, expect, it } from 'vitest';

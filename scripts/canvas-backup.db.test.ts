@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import { emptyCanvasScene } from '@tinyfold/drawings/domain';
 import { expect, test } from 'vitest';
 import { migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
-import { emptyCanvasScene } from '../src/workspace/domain/index.js';
-import { createWorkspaceService } from '../src/workspace/index.js';
+import { createWorkspaceService } from '../src/server/workspace/index.js';
 import { backupRoundTrip } from './testing/backup-round-trip.js';
 
 test('restores canvas scenes and project links independently from a live SQLite backup', async () => {

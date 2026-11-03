@@ -1,6 +1,6 @@
 import { exportToBlob } from '@excalidraw/excalidraw';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
-import type { CanvasScene } from '@tinyfold/workspace/domain';
+import type { CanvasScene } from '@tinyfold/drawings/domain';
 
 /**
  * Renders a scene with Excalidraw itself, so the PNG keeps the hand-drawn strokes, fonts and

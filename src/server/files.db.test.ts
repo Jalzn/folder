@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { createWorkspaceService } from '@tinyfold/workspace';
 import { describe, expect, it } from 'vitest';
-import { drawingFixture } from '../workspace/testing/canvas-scenes.js';
-import { pngImage } from '../workspace/testing/png.js';
 import { useAppFixture } from './testing/app.js';
+import { drawingFixture } from './testing/workspace/canvas-scenes.js';
+import { pngImage } from './testing/workspace/png.js';
+import { createWorkspaceService } from './workspace/index.js';
 
 const origin = 'http://localhost:5170';
 const password = 'tinyfold-files-password';

@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { EmbedReader } from '../../application/embeds/ports.js';
+import type { DrawingPreviewPolicy, EmbedReader } from '../../application/embeds/ports.js';
 import type { WorkspaceTables } from '../sql/tables.js';
 import { drawings, tasks } from './embed-items.js';
 
@@ -8,10 +8,10 @@ import { drawings, tasks } from './embed-items.js';
  * query per kind, whatever the number of embeds. A task or drawing in the trash is `trashed`, one
  * deleted for good or never there `missing`; a live one says its project, archived or not.
  */
-export function embedReads(db: Kysely<WorkspaceTables>): EmbedReader {
+export function embedReads(db: Kysely<WorkspaceTables>, previewPolicy: DrawingPreviewPolicy): EmbedReader {
   return {
     async embeds({ taskIds, canvasIds }) {
-      return { tasks: await tasks(db, taskIds), drawings: await drawings(db, canvasIds) };
+      return { tasks: await tasks(db, taskIds), drawings: await drawings(db, canvasIds, previewPolicy) };
     },
   };
 }

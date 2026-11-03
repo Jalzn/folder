@@ -1,7 +1,8 @@
+import { searchTerms } from '@tinyfold/core/domain';
+import { documentLead } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
 import { excerptAround, excerptFromStart } from './excerpt.js';
 import * as domain from './index.js';
-import { searchTerms } from './search-text.js';
 
 const excerpt = (text: string, query = '') => excerptAround(text, searchTerms(query), 40, 10);
 const line = (text: string) => excerptAround(text, [], 240, 0);
@@ -61,7 +62,7 @@ describe('search excerpt', () => {
       { type: 'paragraph', content: text('Espaço pessoal e minimalista.') },
     ];
     const { excerptChars } = domain.NAVIGATION_LIMITS.overview;
-    expect(domain.excerptFromStart(domain.documentLead(blocks), excerptChars)).toBe('Espaço pessoal e minimalista.');
+    expect(domain.excerptFromStart(documentLead(blocks), excerptChars)).toBe('Espaço pessoal e minimalista.');
     expect(domain.excerptFromStart('Edição\nRascunho local\nServidor', excerptChars)).toBe(
       'Edição, Rascunho local, Servidor',
     );

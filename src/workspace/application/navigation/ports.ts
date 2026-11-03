@@ -1,8 +1,7 @@
 import type { CivilDate, IsoInstant } from '@tinyfold/core/domain';
-import type { Column } from '../../domain/columns.js';
 import type { NavItem, NavItemType } from '../../domain/navigation.js';
 import type { Project } from '../../domain/project-models.js';
-import type { Task } from '../../domain/task-models.js';
+import type { BoardColumn as Column, BoardTask as Task } from '../../domain/read-models.js';
 import type { Calendar } from '../calendar.js';
 import type { TrashItemType } from '../schemas/trash.js';
 

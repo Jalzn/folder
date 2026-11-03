@@ -1,4 +1,4 @@
-import { nameKey } from '@tinyfold/workspace/domain';
+import { nameKey } from '@tinyfold/core/domain';
 import { api, requestId } from '../../lib/api';
 import { inBoardOrder } from '../../lib/board-order';
 import type { ColumnSummary } from '../../lib/queries';

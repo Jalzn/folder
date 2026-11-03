@@ -1,8 +1,6 @@
 import type { CivilDate } from '@tinyfold/core/domain';
-import { addDays } from '@tinyfold/core/domain';
-import type { Column } from './columns.js';
-import { byPosition } from './order.js';
-import { isOverdue } from './task-dates.js';
+import { addDays, byPosition, isPastDue } from '@tinyfold/core/domain';
+import type { BoardColumn } from './read-models.js';
 
 /** What "Agora" needs of a task: its column, place and due date. */
 export interface AgendaTask {
@@ -37,7 +35,7 @@ export const AGENDA = { limit: 6, soonDays: 14 } as const;
  */
 export function overviewTasks<T extends AgendaTask>(
   tasks: readonly T[],
-  columns: readonly Pick<Column, 'id' | 'isDone' | 'position'>[],
+  columns: readonly Pick<BoardColumn, 'id' | 'isDone' | 'position'>[],
   today: CivilDate,
 ): { now: T[]; rest: LeftOut[] } {
   const open = columns.filter((column) => !column.isDone);
@@ -46,7 +44,7 @@ export function overviewTasks<T extends AgendaTask>(
     (columnRank.get(a.columnId) ?? 0) - (columnRank.get(b.columnId) ?? 0) || byPosition(a, b) || (a.id < b.id ? -1 : 1);
   const byDue = (a: T, b: T) => (a.dueOn ?? '9').localeCompare(b.dueOn ?? '9') || byBoard(a, b);
   const inOpen = tasks.filter((task) => columnRank.has(task.columnId)).sort(byBoard);
-  const late = (task: T) => isOverdue(task.dueOn, today, false);
+  const late = (task: T) => isPastDue(task.dueOn, today);
   const first = open[0]?.id;
   const soonUntil = addDays(today, AGENDA.soonDays);
   const overdue = inOpen.filter(late).sort(byDue);

@@ -1,12 +1,12 @@
+import { assertVersion } from '@tinyfold/core/application';
 import type { IsoInstant } from '@tinyfold/core/domain';
 import type { FiledItem } from '../../domain/items.js';
 import { workspaceErrors } from '../errors.js';
 import { requireFolderInProject, requireProjectForFolders } from '../folders/folder-rules.js';
 import { requireLiveItem } from '../items/require-item.js';
-import type { WorkspaceContext, WorkspaceRepository } from '../ports/context.js';
+import type { MovePorts, WorkspaceFlowContext } from '../ports/context.js';
 import { requireActiveProject } from '../projects/project-lookups.js';
 import type { MoveItemInput } from '../schemas/moves.js';
-import { assertVersion } from '../version.js';
 import { keepPinIfRoom } from './pin-scope.js';
 
 /** Where a moved item is now, and the version an open editor saves against from then on. */
@@ -37,14 +37,14 @@ const where = (item: FiledItem): MovedItem => ({
  *   editor. The item keeps its pin while the destination has room.
  * - The place it already is changes nothing.
  */
-export function moveItem(ctx: WorkspaceContext, input: MoveItemInput): Promise<MovedItem> {
+export function moveItem(ctx: WorkspaceFlowContext<MovePorts>, input: MoveItemInput): Promise<MovedItem> {
   return ctx.write('workspace.moveItem', input, async (repo) => {
     const item = await requireLiveItem(repo, input.type, input.id);
     return item.projectId === input.projectId ? fileInFolder(repo, item, input) : moveToProject(repo, item, input);
   });
 }
 
-async function moveToProject(repo: WorkspaceRepository, item: FiledItem, input: MoveItemInput) {
+async function moveToProject(repo: Pick<MovePorts, 'findProject' | 'moveItem'>, item: FiledItem, input: MoveItemInput) {
   if (input.expectedVersion === undefined) throw workspaceErrors.moveVersionRequired();
   if (input.folderId) throw workspaceErrors.moveProjectFirst();
   assertVersion(item.version, input.expectedVersion);
@@ -53,7 +53,11 @@ async function moveToProject(repo: WorkspaceRepository, item: FiledItem, input: 
   return { id: item.id, projectId: project.id, folderId: null, version: item.version + 1, pinnedAt: null };
 }
 
-async function fileInFolder(repo: WorkspaceRepository, item: FiledItem, input: MoveItemInput) {
+async function fileInFolder(
+  repo: Pick<MovePorts, 'findProject' | 'findFolder' | 'pinnedInScope' | 'placeItem'>,
+  item: FiledItem,
+  input: MoveItemInput,
+) {
   const folderId = input.folderId;
   if (folderId === undefined || folderId === item.folderId) return where(item);
   await requireProjectForFolders(repo, item.projectId);

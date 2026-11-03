@@ -24,7 +24,7 @@ import { todayIn } from '../src/core/domain/index.js';
 import { createDatabase, type Database, migrate } from '../src/core/infra/index.js';
 import { readConfig } from '../src/server/config.js';
 import { modules } from '../src/server/modules.js';
-import { createWorkspaceService } from '../src/workspace/index.js';
+import { createWorkspaceService } from '../src/server/workspace/index.js';
 import { seed } from './sample-seed.js';
 import { assertSeedTarget, temporaryRoots } from './seed-target.js';
 

@@ -18,7 +18,10 @@
  * already as it keeps them. e2e/seed-sample.desktop.spec.ts opens each item and fails when a new Excalidraw
  * or BlockNote changes this again.
  */
-import type { CanvasElement, CanvasScene, DocumentBlock, JsonValue } from '../src/workspace/domain/index.js';
+
+import type { JsonValue } from '@tinyfold/core/domain';
+import type { CanvasElement, CanvasScene } from '@tinyfold/drawings/domain';
+import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 
 const text = (value: string): JsonValue => [{ type: 'text', text: value, styles: {} }];
 /**

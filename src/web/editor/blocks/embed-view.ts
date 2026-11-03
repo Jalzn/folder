@@ -1,5 +1,5 @@
+import { isOverdue } from '@tinyfold/board/domain';
 import type { CivilDate } from '@tinyfold/core/domain';
-import { isOverdue } from '@tinyfold/workspace/domain';
 import type { EmbeddedDrawing, EmbeddedTask, EmbedProject, LiveDrawing, LiveTask } from '../../lib/queries/embeds';
 
 /** What an unavailable embed shows: its text and which of Restaurar and Remover it offers. */

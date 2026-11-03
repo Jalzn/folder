@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from 'vitest';
 import { migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
-import { createWorkspaceService } from '../src/workspace/index.js';
+import { createWorkspaceService } from '../src/server/workspace/index.js';
 import { backupRoundTrip } from './testing/backup-round-trip.js';
 
 const request = () => ({ requestId: randomUUID() });

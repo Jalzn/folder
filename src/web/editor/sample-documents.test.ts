@@ -1,4 +1,4 @@
-import { type DocumentBlock, readDocumentContent } from '@tinyfold/workspace/domain';
+import { type DocumentBlock, readDocumentContent } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_DESCRIPTIONS, SAMPLE_DOCUMENTS, visionDocument } from '../../../scripts/sample-content';
 import { setupBlockNoteEditor } from '../testing/blocknote-editor';

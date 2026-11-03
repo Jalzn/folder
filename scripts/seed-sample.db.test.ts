@@ -1,12 +1,11 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { embedIds, excerptPresent } from '@tinyfold/rich-text/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase, type Database, migrate } from '../src/core/infra/index.js';
 import { modules } from '../src/server/modules.js';
-import { embedIds } from '../src/workspace/domain/embeds.js';
-import { excerptPresent } from '../src/workspace/domain/task-source.js';
-import { createWorkspaceService } from '../src/workspace/index.js';
+import { createWorkspaceService } from '../src/server/workspace/index.js';
 import { SAMPLE_DOCUMENTS, sampleScenes, TOKEN_BLOCK, TOKEN_EXCERPT } from './sample-content.js';
 import { seedSample } from './seed-sample.js';
 

@@ -1,4 +1,4 @@
-import { type DocumentBlock, EMBED_TYPES, readDocumentContent } from '@tinyfold/workspace/domain';
+import { type DocumentBlock, EMBED_TYPES, readDocumentContent } from '@tinyfold/rich-text/domain';
 
 const embedTypes: ReadonlySet<string> = new Set(EMBED_TYPES);
 

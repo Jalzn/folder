@@ -1,4 +1,5 @@
-import { type DocumentBlock, documentToMarkdown, embedIds, embedResolver } from '@tinyfold/workspace/domain';
+import { type DocumentBlock, documentToMarkdown, embedIds } from '@tinyfold/rich-text/domain';
+import { embedResolver } from '@tinyfold/workspace/domain';
 import { appEmbedHref } from '../../editor/blocks/embed-text';
 import type { EmbeddedItems } from '../../lib/queries/embeds';
 

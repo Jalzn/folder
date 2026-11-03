@@ -1,4 +1,4 @@
-import { nameKey } from '@tinyfold/workspace/domain';
+import { nameKey } from '@tinyfold/core/domain';
 import { describe, expect, it } from 'vitest';
 import {
   boardCount,

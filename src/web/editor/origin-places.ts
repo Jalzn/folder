@@ -1,4 +1,4 @@
-import { excerptEnd } from '@tinyfold/workspace/domain';
+import { excerptEnd } from '@tinyfold/rich-text/domain';
 import type { Node as ProseNode } from '@tiptap/pm/model';
 
 /** A task born in the document, as its marker shows it. */

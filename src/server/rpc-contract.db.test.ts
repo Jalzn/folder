@@ -1,13 +1,13 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { type AnyProcedure, isProcedure } from '@orpc/server';
 import { createAccessTokens } from '@tinyfold/auth';
-import { createWorkspace } from '@tinyfold/workspace';
-import { emptyCanvasScene } from '@tinyfold/workspace/domain';
+import { emptyCanvasScene } from '@tinyfold/drawings/domain';
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { createRouter } from './router.js';
 import { useAppFixture } from './testing/app.js';
+import { createWorkspace } from './workspace/index.js';
 
 /*
  * The RPC contract and the write fingerprints, pinned before stage 12 moves the code behind them:

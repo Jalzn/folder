@@ -5,7 +5,7 @@ import {
   emptyCanvasScene,
   RECOVERY_CANVAS_LIMITS,
   readCanvasScene,
-} from '@tinyfold/workspace/domain';
+} from '@tinyfold/drawings/domain';
 import { fileNameFrom } from '../files/download';
 import type { DraftStorage, Legacy, SavedDraft, SaveInput } from './index';
 

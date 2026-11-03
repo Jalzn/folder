@@ -1,6 +1,6 @@
 import type { IsoInstant } from '@tinyfold/core/domain';
-import { compareCodeUnits } from './order.js';
-import { type BoardKey, SEARCH_ITEM_TYPES, type SearchItemType, type SearchKey } from './paging.js';
+import { compareCodeUnits } from '@tinyfold/core/domain';
+import { SEARCH_ITEM_TYPES, type SearchItemType, type SearchKey } from './paging.js';
 
 export const searchTypeRankOf = (type: SearchItemType) => SEARCH_ITEM_TYPES.indexOf(type);
 
@@ -27,10 +27,3 @@ export function compareSearchKeys(a: SearchKey, b: SearchKey): number {
     compareText(a.id, b.id)
   );
 }
-
-/** Tasks in board order: the column, then the position within it. */
-export const boardKey = (task: { columnPosition: number; position: number; id: string }): BoardKey => ({
-  columnRank: task.columnPosition,
-  position: task.position,
-  id: task.id,
-});

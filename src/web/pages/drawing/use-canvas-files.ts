@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { MAX_CANVAS_BYTES } from '@tinyfold/workspace/domain';
+import { MAX_CANVAS_BYTES } from '@tinyfold/drawings/domain';
 import { useState } from 'react';
 import { besidePlace, createBeside, DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page';
 import { api, errorMessage, refreshWorkspace } from '../../lib/api';

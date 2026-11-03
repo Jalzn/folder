@@ -6,7 +6,7 @@ import {
   emptyCanvasScene,
   MAX_CANVAS_BYTES,
   readCanvasScene,
-} from '@tinyfold/workspace/domain';
+} from '@tinyfold/drawings/domain';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type CanvasSnapshot, canvasFile, parseCanvasDraft, readCanvasImport, withCleanLinks } from './canvas-autosave';
 import { withDraftProject } from './draft-project';

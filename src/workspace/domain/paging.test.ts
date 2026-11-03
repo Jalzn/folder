@@ -1,16 +1,7 @@
 import { readIsoInstant } from '@tinyfold/core/domain';
+import { pageText } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
-import {
-  boardCursor,
-  completedCursor,
-  documentCursor,
-  pageText,
-  readBoardCursor,
-  readCompletedCursor,
-  readDocumentCursor,
-  readSearchCursor,
-  searchCursor,
-} from './paging.js';
+import { documentCursor, readDocumentCursor, readSearchCursor, searchCursor } from './paging.js';
 
 describe('text pages', () => {
   it('returns short text as a single page', () => {
@@ -38,33 +29,16 @@ describe('text pages', () => {
 
 describe('cursors', () => {
   const id = '3f9e2c1a-0b4d-4e5f-8a6b-7c8d9e0f1a2b';
-  it('round trips document, search and board cursors', () => {
+  it('round trips document and search cursors', () => {
     expect(readDocumentCursor(documentCursor('1f3a9c', 60_000))).toEqual({ textPrint: '1f3a9c', offset: 60_000 });
     const searchKey = { titleRank: 2, updatedAt: readIsoInstant('2026-10-31T06:41:25.403Z'), typeRank: 1, id };
     expect(searchCursor(searchKey)).toBe(`s~2~2026-10-31T06:41:25.403Z~1~${id}`);
     expect(readSearchCursor(searchCursor(searchKey))).toEqual(searchKey);
-    const boardKey = { columnRank: 1, position: 7, id };
-    expect(boardCursor(42, boardKey)).toBe(`t~42~1~7~${id}`);
-    expect(readBoardCursor(boardCursor(42, boardKey))).toEqual({ revision: 42, key: boardKey });
   });
   it('refuses malformed cursors and cursors of another list', () => {
     for (const cursor of ['', '12', 'g:1', 'A1:1', '1:-2', `${'f'.repeat(17)}:1`])
       expect(() => readDocumentCursor(cursor)).toThrow('Cursor inválido');
     for (const cursor of ['o:40', `t~1~7~${id}`, `s~1~2026-10-31~0~${id}`, `s~1~2026-10-31T06:41:25.403Z~3~${id}`])
       expect(() => readSearchCursor(cursor)).toThrow('Cursor inválido');
-    // The column is its position among at most 20 active ones: 0 to 19.
-    expect(readBoardCursor(`t~1~19~7~${id}`).key.columnRank).toBe(19);
-    for (const cursor of [`s~0~2026-10-31T06:41:25.403Z~0~${id}`, `t~1~20~7~${id}`, `t~1~7~${id}`])
-      expect(() => readBoardCursor(cursor)).toThrow('Cursor inválido');
-  });
-});
-
-describe('completed tasks cursor', () => {
-  it('keeps the completion and the ID, and refuses any other cursor', () => {
-    const key = { completedAt: readIsoInstant('2026-10-31T06:41:25.403Z'), id: '00000000-0000-4000-8000-000000000010' };
-    expect(completedCursor(key)).toBe(`c~2026-10-31T06:41:25.403Z~${key.id}`);
-    expect(readCompletedCursor(completedCursor(key))).toEqual(key);
-    for (const cursor of ['c~2026-10-31~x', `t~1~0~0~${key.id}`, ''])
-      expect(() => readCompletedCursor(cursor)).toThrow('Cursor inválido');
   });
 });

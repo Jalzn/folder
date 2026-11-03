@@ -1,10 +1,10 @@
+import type { JsonValue } from '@tinyfold/core/domain';
 import {
   type DocumentBlock,
   type DocumentContent,
   documentPlainText,
   documentToMarkdown,
-  type JsonValue,
-} from '@tinyfold/workspace/domain';
+} from '@tinyfold/rich-text/domain';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setupBlockNoteEditor } from '../../testing/blocknote-editor';
 import { importMarkdownWithMath } from './markdown';

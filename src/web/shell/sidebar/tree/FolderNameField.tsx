@@ -1,4 +1,4 @@
-import { folderName, folderNameKey } from '@tinyfold/workspace/domain';
+import { folderName, folderNameKey } from '@tinyfold/projects/domain';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { InlineNameField, whenPresent } from '../../../ui';
 import { takenText } from '../../folders/folder-text';

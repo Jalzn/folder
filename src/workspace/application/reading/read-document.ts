@@ -1,6 +1,5 @@
+import { documentToMarkdown, type EmbedKind, embedIds } from '@tinyfold/rich-text/domain';
 import { embedResolver } from '../../domain/embed-resolver.js';
-import { type EmbedKind, embedIds } from '../../domain/embeds.js';
-import { documentToMarkdown } from '../../domain/markdown/index.js';
 import { readDocumentCursor } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import { workspaceErrors } from '../errors.js';

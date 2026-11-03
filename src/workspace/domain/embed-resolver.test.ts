@@ -1,7 +1,7 @@
+import { documentToMarkdown } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
 import type { EmbeddedItems } from './embed-items.js';
 import { embedResolver } from './embed-resolver.js';
-import { documentToMarkdown } from './markdown/index.js';
 
 const project = { id: 'p1', name: 'Tinyfold', color: 'violet' as const, archived: false };
 const items: EmbeddedItems = {

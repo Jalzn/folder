@@ -1,4 +1,4 @@
-import { emptyCanvasScene } from '@tinyfold/workspace/domain';
+import { emptyCanvasScene } from '@tinyfold/drawings/domain';
 import { describe, expect, it } from 'vitest';
 import { draftDownload, localDrafts } from './local-drafts';
 

@@ -1,4 +1,4 @@
-import type { EmbedKind } from '@tinyfold/workspace/domain';
+import type { EmbedKind } from '@tinyfold/rich-text/domain';
 import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import { embedOf } from './embed-blocks';

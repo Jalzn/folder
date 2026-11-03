@@ -1,4 +1,4 @@
-import { type DocumentBlock, embedIds, figureNumbers } from '@tinyfold/workspace/domain';
+import { type DocumentBlock, embedIds, figureNumbers } from '@tinyfold/rich-text/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { embedBlock } from '../../editor/blocks/embed-blocks';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';

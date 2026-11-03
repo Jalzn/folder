@@ -1,4 +1,4 @@
-import { isOverdue } from '@tinyfold/workspace/domain';
+import { isOverdue } from '@tinyfold/board/domain';
 import { Plus } from 'lucide-react';
 import type { RefObject } from 'react';
 import type { DrawerContent } from '../../shell/state';

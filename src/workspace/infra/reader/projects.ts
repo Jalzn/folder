@@ -1,8 +1,8 @@
+import { afterKeyset } from '@tinyfold/core/infra';
 import { type Kysely, sql } from 'kysely';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
 import type { FolderWithCount, ItemCounts } from '../../application/reading/read-models.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import { afterKeyset } from '../sql/keyset.js';
 import type { WorkspaceTables } from '../sql/tables.js';
 import { openTask } from '../sql/task-predicates.js';
 

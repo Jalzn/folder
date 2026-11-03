@@ -1,4 +1,4 @@
-import type { LabelColor } from '@tinyfold/workspace/domain';
+import type { LabelColor } from '@tinyfold/board/domain';
 
 /** The seven label colors by their names in the interface (docs/interface/visual.md, "Etiquetas"). */
 export const labelColorNames: Record<LabelColor, string> = {

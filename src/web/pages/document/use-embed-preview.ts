@@ -1,4 +1,4 @@
-import { sceneFingerprint } from '@tinyfold/workspace/domain';
+import { sceneFingerprint } from '@tinyfold/drawings/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, queryClient } from '../../lib/api';
 import { renderPreview } from '../../lib/files/canvas-preview';

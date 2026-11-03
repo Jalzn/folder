@@ -1,7 +1,7 @@
 import { CaptureUpdateAction } from '@excalidraw/excalidraw';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI, ExcalidrawProps } from '@excalidraw/excalidraw/types';
-import { type CanvasScene, compactCanvasScene } from '@tinyfold/workspace/domain';
+import { type CanvasScene, compactCanvasScene } from '@tinyfold/drawings/domain';
 import { type RefObject, useEffect, useRef } from 'react';
 import type { AutosaveController, SaveState } from '../../lib/autosave';
 import { type CanvasSnapshot, withCleanLinks } from '../../lib/autosave/canvas-autosave';

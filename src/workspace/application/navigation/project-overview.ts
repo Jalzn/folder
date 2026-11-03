@@ -1,6 +1,6 @@
+import { civilWindowStart, isPastDue } from '@tinyfold/core/domain';
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
 import { overviewTasks } from '../../domain/overview-tasks.js';
-import { doneWindowStart, isOverdue } from '../../domain/task-dates.js';
 import { requireProject } from '../projects/project-lookups.js';
 import type { ProjectOverviewInput } from '../schemas/navigation.js';
 import type { NavigationContext } from './ports.js';
@@ -18,7 +18,7 @@ export async function projectOverview(ctx: NavigationContext, input: ProjectOver
     return {
       columns: await reader.columns(),
       open: await reader.openTasks(input.projectId),
-      done: await reader.doneTasks(input.projectId, doneWindowStart(today, timeZone), limits.done),
+      done: await reader.doneTasks(input.projectId, civilWindowStart(today, timeZone, limits.doneDays), limits.done),
       recent: await reader.recentItems(input.projectId, limits.recent),
     };
   });
@@ -27,7 +27,7 @@ export async function projectOverview(ctx: NavigationContext, input: ProjectOver
   return {
     today,
     openTasks: read.open.length,
-    overdueTasks: read.open.filter((task) => isOverdue(task.dueOn, today, false)).length,
+    overdueTasks: read.open.filter((task) => isPastDue(task.dueOn, today)).length,
     now,
     rest,
     done: read.done.items,

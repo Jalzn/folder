@@ -1,11 +1,23 @@
+import { assertVersion } from '@tinyfold/core/application';
 import type { IsoInstant } from '@tinyfold/core/domain';
 import { FOLDER_LIMITS } from '../../domain/folders.js';
 import { MAX_PINNED } from '../../domain/project.js';
-import type { WorkspaceContext } from '../ports/context.js';
-import type { FolderItem } from '../ports/folders.js';
+import type { FolderItem, FolderLifecyclePorts, WorkspaceFlowContext } from '../ports/context.js';
 import type { DeleteFolderInput } from '../schemas/folders.js';
-import { assertVersion } from '../version.js';
 import { renumberFolders, requireActiveFolder, requireProjectForFolders } from './folder-rules.js';
+
+type DeleteFolderPorts = Pick<
+  FolderLifecyclePorts,
+  | 'findFolder'
+  | 'findProject'
+  | 'itemsInFolder'
+  | 'pinnedInScope'
+  | 'trashItem'
+  | 'placeItem'
+  | 'saveFolder'
+  | 'activeFolders'
+  | 'setFolderPosition'
+>;
 
 /** An item a deletion took out of the folder, with the pin it had in the folder, for the undo. */
 interface ListedItem {
@@ -39,7 +51,7 @@ export interface MovedToTrash extends ListedItem {
  *
  * The folder keeps its row and its last position, and the other folders are numbered again.
  */
-export function deleteFolder(ctx: WorkspaceContext, input: DeleteFolderInput) {
+export function deleteFolder(ctx: WorkspaceFlowContext<DeleteFolderPorts>, input: DeleteFolderInput) {
   return ctx.write('workspace.deleteFolder', input, async (repo) => {
     const folder = await requireActiveFolder(repo, input.id);
     assertVersion(folder.version, input.expectedVersion);

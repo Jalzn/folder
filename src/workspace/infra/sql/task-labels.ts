@@ -1,7 +1,10 @@
 import type { Kysely } from 'kysely';
 import type { TaskLabel } from '../../application/reading/read-models.js';
-import { byLabelName } from '../../domain/labels.js';
 import type { WorkspaceTables } from './tables.js';
+
+const names = new Intl.Collator('pt-BR');
+const byName = (a: TaskLabel, b: TaskLabel) =>
+  names.compare(a.name, b.name) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
 /** The active labels of the tasks, in alphabetical order: links to deleted labels stay hidden. */
 export async function taskLabels(db: Kysely<WorkspaceTables>, taskIds: readonly string[]) {
@@ -14,7 +17,7 @@ export async function taskLabels(db: Kysely<WorkspaceTables>, taskIds: readonly 
     .where('link.task_id', 'in', taskIds)
     .where('label.deleted_at', 'is', null)
     .execute();
-  for (const row of [...rows].sort(byLabelName))
+  for (const row of [...rows].sort(byName))
     byTask.set(row.task_id, [...(byTask.get(row.task_id) ?? []), { id: row.id, name: row.name, color: row.color }]);
   return byTask;
 }

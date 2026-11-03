@@ -6,7 +6,7 @@ export const NAVIGATION_LIMITS = {
    * The tasks of "Agora", the completed tasks of the done window and the recently edited items the
    * overview shows, and the length of the excerpts.
    */
-  overview: { now: 6, done: 8, recent: 5, excerptChars: 240 },
+  overview: { now: 6, done: 8, doneDays: 14, recent: 5, excerptChars: 240 },
   /**
    * Items of a project's trash listed at once and emptied in one request: one limit, so emptying can
    * take everything a listing shows. The trash count is never cut.

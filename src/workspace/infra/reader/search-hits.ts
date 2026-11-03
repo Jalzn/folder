@@ -1,9 +1,9 @@
+import { afterKeyset } from '@tinyfold/core/infra';
 import { type Kysely, type RawBuilder, sql } from 'kysely';
 import type { SearchHit, SearchQuery } from '../../application/reading/read-models.js';
 import { searchTypeRankOf } from '../../domain/list-order.js';
 import { folderColumns, folderReference } from '../sql/folders.js';
 import { itemTable } from '../sql/item-tables.js';
-import { afterKeyset } from '../sql/keyset.js';
 import { projectColumns, projectReference } from '../sql/references.js';
 import type { WorkspaceTables } from '../sql/tables.js';
 import { type TextType, titleLengthInSearchText } from './searchable.js';

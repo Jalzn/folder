@@ -11,22 +11,3 @@ export interface FiledItem {
   pinnedAt: IsoInstant | null;
   deletedAt: IsoInstant | null;
 }
-
-/**
- * What restoring a document or drawing answers. `folderGone` says its folder was deleted meanwhile,
- * so it came back at the project's root instead.
- */
-export interface RestoreAck {
-  id: string;
-  version: number;
-  updatedAt: IsoInstant;
-  folderGone: boolean;
-}
-
-export interface ItemAck {
-  id: string;
-  version: number;
-  updatedAt: IsoInstant;
-}
-
-export type DocumentAck = ItemAck;

@@ -1,4 +1,4 @@
-import type { DocumentBlock } from '../../domain/document-models.js';
+import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import { taskLabels } from './task-labels.js';
 import { hydrateTaskSource, taskChecklist } from './task-source.js';
 export const taskSummaryColumns = [
@@ -19,7 +19,7 @@ export const taskSummaryColumns = [
 export type TaskSummaryRow = Pick<TaskRow, (typeof taskSummaryColumns)[number]>;
 
 import type { Kysely } from 'kysely';
-import type { Task } from '../../domain/task-models.js';
+import type { BoardTask as Task } from '../../domain/read-models.js';
 import type { TaskRow, WorkspaceTables } from './tables.js';
 
 /** A stored task as lists show it, without its description. */

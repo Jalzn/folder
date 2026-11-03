@@ -1,6 +1,6 @@
 import './project-dialog.css';
 import { useNavigate } from '@tanstack/react-router';
-import { defaultProjectColor, PROJECT_COLORS, type ProjectColor } from '@tinyfold/workspace/domain';
+import { defaultProjectColor, PROJECT_COLORS, type ProjectColor } from '@tinyfold/projects/domain';
 import { type FormEvent, useState } from 'react';
 import { api } from '../../lib/api';
 import { useProjects } from '../../lib/queries';

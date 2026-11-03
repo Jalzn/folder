@@ -19,9 +19,12 @@
  * (data/tinyfold.sqlite) and the production one (/data/tinyfold.sqlite) included.
  */
 import { randomUUID } from 'node:crypto';
+import type { LabelColor } from '@tinyfold/board/domain';
+import type { CanvasScene } from '@tinyfold/drawings/domain';
+import type { Project } from '@tinyfold/projects/domain';
+import type { DocumentBlock } from '@tinyfold/rich-text/domain';
 import { addDays, type CivilDate } from '../src/core/domain/index.js';
-import type { CanvasScene, DocumentBlock, LabelColor } from '../src/workspace/domain/index.js';
-import type { Project, WorkspaceService } from '../src/workspace/index.js';
+import type { WorkspaceService } from '../src/server/workspace/index.js';
 import {
   loadDocument,
   loadScene,

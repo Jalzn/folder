@@ -1,4 +1,4 @@
-import { EMBED_TYPES } from '@tinyfold/workspace/domain';
+import { EMBED_TYPES } from '@tinyfold/rich-text/domain';
 import { describe, expect, it } from 'vitest';
 import { EMBED_BLOCKS, EMBED_CLIPBOARD_MARK, embedBlock, embedBlockType, embedOf, isEmbedType } from './embed-blocks';
 
