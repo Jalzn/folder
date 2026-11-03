@@ -100,7 +100,6 @@
 
 .label-name-field {
   --inline-field-offset: -4px;
-  --inline-field-type: var(--type-ui);
   --inline-field-tracking: var(--tracking-ui);
 
   display: flex;

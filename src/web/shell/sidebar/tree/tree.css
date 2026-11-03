@@ -103,7 +103,6 @@
   --inline-field-offset: -7px;
   --inline-field-padding: 0 6px;
   --inline-field-tracking: var(--tracking-ui);
-  --inline-field-error: var(--late);
 
   display: flex;
   flex-direction: column;

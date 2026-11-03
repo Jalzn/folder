@@ -12,11 +12,11 @@
   background: var(--raised-1);
   box-shadow: 0 0 0 3px var(--accent-25);
   color: var(--text);
-  font: var(--inline-field-type, var(--type-ui-medium));
+  font: var(--type-ui-medium);
   letter-spacing: var(--inline-field-tracking, normal);
   outline: none;
 }
 .inline-name-field__error {
-  color: var(--inline-field-error, var(--danger));
+  color: var(--danger);
   font: var(--type-meta);
 }
