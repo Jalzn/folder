@@ -1,11 +1,11 @@
 import { useRef } from 'react';
 import { completedText, TASK_CHANGED } from '../../components/task/task-change-text';
-import { api, errorCode, requestId } from '../../lib/api';
+import { taskWrites } from '../../components/task/task-writes';
+import { errorCode, requestId } from '../../lib/api';
 import { followingTask } from '../../lib/board-order';
 import { usesCommandKey } from '../../lib/platform';
 import { cachedColumns, cachedTasks } from '../../lib/queries';
 import { displayTitle, type Task } from '../../lib/types';
-import { onceMoreIfLost } from '../../lib/writes/lost-answer';
 import { useAnnounce } from '../../shell';
 import { useUndoableChange, type WriteRunner } from '../../shell/writes';
 import { arrangeBoard, type BoardColumnView, keyLayout, placeOf } from './board-columns';
@@ -115,15 +115,13 @@ export function useBoardMoves(
           text: completedText(title),
           changed: TASK_CHANGED,
           undo: () =>
-            onceMoreIfLost(() =>
-              api.workspace.moveTask({
-                requestId: undoIntent,
-                id,
-                expectedVersion: version,
-                columnId: from,
-                beforeTaskId: before,
-              }),
-            ),
+            taskWrites.move({
+              requestId: undoIntent,
+              id,
+              expectedVersion: version,
+              columnId: from,
+              beforeTaskId: before,
+            }),
           undone: () => hooks.moved(id, from),
         };
       },
@@ -159,7 +157,7 @@ export function useBoardMoves(
         expectedRevision: board.revision,
         ...spot,
       };
-      const ack = await onceMoreIfLost(() => api.workspace.moveTask(input));
+      const ack = await taskWrites.move(input);
       return {
         kind: 'moved',
         within: spot.columnId === task.columnId,
@@ -198,7 +196,7 @@ export function useBoardMoves(
         if (task.columnId === columnId) return { kind: 'none' };
         hooks.beforeMove();
         const input = { requestId: intent, id, expectedVersion: task.version, columnId };
-        const ack = await onceMoreIfLost(() => api.workspace.updateTask(input));
+        const ack = await taskWrites.update(input);
         return { kind: 'moved', within: false, completed: completion(task, board.tasks, columnId, ack.version) };
       });
     },

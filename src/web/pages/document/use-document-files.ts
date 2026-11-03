@@ -1,19 +1,19 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { DocumentBlock } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
+import { besidePlace, createBeside } from '../../components/item-page/create-beside';
 import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draft-download';
 import { oneAtATime } from '../../components/item-page/one-at-a-time';
 import type { AnyBlockEditor } from '../../editor/types';
-import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
+import { api, errorMessage, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController, Snapshot } from '../../lib/autosave';
 import { downloadFile, fileNameFrom } from '../../lib/files/download';
 import { importMarkdownWithMath } from '../../lib/files/markdown';
-import { inFolderOrRoot } from '../../lib/folder-fallback';
 import { documentQuery } from '../../lib/queries';
 import { type DocumentContent, displayTitle } from '../../lib/types';
 import { useRequest } from '../../lib/writes/use-request';
 import { paths } from '../../navigation/paths';
-import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
+import { redirectedCopyText, useCopyDestination } from '../../shell';
 import { useToast } from '../../ui';
 import { documentMarkdown } from './document-markdown';
 
@@ -74,14 +74,12 @@ export function useDocumentFiles(editor: AnyBlockEditor, controller: AutosaveCon
         async (source) => (await editor.tryParseMarkdownToBlocks(source)) as unknown as DocumentContent,
       );
       // Import into a fresh document, in this one's folder (decision 15): the open draft remains untouched.
-      const open = queryClient.getQueryData<{ folderId: string | null }>(documentQuery(documentId).queryKey);
-      const folderId = copyFolder({ projectId: own, folderId: open?.folderId ?? null }, destination);
-      // A folder deleted elsewhere sends the import to the root.
-      const { created: imported, atRoot } = await inFolderOrRoot(folderId, (folder) => {
+      const place = besidePlace(own, documentQuery(documentId).queryKey, destination);
+      const { created: imported, atRoot } = await createBeside(place, ({ projectId, folderId }) => {
         const input = {
           title: file.name.replace(/\.(md|markdown|txt)$/i, '').slice(0, 300),
-          projectId: destination.project.id,
-          ...(folder ? { folderId: folder } : {}),
+          projectId,
+          ...(folderId ? { folderId } : {}),
           content: blocks as unknown as DocumentContent,
         };
         return api.workspace.createDocument({ ...input, requestId: importRequest.for(input) });

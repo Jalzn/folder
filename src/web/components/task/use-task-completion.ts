@@ -1,11 +1,11 @@
-import { api, requestId } from '../../lib/api';
+import { requestId } from '../../lib/api';
 import { doneAndFirstOpen, followingTask } from '../../lib/board-order';
 import { Refusal } from '../../lib/errors';
 import { cachedColumns, cachedTasks } from '../../lib/queries';
 import { displayTitle } from '../../lib/types';
-import { onceMoreIfLost } from '../../lib/writes/lost-answer';
 import { useUndoableChange, type WriteRunner } from '../../shell/writes';
 import { completedText, reopenedText, TASK_CHANGED } from './task-change-text';
+import { taskWrites } from './task-writes';
 
 /**
  * Concluir and Reabrir, from a card, its menu, ⌘↵ or the drawer (docs/etapas/10-quadro-tarefa.md, decisions 13
@@ -33,7 +33,7 @@ export function useTaskCompletion(action: WriteRunner) {
         from = { columnId: task.columnId, before: followingTask(tasks, task) };
         text = reopening ? reopenedText(open.name) : completedText(displayTitle(task.title));
         const input = { requestId: intent, id, expectedVersion: task.version, columnId: to.id };
-        return onceMoreIfLost(() => api.workspace.updateTask(input));
+        return taskWrites.update(input);
       },
       (ack) => {
         const back = from;
@@ -43,15 +43,13 @@ export function useTaskCompletion(action: WriteRunner) {
           undone,
           undo: back
             ? () =>
-                onceMoreIfLost(() =>
-                  api.workspace.moveTask({
-                    requestId: undoIntent,
-                    id,
-                    expectedVersion: ack.version,
-                    columnId: back.columnId,
-                    beforeTaskId: back.before,
-                  }),
-                )
+                taskWrites.move({
+                  requestId: undoIntent,
+                  id,
+                  expectedVersion: ack.version,
+                  columnId: back.columnId,
+                  beforeTaskId: back.before,
+                })
             : undefined,
         };
       },

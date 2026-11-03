@@ -1,17 +1,17 @@
 import { useNavigate } from '@tanstack/react-router';
 import { MAX_CANVAS_BYTES } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
+import { besidePlace, createBeside } from '../../components/item-page/create-beside';
 import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draft-download';
-import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
+import { api, errorMessage, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { type CanvasSnapshot, canvasFile, canvasFileName, readCanvasImport } from '../../lib/autosave/canvas-autosave';
 import { renderCanvasPng } from '../../lib/files/canvas-png';
 import { downloadFile } from '../../lib/files/download';
-import { inFolderOrRoot } from '../../lib/folder-fallback';
 import { canvasQuery } from '../../lib/queries';
 import { useRequest } from '../../lib/writes/use-request';
 import { paths } from '../../navigation/paths';
-import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
+import { redirectedCopyText, useCopyDestination } from '../../shell';
 import { useToast } from '../../ui';
 
 /**
@@ -71,14 +71,12 @@ export function useCanvasFiles(controller: AutosaveController<CanvasSnapshot>, c
         return;
       }
       // In this drawing's folder when it stays in its project (decision 15).
-      const open = queryClient.getQueryData<{ folderId: string | null }>(canvasQuery(canvasId).queryKey);
-      const folderId = copyFolder({ projectId: own, folderId: open?.folderId ?? null }, destination);
-      // A folder deleted elsewhere sends the import to the root.
-      const { created: imported, atRoot } = await inFolderOrRoot(folderId, (folder) => {
+      const place = besidePlace(own, canvasQuery(canvasId).queryKey, destination);
+      const { created: imported, atRoot } = await createBeside(place, ({ projectId, folderId }) => {
         const input = {
           title: file.name.replace(/\.excalidraw$/i, '').slice(0, 300),
-          projectId: destination.project.id,
-          ...(folder ? { folderId: folder } : {}),
+          projectId,
+          ...(folderId ? { folderId } : {}),
           scene,
         };
         return api.workspace.createCanvas({ ...input, requestId: importRequest.for(input) });

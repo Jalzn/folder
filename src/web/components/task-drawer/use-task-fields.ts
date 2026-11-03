@@ -1,15 +1,15 @@
 import { useRef } from 'react';
-import { api, queryClient, requestId } from '../../lib/api';
+import { queryClient, requestId } from '../../lib/api';
 import { followingTask } from '../../lib/board-order';
 import { cachedTasks, keys, type TaskWithText } from '../../lib/queries';
 import type { Task } from '../../lib/types';
-import { onceMoreIfLost } from '../../lib/writes/lost-answer';
 import { useRequest } from '../../lib/writes/use-request';
 import { useTaskDrawer } from '../../shell/state';
 import { useAction, useUndoableChange } from '../../shell/writes';
 import { useToast } from '../../ui';
 import { useCreateLabel } from '../labels/use-create-label';
 import { TASK_CHANGED } from '../task/task-change-text';
+import { taskWrites } from '../task/task-writes';
 import { useTaskCompletion } from '../task/use-task-completion';
 
 type FieldKind = 'column' | 'due' | 'labels';
@@ -44,7 +44,7 @@ export function useTaskFields(task: Task | undefined) {
       () => {
         const current = latest.current ?? start;
         const input = { id: current.id, expectedVersion: version(current), ...patch };
-        return api.workspace.updateTask({ ...input, requestId: request.for(input) });
+        return taskWrites.update({ ...input, requestId: request.for(input) }, { retryLost: false });
       },
       (ack) => {
         request.clear();
@@ -78,7 +78,7 @@ export function useTaskFields(task: Task | undefined) {
           before: followingTask(cachedTasks(current.projectId, current.id)?.tasks ?? [], current),
         };
         const input = { requestId: going, id: current.id, expectedVersion: version(current), projectId };
-        return onceMoreIfLost(() => api.workspace.updateTask(input)).then((ack) => {
+        return taskWrites.update(input).then((ack) => {
           follow(projectId);
           return ack;
         });
@@ -92,18 +92,16 @@ export function useTaskFields(task: Task | undefined) {
           undo: was
             ? async () => {
                 const input = { requestId: back, id: start.id, expectedVersion: ack.version, projectId: was.projectId };
-                const returned = await onceMoreIfLost(() => api.workspace.updateTask(input));
+                const returned = await taskWrites.update(input);
                 acked.current = { id: returned.id, version: returned.version };
                 follow(was.projectId);
                 const spot = { columnId: was.columnId, beforeTaskId: was.before };
-                const moved = await onceMoreIfLost(() =>
-                  api.workspace.moveTask({
-                    requestId: place,
-                    id: start.id,
-                    expectedVersion: returned.version,
-                    ...spot,
-                  }),
-                );
+                const moved = await taskWrites.move({
+                  requestId: place,
+                  id: start.id,
+                  expectedVersion: returned.version,
+                  ...spot,
+                });
                 acked.current = { id: moved.id, version: moved.version };
               }
             : undefined,
@@ -139,7 +137,7 @@ export function useTaskFields(task: Task | undefined) {
           const input = { id: current.id, expectedVersion: version(current) };
           // A lost answer goes once more with the same request, which the server replays, as the card's
           // trash does (decision 7).
-          return onceMoreIfLost(() => api.workspace.deleteTask({ ...input, requestId: requests.trash.for(input) }));
+          return taskWrites.trash({ ...input, requestId: requests.trash.for(input) });
         },
         () => {
           requests.trash.clear();

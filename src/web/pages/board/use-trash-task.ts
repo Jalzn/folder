@@ -1,6 +1,6 @@
-import { api, requestId } from '../../lib/api';
+import { taskWrites } from '../../components/task/task-writes';
+import { requestId } from '../../lib/api';
 import type { Task } from '../../lib/types';
-import { onceMoreIfLost } from '../../lib/writes/lost-answer';
 import type { WriteRunner } from '../../shell/writes';
 import { useToast } from '../../ui';
 import type { BoardFocus, BoardLayout } from './board-keys';
@@ -21,7 +21,7 @@ export function useTrashTask(action: WriteRunner) {
         ? { kind: 'column', id: column.id }
         : null;
     const input = { requestId: requestId(), id: task.id, expectedVersion: task.version };
-    const trashed = await action.run(() => onceMoreIfLost(() => api.workspace.deleteTask(input)));
+    const trashed = await action.run(() => taskWrites.trash(input));
     if (!trashed) return null;
     toast('Tarefa movida para a lixeira.');
     return { next };

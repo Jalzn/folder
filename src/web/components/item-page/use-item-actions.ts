@@ -2,13 +2,13 @@ import { useNavigate } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
-import { inFolderOrRoot } from '../../lib/folder-fallback';
 import type { ItemType } from '../../lib/types';
 import { useRequest } from '../../lib/writes/use-request';
 import { paths } from '../../navigation/paths';
-import { copyFolder, redirectedCopyText, useCopyDestination } from '../../shell';
+import { redirectedCopyText, useCopyDestination } from '../../shell';
 import { useAction } from '../../shell/writes';
 import { useToast } from '../../ui';
+import { besidePlace, createBeside } from './create-beside';
 import { copyTitle, isFinalRefusal } from './item-copy';
 import { itemWords } from './item-words';
 
@@ -80,11 +80,9 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
     const snapshot = structuredClone(controller.getState().snapshot);
     const { destination, projects } = await findDestination(snapshot.projectId);
     if (!destination) return null;
-    const open = queryClient.getQueryData<{ folderId: string | null }>(item.queryKey);
     pendingCopy.current = {
       snapshot,
-      projectId: destination.project.id,
-      folderId: copyFolder({ projectId: snapshot.projectId, folderId: open?.folderId ?? null }, destination),
+      ...besidePlace(snapshot.projectId, item.queryKey, destination),
       projectName: destination.project.name,
       redirected: destination.redirected,
       archivedName: projects.find((project) => project.id === snapshot.projectId)?.name,
@@ -106,10 +104,9 @@ export function useItemActions<Snapshot extends { title: string; projectId: stri
       const title = copyTitle(copied.title);
       // A folder deleted elsewhere sends the copy to the root, and a retry goes there too. A refused request
       // records nothing, so the root takes the same request ID.
-      const { created: copy, atRoot } = await inFolderOrRoot(pending.folderId, (folderId) => {
-        pending.folderId = folderId;
-        return item.createCopy(copied, { projectId: pending.projectId, folderId }, title, pending.requestId);
-      });
+      const { created: copy, atRoot } = await createBeside(pending, (place) =>
+        item.createCopy(copied, place, title, pending.requestId),
+      );
       pendingCopy.current = null;
       // A newer local edit made during copying must remain recoverable on the original.
       const unchanged = () => JSON.stringify(copied) === JSON.stringify(controller.getState().snapshot);
