@@ -1,4 +1,4 @@
-import { TrashTaskDialog } from '../../components/task/TrashTaskDialog';
+import { TrashTaskDialog } from '../../components/task';
 import type { BoardColumnView } from './board-columns';
 import { DeleteColumnDialog } from './DeleteColumnDialog';
 import { MoveTaskPopover } from './MoveTaskMenu';

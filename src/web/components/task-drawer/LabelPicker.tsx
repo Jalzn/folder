@@ -5,7 +5,7 @@ import { Menu as AriaMenu, SearchField as AriaSearchField, Autocomplete, Input }
 import type { LabelSummary } from '../../lib/queries';
 import { matchesAllWords } from '../../lib/text/highlight';
 import { MenuItem, MenuSection, PopoverSurface } from '../../ui';
-import { labelColorVar } from '../labels/label-colors';
+import { labelColorVar } from '../labels';
 
 const CREATE = 'create';
 

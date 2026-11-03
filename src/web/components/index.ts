@@ -1,0 +1,1 @@
+export { createInlineMathSpec } from './InlineMath';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { TaskDrawer } from '../components/task-drawer/TaskDrawer';
+import { TaskDrawer } from '../components/task-drawer';
 import { useLayer } from './keyboard/use-layer';
 import { useDrawerContent, useTaskDrawer } from './task-drawer-state';
 

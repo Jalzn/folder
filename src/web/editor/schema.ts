@@ -8,7 +8,7 @@ import {
 } from '@blocknote/core';
 import { pt } from '@blocknote/core/locales';
 import { createReactMathBlockSpec, locales as mathLocales } from '@blocknote/math-block';
-import { createInlineMathSpec } from '../components/InlineMath';
+import { createInlineMathSpec } from '../components';
 import { createDrawingEmbedSpec, createTaskEmbedSpec } from './blocks/embed-specs';
 
 /** The blocks every editor takes: text, three heading levels, lists, quote, code and equations. */

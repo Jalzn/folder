@@ -2,7 +2,7 @@ import './task-meta.css';
 import type { LabelColor } from '@tinyfold/workspace/domain';
 import { Clock } from 'lucide-react';
 import { shortCivilDate } from '../../lib/dates/task-dates';
-import { LabelChip } from '../labels/LabelChip';
+import { LabelChip } from '../labels/display';
 
 /** The checklist's ring of 12 px: the share of checked items, in --ok once all are. */
 function ProgressRing({ done, total }: { done: number; total: number }) {

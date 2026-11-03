@@ -7,10 +7,8 @@ import { useRequest } from '../../lib/writes/use-request';
 import { useTaskDrawer } from '../../shell/state';
 import { useAction, useUndoableChange } from '../../shell/writes';
 import { useToast } from '../../ui';
-import { useCreateLabel } from '../labels/use-create-label';
-import { TASK_CHANGED } from '../task/task-change-text';
-import { taskWrites } from '../task/task-writes';
-import { useTaskCompletion } from '../task/use-task-completion';
+import { useCreateLabel } from '../labels';
+import { TASK_CHANGED, taskWrites, useTaskCompletion } from '../task';
 
 type FieldKind = 'column' | 'due' | 'labels';
 type FieldPatch = { columnId?: string; dueOn?: string | null; labelIds?: string[] };

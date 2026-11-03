@@ -1,4 +1,4 @@
-import { ItemRow } from '../../../components/item-list/ItemRow';
+import { ItemRow } from '../../../components/item-list';
 import type { ProjectOverview } from '../../../lib/queries';
 import { paths } from '../../../navigation/paths';
 

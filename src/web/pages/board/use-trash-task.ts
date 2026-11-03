@@ -1,4 +1,4 @@
-import { taskWrites } from '../../components/task/task-writes';
+import { taskWrites } from '../../components/task';
 import { requestId } from '../../lib/api';
 import type { Task } from '../../lib/types';
 import type { WriteRunner } from '../../shell/writes';

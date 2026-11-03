@@ -2,7 +2,7 @@ import { Plus, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { LabelSummary } from '../../lib/queries';
 import { IconButton } from '../../ui';
-import { LabelChip } from '../labels/LabelChip';
+import { LabelChip } from '../labels';
 import { LabelPicker } from './LabelPicker';
 
 /**

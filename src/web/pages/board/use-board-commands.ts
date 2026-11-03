@@ -1,5 +1,5 @@
 import { type RefObject, useRef, useState } from 'react';
-import { useTaskCompletion } from '../../components/task/use-task-completion';
+import { useTaskCompletion } from '../../components/task';
 import { type ColumnSummary, cachedColumns } from '../../lib/queries';
 import type { Task } from '../../lib/types';
 import { useAnnounce } from '../../shell';

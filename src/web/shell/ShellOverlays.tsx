@@ -1,6 +1,6 @@
 import { type RefObject, useMemo, useRef } from 'react';
 import { Dialog as AriaDialog, Modal, ModalOverlay } from 'react-aria-components';
-import { LabelsDialog } from '../components/labels/LabelsDialog';
+import { LabelsDialog } from '../components/labels';
 import { useFolders } from '../lib/queries';
 import type { Project } from '../lib/types';
 import { CommandPalette } from './command-palette/CommandPalette';

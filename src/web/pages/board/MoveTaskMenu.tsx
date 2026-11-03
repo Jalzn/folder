@@ -1,6 +1,6 @@
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import type { Key, RefObject } from 'react';
-import { columnMenuItems } from '../../components/task-drawer/TaskProperties';
+import { columnMenuItems } from '../../components/task-drawer';
 import type { ColumnSummary } from '../../lib/queries';
 import { MenuItem, MenuList, MenuSection, MenuSeparator, PopoverSurface } from '../../ui';
 

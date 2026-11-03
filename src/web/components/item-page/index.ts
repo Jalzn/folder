@@ -1,7 +1,11 @@
+export { besidePlace, createBeside } from './create-beside';
+export { DRAFT_DOWNLOADED, downloadDraft } from './draft-download';
 export { ReloadDialog, TrashItemDialog } from './EditorDialogs';
 export { HiddenFileInput } from './HiddenFileInput';
 export { ItemEditorDialogs } from './ItemEditorDialogs';
+export { copyTitle, isFinalRefusal } from './item-copy';
 export { type ItemWords, itemWords } from './item-words';
+export { oneAtATime } from './one-at-a-time';
 export { SaveBanners } from './SaveBanners';
 export { type EditedDetail, SaveState } from './SaveState';
 export { TrashedItem } from './TrashedItem';

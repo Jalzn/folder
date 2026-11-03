@@ -1,8 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { MAX_CANVAS_BYTES } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
-import { besidePlace, createBeside } from '../../components/item-page/create-beside';
-import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draft-download';
+import { besidePlace, createBeside, DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page';
 import { api, errorMessage, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController } from '../../lib/autosave';
 import { type CanvasSnapshot, canvasFile, canvasFileName, readCanvasImport } from '../../lib/autosave/canvas-autosave';

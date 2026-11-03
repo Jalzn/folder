@@ -10,7 +10,7 @@ import { useOwnerToday } from '../../shell';
 import { type DrawerContent, useTaskDrawer } from '../../shell/state';
 import { useAction } from '../../shell/writes';
 import { useToast } from '../../ui';
-import { useCreateLabel } from '../labels/use-create-label';
+import { useCreateLabel } from '../labels';
 import { type DrawerCommands, EMPTY_DRAWER_COMMANDS } from './drawer-commands';
 
 import { useNewTaskGuard } from './use-new-task-guard';

@@ -1,5 +1,5 @@
 import { useId, useRef } from 'react';
-import { TaskMeta } from '../../components/task/TaskMeta';
+import { TaskMeta } from '../../components/task/display';
 import { ColumnRing, ProjectMark } from '../../ui';
 import { AbsentEmbed, EmbedLoading } from './EmbedFallback';
 import { taskEmbedView } from './embed-view';

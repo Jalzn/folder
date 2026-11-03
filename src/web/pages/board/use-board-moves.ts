@@ -1,6 +1,5 @@
 import { useRef } from 'react';
-import { completedText, TASK_CHANGED } from '../../components/task/task-change-text';
-import { taskWrites } from '../../components/task/task-writes';
+import { completedText, TASK_CHANGED, taskWrites } from '../../components/task';
 import { errorCode, requestId } from '../../lib/api';
 import { followingTask } from '../../lib/board-order';
 import { usesCommandKey } from '../../lib/platform';

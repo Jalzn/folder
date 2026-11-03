@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { TaskRow } from '../../../components/item-list/TaskRow';
+import { TaskRow } from '../../../components/item-list';
 import { civilDateIn } from '../../../lib/dates/civil-date';
 import { shortCivilDate } from '../../../lib/dates/task-dates';
 import type { ColumnSummary, LabelSummary, ProjectOverview } from '../../../lib/queries';

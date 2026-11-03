@@ -1,9 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { DocumentBlock } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
-import { besidePlace, createBeside } from '../../components/item-page/create-beside';
-import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draft-download';
-import { oneAtATime } from '../../components/item-page/one-at-a-time';
+import { besidePlace, createBeside, DRAFT_DOWNLOADED, downloadDraft, oneAtATime } from '../../components/item-page';
 import type { AnyBlockEditor } from '../../editor/types';
 import { api, errorMessage, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController, Snapshot } from '../../lib/autosave';

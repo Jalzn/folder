@@ -1,6 +1,6 @@
 import { ChevronDown, Settings2, X } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import { labelColorVar } from '../../components/labels/label-colors';
+import { labelColorVar } from '../../components/labels';
 import type { LabelSummary } from '../../lib/queries';
 import { Button, Menu, MenuItem, MenuSection, MenuSeparator, MenuTrigger } from '../../ui';
 
