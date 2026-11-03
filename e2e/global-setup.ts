@@ -1,8 +1,11 @@
 import { execFileSync } from 'node:child_process';
 import { statSync } from 'node:fs';
 
-/** What the web bundle is built from: the web, and the pure modules of the other packages it imports. */
-const SOURCES = ['src/web', 'src/workspace/domain', 'src/auth/domain'];
+/**
+ * What the web bundle is built from: the web, and the pure modules of the other packages it imports, the core's
+ * among them through the workspace's and the auth's.
+ */
+const SOURCES = ['src/web', 'src/workspace/domain', 'src/auth/domain', 'src/core/domain'];
 /** Files that never reach the bundle. */
 const NOT_BUNDLED = /\.test\.tsx?$|\/testing\//;
 
