@@ -2,6 +2,65 @@
 
 Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. Nenhuma publicação na nuvem foi realizada.
 
+## Etapa 12: refatoração
+
+Executada em 2026-11-02, em três levas com um ramo cada: backend, fundações da web e funcionalidades da web. As três se integraram em `refactor/integrate` (`44ff8cc`) e fecharam em `refactor/final-web`, com as respostas do fim da etapa e os achados da revisão final. O processo foi o mais curto que o usuário pediu ([Desvios](etapas/12-refatoracao.md#desvios-do-plano)):
+
+- `pnpm check` em cada commit;
+- `build` e E2E completo uma vez por lote;
+- uma revisão por lote e uma de equivalência do resultado integrado.
+
+| Verificação | Onde | Resultado |
+| --- | --- | --- |
+| `pnpm check` | Cada commit das levas da web e de `refactor/final-web` | Passou. No último commit da leva das fundações: lint sem erro (23 avisos `noPlaywrightWaitForTimeout`, os de antes), tipos, dependências sem violação em 892 módulos e 686 testes unitários |
+| `pnpm build` e E2E completo | Leva das fundações da web, em `25eb6f6` | 215 passaram e 131 foram pulados pelas condições existentes dos testes, sem falha nem intermitência, em 23,3 min. A lista executada tinha 346 testes: os 344 do começo, mais o de W4.16a nos dois projetos |
+| E2E completo | Leva do backend | 213 passaram e 1 falhou: a intermitência de `task-drawer.spec.ts`, abaixo |
+| `test:db`, `build` e E2E focado | `refactor/integrate` (`44ff8cc`), pela revisão de equivalência | `test:db` com 274 testes, `build` e 48 E2E de `chrome-desktop` passaram. O `check` falhou nos tipos da web (E1, abaixo); à parte, passaram o biome, as dependências (989 módulos) e 725 unitários |
+| Testes de contrato na `main` | `rpc-contract.db.test.ts` e `schema.db.test.ts` da etapa contra o código de `438a9b3` | Os 3 passaram: os retratos descrevem a `main` |
+| `pnpm check` | Último commit de `refactor/final-web` | Passou: dependências sem violação em 988 módulos e 727 testes unitários |
+| E2E dos specs tocados | `refactor/final-web`, porta 5191 | Passaram: `item-page-decisions`, `document-page`, `canvas`, `draft-isolation`, `adversarial`, `app`, `folder-retries`, `trash`, `canvas-navigation`, `palette`, `navigation`, `task-drawer` e `board`. Os E2E novos, do item na lixeira com texto local e da página de aviso, falharam sem a correção; o nome do rascunho e a rede que volta têm testes unitários |
+
+O portão completo de `refactor/final-web` (`check`, `test:db`, `build` e E2E completo) roda na entrada na `main`.
+
+### Revisões
+
+- **Lote das fundações da web:** uma revisão somente leitura de `main..refactor/web`. Ela achou:
+  - **uma regressão média, do próprio W4.6a:** uma sessão recusada de vez não salvava ao esconder a aba nem depois de uma edição que corrigia o texto. Uma edição agora limpa `refused`;
+  - **duas armadilhas para quem adotasse `useStableHandlers` e `useCommandSlot`**, que saíram antes de ter quem os usasse;
+  - **o domínio do `core`**, que faltava na conferência do bundle velho.
+
+  Os outros commits foram conferidos como equivalentes.
+- **Equivalência de `refactor/integrate`** (`438a9b3..44ff8cc`, 49 commits): nenhum achado crítico ou alto.
+  - **E1 (média):** a integração perdeu o export de `EmbedBlockType` e o `check` falhava nos tipos da web. Corrigida em `bf635dd`.
+  - **E2 (baixa):** a página de aviso de um item na lixeira sem nada local oferecia no ⌘K os comandos de um editor ausente, e dava à aba o título do item. O desenho já fazia isso na `main`. Corrigida em `181bf25`, com um E2E do documento e do desenho.
+  - **Notas:**
+    - **N1:** com o B3.16a, reordenar uma pasta ou uma coluna cuja vizinha sumiu mostra a frase genérica do conflito de versão. É a leitura da decisão 3.
+    - **N2:** um documento na lixeira com texto local reenviava o salvamento a cada aba escondida. Já tratado por `d86aef0`: a sessão de um item na lixeira não envia nada.
+
+  A revisão também conferiu como sem diferença:
+  - as teclas dos incorporados, o autosave, o Desfazer e a sessão;
+  - a página do item, os provedores e as teclas;
+  - os contratos do backend.
+
+### Intermitência de `task-drawer.spec.ts`
+
+"A project change from the drawer keeps the drawer open on the task, with the focus" falhava também na `main`: o backend mediu 2 de 5 no ramo e 3 de 5 na `main` de partida.
+
+- **Diagnóstico:** uma sonda com um `MutationObserver` e os eventos de foco, rodada 10 vezes sob carga (10 processos ocupando a CPU), mostrou a corrida numa delas. O botão "Projeto:" sumia, a gaveta dizia "Esta tarefa não está mais neste projeto.", o botão voltava, e o foco ficava no `body`.
+- **Causa:** depois da mudança de projeto, a leitura do workspace inteiro atualizava a lista do projeto antigo antes de a gaveta seguir a tarefa.
+- **Correção:** `df64712`. A gaveta segue a tarefa assim que o servidor responde, com o projeto novo na consulta da própria tarefa.
+
+| Execução, sob a mesma carga | Falhas |
+| --- | --- |
+| Teste original, sem a correção, 10 vezes | 1, com o foco "inactive" |
+| Teste original, com a correção, 2 × 10 vezes | 0 |
+| Sonda, com a correção, 10 vezes | Nenhuma página "Esta tarefa não está mais neste projeto." |
+
+### Pendências
+
+- **Chrome real:** as passagens previstas, inclusive a sessão dos incorporados ao ritmo de uma pessoa, não foram feitas nesta etapa.
+- **Tempos do E2E:** o E2E isolado e paralelo ficou para depois (W2.6 a W2.11), então não há tempos de antes e depois a comparar.
+
 ## Preparação para Railway e Cloudflare
 
 Executada em 2026-11-02, primeiro localmente e depois no Railway. A preparação não altera regras do domínio, migrações nem a interface. O serviço foi implantado com um espaço vazio; DNS, HTTPS e login pelo subdomínio também foram verificados.

@@ -13,11 +13,31 @@
 | 09 | [Pastas](09-pastas.md) | Pastas de um nível para documentos e desenhos, árvore na lateral e Desfazer com ⌘Z | Concluída localmente |
 | 10 | [Quadro e tarefa](10-quadro-tarefa.md) | Colunas configuráveis, gaveta da tarefa, descrição, prazo e etiquetas | Concluída localmente |
 | 11 | [Documento e desenho](11-documento-desenho.md) | Tarefas e desenhos incorporados, marcador de origem e novas páginas de documento e desenho | Concluída localmente |
-| 12 | [Refatoração](12-refatoracao.md) | Código mais fácil de ler e de mudar, sem mudar o comportamento: partes paralelas juntas, guardas automáticas e E2E isolado e paralelo, em seis ondas | Detalhada |
+| 12 | [Refatoração](12-refatoracao.md) | Guardas automáticas (lint dos testes, camadas, retratos do esquema e do contrato, catraca de CSS, bundle velho recusado), autosave, Desfazer, sessão, escritas e teclas da web com dono, teclado dos incorporados e página do item compartilhados, e as correções decididas | Concluída parcialmente |
 
 As evidências executadas estão em [validação](../validacao.md), [revisão de persistência](../revisao-workspace.md) e [revisão de backend](../revisao-backend.md).
 
 As etapas 07 a 11 seguiram essa ordem. Cada uma deixa `check`, `test:db`, `build` e `e2e` verdes antes de entrar na `main`. As cinco estão concluídas localmente.
+
+## Etapa 12: para depois
+
+A etapa 12 entrou em parte, com um processo mais curto que o plano ([Desvios](12-refatoracao.md#desvios-do-plano)). Ficaram para depois, com os IDs do plano:
+
+- **Backend:**
+  - B3.1 e B3.2 (tipos de item e modelos), e B3.4 e B3.5 (o catálogo de erros);
+  - BC-1 (o ciclo de vida de documento e desenho);
+  - BC-2 (nomes e ordem de pastas, colunas e etiquetas);
+  - BI-1 (a raiz de composição);
+  - BI-2 e BI-3 (`infra/sql/`);
+  - BI-9.
+- **Web:**
+  - WF-3 (`ShellUiProvider` por assunto);
+  - W4.12, W4.14, W4.17 e W4.18 (criar no projeto, regiões do `AppLayout`, registro de comandos e comandos do item aberto);
+  - as partes de WF-13 (`navigation/` e os subbarris do shell) e de WF-8 (o "Modelo de teclado" e as teclas dos menus das páginas);
+  - `createBeside` (WP-6);
+  - WP-8 a WP-14 e WP-16;
+  - o resto de WP-17 e WP-18.
+- **CSS e E2E:** a onda 6 (CSS e primitivas, com as correções W6.2a, W6.7a, W6.7b e W6.8a), e W2.2 a W2.13 (o arnês de testes: fixtures, E2E isolado e paralelo, smoke e visual).
 
 ## Pendências de operação
 

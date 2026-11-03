@@ -1,6 +1,6 @@
 # Etapa 12 — Refatoração
 
-**Estado:** detalhada em 2026-11-02, com as [decisões do usuário](#decisões-do-usuário) do mesmo dia. Nada foi implementado.
+**Estado:** concluída parcialmente em 2026-11-02. Detalhada no mesmo dia, com as [decisões do usuário](#decisões-do-usuário); o [Resultado](#resultado) diz o que entrou e o que ficou para depois.
 
 O plano consolida cinco revisões somente leitura de `main` (`4c185b6`), cada uma com IDs próprios:
 
@@ -10,7 +10,7 @@ O plano consolida cinco revisões somente leitura de `main` (`4c185b6`), cada um
 - funcionalidades da web (WP-1 a WP-18): editor, documento, desenho, gaveta e quadro;
 - testes, ferramentas e CSS (TT-1 a TT-19).
 
-Os relatórios completos estão na pasta de rascunho da sessão que os produziu. Esta página guarda os IDs para que cada commit aponte a sua origem. As seções "Resultado" e "Desvios do plano" entram ao concluir.
+Os relatórios completos estão na pasta de rascunho da sessão que os produziu. Esta página guarda os IDs para que cada commit aponte a sua origem. O "Resultado" e os "Desvios do plano" estão no fim.
 
 ## Objetivo
 
@@ -699,6 +699,81 @@ As revisões concordam nestes pontos. Eles valem para todos os commits.
 | `validacao.md` | Os portões de cada onda, as revisões, as passagens no Chrome e os tempos do E2E antes e depois |
 | `etapas/README.md` e esta página | O estado, o Resultado e os Desvios |
 
+## Resultado
+
+Três levas entraram, cada uma num ramo, integradas em `refactor/integrate` e fechadas em `refactor/final-web`: o backend, as fundações da web e as funcionalidades da web. Depois da onda 1, o processo mudou a pedido do usuário (ver [Desvios](#desvios-do-plano)). Os portões e as revisões estão na [validação](../validacao.md#etapa-12-refatoração).
+
+**Guardas.**
+
+- **Lint:** o lint recusa uma chamada do Playwright sem `await`, um teste focado e a especificidade descendente no CSS, e o CI recusa `test.only`.
+- **E2E:**
+  - recusa um bundle da web mais velho que o código dele, contando a web e os domínios do workspace, do auth e do `core`;
+  - leva o servidor a um banco temporário por rodada.
+- **CSS:** a catraca de convenções recusa fonte em px, variável desconhecida e ponto de quebra fora da escala. As exceções de hoje têm motivo.
+- **Camadas:** o dependency-cruiser percorre `scripts` e `e2e` e impõe as camadas da web, com `web-lib-is-a-leaf` como erro.
+- **Retratos (backend):** o esquema, o contrato RPC e os nomes de operação.
+
+**Fundações da web.**
+
+- **Consultas:** uma fábrica de chaves (`lib/queries/keys.ts`) com `queryOptions`, e o cache mudado por auxiliares (`patchItemPlace`, `isItemPinned` e `invalidateNavigation`).
+- **Autosave:** fica em `lib/autosave/`.
+  - Um controlador sem formato padrão de rascunho.
+  - `watchPage`, com os ouvintes da página.
+  - `defineItemSession`, de que saem as sessões do documento e do desenho.
+  - O estado diz quando a última recusa foi definitiva (`refused`), e a sessão de um item na lixeira segura os envios (`hold`).
+- **Desfazer:** o protocolo tem um núcleo puro, `runUndoableChange` (`lib/undoable-change.ts`), testado sem React. Os movimentos de pasta e de projeto também passam por ele.
+- **Sessão:** a sessão vencida só se detecta no link RPC; há eventos de sessão com nome e um `signOut()`.
+- **Escritas:** `useAction`, `useUndoableChange` e as mudanças dos itens ficam em `shell/writes/`, e com isso `lib/` vira folha.
+- **Teclas:** `useLatest` nos espelhos do shell, e a tabela `KEYS` (`shell/keyboard/keys.ts`).
+- **Provedores:** `AppProvider` se divide em dono, itens novos e diálogo de projeto, com `useApp` como fachada.
+- **E2E:** os localizadores do toast e do editor de documento ficam nos auxiliares.
+
+**Funcionalidades da web.**
+
+- **Teclado dos incorporados:**
+  - `embed-keymap.ts` é uma tabela, da qual saem o mapa de teclas e as teclas seguradas;
+  - `embed-selection.ts` e `embed-targets.ts` são puros e testados no esquema do documento;
+  - `selection-drift.ts` é o único módulo que conhece a deriva do Chrome;
+  - `embed-blocks.ts` nomeia os blocos.
+- **Página do item aberto:** documento e desenho compartilham `useItemEditor`, `ItemEditorDialogs`, `HiddenFileInput` e `item-copy.ts`.
+- **Sessão:** saíram os relatos de sessão repetidos.
+
+**Correções.**
+
+- **Decididas e feitas:**
+  - backend: B3.6a, B3.14a, B3.14b, B3.16a, B3.22a, B3.22b, B3.29a e B3.31a;
+  - web: W4.6a, W4.16a, W5.7a a W5.7c, W5.8a a W5.8d e W5.11a.
+- **Da onda 6, que não entrou:** W6.2a, W6.7a, W6.7b e W6.8a.
+- **Das respostas do fim da etapa** (ver [Decisões do usuário](#decisões-do-usuário)):
+  - o mesmo padrão de nome nos três rascunhos baixados;
+  - a sessão de um item na lixeira que para de tentar salvar;
+  - a rede que volta sem reenviar uma recusa definitiva;
+  - toda frase de esquema escrita para a pessoa.
+- **Achadas pelas revisões:**
+  - o `EmbedBlockType` que a integração perdeu;
+  - a página de aviso da lixeira, que oferecia comandos de um editor ausente;
+  - a corrida da gaveta ao mudar o projeto da tarefa, a intermitência de `task-drawer.spec.ts`.
+
+### Para depois
+
+- **Backend:**
+  - B3.1 e B3.2 (tipos de item e modelos), e B3.4 e B3.5 (o catálogo de erros);
+  - BC-1 (o ciclo de vida de documento e desenho);
+  - BC-2 (nomes e ordem de pastas, colunas e etiquetas);
+  - BI-1 (a raiz de composição);
+  - BI-2 e BI-3 (`infra/sql/`);
+  - BI-9.
+  - O resto da onda 3 está em [Desvios › Backend](#backend).
+- **Web:**
+  - WF-3 (`ShellUiProvider` por assunto);
+  - W4.12 (`useCreateInProject`), W4.14 (regiões do `AppLayout` e `ShellOverlays`), W4.17 (o registro de comandos) e W4.18 (os comandos do item aberto);
+  - de WF-13: `navigation/` separado de `router/` e os subbarris do shell, com a regra de entrada;
+  - de WF-8: a seção "Modelo de teclado" e as teclas dos menus das páginas;
+  - `createBeside` (WP-6);
+  - WP-8 a WP-14 e WP-16 (a gaveta, o quadro e os slots de comandos);
+  - o resto de WP-17 e WP-18.
+- **CSS e E2E:** a onda 6, e W2.2 a W2.13 (o arnês de testes, inclusive o E2E isolado e paralelo).
+
 ## Desvios do plano
 
 ### Backend
@@ -741,6 +816,28 @@ As revisões concordam nestes pontos. Eles valem para todos os commits.
   - **Caracterização:** os testes B3.0a a B3.0c, que só valem antes desses movimentos.
   - **Onda 2:** B2.3 a B2.6.
 
+### Web
+
+- **Processo:** o mesmo do backend.
+  - Um commit por assunto, com `pnpm check` em cada commit.
+  - O `build` e o E2E completo uma vez por lote, e o E2E dos specs tocados nos commits do fim.
+  - Uma revisão só por lote e uma revisão de equivalência do resultado integrado, no lugar da revisão adversarial por onda.
+  - As correções decididas ficaram em commits `fix`, cada uma com um teste que falha antes e passa depois.
+- **Caracterização:** W4.0a a W4.0c não viraram retratos próprios. A tabela de `watchPage` (esconder, rede e saída, em cada estado), os testes de `runUndoableChange` e os E2E de pastas e de lixeira cobrem o mesmo.
+- **Ondas 1 e 2:**
+  - W1.4 (retratos visuais) e W1.7 ficaram de fora;
+  - da onda 2, só a parte mecânica de W2.1.
+- **WF-6:** entrou em duas partes. A fundação (o link, `isSessionError`, os eventos e `signOut`) foi da leva das fundações, e as chamadas das funcionalidades saíram na integração.
+- **WF-7:** ficou só `useLatest`. `useStableHandlers` e `useCommandSlot` entraram e saíram no mesmo lote, porque a revisão mostrou que não serviam aos lugares que os adotariam: "Nesta tarefa" oferece um comando só quando ele existe, e o ⌘↵ da gaveta escreve no slot num efeito passivo. Os slots ficam para WP-11, com o tempo de cada lugar.
+- **W4.6a:** a revisão do lote achou uma regressão do próprio commit. Uma sessão recusada de vez não tentava de novo nem depois de uma edição. Uma edição agora limpa `refused`.
+- **W4.16a:** com a regra do shell, um botão dentro do editor da descrição, como o de uma fórmula, conta como editor, e ⌥↑/⌥↓ não mudam a altura da gaveta ali. O usuário manteve.
+- **W4.22:** a regra `web-lib-is-a-leaf` virou erro no fim, depois da integração com o backend, que a criou como aviso.
+- **Integração:** cada leva passava sozinha, mas o backend tirou do domínio o export de `EmbedBlockType`, que a leva das funcionalidades passou a usar. O export voltou.
+- **E2E intermitente:**
+  - **Causa:** `task-drawer.spec.ts`, "a project change from the drawer…", falhava também na `main`, por uma corrida do aplicativo, não do teste. Entre a resposta da mudança de projeto e a gaveta seguir a tarefa, a lista do projeto antigo já não a tinha, e o editor fechava e abria de novo, perdendo o foco.
+  - **Correção:** a gaveta passa a seguir a tarefa assim que o servidor responde.
+  - **Prova:** 20 repetições sob carga, sem falha.
+
 ## Decisões do usuário
 
 Respostas de 2026-11-02, registradas em [decisões](../decisoes.md). O usuário aceitou as seis ondas e todas as recomendações:
@@ -766,3 +863,21 @@ Respostas de 2026-11-02, registradas em [decisões](../decisoes.md). O usuário 
    - o nome do dono passa pela regra de nomes, com `visibleText` no `core` (B3.22a e B3.22b). Este item e o anterior foram acrescentados pelo plano às diferenças achadas pelas revisões.
 
 As escolhas que o plano fez sem perguntar foram aceitas como estão: o arnês de testes adiantado para a onda 2, o que ficou [fora da etapa](#fora-da-etapa) e os commits opcionais da onda 3.
+
+### Respostas ao fim da etapa
+
+Em 2026-11-02, o usuário respondeu os oito pontos que as levas levantaram. Quatro mudam o comportamento, cada um num commit `fix` com teste:
+
+- **Decisão 4, alargada:** toda frase que um esquema escreve para a pessoa aparece pelo `/rpc` (`domainMessage`), não só as dos validadores de conteúdo.
+- **Rascunho baixado:** o nome é `tinyfold-rascunho-<documento|desenho|tarefa>-<id>.json` nos três itens, também pela página de item que não existe mais.
+- **Item na lixeira com texto local:**
+  - o documento ou o desenho para de tentar salvar e mostra só a faixa da lixeira, com "Salvar meu rascunho como cópia" e "Baixar cópia", sem a faixa de falha;
+  - o rascunho fica no aparelho.
+- **Rede que volta:** quando a rede volta, uma recusa definitiva do mesmo texto não é reenviada, como ao esconder a aba. Um texto editado sai.
+
+Os outros quatro confirmam o comportamento de hoje:
+
+- o desenho de um projeto arquivado só lê, mas mantém Exportar e "Importar desenho";
+- a referência de ordem de outro projeto responde `VERSION_CONFLICT`;
+- a regra de nomes vale para o nome do dono só na criação;
+- um botão dentro do editor da descrição conta como editor.

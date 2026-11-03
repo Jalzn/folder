@@ -23,7 +23,7 @@ Cada pasta é um pacote `@tinyfold/<nome>`. Auth e workspace seguem domínio, ap
 - as pastas `testing/`, com auxiliares de teste, nunca entram no código de execução, nem no dos scripts;
 - os scripts de `scripts/` chegam a um módulo só pelos arquivos exportados (o servidor, que compõe, eles reaproveitam) e nunca importam a web;
 - o E2E importa de `src` só tipos;
-- na web, `ui/` não importa o shell, os componentes, as páginas, o editor nem as rotas, e só as rotas e outras páginas importam `pages/`. `lib/` como folha é um aviso até `use-action.ts` sair de lá.
+- na web, `ui/` não importa o shell, os componentes, as páginas, o editor nem as rotas, e só as rotas e outras páginas importam `pages/`. `lib/` é folha: não importa nenhuma outra camada da web, e as escritas que mostram toast ficam em `shell/writes/`.
 
 Desde a etapa 12, `pnpm deps` percorre `src`, `scripts` e `e2e`. A exclusão do build cobre só `src/*/dist`, então as regras também enxergam os pacotes npm.
 
@@ -107,6 +107,8 @@ Excluir uma pasta, com ou sem os itens, e mover um item entre pastas ou projetos
 
 No cliente, o ⌘Z desfaz a ação do toast na tela (`ToastProvider`, com a guarda `undoKeyAction`): só fora de campos editáveis, do editor, do Excalidraw e de menus e diálogos, e nunca a de um toast que já saiu. Fora de campos e editores, ⌘Z, ⇧⌘Z e Ctrl+Y nunca chegam ao navegador, cujo desfazer reverteria a última edição de um editor já sem foco. Cada Desfazer pertence à sua mudança (`lib/item-changes.ts`): uma mudança mais nova do mesmo item tira o Desfazer do toast anterior. As escritas passam uma de cada vez (`lib/write-queue.ts`), cada intenção guarda o seu ID de pedido, e uma resposta perdida é reenviada uma vez com o mesmo ID (`lib/lost-answer.ts`), que devolve a resposta guardada.
 
+Desde a etapa 12, esse protocolo tem um núcleo só, `runUndoableChange` (`lib/undoable-change.ts`), puro e testado sem React. A mudança começa quando a fila a aceita; o toast oferece o Desfazer; uma mudança mais nova o retira; e o Desfazer espera a escrita em curso e confere que ainda é a mais recente antes de rodar. `useUndoableChange` o liga ao toast, ao anunciador e às mudanças dos itens. Passam por ele as mudanças de tarefa, coluna e etiqueta e os movimentos entre pastas e projetos. Excluir pasta e arquivar projeto guardam o próprio Desfazer, que uma mudança mais nova não retira. Os ganchos de escrita da web (`useAction`, `useUndoableChange` e o provedor das mudanças) ficam em `shell/writes/`.
+
 ## Quadro e tarefas
 
 As regras completas estão no [README do workspace](../src/workspace/README.md); o plano e os desvios, na [etapa 10](etapas/10-quadro-tarefa.md).
@@ -142,7 +144,7 @@ O plano e os desvios estão na [etapa 11](etapas/11-documento-desenho.md); as re
   - ⇧↑ e ⇧↓ estendem a seleção ao bloco vizinho, e Page Up e Page Down não fazem nada;
   - digitar abre um parágrafo depois do incorporado (`embed-typing.ts`), e ⌘C escreve o link do item (`embed-clipboard.ts`).
 
-  Em qualquer seleção, Tab não aninha blocos sob um incorporado. `embed-selection-hold.ts` recusa a deriva da seleção do Chrome para o primeiro texto do documento ([etapa 11](etapas/11-documento-desenho.md#desvios-do-plano)). Colar deixa de fora um incorporado com ID recusado (`embed-paste.ts`), e os rascunhos e os salvamentos passam por `sanitizeEmbeds`.
+  Em qualquer seleção, Tab não aninha blocos sob um incorporado. Desde a etapa 12, as teclas são uma tabela (`embed-keymap.ts`, `{ key, intent, holds, run }`), da qual saem o mapa e as teclas que a guarda segura. Para onde cada tecla leva a seleção é puro e testado no esquema do documento: `embed-selection.ts` lê a seleção e `embed-targets.ts` calcula o alvo. `embed-blocks.ts` nomeia cada bloco incorporado, com o tipo do item e a propriedade do ID. `selection-drift.ts` é o único módulo que conhece a deriva da seleção do Chrome para o primeiro texto do documento e o observador privado do ProseMirror, com a política da guarda numa função pura (`driftDecision`), como na [etapa 11](etapas/11-documento-desenho.md#desvios-do-plano). Colar deixa de fora um incorporado com ID recusado (`embed-paste.ts`), e os rascunhos e os salvamentos passam por `sanitizeEmbeds`.
 - **Marcador de origem:** uma decoração do ProseMirror (`origin-markers.tsx`, com os lugares em `origin-places.ts`), feita das origens das tarefas do documento, sem tocar no JSON. É um botão no fim do trecho (`excerptEnd`), ou no fim do bloco quando o trecho mudou. Abre a gaveta e, no hover, sublinha o trecho por um destaque CSS. Fica fora da ordem do Tab, e o popover "Tarefas · n" leva às mesmas tarefas.
 - **Markdown e endereço:** a exportação `.md` usa `documentToMarkdown` do domínio com `embedResolver` e os endereços do aplicativo (`/tarefas/<id>` e `/desenhos/<id>`). `/tarefas/$taskId` abre a tarefa na gaveta, no quadro do projeto dela.
 
@@ -162,6 +164,20 @@ A recuperação depende do armazenamento disponível no navegador; não equivale
 
 O controlador de autosave aceita snapshots e validadores de rascunho específicos de documentos e desenhos. As chaves antigas dos documentos foram preservadas; desenhos usam outro namespace por instalação, recurso e escritor. Durante o desenho contínuo, as gravações locais são agrupadas em intervalos de até 100 ms, com persistência adicional ao soltar o ponteiro ou sair. O envio ao servidor aguarda 650 ms de pausa e mantém uma chamada em voo.
 
+Desde a etapa 12, o autosave fica em `src/web/lib/autosave/`:
+
+- **Controlador:** `AutosaveController`, sem formato de rascunho padrão: cada sessão dá o seu leitor.
+- **Sessões de item:** `defineItemSession` (`item-session.ts`) faz as do documento e do desenho a partir de uma especificação: snapshot, armazenamento, rascunho, conferência, envio, cache, invalidações e o que vive ao lado, como as prévias do desenho. É uma sessão por instalação e item, pela vida da aba, registrada para o ponto "não salvo". A sessão do texto da tarefa fica à parte, no conjunto de `lib/session-pool.ts`.
+- **Página:** `watchPage` (`page-listeners.ts`) dá os mesmos ouvintes a um editor aberto e a uma sessão que sobreviveu a ele.
+  - Tenta de novo um salvamento que falhou quando a rede volta.
+  - Avisa antes de sair com trabalho não salvo.
+  - Salva quando a aba se esconde.
+  - Nem a rede que volta nem a aba escondida reenviam uma recusa definitiva (`refused`, em `VALIDATION`, `DOMAIN_RULE`, `BAD_REQUEST`, `PAYLOAD_TOO_LARGE` ou `REFUSED`) enquanto o texto não muda. Uma edição a limpa. Esconder a aba também não reenvia um conflito, que a pessoa resolve.
+- **Lixeira:** um documento ou desenho na lixeira com texto local segura os envios (`hold`). Nada sai, as edições continuam no rascunho do aparelho, e a página mostra só a faixa da lixeira, com a cópia e o download. Sem nada local, a página só leva à lixeira, sem editor, sem comandos no ⌘K e sem o título na aba.
+- **Rascunho baixado:** o arquivo de um rascunho se chama `tinyfold-rascunho-<documento|desenho|tarefa>-<id>.json` (`lib/local-drafts.ts`).
+
+A sessão vencida só se detecta no link RPC (`lib/api.ts`), em toda resposta 401. Os eventos da sessão têm nome em `lib/session-events.ts`, e sair passa por `signOut()` (`lib/session.ts`).
+
 ## Rotas e shell
 
 A SPA usa TanStack Router com endereços em português, sempre dentro de um projeto:
@@ -179,7 +195,7 @@ A SPA usa TanStack Router com endereços em português, sempre dentro de um proj
 
 `/` reabre o último lugar do último projeto, com a rolagem, guardado no dispositivo por instalação; o caminho guardado só é usado se for um endereço interno conhecido. Os endereços anteriores (`/documentos/$id`, `/desenhos/$id`, listas e `/login`) redirecionam, e um item aberto no endereço de outro projeto passa ao endereço certo. `/tarefas/$taskId`, o endereço permanente de uma tarefa nos arquivos exportados, abre a tarefa na gaveta, no quadro do projeto dela. Uma codificação quebrada ou um endereço desconhecido mostram uma página em português dentro do shell.
 
-O shell (`src/web/shell/`) tem a lateral de 256 px a partir de 1.100 px, com a árvore Itens (o `Tree` do React Aria, `treegrid`), em que os atalhos N, P, M e G ganham do typeahead e um arrastar leva itens entre pastas e reordena pastas, a faixa de 52 px (⌘\\) e a lateral sobre a página entre 720 e 1.100 px, e abaixo de 720 px uma barra de 44 px que recebe as ações da página. Buscar filtra na lateral; o ⌘K busca em todos os projetos e lista as ações do item aberto e os comandos. Atalhos de uma tecla não valem em campos editáveis, durante uma composição de IME nem no Excalidraw, e o Esc fecha só a camada mais recente, sem navegar. Toasts mostram um por vez, o mais novo no lugar do anterior, em regiões vivas que um modal não esconde. A gaveta da tarefa fica abaixo da página, na mesma coluna de trabalho, que ela empurra para cima; é uma camada do Esc e uma região do F6, e a tarefa aberta fica no estado do shell, não no endereço.
+O shell (`src/web/shell/`) tem a lateral de 256 px a partir de 1.100 px, com a árvore Itens (o `Tree` do React Aria, `treegrid`), em que os atalhos N, P, M e G ganham do typeahead e um arrastar leva itens entre pastas e reordena pastas, a faixa de 52 px (⌘\\) e a lateral sobre a página entre 720 e 1.100 px, e abaixo de 720 px uma barra de 44 px que recebe as ações da página. Buscar filtra na lateral; o ⌘K busca em todos os projetos e lista as ações do item aberto e os comandos. Atalhos de uma tecla não valem em campos editáveis, durante uma composição de IME nem no Excalidraw, e o Esc fecha só a camada mais recente, sem navegar. As teclas de cada atalho têm nome uma vez, em `KEYS` (`shell/keyboard/keys.ts`), que a tabela de Atalhos, a paleta, os menus e as dicas leem. Um teste confere que a tabela de Atalhos lista todas. O quadro, a gaveta e o shell usam a mesma regra de campo (`isTextTarget`): um checkbox, um rádio ou um botão só recebem um toque e deixam valer as teclas da página. Toasts mostram um por vez, o mais novo no lugar do anterior, em regiões vivas que um modal não esconde. A gaveta da tarefa fica abaixo da página, na mesma coluna de trabalho, que ela empurra para cima; é uma camada do Esc e uma região do F6, e a tarefa aberta fica no estado do shell, não no endereço.
 
 ## Tema, tokens e fontes
 
