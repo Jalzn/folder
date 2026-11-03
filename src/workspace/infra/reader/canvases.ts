@@ -1,9 +1,9 @@
 import type { Kysely } from 'kysely';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
 import type { CanvasScene } from '../../domain/canvas.js';
-import type { WorkspaceTables } from '../db.js';
-import { folderColumns, folderReference } from './folders.js';
-import { bytes, projectColumns, projectReference } from './shared.js';
+import { folderColumns, folderReference } from '../sql/folders.js';
+import { bytes, projectColumns, projectReference } from '../sql/references.js';
+import type { WorkspaceTables } from '../sql/tables.js';
 
 type CanvasReads = Pick<WorkspaceReader, 'canvasForReading'>;
 

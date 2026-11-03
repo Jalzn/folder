@@ -48,7 +48,7 @@ async function moveToProject(repo: WorkspaceRepository, item: FiledItem, input: 
   if (input.folderId) throw workspaceErrors.moveProjectFirst();
   assertVersion(item.version, input.expectedVersion);
   const project = await requireActiveProject(repo, input.projectId);
-  await repo.moveItem(input.type, item.id, project.id, item.version);
+  await repo.moveItem({ type: input.type, id: item.id, projectId: project.id, expectedVersion: item.version });
   return { id: item.id, projectId: project.id, folderId: null, version: item.version + 1, pinnedAt: null };
 }
 
@@ -58,6 +58,6 @@ async function fileInFolder(repo: WorkspaceRepository, item: FiledItem, input: M
   await requireProjectForFolders(repo, item.projectId);
   if (folderId !== null) await requireFolderInProject(repo, folderId, item.projectId);
   const pinnedAt = await keepPinIfRoom(repo, item, folderId);
-  await repo.placeItem(input.type, item.id, folderId, pinnedAt);
+  await repo.placeItem({ type: input.type, id: item.id, folderId: folderId, pinnedAt: pinnedAt });
   return { ...where(item), folderId, pinnedAt };
 }

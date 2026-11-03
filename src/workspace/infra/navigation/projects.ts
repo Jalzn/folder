@@ -1,8 +1,9 @@
 import type { Kysely } from 'kysely';
 import type { NavigationReader } from '../../application/navigation/ports.js';
-import type { WorkspaceTables } from '../db.js';
-import { itemTable } from '../item-tables.js';
-import { projectModel } from '../repository/mappers.js';
+import { itemTable } from '../sql/item-tables.js';
+import { projectModel } from '../sql/mappers.js';
+import type { WorkspaceTables } from '../sql/tables.js';
+import { openTask } from '../sql/task-predicates.js';
 
 type ProjectReads = Pick<NavigationReader, 'findProject' | 'navItems' | 'folders' | 'openTaskCount'>;
 
@@ -48,8 +49,7 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
         .innerJoin('workspace_columns as col', 'col.id', 'task.column_id')
         .select((eb) => eb.fn.countAll<number>().as('count'))
         .where('task.project_id', '=', projectId)
-        .where('task.deleted_at', 'is', null)
-        .where('col.is_done', '=', 0)
+        .where(openTask('task', 'col'))
         .executeTakeFirstOrThrow();
       return row.count;
     },

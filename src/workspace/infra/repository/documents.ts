@@ -1,9 +1,9 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import type { DocumentRepository } from '../../application/ports/documents.js';
-import type { WorkspaceTables } from '../db.js';
-import { documentModel, documentRow, documentSummary } from './mappers.js';
-import { expectUpdated } from './versioned-update.js';
+import { documentModel, documentRow, documentSummary } from '../sql/mappers.js';
+import type { WorkspaceTables } from '../sql/tables.js';
+import { versionedUpdate } from './versioned-update.js';
 
 export function documentRepository(connection: Database): DocumentRepository {
   const db = tables<WorkspaceTables>(connection);
@@ -37,13 +37,12 @@ export function documentRepository(connection: Database): DocumentRepository {
       await db.insertInto('workspace_documents').values(documentRow(document)).execute();
     },
     async saveDocument(document, expectedVersion) {
-      const result = await db
-        .updateTable('workspace_documents')
-        .set(documentRow(document))
-        .where('id', '=', document.id)
-        .where('version', '=', expectedVersion)
-        .executeTakeFirstOrThrow();
-      expectUpdated(result.numUpdatedRows);
+      await versionedUpdate(db.updateTable('workspace_documents').set(documentRow(document)), {
+        id: document.id,
+        expectedVersion: expectedVersion,
+        idColumn: 'id',
+        versionColumn: 'version',
+      });
     },
   };
 }

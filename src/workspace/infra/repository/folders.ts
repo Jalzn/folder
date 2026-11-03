@@ -2,10 +2,10 @@ import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import type { FolderItem, FolderRepository } from '../../application/ports/folders.js';
 import type { NavItemType } from '../../domain/navigation.js';
-import type { WorkspaceTables } from '../db.js';
-import { itemTable } from '../item-tables.js';
-import { folderModel, folderRow } from './mappers.js';
-import { expectUpdated } from './versioned-update.js';
+import { itemTable } from '../sql/item-tables.js';
+import { folderModel, folderRow } from '../sql/mappers.js';
+import type { WorkspaceTables } from '../sql/tables.js';
+import { versionedUpdate } from './versioned-update.js';
 
 const itemColumns = [
   'item.id',
@@ -90,13 +90,12 @@ export function folderRepository(connection: Database): FolderRepository {
       await db.insertInto('workspace_folders').values(folderRow(folder)).execute();
     },
     async saveFolder(folder, expectedVersion) {
-      const result = await db
-        .updateTable('workspace_folders')
-        .set(folderRow(folder))
-        .where('id', '=', folder.id)
-        .where('version', '=', expectedVersion)
-        .executeTakeFirstOrThrow();
-      expectUpdated(result.numUpdatedRows);
+      await versionedUpdate(db.updateTable('workspace_folders').set(folderRow(folder)), {
+        id: folder.id,
+        expectedVersion: expectedVersion,
+        idColumn: 'id',
+        versionColumn: 'version',
+      });
     },
     async setFolderPosition(id, position) {
       await db.updateTable('workspace_folders').set({ position }).where('id', '=', id).execute();
@@ -125,36 +124,32 @@ export function folderRepository(connection: Database): FolderRepository {
         .executeTakeFirst();
       return row && folderItem(type, row);
     },
-    async placeItem(type, id, folderId, pinnedAt) {
+    async placeItem({ type, id, folderId, pinnedAt }) {
       await db
         .updateTable(itemTable(db, type))
         .set({ folder_id: folderId, pinned_at: pinnedAt })
         .where('item.id', '=', id)
         .execute();
     },
-    async trashItem(type, id, at, expectedVersion) {
-      const result = await db
-        .updateTable(itemTable(db, type))
-        .set({ deleted_at: at, updated_at: at, pinned_at: null, version: expectedVersion + 1 })
-        .where('item.id', '=', id)
-        .where('item.version', '=', expectedVersion)
-        .executeTakeFirstOrThrow();
-      expectUpdated(result.numUpdatedRows);
+    async trashItem({ type, id, at, expectedVersion }) {
+      await versionedUpdate(
+        db
+          .updateTable(itemTable(db, type))
+          .set({ deleted_at: at, updated_at: at, pinned_at: null, version: expectedVersion + 1 }),
+        { id: id, expectedVersion: expectedVersion, idColumn: 'item.id', versionColumn: 'item.version' },
+      );
     },
-    async restoreItem(type, id, place, at, expectedVersion) {
-      const result = await db
-        .updateTable(itemTable(db, type))
-        .set({
+    async restoreItem({ type, id, place, at, expectedVersion }) {
+      await versionedUpdate(
+        db.updateTable(itemTable(db, type)).set({
           deleted_at: null,
           updated_at: at,
           folder_id: place.folderId,
           pinned_at: place.pinnedAt,
           version: expectedVersion + 1,
-        })
-        .where('item.id', '=', id)
-        .where('item.version', '=', expectedVersion)
-        .executeTakeFirstOrThrow();
-      expectUpdated(result.numUpdatedRows);
+        }),
+        { id: id, expectedVersion: expectedVersion, idColumn: 'item.id', versionColumn: 'item.version' },
+      );
     },
   };
 }

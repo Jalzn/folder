@@ -57,7 +57,7 @@ export function restoreFolder(ctx: WorkspaceContext, input: RestoreFolderInput) 
       const item = await repo.findItem(listed.type, listed.id);
       if (!item || item.deletedAt || item.projectId !== folder.projectId || item.folderId !== null) continue;
       const pinnedAt = listed.keptPin ? item.pinnedAt : (item.pinnedAt ?? pinBefore(listed.pinnedAt, deletedAt));
-      await repo.placeItem(item.type, item.id, folder.id, pinIfRoom(pinnedAt));
+      await repo.placeItem({ type: item.type, id: item.id, folderId: folder.id, pinnedAt: pinIfRoom(pinnedAt) });
       restored += 1;
     }
     for (const listed of input.trashed) {
@@ -65,7 +65,7 @@ export function restoreFolder(ctx: WorkspaceContext, input: RestoreFolderInput) 
       const fromDeletion = item?.deletedAt === deletedAt && item.folderId === folder.id;
       if (!fromDeletion || item.version !== listed.version) continue;
       const place = { folderId: folder.id, pinnedAt: pinIfRoom(pinBefore(listed.pinnedAt, deletedAt)) };
-      await repo.restoreItem(item.type, item.id, place, now, item.version);
+      await repo.restoreItem({ type: item.type, id: item.id, place: place, at: now, expectedVersion: item.version });
       restored += 1;
     }
     return {

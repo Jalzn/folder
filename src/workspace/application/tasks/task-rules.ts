@@ -37,13 +37,15 @@ export async function columnFor(
  * completion shows, or the end of any other (decision 13). Going to the top renumbers the column.
  */
 export async function placeIn(repo: WorkspaceRepository, projectId: string, column: Column, taskId: string) {
-  if (!column.isDone) return repo.nextPosition(projectId, column.id);
+  if (!column.isDone) return repo.nextPosition({ projectId: projectId, columnId: column.id });
   return topPosition(repo, projectId, column.id, taskId);
 }
 
 /** The top of one project's column, after moving the others down one. */
 async function topPosition(repo: WorkspaceRepository, projectId: string, columnId: string, taskId: string) {
-  const others = (await repo.tasksInColumn(projectId, columnId)).filter((task) => task.id !== taskId);
+  const others = (await repo.tasksInColumn({ projectId: projectId, columnId: columnId })).filter(
+    (task) => task.id !== taskId,
+  );
   for (const [index, task] of others.entries())
     if (task.position !== index + 1) await repo.setTaskPosition(task.id, index + 1);
   return 0;

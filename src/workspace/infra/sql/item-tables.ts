@@ -1,14 +1,15 @@
 import type { Kysely } from 'kysely';
-import type { WorkspaceTables } from './db.js';
+import type { ItemType } from '../../domain/items.js';
+import type { WorkspaceTables } from './tables.js';
 
 /** The table that stores each type of item. */
 const itemTables = {
   document: 'workspace_documents',
   drawing: 'workspace_canvases',
   task: 'workspace_tasks',
-} as const satisfies Record<string, keyof WorkspaceTables>;
+} as const satisfies Record<ItemType, keyof WorkspaceTables>;
 
-export type ItemType = keyof typeof itemTables;
+export type { ItemType };
 
 /**
  * The table of an item type as `item`. With a union of types, queries can only name the columns

@@ -1,6 +1,6 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
-import type { WorkspaceTables } from '../db.js';
+import type { WorkspaceTables } from '../sql/tables.js';
 import { canvasReads } from './canvases.js';
 import { documentReads } from './documents.js';
 import { embedReads } from './embeds.js';

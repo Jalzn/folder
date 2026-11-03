@@ -1,9 +1,9 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import type { LabelRepository } from '../../application/ports/labels.js';
 import { byLabelName } from '../../domain/labels.js';
-import type { WorkspaceTables } from '../db.js';
-import { labelModel, labelRow } from './mappers.js';
-import { expectUpdated } from './versioned-update.js';
+import { labelModel, labelRow } from '../sql/mappers.js';
+import type { WorkspaceTables } from '../sql/tables.js';
+import { versionedUpdate } from './versioned-update.js';
 
 export function labelRepository(connection: Database): LabelRepository {
   const db = tables<WorkspaceTables>(connection);
@@ -32,13 +32,13 @@ export function labelRepository(connection: Database): LabelRepository {
       return rows.map(labelModel).sort(byLabelName);
     },
     async labelSummaries() {
-      const [labels, counts] = await Promise.all([
-        db.selectFrom('workspace_labels').selectAll().where('deleted_at', 'is', null).execute(),
-        liveLinks()
+      const [labels, counts] = [
+        await db.selectFrom('workspace_labels').selectAll().where('deleted_at', 'is', null).execute(),
+        await liveLinks()
           .select((eb) => ['link.label_id', eb.fn.countAll<number>().as('count')])
           .groupBy('link.label_id')
           .execute(),
-      ]);
+      ];
       const countOf = new Map(counts.map((row) => [row.label_id, row.count]));
       return labels
         .map(labelModel)
@@ -81,13 +81,10 @@ export function labelRepository(connection: Database): LabelRepository {
       await db.insertInto('workspace_labels').values(labelRow(label)).execute();
     },
     async saveLabel(label, expectedVersion) {
-      const result = await db
-        .updateTable('workspace_labels')
-        .set(labelRow(label))
-        .where('id', '=', label.id)
-        .where('version', '=', expectedVersion)
-        .executeTakeFirstOrThrow();
-      expectUpdated(result.numUpdatedRows);
+      await versionedUpdate(db.updateTable('workspace_labels').set(labelRow(label)), {
+        id: label.id,
+        expectedVersion,
+      });
     },
   };
 }

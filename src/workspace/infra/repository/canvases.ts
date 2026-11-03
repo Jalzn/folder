@@ -1,9 +1,9 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import type { CanvasRepository } from '../../application/ports/canvases.js';
-import type { WorkspaceTables } from '../db.js';
-import { canvasModel, canvasRow, canvasSummary } from './mappers.js';
-import { expectUpdated } from './versioned-update.js';
+import { canvasModel, canvasRow, canvasSummary } from '../sql/mappers.js';
+import type { WorkspaceTables } from '../sql/tables.js';
+import { versionedUpdate } from './versioned-update.js';
 
 export function canvasRepository(connection: Database): CanvasRepository {
   const db = tables<WorkspaceTables>(connection);
@@ -37,13 +37,12 @@ export function canvasRepository(connection: Database): CanvasRepository {
       await db.insertInto('workspace_canvases').values(canvasRow(canvas)).execute();
     },
     async saveCanvas(canvas, expectedVersion) {
-      const result = await db
-        .updateTable('workspace_canvases')
-        .set(canvasRow(canvas))
-        .where('id', '=', canvas.id)
-        .where('version', '=', expectedVersion)
-        .executeTakeFirstOrThrow();
-      expectUpdated(result.numUpdatedRows);
+      await versionedUpdate(db.updateTable('workspace_canvases').set(canvasRow(canvas)), {
+        id: canvas.id,
+        expectedVersion: expectedVersion,
+        idColumn: 'id',
+        versionColumn: 'version',
+      });
     },
   };
 }

@@ -1,5 +1,5 @@
-import type { LabelColor } from '../domain/labels.js';
-import type { ProjectColor } from '../domain/project.js';
+import type { LabelColor } from '../../domain/labels.js';
+import type { ProjectColor } from '../../domain/project.js';
 
 export interface ProjectRow {
   id: string;

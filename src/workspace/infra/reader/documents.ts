@@ -1,9 +1,9 @@
 import type { Kysely } from 'kysely';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
 import type { DocumentBlock } from '../../domain/document-models.js';
-import type { WorkspaceTables } from '../db.js';
-import { folderColumns, folderReference } from './folders.js';
-import { columnRank, projectColumns, projectReference } from './shared.js';
+import { folderColumns, folderReference } from '../sql/folders.js';
+import { columnRank, projectColumns, projectReference } from '../sql/references.js';
+import type { WorkspaceTables } from '../sql/tables.js';
 
 type DocumentReads = Pick<WorkspaceReader, 'documentForReading' | 'tasksFromDocument'>;
 
@@ -40,16 +40,16 @@ export function documentReads(db: Kysely<WorkspaceTables>): DocumentReads {
         .innerJoin('workspace_columns as col', 'col.id', 'item.column_id')
         .where('source.document_id', '=', documentId)
         .where('item.deleted_at', 'is', null);
-      const [items, count] = await Promise.all([
-        fromDocument
+      const [items, count] = [
+        await fromDocument
           .select(['item.id', 'item.title', 'col.name as column'])
           .orderBy(columnRank)
           .orderBy('item.position')
           .orderBy('item.id')
           .limit(limit)
           .execute(),
-        fromDocument.select(({ fn }) => fn.countAll<number>().as('total')).executeTakeFirstOrThrow(),
-      ]);
+        await fromDocument.select(({ fn }) => fn.countAll<number>().as('total')).executeTakeFirstOrThrow(),
+      ];
       return { items, total: count.total };
     },
   };

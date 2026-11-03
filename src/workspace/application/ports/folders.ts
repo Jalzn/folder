@@ -33,15 +33,15 @@ export interface FolderRepository {
   itemsInFolder(folderId: string): Promise<FolderItem[]>;
   findItem(type: NavItemType, id: string): Promise<FolderItem | undefined>;
   /** Files an item at the root (null) or in a folder, pinned or not. Not an edit: version and dates stay. */
-  placeItem(type: NavItemType, id: string, folderId: string | null, pinnedAt: string | null): Promise<void>;
+  placeItem(input: { type: NavItemType; id: string; folderId: string | null; pinnedAt: string | null }): Promise<void>;
   /** Sends an item to the trash at the expected version, keeping its folder as its origin, unpinned. */
-  trashItem(type: NavItemType, id: string, at: string, expectedVersion: number): Promise<void>;
+  trashItem(input: { type: NavItemType; id: string; at: string; expectedVersion: number }): Promise<void>;
   /** Brings a trashed item back, at the expected version, into `folderId`, pinned or not. */
-  restoreItem(
-    type: NavItemType,
-    id: string,
-    place: { folderId: string | null; pinnedAt: string | null },
-    at: string,
-    expectedVersion: number,
-  ): Promise<void>;
+  restoreItem(input: {
+    type: NavItemType;
+    id: string;
+    place: { folderId: string | null; pinnedAt: string | null };
+    at: string;
+    expectedVersion: number;
+  }): Promise<void>;
 }

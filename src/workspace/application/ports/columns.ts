@@ -20,5 +20,5 @@ export interface ColumnRepository {
   /** Every task of the column, live and trashed, of every project, by project and board order. */
   tasksOfColumn(columnId: string): Promise<TaskRecord[]>;
   /** Sets one task's completion without editing it. */
-  setTaskCompletion(taskId: string, completedAt: string | null): Promise<void>;
+  setTaskCompletion(input: { taskId: string; completedAt: string | null }): Promise<void>;
 }

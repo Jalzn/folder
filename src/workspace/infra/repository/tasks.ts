@@ -1,88 +1,16 @@
 import { type Database, tables } from '@tinyfold/core/infra';
-import type { Kysely } from 'kysely';
-import type { TaskRecord, TaskRepository } from '../../application/ports/tasks.js';
-import { byLabelName } from '../../domain/labels.js';
-import type { Task } from '../../domain/task-models.js';
-import { excerptPresent } from '../../domain/task-source.js';
-import type { TaskRow, WorkspaceTables } from '../db.js';
-import { documentModel, taskFieldsRow, taskModel, taskRow, taskTextRow } from './mappers.js';
-import { expectUpdated } from './versioned-update.js';
-
-/** The active labels of each task, in alphabetical order: links to deleted labels stay hidden. */
-async function activeLabelIds(db: Kysely<WorkspaceTables>, taskIds: readonly string[]) {
-  const byTask = new Map<string, string[]>();
-  if (!taskIds.length) return byTask;
-  const rows = await db
-    .selectFrom('workspace_task_labels as link')
-    .innerJoin('workspace_labels as label', 'label.id', 'link.label_id')
-    .select(['link.task_id', 'label.id', 'label.name'])
-    .where('link.task_id', 'in', taskIds)
-    .where('label.deleted_at', 'is', null)
-    .execute();
-  for (const row of [...rows].sort(byLabelName)) byTask.set(row.task_id, [...(byTask.get(row.task_id) ?? []), row.id]);
-  return byTask;
-}
-
-/** A stored task as lists show it, without its description. */
-function taskSummary(task: TaskRecord, extra: Pick<Task, 'labelIds' | 'source'>): Task {
-  return {
-    id: task.id,
-    title: task.title,
-    projectId: task.projectId,
-    columnId: task.columnId,
-    position: task.position,
-    version: task.version,
-    textVersion: task.textVersion,
-    dueOn: task.dueOn,
-    completedAt: task.completedAt,
-    checklist: task.checklistTotal ? { done: task.checklistDone, total: task.checklistTotal } : null,
-    createdAt: task.createdAt,
-    updatedAt: task.updatedAt,
-    ...extra,
-  };
-}
-
-/**
- * Attaches each task's labels and source with the current availability of its document and
- * excerpt. A document deleted for good is gone, and the source shows the title it kept.
- */
-export async function hydrateTasks(db: Kysely<WorkspaceTables>, rows: TaskRow[]): Promise<Task[]> {
-  if (!rows.length) return [];
-  const ids = rows.map((row) => row.id);
-  const sources = await db.selectFrom('workspace_task_sources').selectAll().where('task_id', 'in', ids).execute();
-  const documentIds = [...new Set(sources.flatMap((source) => source.document_id ?? []))];
-  const documents = documentIds.length
-    ? await db.selectFrom('workspace_documents').selectAll().where('id', 'in', documentIds).execute()
-    : [];
-  const labels = await activeLabelIds(db, ids);
-  const sourceMap = new Map(sources.map((source) => [source.task_id, source]));
-  const documentMap = new Map(documents.map((row) => [row.id, documentModel(row)]));
-  return rows.map((row) => {
-    const task = taskModel(row);
-    const extra = { labelIds: labels.get(row.id) ?? [] };
-    const source = sourceMap.get(row.id);
-    if (!source) return taskSummary(task, { ...extra, source: null });
-    const document = source.document_id === null ? undefined : documentMap.get(source.document_id);
-    const available = Boolean(document && !document.deletedAt);
-    return taskSummary(task, {
-      ...extra,
-      source: {
-        documentId: source.document_id,
-        blockId: source.block_id,
-        excerpt: source.excerpt,
-        documentTitle: document?.title ?? source.document_title,
-        available,
-        blockAvailable: Boolean(available && document && excerptPresent(document, source.block_id, source.excerpt)),
-      },
-    });
-  });
-}
+import type { TaskRepository } from '../../application/ports/tasks.js';
+import { taskFieldsRow, taskModel, taskRow, taskTextRow } from '../sql/mappers.js';
+import type { WorkspaceTables } from '../sql/tables.js';
+import { overdueOn } from '../sql/task-predicates.js';
+import { taskSummaryColumns } from '../sql/tasks.js';
+import { versionedUpdate } from './versioned-update.js';
 
 export function taskRepository(connection: Database): TaskRepository {
   const db = tables<WorkspaceTables>(connection);
   return {
     async listTasks(input) {
-      let query = db.selectFrom('workspace_tasks').selectAll().where('deleted_at', 'is', null);
+      let query = db.selectFrom('workspace_tasks').select(taskSummaryColumns).where('deleted_at', 'is', null);
       if (input.projectId) query = query.where('project_id', '=', input.projectId);
       if (input.documentId)
         query = query.where(
@@ -107,22 +35,20 @@ export function taskRepository(connection: Database): TaskRepository {
       await db.insertInto('workspace_tasks').values(taskRow(task)).execute();
     },
     async saveTaskFields(task, expectedVersion) {
-      const result = await db
-        .updateTable('workspace_tasks')
-        .set(taskFieldsRow(task))
-        .where('id', '=', task.id)
-        .where('version', '=', expectedVersion)
-        .executeTakeFirstOrThrow();
-      expectUpdated(result.numUpdatedRows);
+      await versionedUpdate(db.updateTable('workspace_tasks').set(taskFieldsRow(task)), {
+        id: task.id,
+        expectedVersion: expectedVersion,
+        idColumn: 'id',
+        versionColumn: 'version',
+      });
     },
     async saveTaskText(task, expectedTextVersion) {
-      const result = await db
-        .updateTable('workspace_tasks')
-        .set(taskTextRow(task))
-        .where('id', '=', task.id)
-        .where('text_version', '=', expectedTextVersion)
-        .executeTakeFirstOrThrow();
-      expectUpdated(result.numUpdatedRows);
+      await versionedUpdate(db.updateTable('workspace_tasks').set(taskTextRow(task)), {
+        id: task.id,
+        expectedVersion: expectedTextVersion,
+        idColumn: 'id',
+        versionColumn: 'text_version',
+      });
     },
     async insertSource(source) {
       await db
@@ -136,7 +62,7 @@ export function taskRepository(connection: Database): TaskRepository {
         })
         .execute();
     },
-    async nextPosition(projectId, columnId) {
+    async nextPosition({ projectId, columnId }) {
       const row = await db
         .selectFrom('workspace_tasks')
         .select(({ fn }) => fn.max<number>('position').as('position'))
@@ -146,7 +72,7 @@ export function taskRepository(connection: Database): TaskRepository {
         .executeTakeFirstOrThrow();
       return (row.position ?? -1) + 1;
     },
-    async tasksInColumn(projectId, columnId) {
+    async tasksInColumn({ projectId, columnId }) {
       return (
         await db
           .selectFrom('workspace_tasks')
@@ -162,11 +88,11 @@ export function taskRepository(connection: Database): TaskRepository {
     async setTaskPosition(id, position) {
       await db.updateTable('workspace_tasks').set({ position }).where('id', '=', id).execute();
     },
-    async boardTasks(projectId, doneSince) {
+    async boardTasks({ projectId, doneSince }) {
       const rows = await db
         .selectFrom('workspace_tasks as item')
         .innerJoin('workspace_columns as col', 'col.id', 'item.column_id')
-        .selectAll('item')
+        .select(taskSummaryColumns.map((column) => `item.${column}` as const))
         .where('item.project_id', '=', projectId)
         .where('item.deleted_at', 'is', null)
         .where((eb) => eb.or([eb('col.is_done', '=', 0), eb('item.completed_at', '>=', doneSince)]))
@@ -176,7 +102,7 @@ export function taskRepository(connection: Database): TaskRepository {
         .execute();
       return hydrateTasks(db, rows);
     },
-    async olderDoneCount(projectId, doneSince) {
+    async olderDoneCount({ projectId, doneSince }) {
       const row = await db
         .selectFrom('workspace_tasks')
         .select((eb) => eb.fn.countAll<number>().as('count'))
@@ -189,7 +115,7 @@ export function taskRepository(connection: Database): TaskRepository {
     async completedTasks(projectId, after, limit) {
       let query = db
         .selectFrom('workspace_tasks')
-        .selectAll()
+        .select(taskSummaryColumns)
         .where('project_id', '=', projectId)
         .where('deleted_at', 'is', null)
         .where('completed_at', 'is not', null);
@@ -217,9 +143,7 @@ export function taskRepository(connection: Database): TaskRepository {
       const rows = await db
         .selectFrom('workspace_tasks')
         .select((eb) => ['project_id', eb.fn.countAll<number>().as('count')])
-        .where('deleted_at', 'is', null)
-        .where('due_on', '<', today)
-        .where('completed_at', 'is', null)
+        .where(overdueOn(today, 'workspace_tasks'))
         .groupBy('project_id')
         .execute();
       return new Map(rows.map((row) => [row.project_id, row.count]));
@@ -249,3 +173,5 @@ export function taskRepository(connection: Database): TaskRepository {
     },
   };
 }
+
+import { hydrateTasks } from '../sql/tasks.js';

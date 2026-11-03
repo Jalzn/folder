@@ -15,7 +15,7 @@ export function restoreTask(ctx: WorkspaceContext, input: RestoreTaskInput): Pro
     const saved = {
       ...task,
       deletedAt: null,
-      position: await repo.nextPosition(task.projectId, task.columnId),
+      position: await repo.nextPosition({ projectId: task.projectId, columnId: task.columnId }),
       version: task.version + 1,
       updatedAt: ctx.now(),
     };

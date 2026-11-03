@@ -1,6 +1,6 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import type { CanvasPreviewRepository } from '../../application/ports/canvases.js';
-import type { WorkspaceTables } from '../db.js';
+import type { WorkspaceTables } from '../sql/tables.js';
 
 export function canvasPreviewRepository(connection: Database): CanvasPreviewRepository {
   const db = tables<WorkspaceTables>(connection);

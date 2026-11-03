@@ -30,7 +30,8 @@ export function setDoneColumn(ctx: WorkspaceContext, input: SetDoneColumnInput) 
     await repo.makeDoneColumn(column.id, ctx.now());
     for (const listed of input.restore ?? []) {
       const task = await repo.findTask(listed.id);
-      if (task?.columnId === column.id) await repo.setTaskCompletion(task.id, listed.completedAt);
+      if (task?.columnId === column.id)
+        await repo.setTaskCompletion({ taskId: task.id, completedAt: listed.completedAt });
     }
     return {
       revision: await repo.bumpRevision(),

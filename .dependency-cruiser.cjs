@@ -114,6 +114,13 @@ module.exports = {
       to: { path: '^src/web/(ui|shell|components|pages|editor|router)/' },
     },
     {
+      name: 'workspace-read-models-share-sql-only',
+      comment: 'Repository, agent and navigation adapters share only infra/sql helpers.',
+      severity: 'error',
+      from: { path: '^src/workspace/infra/(repository|reader|navigation)/' },
+      to: { path: '^src/workspace/infra/(repository|reader|navigation)/', pathNot: '^src/workspace/infra/$1/' },
+    },
+    {
       name: 'no-circular',
       severity: 'error',
       from: {},

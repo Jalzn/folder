@@ -18,7 +18,7 @@ export async function trashItem(
   const item = await requireItem(repo, type, input.id, true);
   assertVersion(item.version, input.expectedVersion);
   const updatedAt = now();
-  await repo.trashItem(type, item.id, updatedAt, item.version);
+  await repo.trashItem({ type: type, id: item.id, at: updatedAt, expectedVersion: item.version });
   return itemAck(item.id, item.version + 1, updatedAt);
 }
 export async function restoreItem(
@@ -31,6 +31,12 @@ export async function restoreItem(
   assertVersion(item.version, input.expectedVersion);
   const updatedAt = now();
   const { folderId, folderGone } = await folderAfterRestore(repo, item.folderId);
-  await repo.restoreItem(type, item.id, { folderId, pinnedAt: item.pinnedAt }, updatedAt, item.version);
+  await repo.restoreItem({
+    type: type,
+    id: item.id,
+    place: { folderId, pinnedAt: item.pinnedAt },
+    at: updatedAt,
+    expectedVersion: item.version,
+  });
   return { ...itemAck(item.id, item.version + 1, updatedAt), folderGone };
 }

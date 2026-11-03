@@ -2,8 +2,8 @@ import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import type { PinRepository } from '../../application/ports/pins.js';
 import type { NavItemType } from '../../domain/navigation.js';
-import type { WorkspaceTables } from '../db.js';
-import { itemTable } from '../item-tables.js';
+import { itemTable } from '../sql/item-tables.js';
+import type { WorkspaceTables } from '../sql/tables.js';
 
 export function pinRepository(connection: Database): PinRepository {
   const db = tables<WorkspaceTables>(connection);

@@ -4,11 +4,11 @@ import type { TaskLabel, TaskListing } from '../../application/reading/read-mode
 import type { DocumentBlock } from '../../domain/document-models.js';
 import { byLabelName } from '../../domain/labels.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
-import { excerptPresent } from '../../domain/task-source.js';
-import type { WorkspaceTables } from '../db.js';
-import { activeColumnRows } from '../repository/columns.js';
-import { columnModel, labelModel } from '../repository/mappers.js';
-import { columnRank, projectColumns, projectReference, sourceColumns, sourceDocument } from './shared.js';
+import { activeColumnRows } from '../sql/board.js';
+import { columnModel, labelModel } from '../sql/mappers.js';
+import { columnRank, projectColumns, projectReference, sourceColumns, sourceDocument } from '../sql/references.js';
+import type { WorkspaceTables } from '../sql/tables.js';
+import { hydrateTaskSource, taskChecklist } from '../sql/task-source.js';
 
 type TaskReads = Pick<WorkspaceReader, 'tasks' | 'task' | 'boardRevision' | 'columns' | 'labels'>;
 
@@ -16,22 +16,6 @@ type TaskReads = Pick<WorkspaceReader, 'tasks' | 'task' | 'boardRevision' | 'col
 const hasSource = <Row extends { excerpt: string | null; kept_title: string | null }>(
   row: Row,
 ): row is Row & { excerpt: string; kept_title: string } => row.excerpt !== null && row.kept_title !== null;
-
-/** The active labels of the tasks, in alphabetical order: links to deleted labels stay hidden. */
-export async function taskLabels(db: Kysely<WorkspaceTables>, taskIds: readonly string[]) {
-  const byTask = new Map<string, TaskLabel[]>();
-  if (!taskIds.length) return byTask;
-  const rows = await db
-    .selectFrom('workspace_task_labels as link')
-    .innerJoin('workspace_labels as label', 'label.id', 'link.label_id')
-    .select(['link.task_id', 'label.id', 'label.name', 'label.color'])
-    .where('link.task_id', 'in', taskIds)
-    .where('label.deleted_at', 'is', null)
-    .execute();
-  for (const row of [...rows].sort(byLabelName))
-    byTask.set(row.task_id, [...(byTask.get(row.task_id) ?? []), { id: row.id, name: row.name, color: row.color }]);
-  return byTask;
-}
 
 export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
   const withSource = () =>
@@ -73,7 +57,7 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
     dueOn: row.due_on,
     completedAt: row.completed_at,
     labels,
-    checklist: row.checklist_total ? { done: row.checklist_done, total: row.checklist_total } : null,
+    checklist: taskChecklist(row),
     ...projectReference(row),
     updatedAt: row.updated_at,
   });
@@ -157,18 +141,27 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
         description: JSON.parse(row.description) as DocumentBlock[],
       };
       if (!hasSource(row)) return { ...task, source: null };
-      const document = sourceDocument(row);
-      const blockAvailable =
-        document.available &&
-        excerptPresent(
-          {
-            content: JSON.parse(row.document_content ?? '[]') as DocumentBlock[],
-            plainText: row.document_plain_text ?? '',
-          },
-          row.block_id,
-          row.excerpt,
-        );
-      return { ...task, source: { ...document, blockId: row.block_id, excerpt: row.excerpt, blockAvailable } };
+      const source = hydrateTaskSource(
+        {
+          documentId: row.document_id,
+          keptTitle: row.kept_title,
+          blockId: row.block_id,
+          excerpt: row.excerpt,
+          document:
+            row.document_title === null
+              ? undefined
+              : {
+                  title: row.document_title,
+                  deletedAt: row.document_deleted_at,
+                  content: JSON.parse(row.document_content ?? '[]') as DocumentBlock[],
+                  plainText: row.document_plain_text ?? '',
+                },
+        },
+        'agent',
+      );
+      return { ...task, source };
     },
   };
 }
+
+import { taskLabels } from '../sql/task-labels.js';

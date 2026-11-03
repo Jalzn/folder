@@ -53,15 +53,15 @@ export interface TaskRepository {
   saveTaskText(task: TaskRecord, expectedTextVersion: number): Promise<void>;
   insertSource(source: TaskSourceRecord): Promise<void>;
   /** After the last of one project's live tasks in a column. */
-  nextPosition(projectId: string, columnId: string): Promise<number>;
+  nextPosition(input: { projectId: string; columnId: string }): Promise<number>;
   /** One project's live tasks of a column, in board order. */
-  tasksInColumn(projectId: string, columnId: string): Promise<TaskRecord[]>;
+  tasksInColumn(input: { projectId: string; columnId: string }): Promise<TaskRecord[]>;
   /** Moves a task within its column. The order is not an edit: version and dates stay. */
   setTaskPosition(id: string, position: number): Promise<void>;
   /** One project's live tasks in the open columns, and those completed since `doneSince`, in board order. */
-  boardTasks(projectId: string, doneSince: string): Promise<Task[]>;
+  boardTasks(input: { projectId: string; doneSince: string }): Promise<Task[]>;
   /** How many of one project's live tasks were completed before `doneSince`. */
-  olderDoneCount(projectId: string, doneSince: string): Promise<number>;
+  olderDoneCount(input: { projectId: string; doneSince: string }): Promise<number>;
   /** One project's live completed tasks after `after`, the most recently completed first. */
   completedTasks(projectId: string, after: CompletedKey | undefined, limit: number): Promise<Task[]>;
   completedCount(projectId: string): Promise<number>;

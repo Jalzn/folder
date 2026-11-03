@@ -1,8 +1,8 @@
 import { type Kysely, sql } from 'kysely';
 import type { TextCut } from '../../domain/excerpt.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import type { WorkspaceTables } from '../db.js';
-import { itemTable } from '../item-tables.js';
+import { itemTable } from '../sql/item-tables.js';
+import type { WorkspaceTables } from '../sql/tables.js';
 import { titleLengthInSearchText } from './searchable.js';
 
 /** The item types whose text an excerpt comes from: a task's is its description. */

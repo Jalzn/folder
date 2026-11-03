@@ -2,34 +2,34 @@ import { type Kysely, sql } from 'kysely';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
 import type { FolderWithCount, ItemCounts } from '../../application/reading/read-models.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import type { WorkspaceTables } from '../db.js';
+import type { WorkspaceTables } from '../sql/tables.js';
 
 type ProjectReads = Pick<WorkspaceReader, 'projectsWithCounts'>;
 
 export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
   /** Live documents and drawings and the tasks outside the done column, per project. */
   async function countsByProject(): Promise<(projectId: string) => ItemCounts> {
-    const [documents, drawings, tasks] = await Promise.all([
-      db
+    const [documents, drawings, tasks] = [
+      await db
         .selectFrom('workspace_documents')
         .select((eb) => ['project_id', eb.fn.countAll<number>().as('count')])
         .where('deleted_at', 'is', null)
         .groupBy('project_id')
         .execute(),
-      db
+      await db
         .selectFrom('workspace_canvases')
         .select((eb) => ['project_id', eb.fn.countAll<number>().as('count')])
         .where('deleted_at', 'is', null)
         .groupBy('project_id')
         .execute(),
-      db
+      await db
         .selectFrom('workspace_tasks')
         .select((eb) => ['project_id', eb.fn.countAll<number>().as('count')])
         .where('deleted_at', 'is', null)
         .where('column_id', 'not in', db.selectFrom('workspace_columns').select('id').where('is_done', '=', 1))
         .groupBy('project_id')
         .execute(),
-    ]);
+    ];
     const byProject = (rows: { project_id: string | null; count: number }[]) =>
       new Map(rows.map((row) => [row.project_id, row.count]));
     const [documentCounts, drawingCounts, taskCounts] = [byProject(documents), byProject(drawings), byProject(tasks)];
@@ -78,7 +78,7 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
         query = query.where(
           sql<boolean>`(updated_at < ${after.updatedAt} or (updated_at = ${after.updatedAt} and id > ${after.id}))`,
         );
-      const [projects, counts] = await Promise.all([query.execute(), countsByProject()]);
+      const [projects, counts] = [await query.execute(), await countsByProject()];
       const shown = projects.slice(0, limit);
       const folders = await foldersByProject(shown.map((project) => project.id));
       const items = shown.map((project) => ({

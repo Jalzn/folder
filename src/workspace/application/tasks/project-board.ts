@@ -17,8 +17,8 @@ export async function projectBoard(ctx: WorkspaceContext, input: ProjectBoardInp
       revision: await repo.revision(),
       today,
       doneSince,
-      tasks: await repo.boardTasks(input.projectId, doneSince),
-      olderDone: await repo.olderDoneCount(input.projectId, doneSince),
+      tasks: await repo.boardTasks({ projectId: input.projectId, doneSince: doneSince }),
+      olderDone: await repo.olderDoneCount({ projectId: input.projectId, doneSince: doneSince }),
     };
   });
 }

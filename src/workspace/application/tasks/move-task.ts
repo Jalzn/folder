@@ -22,7 +22,9 @@ export function moveTask(ctx: WorkspaceContext, input: MoveTaskInput): Promise<T
     if (input.beforeTaskId === task.id) throw workspaceErrors.sameTaskReference();
     const column = await columnFor(repo, input, () => undefined);
     // Boards are per project, so the column renumbered is the task's project's.
-    const tasks = (await repo.tasksInColumn(task.projectId, column.id)).filter((item) => item.id !== task.id);
+    const tasks = (await repo.tasksInColumn({ projectId: task.projectId, columnId: column.id })).filter(
+      (item) => item.id !== task.id,
+    );
     let index = input.beforeTaskId ? tasks.findIndex((item) => item.id === input.beforeTaskId) : tasks.length;
     if (index < 0 && input.expectedRevision === undefined) index = tasks.length;
     if (index < 0) throw workspaceErrors.staleTaskPosition();

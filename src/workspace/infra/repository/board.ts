@@ -1,7 +1,7 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import { sql } from 'kysely';
 import type { BoardRepository } from '../../application/ports/board.js';
-import type { WorkspaceTables } from '../db.js';
+import type { WorkspaceTables } from '../sql/tables.js';
 
 export function boardRepository(connection: Database): BoardRepository {
   const db = tables<WorkspaceTables>(connection);

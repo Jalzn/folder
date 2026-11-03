@@ -5,11 +5,12 @@ import type { DocumentBlock } from '../../domain/document-models.js';
 import { excerptFromStart } from '../../domain/excerpt.js';
 import type { NavItemType } from '../../domain/navigation.js';
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
-import type { WorkspaceTables } from '../db.js';
-import { itemTable } from '../item-tables.js';
-import { activeColumnRows } from '../repository/columns.js';
-import { columnModel } from '../repository/mappers.js';
-import { hydrateTasks } from '../repository/tasks.js';
+import { activeColumnRows } from '../sql/board.js';
+import { itemTable } from '../sql/item-tables.js';
+import { columnModel } from '../sql/mappers.js';
+import type { WorkspaceTables } from '../sql/tables.js';
+import { openTask, overdueOn } from '../sql/task-predicates.js';
+import { hydrateTasks, taskSummaryColumns } from '../sql/tasks.js';
 
 type OverviewReads = Pick<NavigationReader, 'columns' | 'openTasks' | 'overdueCount' | 'doneTasks' | 'recentItems'>;
 
@@ -71,10 +72,9 @@ export function overviewReads(db: Kysely<WorkspaceTables>): OverviewReads {
       const rows = await db
         .selectFrom('workspace_tasks as item')
         .innerJoin('workspace_columns as col', 'col.id', 'item.column_id')
-        .selectAll('item')
+        .select(taskSummaryColumns.map((column) => `item.${column}` as const))
         .where('item.project_id', '=', projectId)
-        .where('col.is_done', '=', 0)
-        .where('item.deleted_at', 'is', null)
+        .where(openTask('item', 'col'))
         .orderBy('col.position')
         .orderBy('item.position')
         .orderBy('item.id')
@@ -87,9 +87,7 @@ export function overviewReads(db: Kysely<WorkspaceTables>): OverviewReads {
         .selectFrom('workspace_tasks')
         .select((eb) => eb.fn.countAll<number>().as('count'))
         .where('project_id', '=', projectId)
-        .where('deleted_at', 'is', null)
-        .where('completed_at', 'is', null)
-        .where('due_on', '<', today)
+        .where(overdueOn(today, 'workspace_tasks'))
         .executeTakeFirstOrThrow();
       return row.count;
     },
@@ -100,10 +98,10 @@ export function overviewReads(db: Kysely<WorkspaceTables>): OverviewReads {
         .where('project_id', '=', projectId)
         .where('deleted_at', 'is', null)
         .where('completed_at', '>=', since);
-      const [rows, count] = await Promise.all([
-        done.selectAll().orderBy('completed_at', 'desc').orderBy('id').limit(limit).execute(),
-        done.select((eb) => eb.fn.countAll<number>().as('total')).executeTakeFirstOrThrow(),
-      ]);
+      const [rows, count] = [
+        await done.select(taskSummaryColumns).orderBy('completed_at', 'desc').orderBy('id').limit(limit).execute(),
+        await done.select((eb) => eb.fn.countAll<number>().as('total')).executeTakeFirstOrThrow(),
+      ];
       return { items: await hydrateTasks(db, rows), total: count.total };
     },
 

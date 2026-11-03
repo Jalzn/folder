@@ -1,19 +1,8 @@
 import { type Database, tables } from '@tinyfold/core/infra';
-import type { Kysely } from 'kysely';
 import type { ColumnRepository } from '../../application/ports/columns.js';
-import type { WorkspaceTables } from '../db.js';
-import { columnModel, columnRow, taskModel } from './mappers.js';
-import { expectUpdated } from './versioned-update.js';
-
-/** The active columns' rows in board order: by position, IDs breaking ties. */
-export const activeColumnRows = (db: Kysely<WorkspaceTables>) =>
-  db
-    .selectFrom('workspace_columns')
-    .selectAll()
-    .where('deleted_at', 'is', null)
-    .orderBy('position')
-    .orderBy('id')
-    .execute();
+import { columnModel, columnRow, taskModel } from '../sql/mappers.js';
+import type { WorkspaceTables } from '../sql/tables.js';
+import { versionedUpdate } from './versioned-update.js';
 
 export function columnRepository(connection: Database): ColumnRepository {
   const db = tables<WorkspaceTables>(connection);
@@ -38,13 +27,12 @@ export function columnRepository(connection: Database): ColumnRepository {
       await db.insertInto('workspace_columns').values(columnRow(column)).execute();
     },
     async saveColumn(column, expectedVersion) {
-      const result = await db
-        .updateTable('workspace_columns')
-        .set(columnRow(column))
-        .where('id', '=', column.id)
-        .where('version', '=', expectedVersion)
-        .executeTakeFirstOrThrow();
-      expectUpdated(result.numUpdatedRows);
+      await versionedUpdate(db.updateTable('workspace_columns').set(columnRow(column)), {
+        id: column.id,
+        expectedVersion: expectedVersion,
+        idColumn: 'id',
+        versionColumn: 'version',
+      });
     },
     async setColumnPosition(id, position) {
       await db.updateTable('workspace_columns').set({ position }).where('id', '=', id).execute();
@@ -67,8 +55,10 @@ export function columnRepository(connection: Database): ColumnRepository {
           .execute()
       ).map(taskModel);
     },
-    async setTaskCompletion(taskId, completedAt) {
+    async setTaskCompletion({ taskId, completedAt }) {
       await db.updateTable('workspace_tasks').set({ completed_at: completedAt }).where('id', '=', taskId).execute();
     },
   };
 }
+
+import { activeColumnRows } from '../sql/board.js';

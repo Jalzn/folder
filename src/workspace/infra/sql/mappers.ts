@@ -7,7 +7,7 @@ import type { Label } from '../../domain/labels.js';
 import { nameKey } from '../../domain/names.js';
 import type { Project } from '../../domain/project-models.js';
 import { searchText } from '../../domain/search-text.js';
-import type { CanvasRow, ColumnRow, DocumentRow, FolderRow, LabelRow, ProjectRow, TaskRow } from '../db.js';
+import type { CanvasRow, ColumnRow, DocumentRow, FolderRow, LabelRow, ProjectRow, TaskRow } from './tables.js';
 
 export const projectModel = (row: ProjectRow): Project => ({
   id: row.id,

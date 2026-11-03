@@ -50,7 +50,7 @@ export function deleteFolder(ctx: WorkspaceContext, input: DeleteFolderInput) {
     let unpinned = 0;
     if (input.withItems)
       for (const item of items) {
-        await repo.trashItem(item.type, item.id, now, item.version);
+        await repo.trashItem({ type: item.type, id: item.id, at: now, expectedVersion: item.version });
         trashed.push({ type: item.type, id: item.id, version: item.version + 1, pinnedAt: item.pinnedAt });
       }
     else {
@@ -59,7 +59,12 @@ export function deleteFolder(ctx: WorkspaceContext, input: DeleteFolderInput) {
         const keepsPin = item.pinnedAt !== null && rootPins < MAX_PINNED;
         if (keepsPin) rootPins += 1;
         else if (item.pinnedAt !== null) unpinned += 1;
-        await repo.placeItem(item.type, item.id, null, keepsPin ? item.pinnedAt : null);
+        await repo.placeItem({
+          type: item.type,
+          id: item.id,
+          folderId: null,
+          pinnedAt: keepsPin ? item.pinnedAt : null,
+        });
         moved.push({ type: item.type, id: item.id, pinnedAt: item.pinnedAt, keptPin: keepsPin });
       }
     }

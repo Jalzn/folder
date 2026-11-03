@@ -1,8 +1,8 @@
 import { type Database, tables } from '@tinyfold/core/infra';
 import type { ProjectRepository } from '../../application/ports/projects.js';
-import type { WorkspaceTables } from '../db.js';
-import { projectModel, projectRow } from './mappers.js';
-import { expectUpdated } from './versioned-update.js';
+import { projectModel, projectRow } from '../sql/mappers.js';
+import type { WorkspaceTables } from '../sql/tables.js';
+import { versionedUpdate } from './versioned-update.js';
 
 export function projectRepository(connection: Database): ProjectRepository {
   const db = tables<WorkspaceTables>(connection);
@@ -23,13 +23,12 @@ export function projectRepository(connection: Database): ProjectRepository {
       await db.insertInto('workspace_projects').values(projectRow(project)).execute();
     },
     async saveProject(project, expectedVersion) {
-      const result = await db
-        .updateTable('workspace_projects')
-        .set(projectRow(project))
-        .where('id', '=', project.id)
-        .where('version', '=', expectedVersion)
-        .executeTakeFirstOrThrow();
-      expectUpdated(result.numUpdatedRows);
+      await versionedUpdate(db.updateTable('workspace_projects').set(projectRow(project)), {
+        id: project.id,
+        expectedVersion: expectedVersion,
+        idColumn: 'id',
+        versionColumn: 'version',
+      });
     },
     async setProjectPosition(id, position) {
       await db.updateTable('workspace_projects').set({ position }).where('id', '=', id).execute();

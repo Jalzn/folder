@@ -41,7 +41,8 @@ export function deleteColumn(ctx: WorkspaceContext, input: DeleteColumnInput) {
     const next = new Map<string, number>();
     for (const task of tasks) {
       if (!destination) break;
-      const position = next.get(task.projectId) ?? (await repo.nextPosition(task.projectId, destination.id));
+      const position =
+        next.get(task.projectId) ?? (await repo.nextPosition({ projectId: task.projectId, columnId: destination.id }));
       next.set(task.projectId, position + 1);
       const saved: TaskRecord = {
         ...task,
