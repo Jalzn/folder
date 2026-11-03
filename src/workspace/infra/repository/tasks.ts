@@ -1,5 +1,7 @@
 import { type Database, tables } from '@tinyfold/core/infra';
+import { sql } from 'kysely';
 import type { TaskRepository } from '../../application/ports/tasks.js';
+import { afterKeyset } from '../sql/keyset.js';
 import { taskFieldsRow, taskModel, taskRow, taskTextRow } from '../sql/mappers.js';
 import type { WorkspaceTables } from '../sql/tables.js';
 import { overdueOn } from '../sql/task-predicates.js';
@@ -120,10 +122,10 @@ export function taskRepository(connection: Database): TaskRepository {
         .where('deleted_at', 'is', null)
         .where('completed_at', 'is not', null);
       if (after)
-        query = query.where((eb) =>
-          eb.or([
-            eb('completed_at', '<', after.completedAt),
-            eb.and([eb('completed_at', '=', after.completedAt), eb('id', '>', after.id)]),
+        query = query.where(
+          afterKeyset([
+            { expression: sql.ref('completed_at'), value: after.completedAt, direction: 'desc' },
+            { expression: sql.ref('id'), value: after.id, direction: 'asc' },
           ]),
         );
       const rows = await query.orderBy('completed_at', 'desc').orderBy('id').limit(limit).execute();

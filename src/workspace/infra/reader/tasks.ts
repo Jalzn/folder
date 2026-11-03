@@ -5,6 +5,7 @@ import type { DocumentBlock } from '../../domain/document-models.js';
 import { byLabelName } from '../../domain/labels.js';
 import { matchesAllTerms, searchText } from '../../domain/search-text.js';
 import { activeColumnRows } from '../sql/board.js';
+import { afterKeyset } from '../sql/keyset.js';
 import { columnModel, labelModel } from '../sql/mappers.js';
 import { columnRank, projectColumns, projectReference, sourceColumns, sourceDocument } from '../sql/references.js';
 import type { WorkspaceTables } from '../sql/tables.js';
@@ -99,7 +100,11 @@ export function taskReads(db: Kysely<WorkspaceTables>): TaskReads {
       const after = query.after;
       if (after)
         select = select.where(
-          sql<boolean>`(${columnRank}, item.position, item.id) > (${after.columnRank}, ${after.position}, ${after.id})`,
+          afterKeyset([
+            { expression: columnRank, value: after.columnRank, direction: 'asc' },
+            { expression: sql.ref('item.position'), value: after.position, direction: 'asc' },
+            { expression: sql.ref('item.id'), value: after.id, direction: 'asc' },
+          ]),
         );
       // Titles match in their normalized form, after the query: list_tasks filters by title only.
       if (!query.terms.length) select = select.limit(query.limit + 1);

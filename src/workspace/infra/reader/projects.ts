@@ -2,6 +2,7 @@ import { type Kysely, sql } from 'kysely';
 import type { WorkspaceReader } from '../../application/reading/ports.js';
 import type { FolderWithCount, ItemCounts } from '../../application/reading/read-models.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
+import { afterKeyset } from '../sql/keyset.js';
 import type { WorkspaceTables } from '../sql/tables.js';
 import { openTask } from '../sql/task-predicates.js';
 
@@ -76,7 +77,10 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
       if (!includeArchived) query = query.where('archived_at', 'is', null);
       if (after)
         query = query.where(
-          sql<boolean>`(updated_at < ${after.updatedAt} or (updated_at = ${after.updatedAt} and id > ${after.id}))`,
+          afterKeyset([
+            { expression: sql.ref('updated_at'), value: after.updatedAt, direction: 'desc' },
+            { expression: sql.ref('id'), value: after.id, direction: 'asc' },
+          ]),
         );
       const [projects, counts] = [await query.execute(), await countsByProject()];
       const shown = projects.slice(0, limit);

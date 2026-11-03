@@ -3,6 +3,7 @@ import type { SearchHit, SearchQuery } from '../../application/reading/read-mode
 import { searchTypeRankOf } from '../../domain/list-order.js';
 import { folderColumns, folderReference } from '../sql/folders.js';
 import { itemTable } from '../sql/item-tables.js';
+import { afterKeyset } from '../sql/keyset.js';
 import { projectColumns, projectReference } from '../sql/references.js';
 import type { WorkspaceTables } from '../sql/tables.js';
 import { type TextType, titleLengthInSearchText } from './searchable.js';
@@ -17,8 +18,12 @@ type RankedHit = WithoutExcerpt<SearchHit>;
 function afterKey(query: SearchQuery, typeRank: number, titleRank: RawBuilder<number>) {
   const key = query.after;
   if (!key) return sql<boolean>`1`;
-  const sameTime = typeRank === key.typeRank ? sql`item.id > ${key.id}` : sql`${typeRank > key.typeRank ? 1 : 0}`;
-  return sql<boolean>`(${titleRank} > ${key.titleRank} or (${titleRank} = ${key.titleRank} and (item.updated_at < ${key.updatedAt} or (item.updated_at = ${key.updatedAt} and ${sameTime}))))`;
+  return afterKeyset([
+    { expression: titleRank, value: key.titleRank, direction: 'asc' },
+    { expression: sql.ref('item.updated_at'), value: key.updatedAt, direction: 'desc' },
+    { expression: sql.val(typeRank), value: key.typeRank, direction: 'asc' },
+    { expression: sql.ref('item.id'), value: key.id, direction: 'asc' },
+  ]);
 }
 export async function textHits(
   db: Kysely<WorkspaceTables>,
