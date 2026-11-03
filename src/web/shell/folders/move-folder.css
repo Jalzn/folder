@@ -3,8 +3,6 @@
   width: var(--width-folder-menu);
 }
 .move-folder {
-  --menu-filter-padding: 6px;
-  --menu-filter-input-padding: 0 8px;
   --menu-filter-tracking: var(--tracking-ui);
 }
 

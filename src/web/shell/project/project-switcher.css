@@ -4,10 +4,6 @@
   padding: 0 4px 4px;
 }
 .project-switcher {
-  --menu-filter-padding: 0;
-  --menu-filter-margin: 0 -4px 4px;
-  --menu-filter-height: 40px;
-  --menu-filter-input-padding: 0 12px;
   --menu-filter-tracking: var(--tracking-ui);
 }
 

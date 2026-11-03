@@ -1,12 +1,12 @@
 .menu-filter {
-  padding: var(--menu-filter-padding, 6px 6px 4px);
-  margin: var(--menu-filter-margin, 0);
+  padding: 6px;
+  margin: 0;
   border-bottom: 1px solid var(--line);
 }
 .menu-filter__input {
   width: 100%;
-  height: var(--menu-filter-height, var(--height-field-dense));
-  padding: var(--menu-filter-input-padding, 0 6px);
+  height: var(--height-field-dense);
+  padding: 0 6px;
   border: 0;
   background: transparent;
   color: var(--text);
