@@ -22,6 +22,7 @@ export { Logo } from './glyphs/Logo';
 export { ProjectMark } from './glyphs/ProjectMark';
 export { Highlight } from './Highlight';
 export { IconButton, type IconButtonProps } from './IconButton';
+export { InlineNameField } from './InlineNameField';
 export { Kbd, Shortcut, shortcutLabel } from './Kbd';
 export {
   ActionMenu,

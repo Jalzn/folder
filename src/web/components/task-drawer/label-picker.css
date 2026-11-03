@@ -1,5 +1,5 @@
 .label-picker {
-  width: 260px;
+  width: var(--width-label-menu);
 }
 
 .label-picker__list {

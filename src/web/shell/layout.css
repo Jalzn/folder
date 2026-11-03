@@ -1,13 +1,13 @@
 /* The shell (docs/etapas/08-fundacao.md, "Layout e larguras"). */
 .app-layout {
   display: grid;
-  grid-template-columns: 256px minmax(0, 1fr);
+  grid-template-columns: var(--width-sidebar) minmax(0, 1fr);
   height: 100dvh;
   background: var(--bg);
   color: var(--text);
 }
 .app-layout[data-rail] {
-  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-columns: var(--width-rail) minmax(0, 1fr);
 }
 .app-layout[data-mode="narrow"] {
   grid-template-columns: minmax(0, 1fr);
@@ -89,7 +89,7 @@
   top: 0;
   bottom: 0;
   left: 0;
-  width: 256px;
+  width: var(--width-sidebar);
   box-shadow: var(--shadow-float);
   outline: none;
 }
@@ -118,7 +118,7 @@
 }
 @media (max-width: 719px) {
   .sidebar-overlay__panel {
-    width: min(320px, 100vw - 48px);
+    width: min(var(--width-sidebar-narrow), 100vw - 48px);
   }
 }
 /* The page's actions keep their size; the project's name is what gives way, with an ellipsis. */

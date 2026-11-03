@@ -1,6 +1,6 @@
 /* The picker of the `/` menu. */
 .embed-picker {
-  width: 360px;
+  width: var(--width-embed-menu);
   padding: 0;
 }
 

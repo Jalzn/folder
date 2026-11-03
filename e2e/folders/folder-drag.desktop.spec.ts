@@ -49,7 +49,7 @@ test('an item dropped on a folder goes into it, and on the Itens header back to 
   // The header takes it back to the root.
   const header = projectNavigation(page).locator('.items-header');
   await drag(page, treeRow(page, 'Solto'), header, { release: false });
-  await expect(header).toHaveClass(/is-drop-target/);
+  await expect(header).toHaveAttribute('data-drop-target', 'true');
   await page.mouse.up();
   await expect(toast(page)).toContainText('Movido para a raiz do projeto.');
   await expect(treeRow(page, 'Solto')).toHaveAttribute('aria-level', '1');

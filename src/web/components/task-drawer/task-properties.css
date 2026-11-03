@@ -1,6 +1,6 @@
 /* Properties: 300 px, a grid of 88 px + 1fr with 30 px rows; label 12/16 --text-3, value 13/20. */
 .task-drawer__props {
-  width: min(300px, 100%);
+  width: min(var(--width-task-properties), 100%);
   min-width: 0;
 }
 .task-props {

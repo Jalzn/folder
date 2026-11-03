@@ -99,32 +99,19 @@
 }
 
 .label-name-field {
+  --inline-field-offset: -4px;
+  --inline-field-type: var(--type-ui);
+  --inline-field-tracking: var(--tracking-ui);
+
   display: flex;
-  flex: 1;
   flex-direction: column;
   gap: 2px;
-  min-width: 0;
 }
-.label-name-field__input {
-  width: 100%;
-  height: var(--height-field-dense);
-  margin-left: -4px;
-  padding: 0 7px;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  background: var(--raised-1);
-  box-shadow: 0 0 0 3px var(--accent-25);
-  color: var(--text);
-  font: var(--type-ui);
-  letter-spacing: var(--tracking-ui);
-  outline: none;
-}
+
 .label-name-field__input::placeholder {
   color: var(--text-3);
 }
 .label-name-field__error {
   padding: 0 0 2px 0;
   margin-left: -4px;
-  color: var(--danger);
-  font: var(--type-meta);
 }

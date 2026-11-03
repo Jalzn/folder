@@ -118,7 +118,7 @@ test('the rail’s Itens tree works from the keyboard and closes on a choice', {
   const list = page.getByRole('dialog', { name: /^Itens de / });
   const tree = list.getByRole('treegrid');
   // The open item's row takes the focus; the one written just before it comes next.
-  await expect(tree.locator('[role="row"].is-current')).toBeFocused();
+  await expect(tree.locator('[role="row"][data-current]')).toBeFocused();
   await page.keyboard.press('ArrowDown');
   const titled = tree.getByRole('row', { name: new RegExp(`^${title}, documento`) });
   await expect(titled).toBeFocused();
@@ -130,7 +130,7 @@ test('the rail’s Itens tree works from the keyboard and closes on a choice', {
   // The item already open changes no page, and still closes the list; the page's title takes the focus.
   await items.focus();
   await page.keyboard.press('Enter');
-  await expect(tree.locator('[role="row"].is-current')).toBeFocused();
+  await expect(tree.locator('[role="row"][data-current]')).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(list).toBeHidden();
   await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeFocused();

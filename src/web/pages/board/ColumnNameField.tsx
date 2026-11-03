@@ -1,6 +1,6 @@
 import { displayName, nameKey } from '@tinyfold/workspace/domain';
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
-import { whenPresent } from '../../ui';
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { InlineNameField, whenPresent } from '../../ui';
 
 /** "Já existe uma coluna Revisão." */
 export const columnTakenText = (name: string) => `Já existe uma coluna ${name}.`;
@@ -24,7 +24,6 @@ export function ColumnNameField({
   /** The field leaves, saved or not. */
   onDone: () => void;
 }) {
-  const errorId = useId();
   const [value, setValue] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const settled = useRef(false);
@@ -70,31 +69,25 @@ export function ColumnNameField({
     }
   }
   return (
-    <span className="column-name-field">
-      <input
-        ref={input}
-        className="column-name-field__input"
-        aria-label="Nome da coluna"
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        value={value}
-        maxLength={200}
-        onFocus={(event) => event.currentTarget.select()}
-        onChange={(event) => {
+    <InlineNameField
+      className="column-name-field"
+      error={error}
+      input={{
+        ref: input,
+        'aria-label': 'Nome da coluna',
+        value: value,
+        maxLength: 200,
+        onFocus: (event) => event.currentTarget.select(),
+        onChange: (event) => {
           setValue(event.target.value);
           setError(null);
-        }}
-        onKeyDown={keyDown}
-        onKeyUp={(event) => event.stopPropagation()}
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => event.stopPropagation()}
-        onBlur={() => void settle(true)}
-      />
-      {error && (
-        <span id={errorId} className="column-name-field__error" role="alert">
-          {error}
-        </span>
-      )}
-    </span>
+        },
+        onKeyDown: keyDown,
+        onKeyUp: (event) => event.stopPropagation(),
+        onPointerDown: (event) => event.stopPropagation(),
+        onClick: (event) => event.stopPropagation(),
+        onBlur: () => void settle(true),
+      }}
+    />
   );
 }

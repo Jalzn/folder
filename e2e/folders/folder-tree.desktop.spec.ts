@@ -134,7 +134,7 @@ test('open folders persist per project, and arriving at an item opens its folder
   await page.reload();
   await expect(folderRow(page, 'Arquitetura')).toHaveAttribute('aria-expanded', 'false');
   // It marks that it holds the open item.
-  await expect(folderRow(page, 'Arquitetura')).toHaveClass(/holds-current/);
+  await expect(folderRow(page, 'Arquitetura')).toHaveAttribute('data-holds-current', 'true');
 
   // An empty folder shows "Pasta vazia", and → reaches its two links.
   await folderRow(page, 'Vazia').focus();

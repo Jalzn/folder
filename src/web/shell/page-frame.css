@@ -38,7 +38,7 @@
   padding: 0;
 }
 .page-frame__status {
-  max-width: 720px;
+  max-width: var(--width-page);
   margin: 0 auto;
   padding: 28px 0;
 }

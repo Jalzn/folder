@@ -1,6 +1,6 @@
 /* "Mover para pasta…": a filter over the folders' menu, 280 px wide. */
 .move-folder {
-  width: 280px;
+  width: var(--width-folder-menu);
 }
 .move-folder {
   --menu-filter-padding: 6px;

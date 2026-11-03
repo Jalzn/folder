@@ -1,6 +1,6 @@
 /* The switcher popover, 300 px (docs/interface/visual.md §6, "Seletor de projeto"). */
 .project-switcher {
-  width: 300px;
+  width: var(--width-project-menu);
   padding: 0 4px 4px;
 }
 .project-switcher {

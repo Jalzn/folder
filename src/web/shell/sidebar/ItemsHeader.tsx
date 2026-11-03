@@ -4,7 +4,6 @@ import { NAV_SORTS, type NavSort } from '@tinyfold/workspace/domain';
 import { Ellipsis, FileText, Folder, FoldVertical, Plus, Shapes } from 'lucide-react';
 import { type Ref, useRef } from 'react';
 import { isTextDropItem, useDrop } from 'react-aria-components';
-import { cx } from '../../lib/cx';
 import { formatCount } from '../../lib/text/count';
 import type { Project } from '../../lib/types';
 import { paths } from '../../navigation/paths';
@@ -55,7 +54,7 @@ export function ItemsHeader({
     },
   });
   return (
-    <div ref={header} {...dropProps} className={cx('items-header', isDropTarget && 'is-drop-target')}>
+    <div ref={header} {...dropProps} className="items-header" data-drop-target={isDropTarget || undefined}>
       <span className="items-header__label">Itens</span>
       <span className="items-header__tools">
         {!project.archivedAt && (

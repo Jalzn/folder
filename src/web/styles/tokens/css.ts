@@ -1,5 +1,5 @@
 import { type Palette, palette } from './palette';
-import { durations, easings, fontFamilies, heights, radii, type TextRole, textRoles } from './scale';
+import { durations, easings, fontFamilies, heights, radii, type TextRole, textRoles, widths } from './scale';
 
 export const GENERATED_HEADER = '/* Gerado por `pnpm tokens`. Não editar. */';
 
@@ -34,6 +34,7 @@ function scaleEntries(): [string, string][] {
     ...textRoleEntries(),
     ...named('radius', radii, 'px'),
     ...named('height', heights, 'px'),
+    ...named('width', widths, 'px'),
     ...named('duration', durations, 'ms'),
     ...Object.entries(easings).map(([name, value]): [string, string] => [`ease-${name}`, value]),
   ];

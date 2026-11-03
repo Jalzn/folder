@@ -9,77 +9,35 @@
   outline: none;
 }
 .tree-row {
-  position: relative;
-  border-radius: var(--radius-sm);
-  color: var(--text-2);
   cursor: pointer;
   outline: none;
-  user-select: none;
-  transition:
-    color var(--duration-hover) var(--ease-out),
-    background-color var(--duration-hover) var(--ease-out);
 }
 .tree-row__body {
-  min-height: var(--height-sidebar-row);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px 4px 20px;
   border-radius: inherit;
   color: inherit;
-  text-decoration: none;
 }
-.tree-row__body > svg {
-  flex: none;
-  color: var(--icon);
-  transition: color var(--duration-hover) var(--ease-out);
-}
+
 .tree-row[data-hovered] {
   background: var(--sidebar-hover);
   color: var(--text);
 }
 .tree-row[data-hovered] .tree-row__body > svg,
-.tree-row.is-current .tree-row__body > svg,
-.tree-row.holds-current .tree-row__body > svg {
+.tree-row[data-current] .tree-row__body > svg,
+.tree-row[data-holds-current] .tree-row__body > svg {
   color: var(--text);
 }
-.tree-row.is-current {
+.tree-row[data-current] {
   background: var(--sidebar-active);
   color: var(--text);
   font-weight: 500;
 }
-.tree-row.holds-current {
+.tree-row[data-holds-current] {
   background: var(--sidebar-hover);
   color: var(--text);
   font-weight: 500;
 }
 .tree-row[data-focus-visible] {
   box-shadow: inset 0 0 0 2px var(--accent);
-}
-.tree-row__name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.tree-row__count {
-  margin-left: auto;
-  padding-left: 8px;
-  font: var(--type-meta);
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.tree-row__pending {
-  flex: none;
-  width: 6px;
-  height: 6px;
-  margin: 0 2px 0 auto;
-  border-radius: 50%;
-  background: var(--late);
-}
-.tree-row__pending + .tree-row__count {
-  margin-left: 0;
 }
 
 /* Folders: the chevron column, then the icon. */
@@ -141,33 +99,23 @@
   align-items: flex-start;
 }
 .folder-field {
-  flex: 1;
-  min-width: 0;
+  --inline-field-height: var(--height-button-dense);
+  --inline-field-offset: -7px;
+  --inline-field-padding: 0 6px;
+  --inline-field-tracking: var(--tracking-ui);
+  --inline-field-error: var(--late);
+
   display: flex;
   flex-direction: column;
   gap: 2px;
   margin: -2px 0;
 }
-.folder-field__input {
-  width: 100%;
-  height: 24px;
-  margin-left: -7px;
-  padding: 0 6px;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  background: var(--raised-1);
-  box-shadow: 0 0 0 3px var(--accent-25);
-  color: var(--text);
-  font: var(--type-ui-medium);
-  letter-spacing: var(--tracking-ui);
-}
+
 .folder-field__input:focus {
   outline: none;
 }
 .folder-field__error {
   margin-left: -6px;
-  font: var(--type-meta);
-  color: var(--late);
   white-space: normal;
 }
 
@@ -214,7 +162,7 @@
 }
 
 /* The line under the root's pins, from the text edge to the counts. */
-.tree-row.is-last-pin::after {
+.tree-row[data-last-pin]::after {
   content: "";
   display: block;
   height: 1px;

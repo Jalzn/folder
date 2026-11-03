@@ -1,5 +1,5 @@
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
-import { whenPresent } from '../../ui';
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { InlineNameField, whenPresent } from '../../ui';
 import { checkLabelName } from './label-name';
 
 /** How the field left: by ↵ or Esc, so the focus goes back to its row, or by leaving, which already moved it. */
@@ -31,7 +31,6 @@ export function LabelNameField({
   onDone: (exit: LabelFieldExit) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const errorId = useId();
   const [value, setValue] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const settled = useRef(false);
@@ -75,35 +74,29 @@ export function LabelNameField({
     }
   }
   return (
-    <span className="label-name-field">
-      <input
-        ref={input}
-        className="label-name-field__input"
-        aria-label={label}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        value={value}
-        placeholder="Nome da etiqueta"
-        maxLength={200}
-        autoComplete="off"
-        data-1p-ignore
-        data-lpignore="true"
-        onFocus={(event) => event.currentTarget.select()}
-        onChange={(event) => {
+    <InlineNameField
+      className="label-name-field"
+      error={error}
+      input={{
+        ref: input,
+        'aria-label': label,
+        value: value,
+        placeholder: 'Nome da etiqueta',
+        maxLength: 200,
+        autoComplete: 'off',
+        'data-1p-ignore': true,
+        'data-lpignore': 'true',
+        onFocus: (event) => event.currentTarget.select(),
+        onChange: (event) => {
           setValue(event.target.value);
           setError(null);
-        }}
-        onKeyDown={keyDown}
-        onKeyUp={(event) => event.stopPropagation()}
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => event.stopPropagation()}
-        onBlur={() => void settle('leave')}
-      />
-      {error && (
-        <span id={errorId} className="label-name-field__error" role="alert">
-          {error}
-        </span>
-      )}
-    </span>
+        },
+        onKeyDown: keyDown,
+        onKeyUp: (event) => event.stopPropagation(),
+        onPointerDown: (event) => event.stopPropagation(),
+        onClick: (event) => event.stopPropagation(),
+        onBlur: () => void settle('leave'),
+      }}
+    />
   );
 }

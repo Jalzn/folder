@@ -170,22 +170,11 @@
 
 /* A column's name in place: 28 px on level 1 with the accent's border and halo, as a folder's. */
 .column-name-field {
+  --inline-field-padding: 0 8px;
+
   position: relative;
-  flex: 1;
-  min-width: 0;
 }
-.column-name-field__input {
-  width: 100%;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  background: var(--raised-1);
-  box-shadow: 0 0 0 3px var(--accent-25);
-  color: var(--text);
-  font: var(--type-ui-medium);
-  outline: none;
-}
+
 .column-name-field__error {
   position: absolute;
   top: calc(100% + 4px);
@@ -195,8 +184,6 @@
   border-radius: var(--radius-xs);
   background: var(--raised-2);
   box-shadow: var(--shadow-float);
-  color: var(--danger);
-  font: var(--type-meta);
   white-space: nowrap;
 }
 

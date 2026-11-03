@@ -1,6 +1,5 @@
 import type { PointerEvent, ReactElement } from 'react';
 import { TreeItem, TreeItemContent } from 'react-aria-components';
-import { cx } from '../../../lib/cx';
 import type { Project } from '../../../lib/types';
 import { paths } from '../../../navigation/paths';
 import { FolderTools } from '../../folders/FolderMenu';
@@ -39,7 +38,9 @@ function itemNode(node: ItemNode, context: TreeNodeContext) {
       id={node.key}
       textValue={node.item.title}
       aria-label={itemLabel(node)}
-      className={cx('tree-row', 'tree-row--item', node.current && 'is-current', node.lastPin && 'is-last-pin')}
+      className="tree-row tree-row--item"
+      data-current={node.current || undefined}
+      data-last-pin={node.lastPin || undefined}
       onAction={() => context.onOpen(node)}
     >
       <TreeItemContent>
@@ -102,7 +103,8 @@ function folderNode(node: FolderNode, context: TreeNodeContext) {
       id={node.key}
       textValue={node.folder.name}
       aria-label={folderLabel(node)}
-      className={cx('tree-row', 'tree-row--folder', node.holdsCurrent && !node.expanded && 'holds-current')}
+      className="tree-row tree-row--folder"
+      data-holds-current={(node.holdsCurrent && !node.expanded) || undefined}
       onAction={() => !renaming && context.onToggle(node.folder.id)}
     >
       <TreeItemContent>

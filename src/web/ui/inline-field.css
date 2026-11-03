@@ -1,0 +1,22 @@
+.inline-name-field {
+  flex: 1;
+  min-width: 0;
+}
+.inline-name-field__input {
+  width: 100%;
+  height: var(--inline-field-height, var(--height-field-dense));
+  padding: var(--inline-field-padding, 0 7px);
+  margin-left: var(--inline-field-offset, 0);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--raised-1);
+  box-shadow: 0 0 0 3px var(--accent-25);
+  color: var(--text);
+  font: var(--inline-field-type, var(--type-ui-medium));
+  letter-spacing: var(--inline-field-tracking, normal);
+  outline: none;
+}
+.inline-name-field__error {
+  color: var(--inline-field-error, var(--danger));
+  font: var(--type-meta);
+}

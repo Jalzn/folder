@@ -12,7 +12,7 @@
   position: absolute;
   top: 12vh;
   left: 50%;
-  width: min(640px, calc(100vw - 32px));
+  width: min(var(--width-palette), calc(100vw - 32px));
   max-height: min(520px, calc(100dvh - 12vh - 32px));
   display: flex;
   border: 1px solid var(--line);

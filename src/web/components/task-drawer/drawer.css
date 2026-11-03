@@ -110,7 +110,7 @@
 }
 .task-drawer__columns {
   display: grid;
-  grid-template-columns: minmax(0, 665px) 300px;
+  grid-template-columns: minmax(0, 665px) var(--width-task-properties);
   column-gap: 24px;
   align-items: start;
 }

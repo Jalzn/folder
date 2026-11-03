@@ -72,3 +72,20 @@ export const easings = {
   standard: 'cubic-bezier(.2, .8, .2, 1)',
   out: 'ease-out',
 } as const;
+
+/** Fixed layout and menu widths; responsive limits remain at each host. */
+export const widths = {
+  sidebar: 256,
+  rail: 52,
+  'sidebar-narrow': 320,
+  page: 720,
+  document: 680,
+  'task-properties': 300,
+  palette: 640,
+  dialog: 520,
+  'project-menu': 300,
+  'folder-menu': 280,
+  'label-menu': 260,
+  'embed-menu': 360,
+  'document-tasks': 320,
+} as const;

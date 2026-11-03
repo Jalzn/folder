@@ -1,6 +1,6 @@
 import { folderName, folderNameKey } from '@tinyfold/workspace/domain';
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
-import { whenPresent } from '../../../ui';
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { InlineNameField, whenPresent } from '../../../ui';
 import { takenText } from '../../folders/folder-text';
 
 /** Marks the field, whose keys the tree leaves to it. */
@@ -33,7 +33,6 @@ export function FolderNameField({
   onTakenOnLeave: (message: string) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const errorId = useId();
   const [value, setValue] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const done = useRef(false);
@@ -95,31 +94,25 @@ export function FolderNameField({
     }
   }
   return (
-    <span className="folder-field">
-      <input
-        ref={input}
-        className="folder-field__input"
-        {...{ [FOLDER_NAME_FIELD]: '' }}
-        aria-label={label}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        value={value}
-        maxLength={200}
-        onChange={(event) => {
+    <InlineNameField
+      className="folder-field"
+      error={error}
+      input={{
+        ref: input,
+        ...{ [FOLDER_NAME_FIELD]: '' },
+        'aria-label': label,
+        value: value,
+        maxLength: 200,
+        onChange: (event) => {
           setValue(event.target.value);
           setError(null);
-        }}
-        onKeyDown={keyDown}
-        onKeyUp={(event) => event.stopPropagation()}
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => event.stopPropagation()}
-        onBlur={() => void settle(true)}
-      />
-      {error && (
-        <span id={errorId} className="folder-field__error" role="alert">
-          {error}
-        </span>
-      )}
-    </span>
+        },
+        onKeyDown: keyDown,
+        onKeyUp: (event) => event.stopPropagation(),
+        onPointerDown: (event) => event.stopPropagation(),
+        onClick: (event) => event.stopPropagation(),
+        onBlur: () => void settle(true),
+      }}
+    />
   );
 }
