@@ -2,6 +2,8 @@
 
 **Estado:** implementada, com operação local e implantação no Railway validadas. DNS, HTTPS e login em `folder.jalzn.com` foram verificados.
 
+**Próxima etapa planejada:** a [etapa 13](etapas/13-modulos.md) detalha a separação do workspace em módulos de negócio, classes com contratos públicos e eventos após commit. Essa separação ainda não está implementada; a estrutura abaixo descreve o código atual.
+
 ## Base e módulos
 
 O Orbis serviu de referência para o workspace pnpm, TypeScript, SPA React/Vite, Hono, oRPC, módulos em camadas, autenticação, migrações com checksum e escritas idempotentes. Seu PostgreSQL foi substituído por SQLite; transações, migrações e backups foram adaptados.

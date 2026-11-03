@@ -14,6 +14,7 @@
 | 10 | [Quadro e tarefa](10-quadro-tarefa.md) | Colunas configuráveis, gaveta da tarefa, descrição, prazo e etiquetas | Concluída localmente |
 | 11 | [Documento e desenho](11-documento-desenho.md) | Tarefas e desenhos incorporados, marcador de origem e novas páginas de documento e desenho | Concluída localmente |
 | 12 | [Refatoração](12-refatoracao.md) | Contratos, composição e SQL compartilhados; shell e funcionalidades separados; CSS/primitivas; fixtures, timing e retratos visuais; correções aprovadas | Concluída localmente |
+| 13 | [Módulos e contratos públicos](13-modulos.md) | Separação de projetos, documentos, desenhos e quadro; classes de módulo, composição transacional e eventos internos | Planejada |
 
 As evidências executadas estão em [validação](../validacao.md), [revisão de persistência](../revisao-workspace.md) e [revisão de backend](../revisao-backend.md).
 
@@ -24,6 +25,10 @@ As etapas 07 a 11 seguiram essa ordem. Cada uma deixa `check`, `test:db`, `build
 As seis ondas obrigatórias foram concluídas em 2026-11-03, pelo [processo abreviado aprovado](12-refatoracao.md#desvios-do-plano). O portão final passou com 745 testes unitários, 287 de banco, 227 E2E e 40 retratos visuais. A passagem assistida foi feita no Chrome dentro do Herdr, com a matriz de incorporados, foco, rascunhos e conflito entre abas; veja [validação](../validacao.md#fechamento-da-etapa-12).
 
 Na sequência, o usuário pediu também W2.12 e B3.34–B3.36. Os quatro foram implementados: dois shards de CI com relatório unificado, predicados keyset compartilhados, marcas para datas civis/instantes e pastas de domínio para Markdown/canvas. O [complemento](12-refatoracao.md#complemento-quatro-opcionais) e a [validação](../validacao.md#complemento-da-etapa-12) registram os commits, 747 unitários, 288 testes de banco, 227 E2E e 40 capturas, além da correção de contraste encontrada no Herdr. Não há refatoração pendente da etapa 12. O remoto público [jalzn/folder](https://github.com/jalzn/folder) foi criado após esse portão local; o workflow executa em push e pull request, com resultados no [GitHub Actions](https://github.com/jalzn/folder/actions).
+
+## Etapa 13: próxima refatoração
+
+O [plano completo](13-modulos.md) define os módulos de destino, as classes e entradas públicas, o inventário das 57 operações atuais, a composição das transações, os eventos após commit e a preservação do histórico de migrações. A execução está dividida nas ondas M0–M8, com tarefas, pontes temporárias, critérios de pronto e validação automática/manual no Chrome do Herdr. A implementação desta etapa ainda não começou; os resultados da etapa 12 continuam sendo a referência histórica.
 
 ## Pendências de operação
 
