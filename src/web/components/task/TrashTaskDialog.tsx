@@ -1,5 +1,5 @@
 import type { Task } from '../../lib/types';
-import { AlertDialog } from '../../ui';
+import { TrashDialog } from '../../ui';
 
 /** "Mover a tarefa para a lixeira?", from the drawer or a card's ⋯: it can come back from the trash. */
 export function TrashTaskDialog({
@@ -16,15 +16,8 @@ export function TrashTaskDialog({
   onClose: () => void;
 }) {
   return (
-    <AlertDialog
-      open={open}
-      title="Mover a tarefa para a lixeira?"
-      confirmLabel="Mover para a lixeira"
-      isPending={pending}
-      onClose={onClose}
-      onConfirm={onConfirm}
-    >
-      <p>Você pode restaurar a tarefa depois.{task.source && ' O trecho do documento continua lá.'}</p>
-    </AlertDialog>
+    <TrashDialog subject="a tarefa" open={open} pending={pending} onClose={onClose} onConfirm={onConfirm}>
+      {task.source ? 'O trecho do documento continua lá.' : null}
+    </TrashDialog>
   );
 }

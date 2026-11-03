@@ -1,6 +1,7 @@
+import type { Confirmation } from '../../../lib/react/use-confirmation';
 import { AlertDialog } from '../../../ui';
 import { emptyTrashBody, emptyTrashTitle } from './trash-text';
-import { type Confirmation, type EmptyTarget, type PurgeTarget, trashTitle } from './use-trash-actions';
+import { type EmptyTarget, type PurgeTarget, trashTitle } from './use-trash-actions';
 
 /** "Excluir de vez “<título>”?", saying that a document's tasks stay when it had any. */
 export function PurgeDialog({

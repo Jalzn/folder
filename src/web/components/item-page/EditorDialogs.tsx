@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { ItemType } from '../../lib/types';
-import { AlertDialog } from '../../ui';
+import { AlertDialog, TrashDialog } from '../../ui';
 import { itemWords } from './item-words';
 
 interface ConfirmProps {
@@ -21,18 +21,16 @@ export function TrashItemDialog({
 }: ConfirmProps & { pending: boolean; children?: ReactNode }) {
   const words = itemWords[type];
   return (
-    <AlertDialog
+    <TrashDialog
+      subject={words.the}
+      restore={words.this}
       open={open}
-      title={`Mover ${words.the} para a lixeira?`}
-      confirmLabel="Mover para a lixeira"
-      isPending={pending}
+      pending={pending}
       onClose={onClose}
       onConfirm={onConfirm}
     >
-      <p>
-        Você pode restaurar {words.this} depois.{children && <> {children}</>}
-      </p>
-    </AlertDialog>
+      {children}
+    </TrashDialog>
   );
 }
 

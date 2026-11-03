@@ -52,3 +52,5 @@ export {
   useWithdrawUndo,
 } from './Toast';
 export { Tooltip, TooltipTrigger } from './Tooltip';
+
+export { TrashDialog } from './TrashDialog';

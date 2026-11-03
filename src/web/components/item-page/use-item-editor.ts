@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import type { AutosaveController } from '../../lib/autosave';
 import { moveThroughController } from '../../lib/autosave/editor-move';
 import { type OpenEditor, registerOpenEditor } from '../../lib/autosave/save-registry';
 import { useAutosaveLifecycle } from '../../lib/autosave/use-autosave-lifecycle';
 import { useHasActiveProject } from '../../lib/queries';
+import { useConfirmation } from '../../lib/react/use-confirmation';
 import { usePageTitle } from '../../lib/react/use-page-title';
 import { editableTitle } from '../../lib/types';
 import type { ItemEditorDialogsProps } from './ItemEditorDialogs';
@@ -53,23 +54,23 @@ export function useItemEditor<Snapshot extends ItemSnapshot, Item extends { vers
   usePageTitle(state.snapshot.title);
   const actions = useItemActions(controller, item);
   const hasActiveProject = useHasActiveProject();
-  const [trashOpen, setTrashOpen] = useState(false);
-  const [reloadOpen, setReloadOpen] = useState(false);
+  const trash = useConfirmation<boolean>();
+  const reload = useConfirmation<boolean>();
   const fileInput = useRef<HTMLInputElement>(null);
 
   const change = (patch: Partial<Snapshot>) => controller.change({ ...controller.getState().snapshot, ...patch });
   const dialogs: Omit<ItemEditorDialogsProps, 'trashNote'> = {
     type: item.type,
     trash: {
-      open: trashOpen,
+      open: trash.open,
       pending: actions.trashing,
-      onClose: () => setTrashOpen(false),
-      onConfirm: () => void actions.moveToTrash().then((moved) => moved && setTrashOpen(false)),
+      onClose: () => trash.close(),
+      onConfirm: () => void actions.moveToTrash().then((moved) => moved && trash.close()),
     },
     reload: {
-      open: reloadOpen,
-      onClose: () => setReloadOpen(false),
-      onConfirm: () => void actions.reloadRemote().then((loaded) => loaded && setReloadOpen(false)),
+      open: reload.open,
+      onClose: () => reload.close(),
+      onConfirm: () => void actions.reloadRemote().then((loaded) => loaded && reload.close()),
     },
   };
   return {
@@ -80,14 +81,14 @@ export function useItemEditor<Snapshot extends ItemSnapshot, Item extends { vers
     actions,
     fileInput,
     openImport: () => fileInput.current?.click(),
-    openTrash: () => setTrashOpen(true),
+    openTrash: () => trash.ask(true),
     dialogs,
     /** What the bands take from the session and the actions. */
     banners: {
       state,
       canCopy: hasActiveProject,
       copying: actions.copying,
-      onReload: () => setReloadOpen(true),
+      onReload: () => reload.ask(true),
       onSaveCopy: () => void actions.saveCopy(),
       onRetry: () => void controller.flush(),
     },
