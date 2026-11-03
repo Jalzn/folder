@@ -222,7 +222,8 @@ button.task-drawer__state {
 .task-description [data-content-type="checkListItem"][data-checked="true"] .bn-inline-content {
   color: var(--text-3);
   text-decoration: line-through;
-  text-decoration-color: var(--line-strong);
+  /* Keep the pre-refactor rendered ink, independent of BlockNote stylesheet order. */
+  text-decoration-color: currentColor;
 }
 .task-description .bn-block-outer:only-child .bn-inline-content[data-is-empty-and-focused]::before,
 .task-description .bn-block-outer:only-child .bn-inline-content:empty::before {
