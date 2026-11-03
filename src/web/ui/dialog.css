@@ -41,7 +41,7 @@
 }
 .dialog__title {
   margin: 0;
-  font: 600 16px / 24px var(--font-sans);
+  font: var(--type-h3);
   letter-spacing: var(--tracking-h3);
   color: var(--text);
 }

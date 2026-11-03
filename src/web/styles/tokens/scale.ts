@@ -28,6 +28,7 @@ export const textRoles = {
   body: { size: 15, line: 24, weight: 400, tracking: -0.009 },
   desc: { size: 14, line: 22, weight: 400, tracking: -0.006 },
   ui: { size: 13, line: 20, weight: 'ui', tracking: -0.003 },
+  'ui-medium': { size: 13, line: 20, weight: 500, tracking: -0.003 },
   card: { size: 13, line: 18, weight: 500, tracking: -0.003 },
   label: { size: 12, line: 16, weight: 500, tracking: 0 },
   meta: { size: 12, line: 16, weight: 'ui', tracking: 0 },

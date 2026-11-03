@@ -87,37 +87,24 @@ const strayBreakpoints = stylesheets.flatMap((file) =>
     .map((query) => `${file} | ${query}`),
 );
 
-const ROLE_500 = 'the 500 13/20 role, which has no type token yet (TT-5, W6.1)';
 const OWN_SIZE = 'a size of its own, with no role in the type scale (TT-5)';
 
 /** The raw fonts of today, each with its reason. */
 const RAW_FONT_EXCEPTIONS: Record<string, string> = {
   'components/inline-math.css | .inline-math-help, .inline-math-error | font-size: 12px': OWN_SIZE,
   'components/inline-math.css | .inline-math-dialog-preview | font-size: 14px': OWN_SIZE,
-  'components/item-list/item-row.css | .item-row__title | font: 500 13px / 20px var(--font-sans)': ROLE_500,
-  'components/labels/labels.css | .label-chip | font: var(--weight-ui) 12px / 16px var(--font-sans)':
-    'the meta role, --type-meta, written by hand (TT-5)',
-  'components/task-drawer/drawer.css | .task-drawer__title | font: 600 20px / 28px var(--font-sans)':
-    'the task title role, --type-task-title, written by hand (TT-5)',
+
   'components/task-drawer/drawer.css | .task-description .block-editor .bn-editor | font: var(--weight-ui) 14px / 22px var(--font-sans)':
     "the description's 14/22, --type-desc, whose weight in the dark theme is decision 7 (W6.2a)",
-  'components/task-drawer/drawer.css | .task-props dt | font: var(--weight-ui) 12px / 16px var(--font-sans)':
-    'the meta role, --type-meta, written by hand (TT-5)',
-  'components/task-drawer/drawer.css | .task-props dd | font: var(--weight-ui) 13px / 20px var(--font-sans)':
-    'the interface role, --type-ui, written by hand (TT-5)',
-  'components/task-drawer/drawer.css | .task-prop | font: var(--weight-ui) 13px / 20px var(--font-sans)':
-    'the interface role, --type-ui, written by hand (TT-5)',
-  'components/task-drawer/drawer.css | .due-calendar__month | font: 500 13px / 20px var(--font-sans)': ROLE_500,
+
   'components/task-drawer/drawer.css | .due-calendar__grid th | font: var(--weight-ui) 11px / 16px var(--font-sans)':
     OWN_SIZE,
-  'components/task-drawer/drawer.css | .due-calendar__cell | font: var(--weight-ui) 13px / 20px var(--font-sans)':
-    'the interface role, --type-ui, written by hand (TT-5)',
+
   'components/task-drawer/drawer.css | .task-drawer__props .task-source .task-source__excerpt | font: var(--weight-ui) 12px / 18px var(--font-sans)':
     OWN_SIZE,
-  'components/task/task-source.css | .task-source__link | font: 500 13px / 20px var(--font-sans)': ROLE_500,
+
   'editor/blocks/embeds.css | .embed-card__title | font: 500 14px / 20px var(--font-sans)': OWN_SIZE,
-  'pages/board/board.css | .board-column__name | font: 500 13px / 20px var(--font-sans)': ROLE_500,
-  'pages/board/board.css | .column-name-field__input | font: 500 13px / 20px var(--font-sans)': ROLE_500,
+
   'pages/document/document.css | .document__content .bn-block-content | font-size: 15px':
     "the editor's content size over BlockNote's own, which --editor-type will carry (TT-6)",
   'pages/document/document.css | .document__content .bn-block-content | font-size: 16px':
@@ -125,30 +112,20 @@ const RAW_FONT_EXCEPTIONS: Record<string, string> = {
   'pages/profile/profile.css | .profile-row__meta code | font-size: 12px': OWN_SIZE,
   'pages/profile/profile.css | .created-token__copy .input | font-size: 16px':
     'the 16 px that keeps iOS from zooming into a focused field',
-  'pages/project/completed/completed.css | .completed-back | font: 500 13px / 20px var(--font-sans)': ROLE_500,
-  'pages/project/completed/completed.css | .completed-row__title | font: 500 13px / 20px var(--font-sans)': ROLE_500,
-  'pages/project/item-index/item-index.css | .index-table__link | font: 500 13px / 20px var(--font-sans)': ROLE_500,
-  'pages/project/item-index/item-index.css | .index-table__group-cell | font: 500 12px / 16px var(--font-sans)':
-    'the label role, --type-label, written by hand (TT-5)',
-  'pages/project/overview/overview.css | .overview-link | font: 500 13px / 20px var(--font-sans)': ROLE_500,
+
   'shell/command-palette/command-palette.css | .palette__input | font: var(--weight-ui) 15px / 22px var(--font-sans)':
     OWN_SIZE,
   'shell/command-palette/command-palette.css | .palette-row__archived | font: 11px / 16px var(--font-sans)': OWN_SIZE,
   'shell/layout.css | .top-bar__project | font: 600 13px / 20px var(--font-sans)': OWN_SIZE,
   'shell/sidebar/sidebar-panel.css | .sidebar-header__switcher | font: 600 13px / 20px var(--font-sans)': OWN_SIZE,
-  'shell/sidebar/tree/tree.css | .folder-field__input | font: 500 13px / 20px var(--font-sans)': ROLE_500,
-  'ui/button.css | .btn | font: 500 13px / 20px var(--font-sans)': ROLE_500,
+
   'ui/button.css | .btn[data-size="sm"] | font-size: 12px': OWN_SIZE,
-  'ui/dialog.css | .dialog__title | font: 600 16px / 24px var(--font-sans)':
-    'the third heading role, --type-h3, written by hand (TT-5)',
-  'ui/error-notice.css | .error-notice__retry | font: 500 13px / 20px var(--font-sans)': ROLE_500,
+
   'ui/glyphs/glyphs.css | .project-mark | font: 600 11px / 1 var(--font-sans)': OWN_SIZE,
   'ui/glyphs/glyphs.css | .project-mark[data-size="16"] | font-size: 10px': OWN_SIZE,
   'ui/glyphs/glyphs.css | .logo__name | font: 600 18px / 24px var(--font-sans)': OWN_SIZE,
   'ui/toast.css | .toast | font: 450 13px / 20px var(--font-sans)':
     'the interface size at 450 in both themes, unlike --type-ui (TT-5)',
-  'ui/toast.css | .toast__action | font: 500 12px / 16px var(--font-sans)':
-    'the label role, --type-label, written by hand (TT-5)',
 };
 
 /** Variables that come from outside the app. */

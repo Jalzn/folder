@@ -55,7 +55,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 500 13px / 20px var(--font-sans);
+  font: var(--type-ui-medium);
   letter-spacing: var(--tracking-ui);
 }
 .item-row__meta {

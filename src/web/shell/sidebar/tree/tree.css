@@ -158,7 +158,7 @@
   background: var(--raised-1);
   box-shadow: 0 0 0 3px var(--accent-25);
   color: var(--text);
-  font: 500 13px / 20px var(--font-sans);
+  font: var(--type-ui-medium);
   letter-spacing: var(--tracking-ui);
 }
 .folder-field__input:focus {

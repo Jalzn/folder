@@ -12,7 +12,7 @@
   background: var(--raised-1);
   box-shadow: var(--shadow-card);
   color: var(--text);
-  font: 500 13px / 20px var(--font-sans);
+  font: var(--type-ui-medium);
   letter-spacing: var(--tracking-ui);
   white-space: nowrap;
   cursor: pointer;
