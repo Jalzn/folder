@@ -1,6 +1,6 @@
 # Tinyfold — Arquitetura
 
-**Estado:** a [etapa 14](etapas/14-definicoes.md) centraliza configuração e definições de composição; está concluída e validada localmente em `refactor/stage14-root-definitions`. A [etapa 13](etapas/13-modulos.md) está integrada na `main`. Resultados executados e versão publicada ficam em [validação](validacao.md); a publicação segue o CI e o deploy automático do Railway.
+**Estado:** a [etapa 14](etapas/14-definicoes.md) centraliza configuração e definições de composição; está concluída, validada localmente e integrada na `main`. A [etapa 13](etapas/13-modulos.md) está integrada na `main`. Resultados executados e versão publicada ficam em [validação](validacao.md); a publicação segue o CI e o deploy automático do Railway.
 
 ## Base e módulos
 

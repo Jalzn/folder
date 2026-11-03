@@ -15,7 +15,7 @@
 | 11 | [Documento e desenho](11-documento-desenho.md) | Tarefas e desenhos incorporados, marcador de origem e novas páginas de documento e desenho | Concluída localmente |
 | 12 | [Refatoração](12-refatoracao.md) | Contratos, composição e SQL compartilhados; shell e funcionalidades separados; CSS/primitivas; fixtures, timing e retratos visuais; correções aprovadas | Concluída localmente |
 | 13 | [Módulos e contratos públicos](13-modulos.md) | Separação de projetos, documentos, desenhos e quadro; classes de módulo, composição transacional e eventos internos | Concluída localmente |
-| 14 | [Configuração na raiz e definições](14-definicoes.md) | Pacote/configurações centrais, aliases `#` e definições de módulo, aplicação e projeto | Concluída e validada localmente |
+| 14 | [Configuração na raiz e definições](14-definicoes.md) | Pacote/configurações centrais, aliases `#` e definições de módulo, aplicação e projeto | Concluída, validada localmente e integrada na `main` |
 
 As evidências executadas estão em [validação](../validacao.md), [revisão de persistência](../revisao-workspace.md) e [revisão de backend](../revisao-backend.md).
 
@@ -44,4 +44,4 @@ Essas configurações externas não foram substituídas pela emulação de celul
 
 ## Etapa 14: configuração na raiz e definições
 
-A [etapa 14](14-definicoes.md) foi concluída em `refactor/stage14-root-definitions`. Dependências, scripts, aliases exatos e configurações TypeScript estão na raiz; os módulos mantêm suas camadas, entradas públicas e restrições. `defineModule`, `defineApplication` e `defineProject` compõem as classes e o servidor, com estado privado por instância e encerramento sob responsabilidade do host. Passaram 808 unitários, 331 SQLite, 227 E2E, 40 comparações visuais, instalação/build limpos e validação no Chrome do Herdr. Os resultados estão em [validação](../validacao.md#etapa-14-configuração-na-raiz-e-definições). A branch ainda não foi integrada nem publicada.
+A [etapa 14](14-definicoes.md) foi concluída em `refactor/stage14-root-definitions`. Dependências, scripts, aliases exatos e configurações TypeScript estão na raiz; os módulos mantêm suas camadas, entradas públicas e restrições. `defineModule`, `defineApplication` e `defineProject` compõem as classes e o servidor, com estado privado por instância e encerramento sob responsabilidade do host. Passaram 808 unitários, 331 SQLite, 227 E2E, 40 comparações visuais, instalação/build limpos e validação no Chrome do Herdr. Os resultados estão em [validação](../validacao.md#etapa-14-configuração-na-raiz-e-definições). Em seguida, a pedido do usuário, o código `0eab3ee` foi integrado por fast-forward na `main`. A publicação segue o CI e o deploy automático do Railway.

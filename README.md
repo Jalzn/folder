@@ -2,7 +2,7 @@
 
 Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar, sempre dentro de um projeto. Interface Sumário, limpa e tipográfica, em tema claro e escuro, com dados em SQLite no servidor e autenticação por senha.
 
-**Código:** [etapa 14](docs/etapas/14-definicoes.md) concluída e validada localmente em `refactor/stage14-root-definitions`: configuração centralizada na raiz e definições de módulo, aplicação e projeto. A [etapa 13](docs/etapas/13-modulos.md) está integrada na `main`: projetos, documentos, desenhos e quadro têm módulos próprios; workspace coordena os fluxos conjuntos. Repositório público: [jalzn/folder](https://github.com/jalzn/folder).
+**Código:** [etapa 14](docs/etapas/14-definicoes.md) concluída, validada localmente e integrada na `main`: configuração centralizada na raiz e definições de módulo, aplicação e projeto. A [etapa 13](docs/etapas/13-modulos.md) está integrada na `main`: projetos, documentos, desenhos e quadro têm módulos próprios; workspace coordena os fluxos conjuntos. Repositório público: [jalzn/folder](https://github.com/jalzn/folder).
 
 **Implantação:** Railway, com deploy automático de `main` após o CI, com SQLite persistente e uma instalação iniciada vazia. Disponível em [folder.jalzn.com](https://folder.jalzn.com), com DNS, HTTPS e login verificados. Snapshot remoto baixado e restauração verificada; backups automáticos externos continuam pendentes. Ver [operação no Railway](docs/railway.md).
 

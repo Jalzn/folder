@@ -1,6 +1,6 @@
 # Etapa 14 — Configuração na raiz e definições de composição
 
-**Estado:** concluída e validada localmente em `refactor/stage14-root-definitions`. Referência: `41e159a`, após a integração e publicação da etapa 13. A branch desta etapa ainda não foi integrada nem publicada.
+**Estado:** concluída em `refactor/stage14-root-definitions`, código em `0eab3ee`, e integrada por fast-forward na `main` em 2026-11-03, a pedido do usuário. Referência: `41e159a`, após a integração e publicação da etapa 13. A publicação utiliza o CI e o deploy automático do Railway; os resultados locais estão registrados abaixo.
 
 ## Objetivo
 
