@@ -1,7 +1,6 @@
-import { ArrowRightLeft, FolderInput, Pin, PinOff, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ItemType, Project } from '../../lib/types';
-import { KEYS } from '../keyboard/keys';
+import { itemCommands } from '../project/item-commands';
 import { usePins } from '../project/use-pins';
 import { useShellActions } from '../shell-ui';
 import type { HereAction } from './palette-sections';
@@ -26,35 +25,26 @@ export function useHereActions({
   const pins = usePins();
   if (!item) return [];
   const page = ui.page.current;
+  const commands = itemCommands(pinned);
   const editable = Boolean(project && !project.archivedAt);
   return [
     ...(page.files ?? []),
     ...(editable
       ? [
           {
-            id: 'pin',
-            label: pinned ? 'Desafixar' : 'Fixar',
-            icon: pinned ? <PinOff size={16} /> : <Pin size={16} />,
-            shortcut: KEYS.pin,
+            ...commands.pin,
             run: () => void (pinned ? pins.unpin(item.type, item.id) : pins.pin(item.type, item.id)),
           },
           {
-            id: 'move-folder',
-            label: 'Mover para pasta…',
-            icon: <FolderInput size={16} />,
-            shortcut: KEYS.move,
+            ...commands.folder,
             run: () => ui.setMoveOpen('folder'),
           },
           {
-            id: 'move',
-            label: 'Mover para projeto…',
-            icon: <ArrowRightLeft size={16} />,
+            ...commands.project,
             run: () => ui.setMoveOpen('project'),
           },
         ]
       : []),
-    ...(page.trash
-      ? [{ id: 'trash', label: 'Mover para a lixeira', icon: <Trash2 size={16} />, run: page.trash }]
-      : []),
+    ...(page.trash ? [{ ...commands.trash, run: page.trash }] : []),
   ];
 }

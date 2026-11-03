@@ -1,4 +1,4 @@
-import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, Shapes, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useRef, useState, useSyncExternalStore } from 'react';
 import {
   HiddenFileInput,
@@ -10,19 +10,19 @@ import {
 } from '../../components/item-page';
 import { useProject } from '../../lib/queries';
 import type { Document } from '../../lib/types';
-import { FolderLabel, PageFrame, useApp, usePageCommands, useTaskDrawer } from '../../shell';
+import { FolderLabel, PageFrame, useApp } from '../../shell';
 import { useTheme } from '../../shell/theme';
-import { Banner, IconButton, useToast } from '../../ui';
+import { Banner, IconButton } from '../../ui';
 import { DocumentBody } from './DocumentBody';
 import { DocumentEmbeds, type EmbedCommands } from './DocumentEmbeds';
 import { DocumentHeader } from './DocumentHeader';
-import { ARCHIVED_NOTE } from './DocumentMenu';
 import { documentController, documentItem } from './document-session';
+import { useDocumentCommands } from './use-document-commands';
 import { savedContent, useBlockAnchor, useDocumentEditor } from './use-document-editor';
 import { useDocumentFiles } from './use-document-files';
 import { useNewDocument } from './use-new-document';
 import { useOriginMarkers } from './use-origin-markers';
-import { NO_EXCERPT, selectedText, useTaskFromSelection } from './use-task-from-selection';
+import { selectedText, useTaskFromSelection } from './use-task-from-selection';
 
 /**
  * An open document, or, in the trash with nothing local to keep, the way to the trash. The session reads what
@@ -60,8 +60,6 @@ function OpenDocument({
   controller: ReturnType<typeof documentController>;
 }) {
   const theme = useTheme();
-  const toast = useToast();
-  const drawer = useTaskDrawer();
   const embedCommands = useRef<EmbedCommands | null>(null);
   const page = useItemEditor({
     controller,
@@ -84,66 +82,15 @@ function OpenDocument({
   const titleRef = useRef<HTMLTextAreaElement>(null);
   useNewDocument(document.id, editor, titleRef);
 
-  /**
-   * "Criar tarefa" in the ⋯: from the selected excerpt, or else a new task in the document's project; none in
-   * an archived project, with or without an excerpt (review M4).
-   */
-  function createTask() {
-    if (archived) return toast(ARCHIVED_NOTE, 'error');
-    if (selectedText(editor)) return void taskFromSelection.create();
-    drawer.newTask(projectId);
-  }
-  // ⌘S saves now and, after a failure, tries again; ⌘⌥T creates a task from the excerpt selected in the
-  // editor; ⌘K lists the item's actions under "Neste item".
-  usePageCommands({
-    saveNow: () => void controller.flush(),
-    createTask: () => {
-      if (archived) toast(ARCHIVED_NOTE, 'error');
-      else if (editor.isFocused() && selectedText(editor)) void taskFromSelection.create();
-      else toast(NO_EXCERPT);
-    },
-    files: [
-      // ⌘K's "Neste item" (docs/etapas/11-documento-desenho.md, W4): the excerpt's task and the embeds, which
-      // a document of an archived project does not offer.
-      ...(archived
-        ? []
-        : [
-            {
-              id: 'create-task',
-              label: 'Criar tarefa da seleção',
-              icon: <Plus size={16} />,
-              run: () => {
-                if (selectedText(editor)) void taskFromSelection.create();
-                else toast(NO_EXCERPT);
-              },
-            },
-            {
-              id: 'embed-task',
-              label: 'Incorporar tarefa…',
-              icon: <ListTodo size={16} />,
-              run: () => embedCommands.current?.openPicker('task'),
-            },
-            {
-              id: 'embed-drawing',
-              label: 'Incorporar desenho…',
-              icon: <Shapes size={16} />,
-              run: () => embedCommands.current?.openPicker('drawing'),
-            },
-          ]),
-      {
-        id: 'export',
-        label: 'Exportar Markdown',
-        icon: <ArrowDownToLine size={16} />,
-        run: () => void files.exportMarkdown(),
-      },
-      {
-        id: 'import',
-        label: 'Importar Markdown',
-        icon: <ArrowUpFromLine size={16} />,
-        run: page.openImport,
-      },
-    ],
-    trash: page.openTrash,
+  const { createTask } = useDocumentCommands({
+    editor,
+    controller,
+    archived,
+    projectId,
+    taskFromSelection,
+    embedCommands,
+    files,
+    page,
   });
 
   return (

@@ -1,10 +1,10 @@
-import { ArrowRightLeft, Ellipsis, FolderInput, Pin, PinOff, Trash2 } from 'lucide-react';
+import { Ellipsis } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useFolders, useProjects } from '../../lib/queries';
 import type { ItemType } from '../../lib/types';
 import { IconButton, Menu, MenuItem, MenuSeparator, MenuTrigger, ProjectMark, SubmenuTrigger } from '../../ui';
-import { KEYS } from '../keyboard/keys';
 import { useShellActions } from '../shell-ui';
+import { itemCommands } from './item-commands';
 import { activeProjects } from './project-order';
 import { useMoveItem } from './use-move-item';
 import { usePins } from './use-pins';
@@ -52,6 +52,7 @@ export function ItemMenu({
   const { move } = useMoveItem();
   const folder = useFolders(projectId).data?.find((each) => each.id === folderId);
   const label = labels[type];
+  const commands = itemCommands(pinned);
   return (
     <MenuTrigger>
       <IconButton label={label}>
@@ -79,29 +80,29 @@ export function ItemMenu({
           <MenuItem
             key="pin"
             id="pin"
-            icon={pinned ? <PinOff size={16} /> : <Pin size={16} />}
-            shortcut={KEYS.pin}
+            icon={commands.pin.icon}
+            shortcut={commands.pin.shortcut}
             onAction={() => void (pinned ? pins.unpin(type, id) : pins.pin(type, id))}
           >
-            {pinned ? 'Desafixar' : 'Fixar'}
+            {commands.pin.label}
           </MenuItem>
         )}
         {!archived && (
           <MenuItem
             key="move-folder"
             id="move-folder"
-            icon={<FolderInput size={16} />}
-            shortcut={KEYS.move}
+            icon={commands.folder.icon}
+            shortcut={commands.folder.shortcut}
             description={folder ? `Em ${folder.name}` : 'Na raiz do projeto'}
             onAction={() => ui.setMoveOpen('folder')}
           >
-            Mover para pasta…
+            {commands.folder.label}
           </MenuItem>
         )}
         {!archived && (
           <SubmenuTrigger>
-            <MenuItem key="move" id="move" icon={<ArrowRightLeft size={16} />}>
-              Mover para projeto…
+            <MenuItem key="move" id="move" icon={commands.project.icon}>
+              {commands.project.label}
             </MenuItem>
             <Menu
               aria-label="Mover para projeto"
@@ -123,8 +124,8 @@ export function ItemMenu({
           </SubmenuTrigger>
         )}
         {!archived && <MenuSeparator />}
-        <MenuItem key="trash" id="trash" icon={<Trash2 size={16} />} danger onAction={onTrash}>
-          Mover para a lixeira
+        <MenuItem key="trash" id="trash" icon={commands.trash.icon} danger onAction={onTrash}>
+          {commands.trash.label}
         </MenuItem>
       </Menu>
     </MenuTrigger>

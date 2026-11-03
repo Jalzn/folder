@@ -2,6 +2,7 @@ import { ArrowUpFromLine } from 'lucide-react';
 import { SaveState, useEdited } from '../../components/item-page';
 import type { SaveStatus } from '../../lib/autosave';
 import { ItemMenu } from '../../shell';
+import { KEYS } from '../../shell/keyboard/keys';
 import { ExportMenu } from './ExportMenu';
 
 /**
@@ -31,7 +32,7 @@ export function DrawingHeader({
   const edited = useEdited(canvas.updatedAt);
   return (
     <>
-      {!trashed && <SaveState status={status} edited={edited} onRetry={onRetry} retryKeys={['mod', 'S']} />}
+      {!trashed && <SaveState status={status} edited={edited} onRetry={onRetry} retryKeys={KEYS.save} />}
       <ExportMenu exporting={files.exporting} onPNG={files.exportPNG} onEditable={files.exportEditable} />
       <ItemMenu
         type="drawing"
