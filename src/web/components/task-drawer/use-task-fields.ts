@@ -1,8 +1,8 @@
 import { useRef } from 'react';
-import { api, requestId } from '../../lib/api';
+import { api, queryClient, requestId } from '../../lib/api';
 import { followingTask } from '../../lib/board-order';
 import { onceMoreIfLost } from '../../lib/lost-answer';
-import { cachedTasks } from '../../lib/queries';
+import { cachedTasks, keys, type TaskWithText } from '../../lib/queries';
 import type { Task } from '../../lib/types';
 import { useRequest } from '../../lib/use-request';
 import { useTaskDrawer } from '../../shell/task-drawer-state';
@@ -61,6 +61,13 @@ export function useTaskFields(task: Task | undefined) {
     if (!start) return Promise.resolve(undefined);
     const [going, back, place] = [requestId(), requestId(), requestId()];
     let from: { projectId: string; columnId: string; before: string | null } | null = null;
+    // The drawer goes with the task as soon as the server moved it, before the workspace reads again: in
+    // between, the list of the project it left no longer has the task while the drawer still showed that
+    // project, and the editor closed and opened again, losing the focus.
+    const follow = (to: string) => {
+      queryClient.setQueryData<TaskWithText>(keys.task(start.id), (detail) => detail && { ...detail, projectId: to });
+      drawer.showTask({ id: start.id, projectId: to, title: start.title });
+    };
     return change(
       `task:${start.id}`,
       () => {
@@ -71,11 +78,13 @@ export function useTaskFields(task: Task | undefined) {
           before: followingTask(cachedTasks(current.projectId, current.id)?.tasks ?? [], current),
         };
         const input = { requestId: going, id: current.id, expectedVersion: version(current), projectId };
-        return onceMoreIfLost(() => api.workspace.updateTask(input));
+        return onceMoreIfLost(() => api.workspace.updateTask(input)).then((ack) => {
+          follow(projectId);
+          return ack;
+        });
       },
       (ack) => {
         acked.current = { id: ack.id, version: ack.version };
-        drawer.showTask({ id: start.id, projectId, title: start.title });
         const was = from;
         return {
           text: `A tarefa foi para ${name}.`,
@@ -85,6 +94,7 @@ export function useTaskFields(task: Task | undefined) {
                 const input = { requestId: back, id: start.id, expectedVersion: ack.version, projectId: was.projectId };
                 const returned = await onceMoreIfLost(() => api.workspace.updateTask(input));
                 acked.current = { id: returned.id, version: returned.version };
+                follow(was.projectId);
                 const spot = { columnId: was.columnId, beforeTaskId: was.before };
                 const moved = await onceMoreIfLost(() =>
                   api.workspace.moveTask({
@@ -97,7 +107,6 @@ export function useTaskFields(task: Task | undefined) {
                 acked.current = { id: moved.id, version: moved.version };
               }
             : undefined,
-          undone: () => was && drawer.showTask({ id: start.id, projectId: was.projectId, title: start.title }),
         };
       },
     );
