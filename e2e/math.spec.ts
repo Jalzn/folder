@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { newDocument } from './support/items.js';
+import { hostKey, hostShortcut } from './support/keyboard.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -110,7 +111,7 @@ test('insert inline math, replace its source with the keyboard and cancel safely
   const reopenedBounds = await popup.boundingBox();
   expect(reopenedBounds).not.toBeNull();
   expect((reopenedBounds?.x ?? 0) + (reopenedBounds?.width ?? 0)).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
-  await input.press('ControlOrMeta+A');
+  await hostShortcut(input, 'A');
   await input.pressSequentially('E = mc^{2}', { delay: 40 });
   await expect(input).toHaveValue('E = mc^{2}');
   await page.screenshot({ path: info.outputPath('equacao-linha-dialogo.png'), fullPage: true, animations: 'disabled' });
@@ -130,7 +131,7 @@ test('insert inline math, replace its source with the keyboard and cancel safely
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
     page.viewportSize()?.width ?? 0,
   );
-  await editor.press(process.platform === 'darwin' ? 'Meta+ArrowDown' : 'Control+End');
+  await editor.press(hostKey('documentEnd'));
   await editor.press('Enter');
   await editor.pressSequentially('Atalho $x^2$ e texto.', { delay: 20 });
   await expect(editor.locator('[data-inline-content-type="math"]')).toHaveCount(2);

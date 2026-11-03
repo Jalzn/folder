@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { newDocument } from './support/items.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut } from './support/keyboard.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -64,7 +64,7 @@ test('W5.7a: a document trashed elsewhere keeps its editor while it holds unsave
     if (new URL(request.url()).pathname === '/rpc/workspace/saveDocument') saves.push(request.url());
   });
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
-  await pressCommand(page, 's');
+  await appShortcut(page, 's');
   await page.reload();
   await expect(editor(page)).toContainText('Texto que não chegou ao servidor.');
   await expect(page.getByText('Este documento foi movido para a lixeira.')).toBeVisible();
@@ -80,7 +80,7 @@ test('W5.7a: a document trashed elsewhere keeps its editor while it holds unsave
 
 /** The rows ⌘K shows on the page, by their labels without the keys. */
 async function paletteRows(page: Page) {
-  await pressCommand(page, 'k');
+  await appShortcut(page, 'k');
   const palette = page.getByRole('dialog', { name: 'Buscar e comandar' });
   await expect(palette).toBeVisible();
   const labels = await palette.locator('[role="menuitem"] .palette-row__label').allInnerTexts();

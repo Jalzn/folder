@@ -3,7 +3,7 @@ import { test } from './fixtures.js';
 import { card, closeDrawer, drawer, openDrawer } from './support/board.js';
 import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
-import { pressCommand, runCommand } from './support/keyboard.js';
+import { appShortcut, hostShortcut, runCommand } from './support/keyboard.js';
 import { createProject, openBoard } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -33,7 +33,7 @@ test('Gerenciar etiquetas creates, renames, recolors and deletes a label in use,
   await page.keyboard.press('Enter');
   const field = dialog.getByRole('textbox', { name: 'Nome da etiqueta' });
   await expect(field).toBeFocused();
-  await page.keyboard.press('ControlOrMeta+a');
+  await hostShortcut(page, 'a');
   await page.keyboard.type(`${name}es`);
   await page.keyboard.press('Enter');
   const renamed = dialog.getByRole('button', { name: `${name}es`, exact: true });
@@ -64,7 +64,7 @@ test('Gerenciar etiquetas creates, renames, recolors and deletes a label in use,
   await expect(toast(page)).toContainText(`Etiqueta ${name}es excluída. Estava em 1 tarefa.`);
   await expect(dialog.getByRole('button', { name: `${name}es`, exact: true })).toHaveCount(0);
   await expect(card(page, 'Ligar para o marceneiro')).not.toContainText(`${name}es`);
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   await expect(toast(page)).toContainText(`Etiqueta ${name}es restaurada.`);
   await expect(dialog.getByRole('button', { name: `${name}es`, exact: true })).toBeVisible();
   await expect(card(page, 'Ligar para o marceneiro')).toContainText(`${name}es`);

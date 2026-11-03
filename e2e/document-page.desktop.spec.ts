@@ -11,7 +11,7 @@ import {
 } from './support/document.js';
 import { toast } from './support/feedback.js';
 import { newDocument } from './support/items.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut } from './support/keyboard.js';
 import { createProject, currentProjectId } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -87,7 +87,7 @@ test('⌘⌥T makes a task of the excerpt selected in the editor, and outside it
 
   // In the title, there is no excerpt to take.
   await page.getByRole('textbox', { name: 'Título do documento' }).click();
-  await pressCommand(page, 'Alt+t');
+  await appShortcut(page, 'Alt+t');
   await expect(toast(page)).toContainText('Selecione um trecho do documento primeiro.');
   await expect(newTaskDrawer(page)).toHaveCount(0);
 

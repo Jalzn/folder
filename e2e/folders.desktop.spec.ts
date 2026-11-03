@@ -10,7 +10,7 @@ import {
   rpcFolder,
   treeRow,
 } from './support/folders.js';
-import { pressCommand, runCommand } from './support/keyboard.js';
+import { appShortcut, runCommand } from './support/keyboard.js';
 import { createProject, currentProjectId, openTrash, projectNavigation } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -110,7 +110,7 @@ test('a new folder started by the keyboard keeps its name field: ⌘K, N and the
   }
 
   // ⌘K: the typed text highlights "Nova pasta", and ↵ runs it (palette.spec.ts types it at once).
-  await pressCommand(page, 'k');
+  await appShortcut(page, 'k');
   await page.keyboard.type('Nova pasta', { delay: 50 });
   const command = page
     .getByRole('dialog', { name: 'Buscar e comandar' })
@@ -158,7 +158,7 @@ test('M moves an item between folders, with Desfazer and ⌘Z, and a full folder
   await expect(treeRow(page, 'Solto fixado')).toHaveCount(0);
   // ⌘Z, away from any field, moves it back and pins it again.
   await page.getByRole('heading', { level: 1 }).focus();
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   await expect(treeRow(page, 'Solto fixado, documento, fixado')).toBeVisible();
   await expect(toast(page)).toHaveCount(0);
 
@@ -239,7 +239,7 @@ test('deleting a folder moves its items to the root, and Desfazer brings back th
   await expect(toast(page)).toContainText('“Primeira” e 1 item foram para a Lixeira.');
   await expect(treeRow(page, 'Nota da primeira')).toHaveCount(0);
   await page.getByRole('heading', { level: 1 }).focus();
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   await expect(folderRow(page, 'Primeira')).toHaveAttribute('aria-label', /, 1 item$/);
 });
 
@@ -353,7 +353,7 @@ test('the Índice’s Pasta filter is in the address, and a folder the project l
 
 test('⌘K shows an item’s path, and a folder opens in the sidebar with its first item focused', async ({ page }) => {
   const { project } = await pagesProject(page, 'Paleta');
-  await pressCommand(page, 'k');
+  await appShortcut(page, 'k');
   const palette = page.getByRole('dialog', { name: 'Buscar e comandar' });
   await palette.getByRole('textbox', { name: 'Buscar ou comandar' }).fill('Leitura');
   await expect(

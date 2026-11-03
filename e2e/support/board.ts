@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { hostShortcut } from './keyboard.js';
 
 /** The task drawer with a task open in it. */
 export const drawer = (page: Page) => page.getByRole('region', { name: /^Tarefa: / });
@@ -45,7 +46,7 @@ export async function createInDrawer(page: Page, title: string) {
   const form = newTaskDrawer(page);
   const field = form.getByRole('textbox', { name: 'Título da nova tarefa' });
   await expect(field).toBeFocused();
-  await field.press('ControlOrMeta+a');
+  await hostShortcut(field, 'a');
   await page.keyboard.type(title);
   await form.getByRole('button', { name: 'Criar', exact: true }).click();
   await expect(drawerOf(page, title)).toBeVisible();

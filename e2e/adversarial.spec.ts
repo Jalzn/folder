@@ -8,6 +8,7 @@ import {
   writeAndSave,
 } from './support/document.js';
 import { moveToTrash, newDocument, restoreFromTrash } from './support/items.js';
+import { hostShortcut } from './support/keyboard.js';
 import { openBoard, overviewAddress } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -82,7 +83,7 @@ test('a task created from selected text survives document trash and restores its
   const taskTitle = `Proximo passo ${info.project.name} ${Date.now()}`;
   const documentUrl = await createDocument(page, title, 'Organizar as referencias do projeto.');
   await editor(page).click();
-  await editor(page).press('ControlOrMeta+a');
+  await hostShortcut(editor(page), 'a');
   await createTaskFromSelection(page);
   await expect(newTaskDrawer(page).getByRole('textbox', { name: 'Título da nova tarefa' })).toHaveValue(
     'Organizar as referencias do projeto.',

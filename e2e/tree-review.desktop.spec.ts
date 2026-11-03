@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 
 import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut } from './support/keyboard.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -40,8 +40,8 @@ test('a folder closed over the open item stays closed when the sidebar comes bac
   // It names the open item it holds, and the open item's row says it is the page.
   await expect(folderRow(page, 'Arquitetura')).toHaveAttribute('aria-label', /, contém o item aberto$/);
   await page.getByRole('main').getByRole('heading', { level: 1 }).focus();
-  await pressCommand(page, 'Backslash');
-  await pressCommand(page, 'Backslash');
+  await appShortcut(page, 'Backslash');
+  await appShortcut(page, 'Backslash');
   await expect(folderRow(page, 'Arquitetura')).toHaveAttribute('aria-expanded', 'false');
 
   // 900 px: the sidebar over the page unmounts on each close.

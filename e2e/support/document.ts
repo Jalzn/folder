@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import { pressCommand } from './keyboard.js';
+import { appShortcut } from './keyboard.js';
 import { answers } from './rpc.js';
 
 /** Waits for the save carrying this text, so an earlier title save cannot satisfy the wait. */
@@ -22,7 +22,7 @@ export async function writeAndSave(page: Page, text: string) {
  */
 export async function createTaskFromSelection(page: Page) {
   await expect(page.getByRole('button', { name: 'Criar tarefa', exact: true })).toBeVisible();
-  await pressCommand(page, 'Alt+t');
+  await appShortcut(page, 'Alt+t');
 }
 
 /** The document's "Tarefas · n" popover, opened from the bar: the tasks born in the document. */
@@ -117,12 +117,4 @@ export async function pickEmbed(page: Page, picker: Locator, filter: string, tit
     await page.keyboard.press('ArrowDown');
   await expect(row).toHaveAttribute('data-focused');
   await page.keyboard.press('Enter');
-}
-
-/**
- * The block editor's own ⌘Z. ProseMirror reads the modifier from navigator.platform, which the devices leave
- * as the machine's, unlike the user agent the app reads: ⌘ on a Mac running the suite, Ctrl elsewhere.
- */
-export async function editorUndo(page: Page) {
-  await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+z`);
 }

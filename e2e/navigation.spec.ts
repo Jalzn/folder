@@ -1,7 +1,7 @@
 import { expect, type Locator } from '@playwright/test';
 import { test } from './fixtures.js';
 import { newDocument } from './support/items.js';
-import { pressCommand, runCommand } from './support/keyboard.js';
+import { appShortcut, runCommand } from './support/keyboard.js';
 import {
   createProject,
   currentProjectId,
@@ -178,13 +178,13 @@ test('⌘Z undoes the toast on screen, and never takes the undo of a field', asy
 
   // In the title, ⌘Z is the field's own undo: the move stays and the toast with it.
   await titleField.focus();
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   await expect(page).toHaveURL(new RegExp(`/projetos/${target}/documentos/`));
   await expect(undo).toBeVisible();
 
   // On the page, it runs the toast's Desfazer and closes the toast.
   await page.locator('main h1').first().focus();
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   await expect(page).toHaveURL(new RegExp(`/projetos/${home}/documentos/`));
   await expect(undo).toHaveCount(0);
   await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeFocused();

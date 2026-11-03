@@ -8,6 +8,7 @@ import {
   writeAndSave,
 } from './support/document.js';
 import { newDocument } from './support/items.js';
+import { hostShortcut } from './support/keyboard.js';
 import { login } from './support/session.js';
 
 async function createDocument(page: Page, title: string) {
@@ -50,7 +51,7 @@ test('saving changed source text refreshes linked-task availability without leav
 }, info) => {
   await createDocument(page, `Origem atualizada ${info.project.name} ${Date.now()}`);
   await editor(page).click();
-  await editor(page).press('ControlOrMeta+a');
+  await hostShortcut(editor(page), 'a');
   await createTaskFromSelection(page);
   const taskTitle = `Tarefa com origem ${Date.now()}`;
   await createInDrawer(page, taskTitle);

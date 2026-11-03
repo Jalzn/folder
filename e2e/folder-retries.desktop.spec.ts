@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { toast } from './support/feedback.js';
 import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -108,7 +108,7 @@ test('⌘Z pressed while a rename is on its way undoes the deletion once the ren
   await field.fill('Segunda renomeada');
   await field.press('Enter');
   await page.getByRole('main').getByRole('heading', { level: 1 }).focus();
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   await expect(folderRow(page, 'Primeira')).toHaveCount(0);
   release();
   await expect(folderRow(page, 'Segunda renomeada')).toBeVisible();
@@ -175,7 +175,7 @@ test('an undo applies only to its own move: a newer move of the item takes the D
   await moveTo('Dois');
   await expect(toast(page).getByRole('button', { name: 'Desfazer' })).toHaveCount(0);
   await page.getByRole('main').getByRole('heading', { level: 1 }).focus();
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   release();
   await expect(toast(page)).toContainText('Movido para Dois.');
   await expect(folderRow(page, 'Dois')).toHaveAttribute('aria-label', /, 1 item$/);

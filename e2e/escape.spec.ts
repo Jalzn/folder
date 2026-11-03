@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { newDocument } from './support/items.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut } from './support/keyboard.js';
 import { createProject, openBoard } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -25,7 +25,7 @@ test('Esc closes one layer at a time, newest first, and stays on the page', asyn
     await page.locator('body').press('?');
   }
   for (const layer of stack) await expect(layer).toBeVisible();
-  await pressCommand(page, 'k');
+  await appShortcut(page, 'k');
   const palette = page.getByRole('dialog', { name: 'Buscar e comandar' });
   await expect(palette).toBeVisible();
   stack.push(palette);
@@ -115,7 +115,7 @@ test('the rail’s Itens tree works from the keyboard and closes on a choice', {
   await newDocument(page);
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   await page.locator('body').click({ position: { x: 1000, y: 700 } });
-  await pressCommand(page, 'Backslash');
+  await appShortcut(page, 'Backslash');
   const items = page.getByRole('button', { name: 'Itens', exact: true });
   await items.focus();
   await page.keyboard.press('Enter');
@@ -138,7 +138,7 @@ test('the rail’s Itens tree works from the keyboard and closes on a choice', {
   await page.keyboard.press('Enter');
   await expect(list).toBeHidden();
   await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeFocused();
-  await pressCommand(page, 'Backslash');
+  await appShortcut(page, 'Backslash');
 });
 
 test('a new task opened from N gives the focus back to where it was', async ({ page }, info) => {

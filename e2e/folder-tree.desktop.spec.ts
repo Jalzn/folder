@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { escapeRegExp, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut } from './support/keyboard.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -194,7 +194,7 @@ test('a closed folder and the rail show the dot of an item not yet saved, and th
   );
 
   // Collapsed, the rail's Itens carries it and opens the same tree in a popover.
-  await pressCommand(page, 'Backslash');
+  await appShortcut(page, 'Backslash');
   const items = page.getByRole('button', { name: /^Itens/ });
   await expect(items).toBeVisible();
   // It says what the dot shows, and is the current place on an item's page.
@@ -208,5 +208,5 @@ test('a closed folder and the rail show the dot of an item not yet saved, and th
   ).toBeVisible();
   await page.keyboard.press('Escape');
   await page.unroute('**/rpc/workspace/saveDocument');
-  await pressCommand(page, 'Backslash');
+  await appShortcut(page, 'Backslash');
 });

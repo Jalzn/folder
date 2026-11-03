@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { toast } from './support/feedback.js';
 import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut } from './support/keyboard.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -46,7 +46,7 @@ test('M moves the open item to the root with its folder open or closed, and ⌘Z
 
   // ⌘Z puts it back in the folder; the toast's Desfazer of the next move takes it out again.
   await page.getByRole('main').getByRole('heading', { level: 1 }).focus();
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   await intact(page, 'Artigo', '2');
   await expect(page.getByRole('button', { name: 'Pasta Leituras. Mover para pasta (M)' })).toBeVisible();
 
@@ -73,7 +73,7 @@ test('the open item dragged to the Itens header goes to the root and the page st
   await expect(toast(page)).toContainText('Movido para a raiz do projeto.');
   await intact(page, 'Artigo', '1');
   await page.getByRole('main').getByRole('heading', { level: 1 }).focus();
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   await intact(page, 'Artigo', '2');
   await expect(itemsTree(page).getByRole('row')).toHaveCount(2);
 });

@@ -1,10 +1,10 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { drawer, drawerOf, newTaskDrawer } from './support/board.js';
-import { clickText, documentEditor, editorUndo, embedCard, embedFigure, pickEmbed, slash } from './support/document.js';
+import { clickText, documentEditor, embedCard, embedFigure, pickEmbed, slash } from './support/document.js';
 import { toast } from './support/feedback.js';
 import { newDocument } from './support/items.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut, editorUndo, hostShortcut } from './support/keyboard.js';
 import { createProject, currentProjectId } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -108,7 +108,7 @@ test('/tarefa embeds a task found by the picker, the document’s project first,
   await card.click();
   await expect(drawerOf(page, `Revisar ${word} daqui`)).toBeVisible();
   await expect(card).toContainText('aberta abaixo');
-  await pressCommand(page, 'Enter');
+  await appShortcut(page, 'Enter');
   await expect(toast(page)).toContainText('Concluída');
   await expect(card).toContainText('Concluída');
   expect(currentProjectId(page)).toBe(here);
@@ -287,7 +287,7 @@ test('⌘K offers "Incorporar tarefa…" in the document, which opens the picker
   const here = await createProject(page, `Incorporar pelo ⌘K ${Date.now()}`);
   await rpcTask(page, here, 'Trocar a fechadura');
   await writeDocument(page, 'Portas.');
-  await pressCommand(page, 'k');
+  await appShortcut(page, 'k');
   const palette = page.getByRole('dialog', { name: 'Buscar e comandar' });
   await expect(palette).toBeVisible();
   await page.keyboard.type('Incorporar tarefa');
@@ -339,8 +339,7 @@ test('figures renumber when a drawing moves above another', async ({ page }) => 
   await pickEmbed(page, await slash(page, 'desenho'), 'Segunda', 'Segunda figura');
   await expect(embedFigure(page, 'Segunda figura')).toContainText('Figura 2 — Segunda figura');
   // The second one, selected after its insertion, moves up a block at a time with the editor's keys.
-  const moveUp = `${process.platform === 'darwin' ? 'Meta' : 'Control'}+Shift+ArrowUp`;
-  for (let step = 0; step < 3; step += 1) await page.keyboard.press(moveUp);
+  for (let step = 0; step < 3; step += 1) await hostShortcut(page, 'Shift+ArrowUp');
   await expect(embedFigure(page, 'Segunda figura')).toContainText('Figura 1 — Segunda figura');
   await expect(embedFigure(page, 'Primeira figura')).toContainText('Figura 2 — Primeira figura');
 });
@@ -406,7 +405,7 @@ test('⌘C on a card copies its words and its link, and a paste in a description
 
   await clickText(page, 'Antes');
   await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('ControlOrMeta+c');
+  await hostShortcut(page, 'c');
   const link = `${new URL(page.url()).origin}/tarefas/${task.id}`;
   const [plain, html, markdown] = await page.evaluate(() => (window as unknown as { copied: string[] }).copied);
   expect(plain).toBe('Tarefa: Card copiado (A fazer)');
@@ -417,7 +416,7 @@ test('⌘C on a card copies its words and its link, and a paste in a description
   await embedCard(page, 'Card copiado').click();
   const description = drawerOf(page, 'Card copiado').getByRole('textbox', { name: 'Descrição da tarefa' });
   await description.click();
-  await page.keyboard.press('ControlOrMeta+v');
+  await hostShortcut(page, 'v');
   await expect(description.getByRole('link', { name: 'Tarefa: Card copiado (A fazer)' })).toHaveAttribute('href', link);
 });
 
@@ -454,11 +453,11 @@ test('a pasted embed with an ID the server refuses never lands, and the document
     ),
   );
   await clickText(page, 'Linha depois', 'end');
-  await page.keyboard.press('ControlOrMeta+c');
+  await hostShortcut(page, 'c');
   const saved = page.waitForResponse(
     (response) => answers(response, 'workspace/saveDocument') && response.status() === 200,
   );
-  await page.keyboard.press('ControlOrMeta+v');
+  await hostShortcut(page, 'v');
   await saved;
   await expect(documentEditor(page)).toContainText('Colado');
   await expect(documentEditor(page).locator('[data-content-type="taskEmbed"]')).toHaveCount(1);

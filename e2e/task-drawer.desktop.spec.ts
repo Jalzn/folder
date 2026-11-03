@@ -3,7 +3,7 @@ import { test } from './fixtures.js';
 import { card, drawerOf, openDrawer, drawer as openTask } from './support/board.js';
 import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut } from './support/keyboard.js';
 import { createProject, openBoard } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -72,7 +72,7 @@ test('the drawer edits the due date, the labels and the text, which saves and sh
 
   // ⌘↵ from the description completes the task.
   await description.click();
-  await pressCommand(page, 'Enter');
+  await appShortcut(page, 'Enter');
   await expect(toast(page)).toContainText('Concluída: Escrever o plano de lançamento.');
 
   // The text came back from the server after a reload.
@@ -100,7 +100,7 @@ test('a description typed offline survives a reload, and ⌘↵ in a code block 
   await page.keyboard.type('```');
   await page.keyboard.press('Space');
   await page.keyboard.type('npm test');
-  await pressCommand(page, 'Enter');
+  await appShortcut(page, 'Enter');
   await expect(toast(page)).toHaveCount(0);
   await expect(openTask(page).getByText('Salvo', { exact: true })).toBeVisible();
 
@@ -169,7 +169,7 @@ test('⌘↵ in the label picker or the calendar completes nothing', async ({ pa
   await openTask(page).getByRole('button', { name: 'Adicionar etiqueta', exact: true }).click();
   await expect(labels).toBeFocused();
   // With nothing typed, the picker's ↵ makes no label, and the picker stays until Esc.
-  await pressCommand(page, 'Enter');
+  await appShortcut(page, 'Enter');
   await page.keyboard.press('Escape');
   await expect(labels).toBeHidden();
   const due = openTask(page).getByRole('button', { name: /^Prazo:/ });
@@ -178,7 +178,7 @@ test('⌘↵ in the label picker or the calendar completes nothing', async ({ pa
   await expect(calendar.getByRole('grid')).toBeVisible();
   // The calendar's ↵ chooses the focused day, today, and closes it: there is no Esc to press after it, which
   // would close the drawer once the calendar is gone.
-  await pressCommand(page, 'Enter');
+  await appShortcut(page, 'Enter');
   await expect(calendar).toBeHidden();
   await expect(due).not.toContainText('Sem prazo');
   await expect(toast(page)).not.toContainText('Concluída');

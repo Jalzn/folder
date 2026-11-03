@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 
 import { documentEditor } from './support/document.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut } from './support/keyboard.js';
 import { createProject, projectNavigation, showSidebar } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -52,7 +52,7 @@ async function askForNew(page: Page, path: Path) {
     await page.getByRole('menuitem', { name: 'Documento', exact: true }).click();
     return;
   }
-  await pressCommand(page, 'k');
+  await appShortcut(page, 'k');
   const palette = page.getByRole('dialog', { name: 'Buscar e comandar' });
   await page.keyboard.type('Novo documento');
   await expect(palette.getByRole('menuitem', { name: /Novo documento/ }).first()).toBeVisible();

@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { itemsTree, rpcDocument } from './support/folders.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -25,7 +25,7 @@ async function slowSearchFor(page: Page, text: string) {
  * still on its way; then the answer is awaited, and the rows of the earlier list are gone.
  */
 async function typeAtOnce(page: Page, text: string, recent: string, whileSearching?: () => Promise<void>) {
-  await pressCommand(page, 'k');
+  await appShortcut(page, 'k');
   // The earlier list: before any text, the items edited last, with `recent` among them.
   await expect(row(page, recent).first()).toBeVisible();
   const late = page.waitForResponse(
@@ -89,7 +89,7 @@ test('⌘K Enter on a query with no results runs nothing, and ↓ then Enter run
   const { id: second } = await rpcDocument(page, projectId, `Segundo ${token}`);
   await page.reload();
 
-  await pressCommand(page, 'k');
+  await appShortcut(page, 'k');
   await field(page).pressSequentially('zzqx nada assim', { delay: 0 });
   await expect(palette(page).getByText('Nada encontrado.')).toBeVisible();
   await page.keyboard.press('Enter');

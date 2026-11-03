@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 
 import { clickText, documentEditor, embedCard } from './support/document.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut, hostKey } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -279,7 +279,7 @@ test('an archived project’s document only reads: no typing, no ⌫ on its embe
 
   // Criar tarefa: ⌘⌥T with an excerpt selected says why, and the ⋯ offers it disabled.
   await documentEditor(page).getByText('Texto guardado', { exact: true }).click({ clickCount: 3 });
-  await pressCommand(page, 'Alt+t');
+  await appShortcut(page, 'Alt+t');
   await expect(page.locator('.toast')).toContainText('Projeto arquivado: desarquive para criar itens.');
   await expect(page.getByRole('region', { name: 'Nova tarefa', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Opções do documento', exact: true }).click();
@@ -390,7 +390,7 @@ test('⌫ right after a jump to the line start still selects the card first', { 
   ]);
   await clickText(page, 'Depois do card');
   // The two keys with no pause, faster than ProseMirror hears of the first.
-  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+ArrowLeft' : 'Home');
+  await page.keyboard.press(hostKey('lineStart'));
   await page.keyboard.press('Backspace');
   expect(await caret(page)).toBe('[card]');
   await expect(documentEditor(page)).toContainText('Card na corrida');
@@ -504,14 +504,13 @@ test('⌘↓ and ⌘↑ from any card of a run, the last one too, go to the docu
 }, async ({ page }) => {
   await openRun(page, 'Fim e começo');
   // ⌘ on a Mac, as ProseMirror reads the machine's platform; Ctrl+End and Ctrl+Home elsewhere.
-  const apple = process.platform === 'darwin';
   for (const index of [1, 2, 3]) {
     await fromCard(page, index);
-    await page.keyboard.press(apple ? 'Meta+ArrowDown' : 'Control+End');
+    await page.keyboard.press(hostKey('documentEnd'));
     await page.waitForTimeout(200);
     expect(await caret(page)).toBe('Fim');
     await fromCard(page, index);
-    await page.keyboard.press(apple ? 'Meta+ArrowUp' : 'Control+Home');
+    await page.keyboard.press(hostKey('documentStart'));
     await page.waitForTimeout(200);
     expect(await caret(page)).toBe('Antes');
   }

@@ -3,7 +3,7 @@ import { test } from './fixtures.js';
 import { card, cardMenu, closeDrawer, column, createInDrawer, drawer, openDrawer } from './support/board.js';
 import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
-import { pressCommand } from './support/keyboard.js';
+import { appShortcut, hostShortcut } from './support/keyboard.js';
 import { createProject, openBoard, showSidebar } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
@@ -112,7 +112,7 @@ test('a new column is named in place with its field’s keys, moves, and refuses
 
   // A name another column has, by its key, says so under the field; Esc gives the name back.
   await page.keyboard.press('Enter');
-  await page.keyboard.press('ControlOrMeta+a');
+  await hostShortcut(page, 'a');
   await page.keyboard.type('a FAZER');
   await page.keyboard.press('Enter');
   await expect(page.getByRole('alert').filter({ hasText: 'Já existe uma coluna A fazer.' })).toBeVisible();
@@ -162,7 +162,7 @@ test('deleting a column with tasks asks where they go, and ⌘Z gives the column
   ).toBeVisible();
 
   // ⌘Z gives the column back with its task.
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   await expect(toast(page)).toContainText('Coluna Revisão restaurada.');
   expect(await serverColumns(page)).toEqual(['A fazer', 'Revisão', 'Em andamento', 'Concluído ✓']);
   expect((await rpc(page, 'workspace/getTask', { id: taskId })).columnId).toBe(created.id);
@@ -271,18 +271,18 @@ test('⌘↵ reopens and completes a card with Desfazer; ⇧F10 opens its ⋯ an
   await cardTitle(page, 'Segunda').focus();
 
   // ⌘↵ reopens it at the end of the first open column; Desfazer puts it back.
-  await pressCommand(page, 'Enter');
+  await appShortcut(page, 'Enter');
   await expect(toast(page)).toContainText('Reaberta em A fazer.');
   await expect(todo.locator('.task-card__title')).toHaveText(['Primeira', 'Terceira', 'Segunda']);
   await expect(cardTitle(page, 'Segunda')).toBeFocused();
-  await pressCommand(page, 'z');
+  await appShortcut(page, 'z');
   await expect(column(page, 'Concluído').getByRole('button', { name: 'Segunda', exact: true })).toBeVisible();
   expect((await rpc(page, 'workspace/getTask', { id: segunda })).columnId).toBe(FIRST_COLUMNS.done);
   await expect(cardTitle(page, 'Segunda')).toBeFocused();
 
   // ⌘↵ on an open card completes it at the top of the done column.
   await cardTitle(page, 'Primeira').focus();
-  await pressCommand(page, 'Enter');
+  await appShortcut(page, 'Enter');
   await expect(toast(page)).toContainText('Concluída: Primeira.');
   await expect(column(page, 'Concluído').locator('.task-card__title')).toHaveText(['Primeira', 'Segunda']);
   await expect(cardTitle(page, 'Primeira')).toBeFocused();
@@ -365,7 +365,7 @@ test('every move into the done column offers Desfazer, and a later move of the t
 
   // ⌘↵ completes it; moving it again by the keyboard takes that toast's Desfazer away.
   await cardTitle(page, 'Pagar a conta').focus();
-  await pressCommand(page, 'Enter');
+  await appShortcut(page, 'Enter');
   await expect(toast(page)).toContainText('Concluída: Pagar a conta.');
   await expect(toast(page).getByRole('button', { name: 'Desfazer' })).toBeVisible();
   await expect(cardTitle(page, 'Pagar a conta')).toBeFocused();

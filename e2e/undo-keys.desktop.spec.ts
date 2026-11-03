@@ -1,19 +1,13 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
-
 import { drawer, openDrawer } from './support/board.js';
 import { newDocument, newTask } from './support/items.js';
+import { hostShortcut } from './support/keyboard.js';
 import { createProject, currentProjectId } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // Esc and ⌘Z from a hardware keyboard; the phone has neither.
-
-/**
- * The browser's own undo key on the machine that runs the suite. The devices report Windows, so the app reads
- * Ctrl as its command key, but the browser undoes with the key of the real system: ⌘Z on a Mac.
- */
-const NATIVE_UNDO = process.platform === 'darwin' ? 'Meta+z' : 'Control+z';
 
 /** Counts the saves of a procedure from now on. */
 function countSaves(page: Page, procedure: string) {
@@ -59,7 +53,7 @@ test('⌘Z in the drawer outside its fields leaves the description and its saved
   await page.keyboard.press('Escape');
   await expect(region).toBeFocused();
   const saves = countSaves(page, 'workspace/saveTaskText');
-  await page.keyboard.press(NATIVE_UNDO);
+  await hostShortcut(page, 'z');
   await page.waitForTimeout(AUTOSAVE_WINDOW_MS);
   await expect(description).toContainText('Primeira linha. Teste dois.');
   expect(saves()).toBe(0);
@@ -93,7 +87,7 @@ test('⌘Z on the document page outside the editor leaves the text and its saved
   await page.keyboard.press('Escape');
   await expect(page.locator('#main-content')).toBeFocused();
   const saves = countSaves(page, 'workspace/saveDocument');
-  await page.keyboard.press(NATIVE_UNDO);
+  await hostShortcut(page, 'z');
   await page.waitForTimeout(AUTOSAVE_WINDOW_MS);
   await expect(editor).toContainText('Visão do produto.');
   expect(saves()).toBe(0);

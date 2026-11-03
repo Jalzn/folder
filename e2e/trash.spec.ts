@@ -3,6 +3,7 @@ import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer, drawer, openDrawer } from './support/board.js';
 import { createTaskFromSelection } from './support/document.js';
 import { moveToTrash, newDocument, newDrawing, newTask } from './support/items.js';
+import { hostShortcut } from './support/keyboard.js';
 import { createProject, openBoard, openTrash } from './support/navigation.js';
 import { login } from './support/session.js';
 
@@ -13,7 +14,7 @@ async function documentWithTask(page: Page, title: string, task: string) {
   const editor = page.locator('[contenteditable="true"]').first();
   await editor.fill('Trecho que vira tarefa.');
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
-  await editor.press('ControlOrMeta+a');
+  await hostShortcut(editor, 'a');
   await createTaskFromSelection(page);
   await createInDrawer(page, task);
   await closeDrawer(page);
