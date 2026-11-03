@@ -2,3 +2,5 @@
 export interface DrawerCommands {
   primary?: (() => void) | undefined;
 }
+
+export const EMPTY_DRAWER_COMMANDS: DrawerCommands = {};

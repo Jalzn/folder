@@ -3,6 +3,7 @@ import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } fro
 import { type ColumnSummary, type TaskWithText, useLabels } from '../../lib/queries';
 import { type Task, UNTITLED } from '../../lib/types';
 import { useAutosaveLifecycle } from '../../lib/use-autosave-lifecycle';
+import { useCommandSlot } from '../../lib/use-command-slot';
 import { paths } from '../../router/paths';
 import { useApp, useOwnerToday } from '../../shell/AppProvider';
 import { useTaskDrawer } from '../../shell/task-drawer-state';
@@ -14,7 +15,7 @@ import { TaskSource } from '../task/TaskSource';
 import { TrashTaskDialog } from '../task/TrashTaskDialog';
 import { ChecklistRow } from './ChecklistRow';
 import { DueField } from './DueField';
-import type { DrawerCommands } from './drawer-commands';
+import { type DrawerCommands, EMPTY_DRAWER_COMMANDS } from './drawer-commands';
 import { LabelsField } from './LabelsField';
 import { type DescriptionHandle, TaskDescription } from './TaskDescription';
 import { TaskDrawerHeader } from './TaskDrawerHeader';
@@ -67,9 +68,11 @@ export function TaskEditor({
     if (detail.textVersion > controller.getState().version)
       controller.receiveRemote(taskTextSnapshot(detail), detail.textVersion);
   }, [controller, detail]);
-  useEffect(() => {
-    commands.current.primary = editable ? () => void fields.toggleDone() : undefined;
-    drawer.taskCommands.current = {
+  const column = columns.find((each) => each.id === task.columnId);
+  useCommandSlot(commands, { primary: editable ? () => void fields.toggleDone() : undefined }, EMPTY_DRAWER_COMMANDS);
+  useCommandSlot(
+    drawer.taskCommands,
+    {
       done: Boolean(column?.isDone),
       copyLink: () => void copyLink(),
       ...(editable
@@ -79,16 +82,9 @@ export function TaskEditor({
             trash: () => setTrashing(true),
           }
         : {}),
-    };
-  });
-  useEffect(
-    () => () => {
-      drawer.taskCommands.current = null;
     },
-    [drawer],
+    null,
   );
-
-  const column = columns.find((each) => each.id === task.columnId);
   const progress = checklistProgress(state.snapshot.description);
   const change = (patch: Partial<typeof state.snapshot>) =>
     controller.change({ ...controller.getState().snapshot, ...patch });

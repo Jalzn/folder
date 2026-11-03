@@ -1,6 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { EmbedKind } from '@tinyfold/workspace/domain';
-import { useRef, useState } from 'react';
 import { embedBlock } from '../../editor/blocks/embed-blocks';
 import type { EmbedActions } from '../../editor/blocks/embeds-context';
 import { selectEmbedBlock } from '../../editor/blocks/selection-drift';
@@ -9,6 +8,7 @@ import { api } from '../../lib/api';
 import { inFolderOrRoot } from '../../lib/folder-fallback';
 import { onceMoreIfLost } from '../../lib/lost-answer';
 import { useRequest } from '../../lib/use-request';
+import { useStableHandlers } from '../../lib/use-stable-handlers';
 import { paths } from '../../router/paths';
 import { useTaskDrawer } from '../../shell';
 import { useAction } from '../../shell/writes';
@@ -180,15 +180,6 @@ export function useEmbedActions({
       });
     },
   };
-  // The blocks get one object for the editor's life, which calls this render's actions: a keystroke in the text
-  // renders the page again, and must not render every embed with it.
-  const latest = useRef(current);
-  latest.current = current;
-  const [actions] = useState<EmbedActions>(() => ({
-    openTask: (task, tapped) => latest.current.openTask(task, tapped),
-    openDrawing: (drawing) => latest.current.openDrawing(drawing),
-    restore: (kind, item, blockId) => latest.current.restore(kind, item, blockId),
-    remove: (blockId) => latest.current.remove(blockId),
-  }));
+  const actions = useStableHandlers(current);
   return { actions, insert, newTask, newDrawing };
 }

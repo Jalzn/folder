@@ -1,11 +1,13 @@
 import type { EmbedKind } from '@tinyfold/workspace/domain';
-import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useMemo, useRef, useState } from 'react';
 import { type EmbedText, embedText } from '../../editor/blocks/embed-text';
 import { EmbedsProvider, type EmbedsValue } from '../../editor/blocks/embeds-context';
 import { EmbedPicker } from '../../editor/EmbedPicker';
 import { embedSlashItems } from '../../editor/insert-menu';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
 import { useColumns } from '../../lib/queries';
+import { useCommandSlot } from '../../lib/use-command-slot';
+import { useStableHandlers } from '../../lib/use-stable-handlers';
 import { useDrawerContent } from '../../shell';
 import { useOwnerToday } from '../../shell/AppProvider';
 import { useDocumentEmbeds } from './use-document-embeds';
@@ -98,23 +100,16 @@ export function DocumentEmbeds({
     pickerBlock.current = block.id;
     setPicker({ kind, blockId: block.id });
   }
-  const latest = useRef({ openPicker, insert, states });
-  latest.current = { openPicker, insert, states };
-  useEffect(() => {
-    commands.current = {
-      openPicker: (kind) => latest.current.openPicker(kind),
-      insertTaskAfter: (blockId, taskId) =>
-        Boolean(editor.getBlock(blockId)) && latest.current.insert(blockId, 'task', taskId),
-      remove: (blockId) => actions.remove(blockId),
-      describe: (kind, id) => {
-        const { tasks, drawings } = latest.current.states;
-        return embedText(kind, id, kind === 'task' ? tasks.get(id) : drawings.get(id), window.location.origin);
-      },
-    };
-    return () => {
-      commands.current = null;
-    };
-  }, [commands, editor, actions]);
+  const offered = useStableHandlers<EmbedCommands>({
+    openPicker,
+    insertTaskAfter: (blockId, taskId) => Boolean(editor.getBlock(blockId)) && insert(blockId, 'task', taskId),
+    remove: (blockId) => actions.remove(blockId),
+    describe: (kind, id) => {
+      const { tasks, drawings } = states;
+      return embedText(kind, id, kind === 'task' ? tasks.get(id) : drawings.get(id), window.location.origin);
+    },
+  });
+  useCommandSlot(commands, offered, null);
   const slashItems = readOnly ? undefined : embedSlashItems(openPicker);
   /** Esc in the picker: the cursor goes back to the block. */
   function back(blockId: string) {

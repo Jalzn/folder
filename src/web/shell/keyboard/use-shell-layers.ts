@@ -1,5 +1,4 @@
-import { useMemo } from 'react';
-import { useLatest } from '../../lib/use-latest';
+import { useStableHandlers } from '../../lib/use-stable-handlers';
 import { useShellOverlays } from '../shell-ui';
 import { useLayer } from './use-layer';
 
@@ -11,20 +10,15 @@ import { useLayer } from './use-layer';
  */
 export function useShellLayers() {
   const ui = useShellOverlays();
-  const latest = useLatest(ui);
-  // Stable closers: a new one would register the layer again, at the top.
-  const close = useMemo(
-    () => ({
-      overlay: () => latest.current.setOverlay(false),
-      switcher: () => latest.current.setSwitcherAt(null),
-      palette: () => latest.current.closePalette(),
-      shortcuts: () => latest.current.setShortcutsOpen(false),
-      labels: () => latest.current.setLabelsOpen(false),
-      newItem: () => latest.current.setNewItemOpen(false),
-      move: () => latest.current.setMoveOpen(false),
-    }),
-    [],
-  );
+  const close = useStableHandlers({
+    overlay: () => ui.setOverlay(false),
+    switcher: () => ui.setSwitcherAt(null),
+    palette: () => ui.closePalette(),
+    shortcuts: () => ui.setShortcutsOpen(false),
+    labels: () => ui.setLabelsOpen(false),
+    newItem: () => ui.setNewItemOpen(false),
+    move: () => ui.setMoveOpen(false),
+  });
   useLayer('overlay', ui.overlay.open, close.overlay);
   useLayer('switcher', ui.switcherAt !== null, close.switcher);
   useLayer('palette', ui.palette !== null, close.palette);

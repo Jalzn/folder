@@ -1,28 +1,15 @@
-import { useEffect } from 'react';
-import { useLatest } from '../lib/use-latest';
+import { useCommandSlot } from '../lib/use-command-slot';
+import { useStableHandlers } from '../lib/use-stable-handlers';
 import { type PageCommands, useShellActions } from './shell-ui';
 
-/** A page offers ⌘S, ⌘⌥T and its palette actions while it is mounted; the shell reads the latest ones. */
+const EMPTY: PageCommands = {};
+/** The historical page slot always offers save and the focused column; other actions are conditional. */
 export function usePageCommands(commands: PageCommands) {
   const { page } = useShellActions();
-  const latest = useLatest(commands);
-  useEffect(() => {
-    const current: PageCommands = {
-      saveNow: () => latest.current.saveNow?.(),
-      get files() {
-        return latest.current.files;
-      },
-      get trash() {
-        return latest.current.trash;
-      },
-      newTaskColumn: () => latest.current.newTaskColumn?.(),
-      get createTask() {
-        return latest.current.createTask;
-      },
-    };
-    page.current = current;
-    return () => {
-      if (page.current === current) page.current = {};
-    };
-  }, [page]);
+  const current = useStableHandlers<PageCommands>({
+    ...commands,
+    saveNow: () => commands.saveNow?.(),
+    newTaskColumn: () => commands.newTaskColumn?.(),
+  });
+  useCommandSlot(page, current, EMPTY);
 }

@@ -5,14 +5,16 @@ import { api, errorMessage, refreshWorkspace } from '../../lib/api';
 import { doneAndFirstOpen } from '../../lib/board-order';
 import { useColumns, useLabels, useProjects } from '../../lib/queries';
 import { openEditor } from '../../lib/save-registry';
+import { useCommandSlot } from '../../lib/use-command-slot';
 import { useRequest } from '../../lib/use-request';
+import { useStableHandlers } from '../../lib/use-stable-handlers';
 import { useOwnerToday } from '../../shell/AppProvider';
 import { type DrawerContent, useTaskDrawer } from '../../shell/task-drawer-state';
 import { useAction } from '../../shell/writes';
 import { AlertDialog, Button, useToast } from '../../ui';
 import { useCreateLabel } from '../labels/use-create-label';
 import { DueField } from './DueField';
-import type { DrawerCommands } from './drawer-commands';
+import { type DrawerCommands, EMPTY_DRAWER_COMMANDS } from './drawer-commands';
 import { LabelsField } from './LabelsField';
 import { ColumnField, ProjectField, TaskProperties } from './TaskProperties';
 import { TaskTitleField } from './TaskTitleField';
@@ -127,16 +129,8 @@ export function NewTaskForm({
       setBusy(false);
     }
   }
-  // ⌘↵ creates: the drawer holds one stable command, which calls this render's create.
-  const latestCreate = useRef(create);
-  latestCreate.current = create;
-  useEffect(() => {
-    const drawerCommands = commands.current;
-    drawerCommands.primary = () => void latestCreate.current();
-    return () => {
-      drawerCommands.primary = undefined;
-    };
-  }, [commands]);
+  const primary = useStableHandlers<DrawerCommands>({ primary: () => void create() });
+  useCommandSlot(commands, primary, EMPTY_DRAWER_COMMANDS);
   /** A label made from the picker goes on the new task at once; the task itself waits for Criar. */
   async function addNewLabel(name: string) {
     const created = await createLabel(name);
