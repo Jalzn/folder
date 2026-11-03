@@ -1,11 +1,18 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer } from './support/board.js';
-import { clickText, createTaskFromSelection, documentEditor, embedCard, expectSelected } from './support/document.js';
+import {
+  clickText,
+  createTaskFromSelection,
+  documentEditor,
+  embedCard,
+  expectSelected,
+  typeAndSave,
+} from './support/document.js';
 import { toast } from './support/feedback.js';
 import { newDocument } from './support/items.js';
 import { createProject } from './support/navigation.js';
-import { answers, rpc } from './support/rpc.js';
+import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The markers need a pointer to hover and a desktop drawer; the phone reaches the tasks by "Tarefas".
@@ -24,21 +31,7 @@ const marker = (page: Page, title: string) =>
 async function writeDocument(page: Page, lines: string[]) {
   await newDocument(page);
   await documentEditor(page).click();
-  for (const [index, line] of lines.entries()) {
-    if (index) await page.keyboard.press('Enter');
-    await page.keyboard.type(line);
-  }
-  await page.waitForResponse(
-    (response) =>
-      answers(response, 'workspace/saveDocument') &&
-      response.status() === 200 &&
-      Boolean(
-        response
-          .request()
-          .postData()
-          ?.includes(lines.at(-1) ?? ''),
-      ),
-  );
+  await typeAndSave(page, lines);
 }
 
 /** Selects a paragraph with a triple click, makes a task of it with ⌘⌥T, and leaves "Incorporar" as asked. */

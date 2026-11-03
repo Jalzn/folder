@@ -1,10 +1,10 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { seedCanvas, seedProject } from './support/builders.js';
-import { newDocument } from './support/items.js';
+import { createSavedDocument } from './support/document.js';
 import { appShortcut } from './support/keyboard.js';
 import { abortRpc } from './support/network.js';
-import { answers, rpc } from './support/rpc.js';
+import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The decided fixes of the open item's page (docs/etapas/12-refatoracao.md, "Correções decididas").
@@ -14,16 +14,7 @@ const idOf = (page: Page) => new URL(page.url()).pathname.split('/').at(-1) ?? '
 
 /** A new document with one line saved; the caret stays at its end. */
 async function savedDocument(page: Page, title: string, line: string) {
-  await newDocument(page);
-  await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
-  const saved = page.waitForResponse(
-    (response) =>
-      answers(response, 'workspace/saveDocument') &&
-      response.status() === 200 &&
-      Boolean(response.request().postData()?.includes(line)),
-  );
-  await editor(page).fill(line);
-  await saved;
+  await createSavedDocument(page, title, line);
   return idOf(page);
 }
 

@@ -2,22 +2,19 @@ import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer, drawer } from './support/board.js';
 import {
+  createSavedDocument,
   createTaskFromSelection,
   documentEditor as editor,
   openDocumentTasks,
   writeAndSave,
 } from './support/document.js';
-import { newDocument } from './support/items.js';
 import { hostShortcut } from './support/keyboard.js';
 import { abortRpc } from './support/network.js';
 import { login } from './support/session.js';
 
 async function createDocument(page: Page, title: string) {
   await login(page);
-  await newDocument(page);
-  await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
-  await writeAndSave(page, 'Ideia original antes de duplicar a aba.');
-  return page.url();
+  return createSavedDocument(page, title, 'Ideia original antes de duplicar a aba.');
 }
 
 test('a duplicated tab keeps its unsaved draft when the original tab saves and the duplicate reloads', async ({

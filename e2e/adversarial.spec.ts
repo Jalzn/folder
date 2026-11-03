@@ -1,24 +1,18 @@
-import { type BrowserContext, expect, type Page } from '@playwright/test';
+import { type BrowserContext, expect } from '@playwright/test';
 import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer, openDrawer } from './support/board.js';
 import {
+  createSavedDocument,
   createTaskFromSelection,
   documentEditor as editor,
   openDocumentTasks,
   writeAndSave,
 } from './support/document.js';
-import { moveToTrash, newDocument, restoreFromTrash } from './support/items.js';
+import { moveToTrash, restoreFromTrash } from './support/items.js';
 import { hostShortcut } from './support/keyboard.js';
 import { openBoard, overviewAddress } from './support/navigation.js';
 import { holdRpc, loseFirstResponse } from './support/network.js';
 import { login } from './support/session.js';
-
-async function createDocument(page: Page, title: string, text: string) {
-  await newDocument(page);
-  await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
-  await writeAndSave(page, text);
-  return page.url();
-}
 
 async function closeContext(context: BrowserContext, release: () => void) {
   release();
@@ -32,7 +26,7 @@ test('two independent sessions keep both versions when a conflicting draft is sa
 }, info) => {
   await login(page);
   const title = `Conflito ${info.project.name} ${Date.now()}`;
-  const documentUrl = await createDocument(page, title, 'Ideia original compartilhada.');
+  const documentUrl = await createSavedDocument(page, title, 'Ideia original compartilhada.');
   const otherContext = await browser.newContext({
     baseURL: new URL(page.url()).origin,
     viewport: page.viewportSize() ?? { width: 1440, height: 1000 },
@@ -72,7 +66,7 @@ test('a task created from selected text survives document trash and restores its
   await login(page);
   const title = `Origem ${info.project.name} ${Date.now()}`;
   const taskTitle = `Proximo passo ${info.project.name} ${Date.now()}`;
-  const documentUrl = await createDocument(page, title, 'Organizar as referencias do projeto.');
+  const documentUrl = await createSavedDocument(page, title, 'Organizar as referencias do projeto.');
   await editor(page).click();
   await hostShortcut(editor(page), 'a');
   await createTaskFromSelection(page);

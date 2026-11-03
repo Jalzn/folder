@@ -1,20 +1,11 @@
 import { readFile } from 'node:fs/promises';
-import { expect, type Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { test } from './fixtures.js';
-
 import { cardMenu, column } from './support/board.js';
-import { newDocument, newTask } from './support/items.js';
+import { createSavedDocument } from './support/document.js';
+import { newTask } from './support/items.js';
 import { createProject, searchProject } from './support/navigation.js';
 import { login } from './support/session.js';
-
-async function createDocument(page: Page, title: string, text: string) {
-  await newDocument(page);
-  await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
-  const editor = page.locator('[contenteditable="true"]').first();
-  await editor.fill(text);
-  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
-  return editor;
-}
 
 test(
   'capture in the current project, reopen, search and export Markdown',
@@ -23,7 +14,7 @@ test(
     const title = `Ideias ${info.project.name} ${Date.now()}`;
     await expect(page).toHaveURL(new RegExp(`/projetos/${project.id}$`));
     await page.screenshot({ path: info.outputPath('inicio.png'), fullPage: true });
-    await createDocument(page, title, 'Uma ideia simples para organizar meus projetos.');
+    await createSavedDocument(page, title, 'Uma ideia simples para organizar meus projetos.');
     const url = page.url();
     await page.reload();
     await expect(page.getByRole('textbox', { name: 'Título do documento' })).toHaveValue(title);
@@ -56,7 +47,7 @@ test(
   { tag: '@smoke' },
   async ({ page }, info) => {
     await login(page);
-    await createDocument(page, `Original ${info.project.name}`, 'Este documento deve permanecer intacto.');
+    await createSavedDocument(page, `Original ${info.project.name}`, 'Este documento deve permanecer intacto.');
     const original = page.url();
     await page.getByLabel('Importar arquivo Markdown').setInputFiles({
       name: 'Referencias.md',
@@ -97,7 +88,7 @@ test('create project, create and move task with accessible controls', { tag: '@s
 
 test('recover unsaved text after offline reload', { tag: '@smoke' }, async ({ page, context }, info) => {
   await login(page);
-  await createDocument(page, `Rascunho ${info.project.name} ${Date.now()}`, 'Texto salvo inicialmente.');
+  await createSavedDocument(page, `Rascunho ${info.project.name} ${Date.now()}`, 'Texto salvo inicialmente.');
   await context.setOffline(true);
   await page.locator('[contenteditable="true"]').first().fill('Meu texto precisa sobreviver à queda de conexão.');
   await expect(page.getByRole('button', { name: 'Tentar salvar', exact: true })).toBeVisible();

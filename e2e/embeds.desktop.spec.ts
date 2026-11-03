@@ -2,7 +2,15 @@ import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.js';
 import { drawer, drawerOf, newTaskDrawer } from './support/board.js';
 import { seedCanvas, seedDocument, seedTask } from './support/builders.js';
-import { clickText, documentEditor, embedCard, embedFigure, pickEmbed, slash } from './support/document.js';
+import {
+  clickText,
+  documentEditor,
+  embedCard,
+  embedFigure,
+  pickEmbed,
+  slash,
+  typeAndSave,
+} from './support/document.js';
 import { toast } from './support/feedback.js';
 import { newDocument } from './support/items.js';
 import { appShortcut, editorUndo, hostShortcut } from './support/keyboard.js';
@@ -68,11 +76,7 @@ async function expectPickerAtLine(page: Page) {
 async function writeDocument(page: Page, line: string) {
   await newDocument(page);
   await documentEditor(page).click();
-  const saved = page.waitForResponse(
-    (response) => answers(response, 'workspace/saveDocument') && response.status() === 200,
-  );
-  await page.keyboard.type(line);
-  await saved;
+  await typeAndSave(page, [line]);
 }
 
 test('/tarefa embeds a task found by the picker, the document’s project first, and the card follows the drawer', async ({

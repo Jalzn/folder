@@ -9,6 +9,7 @@ import {
   openDocumentTasks,
   pickEmbed,
   slash,
+  typeAndSave,
 } from './support/document.js';
 import { toast } from './support/feedback.js';
 import { newDocument } from './support/items.js';
@@ -26,19 +27,7 @@ async function writeDocument(page: Page, title: string, lines: string[]) {
   await page.keyboard.type(title);
   await page.keyboard.press('Enter');
   await expect(editor(page)).toBeFocused();
-  const last = lines.at(-1) ?? '';
-  const saved = page.waitForResponse(
-    (response) =>
-      answers(response, 'workspace/saveDocument') &&
-      response.status() === 200 &&
-      Boolean(response.request().postData()?.includes(last)),
-  );
-  for (const [index, line] of lines.entries()) {
-    if (index) await page.keyboard.press('Enter');
-    await page.keyboard.type(line);
-  }
-  await saved;
-  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+  await typeAndSave(page, lines);
 }
 
 /** Selects a paragraph of the editor with a triple click and makes a task of it with ⌘⌥T. */

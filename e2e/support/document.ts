@@ -1,18 +1,44 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { newDocument } from './items.js';
 import { appShortcut } from './keyboard.js';
 import { answers } from './rpc.js';
 
-/** Waits for the save carrying this text, so an earlier title save cannot satisfy the wait. */
-export async function writeAndSave(page: Page, text: string) {
-  const saved = page.waitForResponse(
+/** Arm before editing: an earlier title save cannot satisfy a wait for this text. */
+export function waitForDocumentSave(page: Page, text: string) {
+  const encoded = JSON.stringify(text).slice(1, -1);
+  return page.waitForResponse(
     (response) =>
       answers(response, 'workspace/saveDocument') &&
       response.status() === 200 &&
-      Boolean(response.request().postData()?.includes(text)),
+      Boolean(response.request().postData()?.includes(encoded)),
   );
+}
+
+/** Fills the document, then waits for this content to reach the server and show as saved. */
+export async function writeAndSave(page: Page, text: string) {
+  const saved = waitForDocumentSave(page, text);
   await documentEditor(page).fill(text);
   await saved;
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+}
+
+/** Types paragraphs at the current caret, keeping real Enter events between lines. */
+export async function typeAndSave(page: Page, lines: string[]) {
+  const saved = waitForDocumentSave(page, lines.at(-1) ?? '');
+  for (const [index, line] of lines.entries()) {
+    if (index) await page.keyboard.press('Enter');
+    await page.keyboard.type(line);
+  }
+  await saved;
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+}
+
+/** Creates through the interface, fills title and content, and returns the saved document's URL. */
+export async function createSavedDocument(page: Page, title: string, text: string) {
+  await newDocument(page);
+  await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
+  await writeAndSave(page, text);
+  return page.url();
 }
 
 /**
