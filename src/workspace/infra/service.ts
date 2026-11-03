@@ -18,8 +18,13 @@ type ServiceCall<Op> =
  * first, as the RPC boundary does, and throws before any work when it is invalid. Civil dates hold
  * in UTC unless a time zone is given.
  */
-export function createWorkspaceService(db: Database, clock = () => new Date(), timeZone: TimeZoneSource = utc) {
-  const operations = workspaceOperations(db, clock, timeZone);
+export function createWorkspaceService(
+  db: Database,
+  clock = () => new Date(),
+  timeZone: TimeZoneSource = utc,
+  mutationClock = clock,
+) {
+  const operations = workspaceOperations(db, clock, timeZone, mutationClock);
   return serviceFromOperations(operations);
 }
 

@@ -37,9 +37,14 @@ export function operationsFrom(ctx: WorkspaceContext, navigation: NavigationCont
   };
 }
 
-export function workspaceOperations(db: Database, clock = () => new Date(), timeZone: TimeZoneSource = utc) {
+export function workspaceOperations(
+  db: Database,
+  clock = () => new Date(),
+  timeZone: TimeZoneSource = utc,
+  mutationClock = clock,
+) {
   return operationsFrom(
-    workspaceContext(db, clock, timeZone),
+    workspaceContext(db, clock, timeZone, mutationClock),
     navigationContext(db, clock, timeZone),
     readingContext(db, clock, timeZone),
   );

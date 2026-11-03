@@ -51,7 +51,8 @@ function readOptions(args: string[]) {
 /** Writes the sample to a migrated database; the seed's tests call it on their own. */
 export function seedSample(db: Database, options: { grande: boolean }) {
   // The large project's 54 more writes would reach the current time within two days.
-  const workspace = createWorkspaceService(db, sampleClock(options.grande ? 7 : 2));
+  // Sample edit dates advance; request receipts keep their real creation time.
+  const workspace = createWorkspaceService(db, sampleClock(options.grande ? 7 : 2), undefined, () => new Date());
   const at = (instant: string) => createWorkspaceService(db, () => new Date(instant));
   return seed({ workspace, at, today: todayIn('UTC', new Date()) }, options);
 }

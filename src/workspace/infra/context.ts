@@ -8,6 +8,7 @@ export function workspaceContext(
   db: Database,
   clock = () => new Date(),
   timeZone: TimeZoneSource = utc,
+  mutationClock = clock,
 ): WorkspaceContext {
   return {
     now: () => clock().toISOString(),
@@ -16,7 +17,7 @@ export function workspaceContext(
     read: (work) => readTransaction(db, (trx) => work(workspaceRepository(trx))),
     write: (operation, input, work) =>
       idempotentWrite(db, operation, input, (trx) => work(workspaceRepository(trx)), {
-        now: () => clock().toISOString(),
+        now: () => mutationClock().toISOString(),
       }),
     writeWithoutRequestRecord: (work) => writeTransaction(db, (trx) => work(workspaceRepository(trx))),
   };
