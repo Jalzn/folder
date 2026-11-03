@@ -4,9 +4,13 @@ import { openBoard, openTrash, projectNavigation, showSidebar } from './navigati
 
 /** Creates an item at the root of the current project, from the "+" of the sidebar's Itens. */
 async function newItem(page: Page, kind: 'Documento' | 'Desenho') {
+  const previousPath = new URL(page.url()).pathname;
+  const itemPath = kind === 'Documento' ? /\/documentos\/[^/]+$/ : /\/desenhos\/[^/]+$/;
   await showSidebar(page);
   await projectNavigation(page).getByRole('button', { name: 'Novo item', exact: true }).click();
   await page.getByRole('menuitem', { name: kind, exact: true }).click();
+  // The old item's editor may still be visible until creation and navigation finish.
+  await expect(page).toHaveURL((url) => url.pathname !== previousPath && itemPath.test(url.pathname));
 }
 
 /** Creates a document in the current project, from the "+" of the sidebar's Itens, and opens it. */
