@@ -1,27 +1,9 @@
 import { type Cookie, expect, type Page } from '@playwright/test';
-import { seedProject } from './builders.js';
-import { projectAddress } from './navigation.js';
 import { E2E_PASSWORD } from './server.js';
 
 export { E2E_PASSWORD };
 
 const sessions = new Map<string, Cookie[]>();
-
-/**
- * Opens the app signed in, in a new project. The first login on each server keeps its
- * session cookie for the following tests, which keeps the suite under the login rate limit. An
- * independent login starts a session of its own, as another device would.
- */
-export async function login(page: Page, { independent = false } = {}) {
-  await signIn(page, { independent });
-  if (!independent) {
-    const project = await seedProject(page, {
-      name: `Projeto de teste ${crypto.randomUUID()}`,
-    });
-    await page.goto(`/projetos/${project.id}`);
-  }
-  await expect(page).toHaveURL(projectAddress);
-}
 
 /** Signs in without creating a project, for the project and API fixtures or a second device. */
 export async function signIn(page: Page, { independent = false } = {}) {

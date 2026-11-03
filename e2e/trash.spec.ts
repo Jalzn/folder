@@ -5,7 +5,6 @@ import { createTaskFromSelection } from './support/document.js';
 import { moveToTrash, newDocument, newDrawing, newTask } from './support/items.js';
 import { hostShortcut } from './support/keyboard.js';
 import { createProject, openBoard, openTrash } from './support/navigation.js';
-import { login } from './support/session.js';
 
 /** A document whose text became a task, so its permanent deletion warns that the task stays. */
 async function documentWithTask(page: Page, title: string, task: string) {
@@ -28,7 +27,6 @@ test('the project trash groups, filters, restores, deletes for good and empties'
   const born = `Nasceu do documento ${suffix}`;
   const loose = `Tarefa solta ${suffix}`;
   const kept = `Desenho que fica ${suffix}`;
-  await login(page);
   await createProject(page, project);
 
   await documentWithTask(page, document, born);

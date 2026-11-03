@@ -9,7 +9,7 @@ type Fixtures = {
 };
 
 /** Files may run together; each worker owns its server, account and SQLite file. */
-export const test = base.extend<Fixtures, { testServer: TestServer; sample: boolean }>({
+export const isolatedTest = base.extend<Fixtures, { testServer: TestServer; sample: boolean }>({
   sample: [false, { scope: 'worker', option: true }],
   testServer: [
     async ({ sample }, use) => {
@@ -35,4 +35,15 @@ export const test = base.extend<Fixtures, { testServer: TestServer; sample: bool
     await page.goto(`/projetos/${project.id}`);
     await use(project);
   },
+});
+
+/** Ordinary scenarios always start in their own project; sample scenarios opt into isolatedTest. */
+export const test = isolatedTest.extend<{ workspace: void }>({
+  workspace: [
+    async ({ project }, use) => {
+      if (!project.id) throw new Error('The test project was not created.');
+      await use();
+    },
+    { auto: true },
+  ],
 });

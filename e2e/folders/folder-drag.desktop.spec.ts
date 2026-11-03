@@ -1,0 +1,99 @@
+import { expect, type Page } from '@playwright/test';
+import { test } from '../fixtures.js';
+import { seedDocument, seedFolder } from '../support/builders.js';
+import { toast } from '../support/feedback.js';
+import { drag, folderRow, itemsTree, treeRow } from '../support/folders.js';
+import { createProject, projectNavigation } from '../support/navigation.js';
+
+// Dragging is a pointer on a desktop; a phone moves through M or the menus (narrow.spec.ts).
+
+const folderNames = (page: Page) =>
+  itemsTree(page)
+    .getByRole('row', { name: /, pasta, / })
+    .evaluateAll((rows) => rows.map((row) => row.getAttribute('aria-label')?.split(',')[0]));
+
+async function sampleProject(page: Page) {
+  const projectId = await createProject(page, `Arrastar ${Date.now()}`);
+  const segunda = await seedFolder(page, { projectId, name: 'Segunda' });
+  const primeira = await seedFolder(page, { projectId, name: 'Primeira' });
+  await seedDocument(page, { projectId, title: 'Dentro', folderId: segunda });
+  await seedDocument(page, { projectId, title: 'Solto' });
+  await page.reload();
+  await expect(folderRow(page, 'Primeira')).toBeVisible();
+  return { projectId, primeira, segunda };
+}
+
+test('an item dropped on a folder goes into it, and on the Itens header back to the root', async ({ page }) => {
+  await sampleProject(page);
+  await drag(page, treeRow(page, 'Solto'), folderRow(page, 'Primeira'), { release: false });
+  await expect(folderRow(page, 'Primeira')).toHaveAttribute('data-drop-target', 'true');
+  await page.mouse.up();
+  await expect(toast(page)).toContainText('Movido para Primeira.');
+  await expect(folderRow(page, 'Primeira')).toHaveAttribute('aria-label', /, 1 item$/);
+
+  // A closed folder opens under a held item, after React Aria's 800 ms.
+  await folderRow(page, 'Primeira').focus();
+  await page.keyboard.press('ArrowRight');
+  await drag(page, treeRow(page, 'Solto'), folderRow(page, 'Segunda'), { release: false });
+  await expect(folderRow(page, 'Segunda')).toHaveAttribute('aria-expanded', 'true', { timeout: 3_000 });
+  // Between the children of a folder is that folder.
+  await drag(page, treeRow(page, 'Solto'), treeRow(page, 'Dentro'), { y: 0.9, release: false });
+  await page.mouse.up();
+  await expect(toast(page)).toContainText('Movido para Segunda.');
+  await expect(treeRow(page, 'Solto')).toHaveAttribute('aria-level', '2');
+  // The tree has drawn that move: Primeira is empty, with its "Pasta vazia" row, so the rows below moved.
+  await expect(folderRow(page, 'Primeira')).toHaveAttribute('aria-label', /, 0 itens$/);
+  await expect(itemsTree(page).getByRole('row', { name: /^Pasta vazia/ })).toBeVisible();
+
+  // The header takes it back to the root.
+  const header = projectNavigation(page).locator('.items-header');
+  await drag(page, treeRow(page, 'Solto'), header, { release: false });
+  await expect(header).toHaveClass(/is-drop-target/);
+  await page.mouse.up();
+  await expect(toast(page)).toContainText('Movido para a raiz do projeto.');
+  await expect(treeRow(page, 'Solto')).toHaveAttribute('aria-level', '1');
+});
+
+test('a folder dragged between folders reorders them, and Esc cancels a drag', async ({ page }) => {
+  await sampleProject(page);
+  expect(await folderNames(page)).toEqual(['Primeira', 'Segunda']);
+  // Below the last folder.
+  await drag(page, folderRow(page, 'Primeira'), folderRow(page, 'Segunda'), { y: 0.85 });
+  await expect.poll(() => folderNames(page)).toEqual(['Segunda', 'Primeira']);
+
+  // Esc while dragging leaves everything where it was.
+  await drag(page, treeRow(page, 'Solto'), folderRow(page, 'Primeira'), { release: false });
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(treeRow(page, 'Solto')).toHaveAttribute('aria-level', '1');
+  await expect(folderRow(page, 'Primeira')).toHaveAttribute('aria-label', /, 0 itens$/);
+  expect(await folderNames(page)).toEqual(['Segunda', 'Primeira']);
+  await expect(toast(page)).toHaveCount(0);
+});
+
+test('an item takes a folder’s whole row, and a folder on the middle of another stays refused', async ({ page }) => {
+  await sampleProject(page);
+  // Near the top edge of a folder row, an item still goes into it.
+  await drag(page, treeRow(page, 'Solto'), folderRow(page, 'Primeira'), { y: 0.1 });
+  await expect(toast(page)).toContainText('Movido para Primeira.');
+  await expect(folderRow(page, 'Primeira')).toHaveAttribute('aria-label', /, 1 item$/);
+  // A folder on the middle of another folder neither nests nor reorders.
+  await drag(page, folderRow(page, 'Segunda'), folderRow(page, 'Primeira'));
+  expect(await folderNames(page)).toEqual(['Primeira', 'Segunda']);
+});
+
+test('a closed folder opens under a held item that keeps moving a little, anywhere on its row', async ({ page }) => {
+  await sampleProject(page);
+  await drag(page, treeRow(page, 'Solto'), folderRow(page, 'Segunda'), { y: 0.85, release: false });
+  const box = await folderRow(page, 'Segunda').boundingBox();
+  if (!box) throw new Error('No folder row.');
+  // A pixel every 200 ms near the bottom edge, as a hand on a trackpad: React Aria's own timer would start
+  // over each time.
+  for (let step = 0; step < 6; step += 1) {
+    await page.mouse.move(box.x + 60 + (step % 2), box.y + box.height * 0.85);
+    await page.waitForTimeout(200);
+  }
+  await expect(folderRow(page, 'Segunda')).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+});
