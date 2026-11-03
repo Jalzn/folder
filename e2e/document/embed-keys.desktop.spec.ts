@@ -1,10 +1,10 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from '../fixtures.js';
 import { seedCanvas, seedDocument, seedTask } from '../support/builders.js';
-
 import { clickText, documentEditor, embedCard } from '../support/document.js';
 import { appShortcut, hostKey } from '../support/keyboard.js';
 import { createProject } from '../support/navigation.js';
+import { PACE, pauseForBrowser } from '../support/pace.js';
 import { answers, rpc } from '../support/rpc.js';
 
 // The keys around embeds, from the stage 11 review: they need a desktop keyboard; narrow.spec.ts has the phone.
@@ -61,14 +61,14 @@ async function walk(page: Page, keys: string[], pause = 0) {
   const stops: (string | null)[] = [];
   for (const key of keys) {
     await page.keyboard.press(key);
-    if (pause) await page.waitForTimeout(pause);
+    if (pause) await pauseForBrowser(page, pause);
     stops.push(await caret(page));
   }
   return stops;
 }
 
 /** The pace of the walks: Playwright's own, with no pause, and a person's, which Chrome's drift needs. */
-const paces = { 'with no pause': 0, 'at a person’s pace': 200 } as const;
+const paces = { 'with no pause': 0, 'at a person’s pace': PACE.humanKey } as const;
 
 /** A document with these blocks, made over RPC as the editor saves them, and opened. */
 async function openDocument(page: Page, projectId: string, blocks: Block[]) {
@@ -432,7 +432,7 @@ test('⇧↓ and ⇧↑ from an embed take the block beside it, and Page Down st
     expect(walked.at(-1)).toBe(`[x${index}]`);
     if (!key) return;
     await page.keyboard.press(key);
-    await page.waitForTimeout(200);
+    await pauseForBrowser(page, PACE.humanKey);
   };
 
   // The middle card, between two cards, is the one Chrome's drift took to the first line.
@@ -489,11 +489,11 @@ test('⌘↓ and ⌘↑ from any card of a run, the last one too, go to the docu
   for (const index of [1, 2, 3]) {
     await fromCard(page, index);
     await page.keyboard.press(hostKey('documentEnd'));
-    await page.waitForTimeout(200);
+    await pauseForBrowser(page, PACE.humanKey);
     expect(await caret(page)).toBe('Fim');
     await fromCard(page, index);
     await page.keyboard.press(hostKey('documentStart'));
-    await page.waitForTimeout(200);
+    await pauseForBrowser(page, PACE.humanKey);
     expect(await caret(page)).toBe('Antes');
   }
 });
@@ -505,7 +505,7 @@ test('⇧↓ and ⇧↑ grow and shrink a range from an embed a block at a time,
   /** Presses the key, then reads what the selection covers, or the card selected as a node. */
   const step = async (key: string) => {
     await page.keyboard.press(key);
-    await page.waitForTimeout(200);
+    await pauseForBrowser(page, PACE.humanKey);
     const at = await caret(page);
     return at?.startsWith('[') ? at : await covered(page);
   };
@@ -536,9 +536,9 @@ test('⌫ and Delete beside an embed take every letter typed there and select th
   ]);
   /** Presses the key a moment after the last, as a person does, and reads the caret's block. */
   const press = async (key: string) => {
-    await page.waitForTimeout(300);
+    await pauseForBrowser(page, PACE.selection);
     await page.keyboard.press(key);
-    await page.waitForTimeout(100);
+    await pauseForBrowser(page, PACE.repeatedKey);
     return caret(page);
   };
 

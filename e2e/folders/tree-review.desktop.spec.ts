@@ -1,10 +1,10 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from '../fixtures.js';
 import { seedDocument, seedFolder } from '../support/builders.js';
-
 import { folderRow, treeRow } from '../support/folders.js';
 import { appShortcut } from '../support/keyboard.js';
 import { createProject, projectNavigation } from '../support/navigation.js';
+import { PACE, pauseForBrowser } from '../support/pace.js';
 
 // The tree review's keyboard and focus findings (tree.md M2, M3, M5, B1, B4, B5, B6 and B7).
 
@@ -76,11 +76,11 @@ test('type-to-select keeps the letters that would be shortcuts, which act again 
   expect(await focusedRow(page)).toBe('Opções de layout, documento');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   // After the pause, P pins, and says so.
-  await page.waitForTimeout(1100);
+  await pauseForBrowser(page, PACE.typeaheadReset);
   await page.keyboard.press('p');
   await expect(live(page)).toHaveText('Fixado.');
   await expect(treeRow(page, 'Opções de layout')).toHaveAttribute('aria-label', /, fixado$/);
-  await page.waitForTimeout(1100);
+  await pauseForBrowser(page, PACE.typeaheadReset);
   await page.keyboard.press('p');
   await expect(live(page)).toHaveText('Desafixado.');
 });
@@ -185,14 +185,14 @@ test('letters that type-to-select finds nothing for stay in the tree: "zp" pins 
   await treeRow(page, 'Arquitetura').focus();
   await page.keyboard.press('z');
   await page.keyboard.press('p');
-  await page.waitForTimeout(300);
+  await pauseForBrowser(page, PACE.selection);
   await expect(visao).not.toHaveAttribute('aria-label', /fixado/);
   await expect(live(page)).not.toHaveText('Fixado.');
   // "a" finds Arquitetura, "an" nothing: the N must not open Novo.
-  await page.waitForTimeout(1100);
+  await pauseForBrowser(page, PACE.typeaheadReset);
   await page.keyboard.press('a');
   await page.keyboard.press('n');
-  await page.waitForTimeout(300);
+  await pauseForBrowser(page, PACE.selection);
   await expect(page.getByRole('menu', { name: /^Novo em / })).toHaveCount(0);
   expect(page.url()).toContain(projectId);
 });

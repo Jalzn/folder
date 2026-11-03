@@ -1,5 +1,8 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from '../fixtures.js';
+
+test.use({ controlledClock: true });
+
 import { seedCanvas, seedDocument } from '../support/builders.js';
 import { documentEditor, embedFigure, pickEmbed, slash } from '../support/document.js';
 import { newDocument } from '../support/items.js';
@@ -141,7 +144,7 @@ test('dragging the figure drops none of its text into the document', async ({ pa
 
   await expect(documentEditor(page).locator('[data-content-type="paragraph"]').first()).toHaveText('Topo');
   await expect(documentEditor(page).locator('[data-content-type="drawingEmbed"]')).toHaveCount(1);
-  await page.waitForTimeout(1500);
+  await page.clock.runFor(1500);
   const saved = await rpc(page, 'workspace/getDocument', { id });
   expect(saved.content.map((block) => block.type)).toEqual(['paragraph', 'drawingEmbed']);
   expect((saved.content[0]?.content as { text?: string }[] | undefined)?.map((each) => each.text).join('')).toBe(

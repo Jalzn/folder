@@ -1,9 +1,13 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from '../fixtures.js';
+
+test.use({ controlledClock: true });
+
 import { drawer, openDrawer } from '../support/board.js';
 import { newDocument, newTask } from '../support/items.js';
 import { hostShortcut } from '../support/keyboard.js';
 import { createProject, currentProjectId } from '../support/navigation.js';
+import { elapseAutosave } from '../support/pace.js';
 import { answers, rpc } from '../support/rpc.js';
 
 // Esc and ⌘Z from a hardware keyboard; the phone has neither.
@@ -16,9 +20,6 @@ function countSaves(page: Page, procedure: string) {
   });
   return () => count;
 }
-
-/** Long enough for the autosave's pause (650 ms) and a save to start, had the text changed. */
-const AUTOSAVE_WINDOW_MS = 1_500;
 
 test('⌘Z in the drawer outside its fields leaves the description and its saved version alone', {
   tag: '@timing',
@@ -52,7 +53,7 @@ test('⌘Z in the drawer outside its fields leaves the description and its saved
   await expect(region).toBeFocused();
   const saves = countSaves(page, 'workspace/saveTaskText');
   await hostShortcut(page, 'z');
-  await page.waitForTimeout(AUTOSAVE_WINDOW_MS);
+  await elapseAutosave(page);
   await expect(description).toContainText('Primeira linha. Teste dois.');
   expect(saves()).toBe(0);
   expect(await version()).toBe(before);
@@ -85,7 +86,7 @@ test('⌘Z on the document page outside the editor leaves the text and its saved
   await expect(page.locator('#main-content')).toBeFocused();
   const saves = countSaves(page, 'workspace/saveDocument');
   await hostShortcut(page, 'z');
-  await page.waitForTimeout(AUTOSAVE_WINDOW_MS);
+  await elapseAutosave(page);
   await expect(editor).toContainText('Visão do produto.');
   expect(saves()).toBe(0);
   expect(await version()).toBe(before);

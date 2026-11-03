@@ -1,6 +1,9 @@
 import { expect } from '@playwright/test';
 import { isolatedTest as test } from '../fixtures.js';
 
+test.use({ controlledClock: true });
+
+import { elapseAutosave } from '../support/pace.js';
 import { rpc } from '../support/rpc.js';
 
 // The sample gets an empty database of its own and uses the same server lifecycle as every worker.
@@ -22,7 +25,7 @@ test('opening each document and drawing of the sample saves nothing, and each st
       await page.goto(`/projetos/${project.id}/documentos/${document.id}`);
       await expect(page.getByRole('textbox', { name: 'Título do documento' })).toHaveValue(document.title);
       // Past the autosave's 650 ms, with the page settled.
-      await page.waitForTimeout(1_500);
+      await elapseAutosave(page);
       expect(saves, document.title).toEqual([]);
       expect((await rpc(page, 'workspace/getDocument', { id: document.id })).version, document.title).toBe(1);
       opened.push(document.title);
@@ -30,7 +33,7 @@ test('opening each document and drawing of the sample saves nothing, and each st
     for (const drawing of await rpc(page, 'workspace/listCanvases', { projectId: project.id })) {
       await page.goto(`/projetos/${project.id}/desenhos/${drawing.id}`);
       await expect(page.locator('.excalidraw canvas.interactive')).toBeVisible();
-      await page.waitForTimeout(1_500);
+      await elapseAutosave(page);
       expect(saves, drawing.title).toEqual([]);
       expect((await rpc(page, 'workspace/getCanvas', { id: drawing.id })).version, drawing.title).toBe(1);
       opened.push(drawing.title);

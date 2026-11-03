@@ -1,5 +1,8 @@
 import { expect, type Page } from '@playwright/test';
 import { test } from '../fixtures.js';
+
+test.use({ controlledClock: true });
+
 import { seedCanvas, seedProject } from '../support/builders.js';
 import { createSavedDocument } from '../support/document.js';
 import { appShortcut } from '../support/keyboard.js';
@@ -165,7 +168,7 @@ test('W5.7b: an archived project’s drawing opens to read only, with the band, 
   await page.mouse.down();
   await page.mouse.move(box.x + 320, box.y + 300, { steps: 5 });
   await page.mouse.up();
-  await page.waitForTimeout(2500);
+  await page.clock.runFor(2500);
   expect(saves).toEqual([]);
 });
 test('W5.7c: the drawing’s hidden file field stays out of the Tab order', async ({ page }) => {

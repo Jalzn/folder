@@ -5,6 +5,7 @@ import { documentEditor } from '../support/document.js';
 import { appShortcut } from '../support/keyboard.js';
 import { createProject, projectNavigation, showSidebar } from '../support/navigation.js';
 import { delayRpc } from '../support/network.js';
+import { PACE, pauseForBrowser } from '../support/pace.js';
 import { rpc } from '../support/rpc.js';
 
 // N, ⌘K and the sidebar's Novo menu with a keyboard; narrow.spec.ts has the phone.
@@ -72,7 +73,7 @@ for (const [platform, userAgent] of [
         await expect(titleField(page)).toHaveValue('');
         await expect(titleField(page)).toBeFocused();
         // Nothing takes it afterwards, as the page settles.
-        await page.waitForTimeout(500);
+        await pauseForBrowser(page, PACE.overlayExit);
         await expect(titleField(page)).toBeFocused();
       });
 

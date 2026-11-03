@@ -5,6 +5,7 @@ import { folderRow, treeRow } from '../support/folders.js';
 import { newDocument } from '../support/items.js';
 import { appShortcut } from '../support/keyboard.js';
 import { createProject, openBoard } from '../support/navigation.js';
+import { PACE, pauseForBrowser } from '../support/pace.js';
 
 /**
  * Esc closes only the newest layer, one per press, and never navigates. On a phone the stack starts with
@@ -74,7 +75,7 @@ test('keys of an IME composition, Esc included, stay with the composition', asyn
     field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 229, bubbles: true })),
   );
   // A close would still show the field during the overlay's exit: wait past it before looking.
-  await page.waitForTimeout(500);
+  await pauseForBrowser(page, PACE.overlayExit);
   await expect(search).toHaveValue('にほ');
   await expect(overlay).toBeVisible();
 });

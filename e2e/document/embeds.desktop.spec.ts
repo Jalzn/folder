@@ -15,6 +15,7 @@ import { toast } from '../support/feedback.js';
 import { newDocument } from '../support/items.js';
 import { appShortcut, editorUndo, hostShortcut } from '../support/keyboard.js';
 import { createProject, currentProjectId } from '../support/navigation.js';
+import { PACE, pauseForBrowser } from '../support/pace.js';
 import { answers, rpc } from '../support/rpc.js';
 
 // The `/` menu, the node selection and the drawer below the page need a desktop; narrow.spec.ts has the phone.
@@ -174,7 +175,7 @@ test('↵ on a title both the document’s project and another one have embeds t
   const picker = await slash(page, 'tarefa');
   await page.keyboard.type(`Revisão ${word}`);
   await expect(picker.getByRole('menuitem').filter({ hasText: `Revisão ${word}` })).toHaveCount(2);
-  await page.waitForTimeout(400);
+  await pauseForBrowser(page, PACE.pickerSettle);
   await page.keyboard.press('Enter');
   const card = embedCard(page, `Revisão ${word}`);
   await expect(card).toBeVisible();

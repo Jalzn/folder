@@ -1,6 +1,9 @@
 import { writeFile } from 'node:fs/promises';
 import { expect, type Page } from '@playwright/test';
 import { test } from '../fixtures.js';
+
+test.use({ controlledClock: true });
+
 import { closeDrawer, createInDrawer } from '../support/board.js';
 import { seedDocument, seedTask } from '../support/builders.js';
 import { createTaskFromSelection } from '../support/document.js';
@@ -282,7 +285,7 @@ test('a drawing changed on another device gets a new preview when reopened, and 
   expect((await read()).previewCurrent).toBe(false);
 
   // The editor's data stays fresh for 10 s; reopening after that refetches it without a page load.
-  await page.waitForTimeout(10_500);
+  await page.clock.runFor(10_500);
   await openListedItem(page, title);
   await expect
     .poll(
@@ -302,7 +305,7 @@ test('a drawing changed on another device gets a new preview when reopened, and 
   const renamed = page.waitForResponse((response) => answers(response, 'workspace/saveCanvas'));
   await page.getByRole('textbox', { name: 'Título do desenho' }).fill(`${title} renomeado`);
   await renamed;
-  await page.waitForTimeout(3_000);
+  await page.clock.runFor(3_000);
   expect(uploads).toBe(0);
   expect(await read()).toMatchObject({ version: before.version + 2, previewCurrent: true });
 });

@@ -4,6 +4,7 @@ import { seedDocument, seedFolder } from '../support/builders.js';
 import { toast } from '../support/feedback.js';
 import { drag, folderRow, itemsTree, treeRow } from '../support/folders.js';
 import { createProject, projectNavigation } from '../support/navigation.js';
+import { PACE, pauseForBrowser } from '../support/pace.js';
 
 // Dragging is a pointer on a desktop; a phone moves through M or the menus (narrow.spec.ts).
 
@@ -91,7 +92,7 @@ test('a closed folder opens under a held item that keeps moving a little, anywhe
   // over each time.
   for (let step = 0; step < 6; step += 1) {
     await page.mouse.move(box.x + 60 + (step % 2), box.y + box.height * 0.85);
-    await page.waitForTimeout(200);
+    await pauseForBrowser(page, PACE.humanKey);
   }
   await expect(folderRow(page, 'Segunda')).toHaveAttribute('aria-expanded', 'true');
   await page.keyboard.press('Escape');

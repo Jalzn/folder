@@ -19,19 +19,19 @@ export default defineConfig({
   projects: [
     {
       name: 'chrome-desktop',
-      testIgnore: '**/*.mobile.spec.ts',
+      testIgnore: ['**/*.mobile.spec.ts', '**/visual/**'],
       grepInvert: /@mobile|@timing/,
       use: desktop,
     },
     {
       name: 'chrome-mobile',
-      testIgnore: '**/*.desktop.spec.ts',
+      testIgnore: ['**/*.desktop.spec.ts', '**/visual/**'],
       grepInvert: /@desktop|@timing/,
       use: { ...devices['Pixel 7'], channel: 'chrome' },
     },
     {
       name: 'chrome-desktop-timing',
-      testIgnore: '**/*.mobile.spec.ts',
+      testIgnore: ['**/*.mobile.spec.ts', '**/visual/**'],
       grep: /@timing/,
       workers: 1,
       dependencies: ['chrome-desktop', 'chrome-mobile'],
