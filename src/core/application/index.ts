@@ -18,11 +18,27 @@ export class AppError extends Error {
   }
 }
 
+const domainMessages = new Set<string>();
+
 /**
- * An input schema's issue that carries a domain rule's sentence, already written for the person: the
- * RPC answers a validation error with it instead of the generic text.
+ * A sentence an input schema shows the person when one of its checks fails, written for them in
+ * Portuguese, as in `z.string().min(1, domainMessage('Escreva um título.'))`. The RPC answers a
+ * validation error with the first such sentence, and with its generic text when there is none: Zod's
+ * own messages are written for developers.
  */
+export function domainMessage(message: string): string {
+  domainMessages.add(message);
+  return message;
+}
+
+/** An issue that carries a sentence of the domain's validators, which varies with the content checked. */
 export const domainIssue = (message: string) => ({ code: 'custom' as const, message, params: { domainMessage: true } });
+
+/** Whether a schema issue carries a sentence for the person, from domainMessage or domainIssue. */
+export function isDomainIssue(issue: { readonly message: string }): boolean {
+  const { params } = issue as { params?: { domainMessage?: unknown } };
+  return params?.domainMessage === true || domainMessages.has(issue.message);
+}
 
 export interface Owner {
   name: string;

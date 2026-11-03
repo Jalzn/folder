@@ -1,3 +1,4 @@
+import { domainMessage } from '@tinyfold/core/application';
 import { isCivilDate } from '@tinyfold/core/domain';
 import { z } from 'zod';
 import { TASK_LIMITS } from '../../domain/tasks.js';
@@ -5,11 +6,11 @@ import { edit, id, request, version, visible } from './common.js';
 import { descriptionContent } from './documents.js';
 
 /** A new task needs a title. */
-const title = visible(z.string().min(1, 'Escreva um título.').max(TASK_LIMITS.titleChars));
+const title = visible(z.string().min(1, domainMessage('Escreva um título.')).max(TASK_LIMITS.titleChars));
 /** Saving the text: empty, or of only characters that draw nothing, it becomes "Sem título". */
 const textTitle = visible(z.string().max(TASK_LIMITS.titleChars));
 /** A due date, a civil date of the calendar; null clears it. */
-const dueOn = z.string().refine(isCivilDate, 'Use uma data válida, no formato AAAA-MM-DD.');
+const dueOn = z.string().refine(isCivilDate, domainMessage('Use uma data válida, no formato AAAA-MM-DD.'));
 /** The labels replace the task's set; the use case checks each and the limit, with its own message. */
 const labelIds = z.array(id).max(5 * TASK_LIMITS.labels);
 
@@ -45,7 +46,7 @@ export const CreateTaskInput = z
       .optional(),
   })
   .refine((input) => typeof input.projectId === 'string' || input.source !== undefined, {
-    message: 'Escolha o projeto da tarefa.',
+    message: domainMessage('Escolha o projeto da tarefa.'),
     path: ['projectId'],
   });
 /** The fields, at the fields' version: column, project, due date and labels. The title is text. */

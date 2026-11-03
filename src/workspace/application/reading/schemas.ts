@@ -1,3 +1,4 @@
+import { domainMessage } from '@tinyfold/core/application';
 import { z } from 'zod';
 import { COLUMN_LIMITS } from '../../domain/columns.js';
 import { LABEL_LIMITS } from '../../domain/labels.js';
@@ -60,7 +61,7 @@ export const ReadDrawingInput = z
     },
     pt,
   )
-  .refine((input) => input.image || input.structure, 'Peça a imagem, a estrutura ou as duas.');
+  .refine((input) => input.image || input.structure, domainMessage('Peça a imagem, a estrutura ou as duas.'));
 
 export const ListTasksInput = z.object(
   {

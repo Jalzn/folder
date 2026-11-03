@@ -222,7 +222,7 @@ describe('server boundaries', () => {
     ]);
   });
 
-  it("answers a validation error with the domain's sentence when the input has one, and the generic text otherwise", async () => {
+  it("answers a validation error with the schema's sentence for the person when it has one, and the generic text otherwise", async () => {
     const { browser } = await fixture();
     const { client } = browser();
     await client.auth.login({ password });
@@ -247,9 +247,28 @@ describe('server boundaries', () => {
       message: 'Revise os dados enviados e tente de novo.',
       data: { code: 'VALIDATION' },
     });
+    // The task schemas' own sentences reach the person too (decision 4, widened).
     await expect(
       client.workspace.createTask({ requestId: randomUUID(), title: 'Sem projeto', projectId: null }),
-    ).rejects.toMatchObject({ status: 400, message: 'Revise os dados enviados e tente de novo.' });
+    ).rejects.toMatchObject({ status: 400, message: 'Escolha o projeto da tarefa.' });
+    const task = { requestId: randomUUID(), projectId: project.id };
+    await expect(client.workspace.createTask({ ...task, title: ' ' })).rejects.toMatchObject({
+      status: 400,
+      message: 'Escreva um título.',
+    });
+    await expect(client.workspace.createTask({ ...task, title: 'Prazo', dueOn: '2026-02-30' })).rejects.toMatchObject({
+      status: 400,
+      message: 'Use uma data válida, no formato AAAA-MM-DD.',
+    });
+    await expect(client.workspace.resolveEmbeds({ taskIds: ['X'], canvasIds: [] })).rejects.toMatchObject({
+      status: 400,
+      message: 'Identificador de item inválido.',
+    });
+    // Zod's own messages are for developers: a missing title answers the generic text.
+    await expect(client.workspace.createTask({ ...task } as never)).rejects.toMatchObject({
+      status: 400,
+      message: 'Revise os dados enviados e tente de novo.',
+    });
   });
   it('saves a document above the old 64KiB limit and rejects excessive request size', async () => {
     const { browser, app } = await fixture();

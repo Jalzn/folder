@@ -1,5 +1,5 @@
 import { ORPCError, os, ValidationError } from '@orpc/server';
-import { AppError, type ErrorCode, type Owner } from '../application/index.js';
+import { AppError, type ErrorCode, isDomainIssue, type Owner } from '../application/index.js';
 import { DomainError } from '../domain/index.js';
 
 export interface RequestSession {
@@ -27,12 +27,9 @@ function toORPCError(error: AppError) {
   const [code, status] = statuses[error.code];
   return new ORPCError(code, { status, message: error.message, data: { code: error.code } });
 }
-/** The first domain sentence the input schema carried (domainIssue), or the generic text. */
+/** The first sentence for the person the input schema carried (isDomainIssue), or the generic text. */
 function validationMessage(error: ValidationError): string {
-  const domain = error.issues.find(
-    (issue) => (issue as { params?: { domainMessage?: unknown } }).params?.domainMessage === true,
-  );
-  return domain?.message ?? 'Revise os dados enviados e tente de novo.';
+  return error.issues.find(isDomainIssue)?.message ?? 'Revise os dados enviados e tente de novo.';
 }
 const base = os.$context<RequestContext>();
 export const pub = base.use(async ({ context, next }) => {
