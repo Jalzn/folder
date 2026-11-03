@@ -4,6 +4,7 @@ import type { Project } from '../../lib/types';
 import { parseProjectPath, paths } from '../../router/paths';
 import { useToast, useUndoLatest } from '../../ui';
 import { useApp } from '../AppProvider';
+import { useCommandRegistry } from '../commands/use-command-registry';
 import { activeProjects } from '../project/project-order';
 import { noProjectText } from '../project/switcher-label';
 import { usePins } from '../project/use-pins';
@@ -38,6 +39,7 @@ function cycleRegions(backwards: boolean) {
 
 /** What each shortcut does, with the rules for a missing or archived project. */
 export function useShortcutActions(layout: ShortcutLayout) {
+  const runCommand = useCommandRegistry(layout);
   const ui = useShellActions();
   const app = useApp();
   const navigate = useNavigate();
@@ -50,7 +52,7 @@ export function useShortcutActions(layout: ShortcutLayout) {
   const item = parseProjectPath(pathname)?.item ?? null;
 
   function chord(command: ChordCommand) {
-    if (command.kind === 'switcher') return ui.setSwitcherAt(layout.switcherPlace);
+    if (command.kind === 'switcher') return runCommand('switch-project');
     if (command.kind === 'project') {
       const target = activeProjects(layout.projects)[command.index];
       if (target) go(paths.overview(target.id));
@@ -58,9 +60,7 @@ export function useShortcutActions(layout: ShortcutLayout) {
       return;
     }
     if (!project) return ui.announce(noProjectText(layout.projects));
-    if (command.kind === 'overview') go(paths.overview(project.id));
-    else if (command.kind === 'board') go(paths.board(project.id));
-    else go(paths.trash(project.id));
+    runCommand(command.kind === 'overview' ? 'overview' : command.kind === 'board' ? 'board' : 'trash');
   }
   function newItem() {
     if (!project || !activeProjects(layout.projects).length) return app.openProjectDialog();
@@ -85,11 +85,11 @@ export function useShortcutActions(layout: ShortcutLayout) {
   }
   return {
     palette: () => ui.openPalette(),
-    toggleSidebar: layout.toggleSidebar,
+    toggleSidebar: () => runCommand('toggle-sidebar'),
     /** ⌘S belongs to the document and drawing pages only. */
     saveNow: () => {
       const save = ui.page.current.saveNow;
-      save?.();
+      if (save) runCommand('save');
       return Boolean(save);
     },
     /** ⌘⌥T belongs to the document's page only; false elsewhere, where the key stays with the browser. */
@@ -98,14 +98,14 @@ export function useShortcutActions(layout: ShortcutLayout) {
       create?.();
       return Boolean(create);
     },
-    back: () => window.history.back(),
+    back: () => runCommand('back'),
     cycleRegions,
     chord,
     search,
     newItem,
     pinCurrent,
     moveCurrent,
-    shortcuts: () => ui.setShortcutsOpen(true),
+    shortcuts: () => runCommand('shortcuts'),
     /** ⌘Z: the undo of the toast on screen; false when there is none. */
     undo,
   };

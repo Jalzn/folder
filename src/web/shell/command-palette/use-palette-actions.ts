@@ -1,20 +1,10 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { Project } from '../../lib/types';
 import { paths } from '../../router/paths';
-import { useApp } from '../AppProvider';
+import { useCommandRegistry } from '../commands/use-command-registry';
 import { useProjectActions } from '../project/use-project-actions';
 import { type SwitcherPlace, useShellActions } from '../shell-ui';
-import { useSidebarPrefs } from '../sidebar/use-sidebar-prefs';
-import { useTaskDrawer } from '../task-drawer-state';
-import { type ThemeChoice, useTheme } from '../theme';
-import type { CommandId } from './commands';
 import type { PaletteAction } from './palette-sections';
-
-const themes: Partial<Record<CommandId, ThemeChoice>> = {
-  'theme-system': 'system',
-  'theme-light': 'light',
-  'theme-dark': 'dark',
-};
 
 /** Runs what a palette row stands for: an item's action, an item, a project, a folder or a command. */
 export function usePaletteActions({
@@ -31,12 +21,11 @@ export function usePaletteActions({
   toggleSidebar: () => void;
 }) {
   const ui = useShellActions();
-  const app = useApp();
-  const drawer = useTaskDrawer();
+
   const navigate = useNavigate();
-  const theme = useTheme();
+  const runCommand = useCommandRegistry({ project, switcherPlace, toggleSidebar });
   const projectActions = useProjectActions();
-  const prefs = useSidebarPrefs();
+
   const go = (href: string) => void navigate({ href });
 
   // A folder of another project shows once its project is on screen.
@@ -44,40 +33,6 @@ export function usePaletteActions({
     const reveal = () => ui.revealFolder({ projectId, folderId });
     if (projectId === project?.id) reveal();
     else void navigate({ href: paths.overview(projectId) }).then(reveal);
-  }
-
-  function runCommand(id: CommandId) {
-    const choice = themes[id];
-    if (choice) {
-      theme.choose(choice);
-      return;
-    }
-    const current = project;
-    const commands: Partial<Record<CommandId, () => void>> = {
-      'new-document': () => current && void app.newDocument(current.id),
-      'new-drawing': () => current && void app.newCanvas(current.id),
-      'new-folder': () => current && ui.startFolder({ projectId: current.id }),
-      'new-task': () => current && drawer.newTask(current.id),
-      'switch-project': () => ui.setSwitcherAt(switcherPlace),
-      overview: () => current && go(paths.overview(current.id)),
-      board: () => current && go(paths.board(current.id)),
-      index: () => current && go(paths.index(current.id)),
-      trash: () => current && go(paths.trash(current.id)),
-      completed: () => current && go(paths.completed(current.id)),
-      labels: () => ui.setLabelsOpen(true),
-      'collapse-folders': () => {
-        if (!current) return;
-        prefs.setProject(current.id, { expanded: [] });
-        ui.announce('Pastas recolhidas.');
-      },
-      'toggle-sidebar': toggleSidebar,
-      profile: () => go(paths.profile),
-      'new-project': () => app.openProjectDialog(),
-      shortcuts: () => ui.setShortcutsOpen(true),
-      save: () => ui.page.current.saveNow?.(),
-      back: () => window.history.back(),
-    };
-    commands[id]?.();
   }
 
   return function run(action: PaletteAction) {

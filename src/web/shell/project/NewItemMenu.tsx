@@ -1,35 +1,12 @@
+export type { NewItemFolder } from './use-create-in-project';
+
 import { Circle, FileText, Folder, Shapes } from 'lucide-react';
 import type { ReactElement, RefObject } from 'react';
-import type { ItemType, Project } from '../../lib/types';
-import { Menu, MenuItem, MenuList, MenuSection, MenuTrigger, PopoverSurface, useToast } from '../../ui';
-import { useApp } from '../AppProvider';
-import { useShellActions } from '../shell-ui';
-import { useTaskDrawer } from '../task-drawer-state';
+import type { Project } from '../../lib/types';
+import { Menu, MenuItem, MenuList, MenuSection, MenuTrigger, PopoverSurface } from '../../ui';
+import { type NewItemFolder, type NewKind, useCreateInProject } from './use-create-in-project';
 
 /** What "Novo" creates: an item at the project's root or in a folder, a folder or a task. */
-type NewKind = ItemType | 'folder' | 'task' | `here:${ItemType}`;
-
-/** The folder a Novo menu creates in first, as the one in focus in the tree or the open item's. */
-export interface NewItemFolder {
-  id: string;
-  name: string;
-}
-
-function useCreate(project: Project, folder: NewItemFolder | undefined, taskColumnId?: string) {
-  const app = useApp();
-  const drawer = useTaskDrawer();
-  const ui = useShellActions();
-  const toast = useToast();
-  return (kind: NewKind) => {
-    if (project.archivedAt) return toast('Projeto arquivado: desarquive para criar itens.', 'error');
-    if (kind === 'here:document' && folder) void app.newDocument(project.id, folder.id);
-    else if (kind === 'here:drawing' && folder) void app.newCanvas(project.id, folder.id);
-    else if (kind === 'document') void app.newDocument(project.id);
-    else if (kind === 'drawing') void app.newCanvas(project.id);
-    else if (kind === 'folder') ui.startFolder({ projectId: project.id });
-    else drawer.newTask(project.id, taskColumnId ? { columnId: taskColumnId } : {});
-  };
-}
 
 /** "Em MCP" (in a folder's context) and then "Novo em <projeto>": Documento, Desenho, Pasta and Tarefa. */
 function NewItems({ project, folder }: { project: Project; folder: NewItemFolder | undefined }) {
@@ -73,7 +50,7 @@ export function NewItemMenu({
   folder?: NewItemFolder | undefined;
   trigger: ReactElement;
 }) {
-  const create = useCreate(project, folder);
+  const create = useCreateInProject(project, folder);
   return (
     <MenuTrigger>
       {trigger}
@@ -103,7 +80,7 @@ export function NewItemPopover({
   onOpenChange: (open: boolean) => void;
   placement?: 'bottom end' | 'bottom start';
 }) {
-  const create = useCreate(project, folder, taskColumnId);
+  const create = useCreateInProject(project, folder, taskColumnId);
   return (
     <PopoverSurface
       triggerRef={triggerRef}
