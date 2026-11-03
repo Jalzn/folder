@@ -2,6 +2,14 @@
 
 Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. A publicação anterior no Railway está registrada adiante; esta retomada de refatoração não realizou deploy.
 
+## GitHub e deploy automático no Railway
+
+Configurado em 2026-11-03, a pedido do usuário. O repositório público [Jalzn/folder](https://github.com/Jalzn/folder) fornece a branch `main` ao serviço `tinyfold` do ambiente `production`. A API confirmou `enabled=true`, `canEnable=true`, `repository=Jalzn/folder`, `branch=main` e `checkSuites=true`. O workflow foi ajustado para explicitar `push.branches: [main]`, mantendo pull requests.
+
+O [CI de `67ac429`](https://github.com/Jalzn/folder/actions/runs/41654160967) terminou com sucesso. Antes de conectar a fonte, foi criado e baixado o snapshot `tinyfold-2026-11-03T16-20-56-716Z.sqlite` (262.144 bytes, fora do Git); `backup:restore` verificou sua restauração em diretório temporário, removido depois do ensaio. O banco ativo não foi substituído.
+
+A conexão iniciou o deployment `4224eca0-e276-4c7f-90a9-f8496a994666`, que terminou em `SUCCESS`, usando o Dockerfile existente. `/ready` e `/` responderam 200 em `https://folder.jalzn.com`. A opção **Wait for CI** foi ativada no gatilho de GitHub; o commit inicial já tinha CI aprovado. A tela de entrada também foi inspecionada no Chrome do Content Viewer do Herdr, sem autenticar ou editar conteúdo. `pnpm check` passou com 747 unitários; o YAML preserva os dois shards e pull requests, explicitando a branch `main` no push. Fonte, gatilho e volume permanecem no serviço existente. O [roteiro de operação](railway.md#deploy-automático-pelo-github) registra a configuração.
+
 ## Complemento da etapa 12
 
 Executado em 2026-11-03, a partir de `704978d`, no ramo `refactor/stage12-optionals`. O usuário pediu os quatro itens antes opcionais: W2.12 e B3.34–B3.36. A configuração de CI, o predicado SQL, as marcas de data e os movimentos de arquivos entraram em commits separados. A revisão integrada consultou o CI e as datas civis do Orbis, verificou parâmetros/ordens dos cursores, fronteiras de tipos e exports públicos. Sem delegação.

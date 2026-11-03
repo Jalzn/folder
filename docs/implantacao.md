@@ -28,7 +28,7 @@ Se existir proxy, configurar `TRUST_PROXY` somente após conferir o encaminhamen
 - encaminhar `/arquivos/*` ao processo com os cookies e o `If-None-Match`, sem cache próprio: a prévia responde `Cache-Control: private, no-cache` e só sai com a sessão;
 - passar `text/event-stream` em `/mcp` sem buffer. Clientes que negociam uma revisão 2025 do protocolo MCP recebem a resposta como um único evento SSE.
 
-O Railway usa a configuração em `.railway/railway.ts`, com volume em `/data` e origem `https://folder.jalzn.com`. A inicialização recusa o Railway sem a variável do volume nesse caminho. O projeto, o serviço, as variáveis, o DNS e o certificado estão configurados; `/ready`, a SPA e o login foram verificados pelo subdomínio. Seguir o [roteiro de Railway e Cloudflare](railway.md), inclusive para os backups no único volume do serviço e sua cópia externa.
+O Railway usa a configuração em `.railway/railway.ts`, com volume em `/data` e origem `https://folder.jalzn.com`. O serviço está conectado a `Jalzn/folder/main`, com deploy automático e **Wait for CI** habilitados. A inicialização recusa o Railway sem a variável do volume nesse caminho. O projeto, o serviço, as variáveis, o DNS e o certificado estão configurados; `/ready`, a SPA e o login foram verificados pelo subdomínio. Seguir o [roteiro de Railway e Cloudflare](railway.md), inclusive para os backups no único volume do serviço e sua cópia externa.
 
 Com um arquivo de ambiente de produção já configurado, a imagem pode ser preparada e iniciada assim:
 

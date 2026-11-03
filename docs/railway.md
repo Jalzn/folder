@@ -1,6 +1,6 @@
 # Tinyfold — Railway e Cloudflare
 
-**Estado:** serviço implantado no Railway em 2026-11-02, disponível em [folder.jalzn.com](https://folder.jalzn.com). A instalação começou vazia, sem importar dados locais. DNS, certificado HTTPS, rotas da SPA e login pelo subdomínio foram verificados. O segundo deploy preservou a sessão do primeiro. As verificações executadas estão em [validação](validacao.md#preparação-para-railway-e-cloudflare).
+**Estado:** serviço implantado no Railway, atualizado para a etapa 12 pelo GitHub em 2026-11-03, disponível em [folder.jalzn.com](https://folder.jalzn.com). A instalação começou vazia, sem importar dados locais. DNS, certificado HTTPS, rotas da SPA e login pelo subdomínio foram verificados. O segundo deploy preservou a sessão do primeiro. As verificações executadas estão em [validação](validacao.md#preparação-para-railway-e-cloudflare).
 
 ## Esta instalação
 
@@ -8,14 +8,28 @@
 - Serviço `tinyfold`: `4446962c-9c05-452d-be86-168c5c722891`.
 - Volume `tinyfold-volume`: `ebd94a97-7448-4837-87c6-b97a24685141`, montado em `/data`, na região `sfo`.
 - A conta foi criada com uma senha exclusiva, cadastrada por stdin. Depois, a senha escolhida pelo usuário em `OWNER_PASSWORD` no Railway foi aplicada à conta pelo comando de redefinição. O arquivo local `.env.railway` guarda apenas a configuração: a senha inicial foi removida, e a senha atual não foi copiada para ele.
-- O código é enviado pela CLI. Ainda não há remoto GitHub configurado.
-- Deploy validado: `251fba7a-c771-4902-9941-8d8dff09b3a3`. O endereço gerado `https://tinyfold-production.up.railway.app` responde em `/ready`; o uso normal e as escritas continuam vinculados a `https://folder.jalzn.com` por `APP_ORIGIN`.
+- Fonte conectada: [Jalzn/folder](https://github.com/Jalzn/folder), branch `main`, com deploy automático e **Wait for CI** ativos. O workflow `Check Tinyfold` roda em push na `main` e em pull requests.
+- Primeiro deploy pelo GitHub validado: `4224eca0-e276-4c7f-90a9-f8496a994666`, após o CI aprovado de `67ac429`. O endereço gerado `https://tinyfold-production.up.railway.app` responde em `/ready`; o uso normal e as escritas continuam vinculados a `https://folder.jalzn.com` por `APP_ORIGIN`.
 
 Para vincular outro checkout a esse ambiente:
 
 ```sh
 railway link --project f42f84f1-c14a-423e-83d7-f05f9ddd6d54 --service 4446962c-9c05-452d-be86-168c5c722891 --environment production
 ```
+
+## Deploy automático pelo GitHub
+
+Pushes em `main` acionam o CI e o deploy deste mesmo serviço, usando o Dockerfile da raiz, `/ready` e o volume existente em `/data`. A API pode identificar o builder como `RAILPACK`: a detecção do Dockerfile foi confirmada nos logs do build. A integração da fonte e o gatilho de GitHub são configurações do serviço; não alteram as variáveis nem o volume descritos pelo IaC.
+
+O gatilho `a6cbdd1e-e8d0-402e-ac12-32d6b424a776` usa `checkSuites=true` (**Wait for CI**). A execução aguarda os workflows do commit; um CI que falha impede sua publicação. Conferir os resultados no [GitHub Actions](https://github.com/Jalzn/folder/actions) e no histórico de deployments do serviço. A documentação do provedor descreve o [deploy automático e a espera pelo CI](https://docs.railway.com/deployments/github-autodeploys).
+
+Para reconstruir a conexão, selecionar o serviço e o ambiente exatos:
+
+```sh
+railway service source connect --project f42f84f1-c14a-423e-83d7-f05f9ddd6d54 --environment production --service 4446962c-9c05-452d-be86-168c5c722891 --repo Jalzn/folder --branch main
+```
+
+Depois de reconectar, conferir **Wait for CI** nas configurações: a conexão pode criar um novo gatilho sem essa opção. Antes do primeiro deploy pelo GitHub, o snapshot `tinyfold-2026-11-03T16-20-56-716Z.sqlite` foi criado no serviço, baixado para `backups/` (fora do Git) e restaurado com verificação em um arquivo temporário separado.
 
 ## O que está no repositório
 
@@ -33,7 +47,7 @@ O `railway.json` da preparação inicial foi substituído pelo IaC recomendado p
 1. Para esta instalação, vincular o checkout ao projeto existente. Para outra instalação, criar um projeto chamado `tinyfold` e revisar o domínio em `.railway/railway.ts`. Usar a raiz deste repositório como diretório do serviço e manter os comandos personalizados de build, início e pré-implantação vazios.
 2. Executar `railway config plan`, conferir as mudanças e executar `railway config apply`. A configuração cria/anexa o volume em `/data` e mantém uma única região e uma instância. A troca de implantação terá uma breve interrupção, pois o volume não é compartilhado por duas implantações ativas.
 3. Cadastrar as variáveis abaixo em **Variables**. Definir a senha no painel; não colocá-la no Git nem em comandos salvos no histórico.
-4. Enviar o código com a CLI ou conectar um repositório GitHub. Na preparação local deste projeto ainda não há remoto Git configurado. O upload pela CLI funciona sem GitHub; a conexão posterior permite deploy automático após push.
+4. Conectar o repositório GitHub à branch de produção e habilitar **Wait for CI**. Nesta instalação, `Jalzn/folder/main` já está conectado e o deploy aguarda o workflow do GitHub Actions. O upload pela CLI continua disponível para operação manual.
 
 | Variável | Valor |
 | --- | --- |

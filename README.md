@@ -4,7 +4,7 @@ Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e ac
 
 **Código:** [etapa 12 concluída](docs/etapas/12-refatoracao.md), incluindo os quatro opcionais. Repositório público: [jalzn/folder](https://github.com/jalzn/folder).
 
-**Implantação:** [etapa 11](docs/etapas/11-documento-desenho.md) no Railway, com SQLite persistente e uma instalação iniciada vazia. Disponível em [folder.jalzn.com](https://folder.jalzn.com), com DNS, HTTPS e login verificados. Snapshot remoto baixado e restauração verificada; backups automáticos externos continuam pendentes. Ver [operação no Railway](docs/railway.md).
+**Implantação:** [etapa 12](docs/etapas/12-refatoracao.md) no Railway, com deploy automático de `main` após o CI, com SQLite persistente e uma instalação iniciada vazia. Disponível em [folder.jalzn.com](https://folder.jalzn.com), com DNS, HTTPS e login verificados. Snapshot remoto baixado e restauração verificada; backups automáticos externos continuam pendentes. Ver [operação no Railway](docs/railway.md).
 
 ## O que funciona
 
