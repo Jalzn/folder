@@ -1,40 +1,19 @@
 import { ORPCError, os, ValidationError } from '@orpc/server';
-import { AppError, type ErrorCode, isDomainIssue, type Owner } from '../application/index.js';
+import { AppError } from '../application/index.js';
 import { DomainError } from '../domain/index.js';
+import type { RequestContext } from './rpc-context.js';
+import { toORPCError, validationMessage } from './rpc-errors.js';
 
-export interface RequestSession {
-  owner: Owner;
-  sessionId: string;
-}
-export interface RequestContext {
-  originAllowed: boolean;
-  session: RequestSession | undefined;
-  client: { ip: string; userAgent: string | undefined };
-  cookies: { setSession(token: string, expiresAt: Date): void; clearSession(): void };
-}
+export type { RequestContext, RequestSession } from './rpc-context.js';
+export { httpStatusOf } from './rpc-errors.js';
 
-const statuses: Record<ErrorCode, [string, number]> = {
-  VALIDATION: ['BAD_REQUEST', 400],
-  UNAUTHENTICATED: ['UNAUTHORIZED', 401],
-  FORBIDDEN_ORIGIN: ['FORBIDDEN', 403],
-  NOT_FOUND: ['NOT_FOUND', 404],
-  VERSION_CONFLICT: ['CONFLICT', 409],
-  REQUEST_REUSED: ['CONFLICT', 409],
-  DOMAIN_RULE: ['UNPROCESSABLE_CONTENT', 422],
-  RATE_LIMITED: ['TOO_MANY_REQUESTS', 429],
-};
-function toORPCError(error: AppError) {
-  const [code, status] = statuses[error.code];
-  return new ORPCError(code, { status, message: error.message, data: { code: error.code } });
-}
-/** The first sentence for the person the input schema carried (isDomainIssue), or the generic text. */
-function validationMessage(error: ValidationError): string {
-  return error.issues.find(isDomainIssue)?.message ?? 'Revise os dados enviados e tente de novo.';
-}
 const base = os.$context<RequestContext>();
-export const pub = base.use(async ({ context, next }) => {
+export const originGuard = base.middleware(({ context, next }) => {
   if (!context.originAllowed)
     throw toORPCError(new AppError('FORBIDDEN_ORIGIN', 'A origem desta solicitação não é permitida.'));
+  return next();
+});
+export const appErrors = base.middleware(async ({ next }) => {
   try {
     return await next();
   } catch (error) {
@@ -45,7 +24,12 @@ export const pub = base.use(async ({ context, next }) => {
     throw error;
   }
 });
-export const authedProcedure = pub.use(({ context, next }) => {
+export const publicProcedure = base.use(originGuard).use(appErrors);
+export const pub = publicProcedure;
+export const authedProcedure = publicProcedure.use(({ context, next }) => {
   if (!context.session) throw toORPCError(new AppError('UNAUTHENTICATED', 'Sua sessão terminou. Entre de novo.'));
   return next({ context: { session: context.session } });
 });
+/** Converts the validated multipart file at the transport boundary. */
+export const fileUpload = async (file: { arrayBuffer(): Promise<ArrayBuffer> }): Promise<Uint8Array<ArrayBuffer>> =>
+  new Uint8Array(await file.arrayBuffer());

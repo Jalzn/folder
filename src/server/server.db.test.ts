@@ -8,7 +8,9 @@ import { RPCLink } from '@orpc/client/fetch';
 import { isProcedure, type RouterClient } from '@orpc/server';
 import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import { createWorkspace } from '@tinyfold/workspace';
 import { emptyCanvasScene, sceneFingerprint } from '@tinyfold/workspace/domain';
+import { sql } from 'kysely';
 import { afterEach, describe, expect, it } from 'vitest';
 import { pngImage } from '../workspace/testing/png.js';
 import { createApp } from './app.js';
@@ -19,18 +21,23 @@ import { type AppRouter, createRouter } from './router.js';
 const resources: { db: Database; folder: string }[] = [];
 const origin = 'http://localhost:5170';
 const password = 'tinyfold-server-password';
-async function fixture() {
+async function fixture(clock = () => new Date()) {
   const folder = await mkdtemp(join(tmpdir(), 'tinyfold-server-'));
   const db = createDatabase(join(folder, 'test.sqlite'));
   resources.push({ db, folder });
   await migrate(db, modules);
-  const auth = createAuthService(db);
+  const auth = createAuthService(db, { clock });
   await auth.ensureOwner({ name: 'Você', password });
   const webDir = join(folder, 'web');
   await mkdir(join(webDir, 'assets'), { recursive: true });
   await writeFile(join(webDir, 'index.html'), '<!doctype html><title>Tinyfold</title>');
   await writeFile(join(webDir, 'assets', 'test.js'), '/* built asset */');
-  const app = createApp({ db, auth, config: { appOrigin: origin, secureCookie: true, trustProxy: false, webDir } });
+  const app = createApp({
+    db,
+    auth,
+    clock,
+    config: { appOrigin: origin, secureCookie: true, trustProxy: false, webDir },
+  });
   function browser(requestOrigin = origin) {
     const state = { cookie: undefined as string | undefined, setCookies: [] as string[] };
     const client = createORPCClient<RouterClient<AppRouter>>(
@@ -69,10 +76,28 @@ const paths = (router: object, prefix: string[] = []): string[][] =>
   );
 
 describe('server boundaries', () => {
+  it('uses the injected clock for RPC writes and their retry records', async () => {
+    const instant = '2025-02-03T04:05:06.000Z';
+    const { db, browser } = await fixture(() => new Date(instant));
+    const { client } = browser();
+    await client.auth.login({ password });
+    const requestId = randomUUID();
+    const input = { requestId, name: 'Relógio compartilhado' };
+    const project = await client.workspace.createProject(input);
+    expect(project.createdAt).toBe(instant);
+    expect(project.updatedAt).toBe(instant);
+    const record = await sql<{
+      created_at: string;
+    }>`select created_at from core_mutations where request_id = ${requestId}`.execute(db);
+    expect(record.rows).toEqual([{ created_at: instant }]);
+    expect(await client.workspace.createProject(input)).toEqual(project);
+  });
   it('requires authentication on every content and account operation', async () => {
     const { db, auth, browser } = await fixture();
     const { client } = browser();
-    for (const path of paths(createRouter(db, auth, createAccessTokens(db)))) {
+    for (const path of paths(
+      createRouter(auth, createAccessTokens(db), createWorkspace(db, { timeZone: () => auth.timeZone() }).router),
+    )) {
       if (path.join('.') === 'auth.login') continue;
       let call: unknown = client;
       for (const part of path) call = (call as Record<string, unknown>)[part];

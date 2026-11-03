@@ -7,6 +7,7 @@ import { RPCLink } from '@orpc/client/fetch';
 import { type AnyProcedure, isProcedure, type RouterClient } from '@orpc/server';
 import { createAccessTokens, createAuthService } from '@tinyfold/auth';
 import { createDatabase, type Database, migrate } from '@tinyfold/core/infra';
+import { createWorkspace } from '@tinyfold/workspace';
 import { emptyCanvasScene } from '@tinyfold/workspace/domain';
 import { sql } from 'kysely';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -52,7 +53,11 @@ async function fixture() {
     }),
   );
   await client.auth.login({ password });
-  return { db, router: createRouter(db, auth, createAccessTokens(db)), client };
+  return {
+    db,
+    router: createRouter(auth, createAccessTokens(db), createWorkspace(db, { timeZone: () => auth.timeZone() }).router),
+    client,
+  };
 }
 afterEach(async () => {
   for (const { db, folder } of resources) {

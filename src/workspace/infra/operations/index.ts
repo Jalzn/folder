@@ -1,4 +1,7 @@
 import type { Database } from '@tinyfold/core/infra';
+import type { NavigationContext } from '../../application/navigation/ports.js';
+import type { WorkspaceContext } from '../../application/ports/context.js';
+import type { ReadingContext } from '../../application/reading/ports.js';
 import { type TimeZoneSource, utc } from '../calendar.js';
 import { workspaceContext } from '../context.js';
 import { navigationContext } from '../navigation-context.js';
@@ -17,12 +20,7 @@ import { taskOperations } from './tasks.js';
 import { trashOperations } from './trash.js';
 
 export type { Operation } from './operation.js';
-
-/** Every workspace operation, by aggregate, over one database. */
-export function workspaceOperations(db: Database, clock = () => new Date(), timeZone: TimeZoneSource = utc) {
-  const ctx = workspaceContext(db, clock, timeZone);
-  const navigation = navigationContext(db, clock, timeZone);
-  const reading = readingContext(db, clock, timeZone);
+export function operationsFrom(ctx: WorkspaceContext, navigation: NavigationContext, reading: ReadingContext) {
   return {
     ...projectOperations(ctx),
     ...folderOperations(ctx),
@@ -38,3 +36,12 @@ export function workspaceOperations(db: Database, clock = () => new Date(), time
     ...embedOperations(reading),
   };
 }
+
+export function workspaceOperations(db: Database, clock = () => new Date(), timeZone: TimeZoneSource = utc) {
+  return operationsFrom(
+    workspaceContext(db, clock, timeZone),
+    navigationContext(db, clock, timeZone),
+    readingContext(db, clock, timeZone),
+  );
+}
+export type WorkspaceOperations = ReturnType<typeof operationsFrom>;

@@ -2,8 +2,7 @@ import type { AuthService } from '@tinyfold/auth';
 import { AppError } from '@tinyfold/core/application';
 import type { WorkspaceFiles } from '@tinyfold/workspace';
 import type { Hono } from 'hono';
-import { getCookie } from 'hono/cookie';
-import { clearedSessionCookie, sessionCookie, sessionCookieName } from '../session-cookie.js';
+import { cookieSession } from '../cookie-session.js';
 
 export interface CanvasPreviewRouteOptions {
   auth: AuthService;
@@ -37,15 +36,12 @@ const cacheHeaders = (etag: string) => ({
  */
 export function mountCanvasPreviewRoute(app: Hono, { auth, files, secureCookie, clock }: CanvasPreviewRouteOptions) {
   app.get('/arquivos/desenhos/:id/previa.png', async (c) => {
-    const now = clock();
-    const token = getCookie(c, sessionCookieName);
-    const session = await auth.authenticate(token);
+    const { session, setCookies } = await cookieSession(c, auth, clock(), secureCookie);
+    for (const value of setCookies) c.header('Set-Cookie', value, { append: true });
     if (!session) {
-      if (token) c.header('Set-Cookie', clearedSessionCookie(secureCookie));
       c.header('Cache-Control', 'no-store');
       return c.json({ message: 'Sua sessão terminou. Entre de novo.' }, 401);
     }
-    if (session.renewed && token) c.header('Set-Cookie', sessionCookie(token, session.expiresAt, now, secureCookie));
     let image: Awaited<ReturnType<WorkspaceFiles['canvasPreview']>>;
     try {
       image = await files.canvasPreview(c.req.param('id'));

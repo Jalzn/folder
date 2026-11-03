@@ -26,6 +26,7 @@ export async function idempotentWrite<T>(
   operation: string,
   input: { requestId: string },
   work: (trx: DatabaseTransaction) => Promise<T>,
+  { now = () => new Date().toISOString() }: { now?: () => string } = {},
 ): Promise<T> {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.requestId))
     throw new AppError('VALIDATION', 'Solicitação sem identificador válido.');
@@ -46,7 +47,7 @@ export async function idempotentWrite<T>(
     const response = JSON.stringify(value ?? null);
     await store
       .insertInto('core_mutations')
-      .values({ request_id: input.requestId, operation, fingerprint, response, created_at: new Date().toISOString() })
+      .values({ request_id: input.requestId, operation, fingerprint, response, created_at: now() })
       .execute();
     return JSON.parse(response) as T;
   });

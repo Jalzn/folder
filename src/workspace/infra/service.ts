@@ -2,6 +2,7 @@ import type { Database } from '@tinyfold/core/infra';
 import type { z } from 'zod';
 import type { TimeZoneSource } from './calendar.js';
 import { utc } from './calendar.js';
+import type { WorkspaceOperations } from './operations/index.js';
 import { type Operation, workspaceOperations } from './operations/index.js';
 
 /** An operation called in-process; inputs whose fields are all optional may be left out. */
@@ -19,6 +20,10 @@ type ServiceCall<Op> =
  */
 export function createWorkspaceService(db: Database, clock = () => new Date(), timeZone: TimeZoneSource = utc) {
   const operations = workspaceOperations(db, clock, timeZone);
+  return serviceFromOperations(operations);
+}
+
+export function serviceFromOperations(operations: WorkspaceOperations) {
   return Object.fromEntries(
     Object.entries(operations).map(([name, operation]: [string, Operation]) => [
       name,

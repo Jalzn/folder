@@ -1,4 +1,5 @@
 import type { Database } from '@tinyfold/core/infra';
+import type { ReadingContext } from '../../application/reading/ports.js';
 import type { TimeZoneSource } from '../calendar.js';
 import { readingContext } from '../reading-context.js';
 import { withToolErrors } from './errors.js';
@@ -28,7 +29,12 @@ export interface WorkspaceToolOptions {
  */
 export function createWorkspaceTools(db: Database, options: WorkspaceToolOptions = {}): AgentTool[] {
   const reading = readingContext(db, options.clock, options.timeZone);
-  const logError = options.logError ?? console.error;
+  return toolsFromContext(reading, options.logError);
+}
+export function toolsFromContext(
+  reading: ReadingContext,
+  logError: (error: unknown) => void = console.error,
+): AgentTool[] {
   const tools: AgentTool[] = [
     listProjectsTool(reading),
     searchTool(reading),

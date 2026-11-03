@@ -14,4 +14,5 @@ export { type CanvasPreviewImage, createWorkspaceFiles, type WorkspaceFiles } fr
 export { type AgentTool, type AgentToolResult, createWorkspaceTools } from './infra/mcp/index.js';
 export { workspaceModule } from './infra/module.js';
 export { createWorkspaceRouter } from './infra/rpc.js';
+export { createWorkspace, type Workspace, type WorkspaceOptions } from './infra/runtime.js';
 export { createWorkspaceService, type WorkspaceService } from './infra/service.js';

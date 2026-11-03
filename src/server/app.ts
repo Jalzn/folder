@@ -1,19 +1,15 @@
-import { serveStatic } from '@hono/node-server/serve-static';
-import { ORPCError, onError } from '@orpc/server';
-import { BodyLimitPlugin, RPCHandler } from '@orpc/server/fetch';
 import { type AccessTokenService, type AuthService, createAccessTokens, createAuthService } from '@tinyfold/auth';
-import type { Database, RequestContext } from '@tinyfold/core/infra';
-import { createWorkspaceFiles, createWorkspaceTools } from '@tinyfold/workspace';
+import type { Database } from '@tinyfold/core/infra';
+import { createWorkspace } from '@tinyfold/workspace';
 import { Hono } from 'hono';
-import { getCookie } from 'hono/cookie';
-import { secureHeaders } from 'hono/secure-headers';
 import { sql } from 'kysely';
-import { clientIp } from './client-ip.js';
 import type { Config } from './config.js';
 import { mountCanvasPreviewRoute } from './files/canvas-preview-route.js';
 import { mountMcp } from './mcp/endpoint.js';
 import { createRouter } from './router.js';
-import { clearedSessionCookie, sessionCookie, sessionCookieName } from './session-cookie.js';
+import { mountRpc } from './rpc.js';
+import { mountSecurityHeaders } from './security-headers.js';
+import { mountSpa } from './spa.js';
 
 export interface AppDependencies {
   db: Database;
@@ -34,92 +30,34 @@ export function createApp({
 }: AppDependencies) {
   const authService = auth ?? createAuthService(db, { clock });
   const accessTokenService = accessTokens ?? createAccessTokens(db, { clock, logError });
-  const rpc = new RPCHandler(createRouter(db, authService, accessTokenService), {
-    plugins: [new BodyLimitPlugin({ maxBodySize: 2 * 1024 * 1024 })],
-    interceptors: [
-      onError((error) => {
-        if (!(error instanceof ORPCError) || error.status >= 500) logError(error);
-      }),
-    ],
-  });
+  const workspace = createWorkspace(db, { clock, logError, timeZone: () => authService.timeZone() });
   const app = new Hono();
-  app.use(
-    '*',
-    secureHeaders({
-      contentSecurityPolicy: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:'],
-        fontSrc: ["'self'"],
-        connectSrc: ["'self'"],
-        frameAncestors: ["'none'"],
-        baseUri: ["'self'"],
-        formAction: ["'self'"],
-      },
-      referrerPolicy: 'no-referrer',
-      xFrameOptions: 'DENY',
-    }),
-  );
+  mountSecurityHeaders(app);
   app.get('/health', (c) => c.json({ status: 'ok' }));
   app.get('/ready', async (c) => {
     await sql`select 1`.execute(db);
     return c.json({ status: 'ok' });
   });
-  app.all('/rpc/*', async (c) => {
-    const now = clock();
-    const token = getCookie(c, sessionCookieName);
-    const session = await authService.authenticate(token);
-    const setCookies: string[] = [];
-    const cookies: RequestContext['cookies'] = {
-      setSession: (value, expiry) => setCookies.push(sessionCookie(value, expiry, now, config.secureCookie)),
-      clearSession: () => setCookies.push(clearedSessionCookie(config.secureCookie)),
-    };
-    if (session?.renewed && token) cookies.setSession(token, session.expiresAt);
-    if (token && !session) cookies.clearSession();
-    const { matched, response } = await rpc.handle(c.req.raw, {
-      prefix: '/rpc',
-      context: {
-        originAllowed: c.req.header('origin') === config.appOrigin,
-        session: session ? { owner: session.owner, sessionId: session.sessionId } : undefined,
-        client: { ip: clientIp(c, config.trustProxy), userAgent: c.req.header('user-agent') },
-        cookies,
-      },
-    });
-    if (!matched) return c.json({ message: 'Este endereço não existe.' }, 404);
-    const headers = new Headers(response.headers);
-    headers.set('Cache-Control', 'no-store');
-    for (const value of setCookies) headers.append('Set-Cookie', value);
-    return new Response(response.body, { status: response.status, headers });
+  mountRpc(app, {
+    router: createRouter(authService, accessTokenService, workspace.router),
+    auth: authService,
+    config,
+    clock,
+    logError,
   });
   mountCanvasPreviewRoute(app, {
     auth: authService,
-    files: createWorkspaceFiles(db),
+    files: workspace.files,
     secureCookie: config.secureCookie,
     clock,
   });
   mountMcp(app, {
     accessTokens: accessTokenService,
-    tools: createWorkspaceTools(db, { logError, clock, timeZone: () => authService.timeZone() }),
+    tools: workspace.tools,
     config,
     clock,
     logError,
   });
-  if (config.webDir) {
-    app.use('*', async (c, next) => {
-      await next();
-      if (c.res.ok)
-        c.header(
-          'Cache-Control',
-          c.req.path.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache',
-        );
-    });
-    app.use('*', serveStatic({ root: config.webDir }));
-    app.get(
-      '*',
-      async (c, next) => (/\.[^/]+$/.test(c.req.path) ? c.notFound() : next()),
-      serveStatic({ root: config.webDir, path: 'index.html' }),
-    );
-  }
+  mountSpa(app, config.webDir);
   return app;
 }

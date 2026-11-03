@@ -49,6 +49,7 @@ export function writeTransaction<T>(db: Database, work: (trx: DatabaseTransactio
   return db.transaction().execute(work);
 }
 
+/** Reads hold BEGIN IMMEDIATE too: the SQLite driver serializes consistent multi-query snapshots with writes. */
 export function readTransaction<T>(db: Database, work: (trx: DatabaseTransaction) => Promise<T>): Promise<T> {
   return db.transaction().execute(work);
 }

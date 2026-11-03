@@ -14,7 +14,10 @@ export function workspaceContext(
     calendar: calendarOf(clock, timeZone),
     newId: randomUUID,
     read: (work) => readTransaction(db, (trx) => work(workspaceRepository(trx))),
-    write: (operation, input, work) => idempotentWrite(db, operation, input, (trx) => work(workspaceRepository(trx))),
+    write: (operation, input, work) =>
+      idempotentWrite(db, operation, input, (trx) => work(workspaceRepository(trx)), {
+        now: () => clock().toISOString(),
+      }),
     writeWithoutRequestRecord: (work) => writeTransaction(db, (trx) => work(workspaceRepository(trx))),
   };
 }
