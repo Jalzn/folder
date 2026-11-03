@@ -2,26 +2,24 @@ import { checklistProgress, isOverdue } from '@tinyfold/workspace/domain';
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useAutosaveLifecycle } from '../../lib/autosave/use-autosave-lifecycle';
 import { type ColumnSummary, type TaskWithText, useLabels } from '../../lib/queries';
-import { useCommandSlot } from '../../lib/react/use-command-slot';
 import { editableTitle, type Task, UNTITLED } from '../../lib/types';
-import { paths } from '../../navigation/paths';
 import { useApp, useOwnerToday } from '../../shell';
 import { useTaskDrawer } from '../../shell/state';
-import { Banner, useToast } from '../../ui';
+import { Banner } from '../../ui';
 import { ReloadDialog } from '../item-page/EditorDialogs';
 import { SaveBanners } from '../item-page/SaveBanners';
 import { SaveState } from '../item-page/SaveState';
 import { TaskSource } from '../task/TaskSource';
 import { TrashTaskDialog } from '../task/TrashTaskDialog';
 import { ChecklistRow } from './ChecklistRow';
-import { DueField } from './DueField';
-import { type DrawerCommands, EMPTY_DRAWER_COMMANDS } from './drawer-commands';
-import { LabelsField } from './LabelsField';
+import type { DrawerCommands } from './drawer-commands';
 import { type DescriptionHandle, TaskDescription } from './TaskDescription';
 import { TaskDrawerHeader } from './TaskDrawerHeader';
-import { ColumnField, ProjectField, TaskProperties } from './TaskProperties';
+import { TaskProperties } from './TaskProperties';
 import { TaskTitleField } from './TaskTitleField';
+import { columnRow, dueRow, labelsRow, projectRow } from './task-property-rows';
 import { holdTaskController, taskController, taskTextSnapshot } from './task-session';
+import { useTaskEditorCommands } from './use-task-editor-commands';
 import { useTaskFields } from './use-task-fields';
 import { useTaskTextActions } from './use-task-text-actions';
 
@@ -48,7 +46,6 @@ export function TaskEditor({
 }) {
   const app = useApp();
   const drawer = useTaskDrawer();
-  const toast = useToast();
   const today = useOwnerToday();
   const labels = useLabels().data ?? [];
   const [controller] = useState(() => taskController(detail, app.owner.installationId));
@@ -69,34 +66,18 @@ export function TaskEditor({
       controller.receiveRemote(taskTextSnapshot(detail), detail.textVersion);
   }, [controller, detail]);
   const column = columns.find((each) => each.id === task.columnId);
-  useCommandSlot(commands, { primary: editable ? () => void fields.toggleDone() : undefined }, EMPTY_DRAWER_COMMANDS);
-  useCommandSlot(
-    drawer.taskCommands,
-    {
-      done: Boolean(column?.isDone),
-      copyLink: () => void copyLink(),
-      ...(editable
-        ? {
-            toggleDone: () => void fields.toggleDone(),
-            moveToColumn: () => setMoveOpen(true),
-            trash: () => setTrashing(true),
-          }
-        : {}),
-    },
-    null,
-  );
+  const { copyLink } = useTaskEditorCommands({
+    commands,
+    task,
+    editable,
+    done: Boolean(column?.isDone),
+    toggleDone: fields.toggleDone,
+    move: () => setMoveOpen(true),
+    trash: () => setTrashing(true),
+  });
   const progress = checklistProgress(state.snapshot.description);
   const change = (patch: Partial<typeof state.snapshot>) =>
     controller.change({ ...controller.getState().snapshot, ...patch });
-  async function copyLink() {
-    const link = paths.permanent(paths.task(task.projectId, task.id));
-    try {
-      await navigator.clipboard.writeText(link);
-      toast('Link da tarefa copiado.');
-    } catch {
-      toast('Não foi possível copiar o link.', 'error');
-    }
-  }
   const title = editableTitle(state.snapshot.title);
 
   return (
@@ -155,55 +136,31 @@ export function TaskEditor({
           <TaskProperties
             label="Propriedades da tarefa"
             rows={[
-              {
-                id: 'column',
-                label: 'Coluna',
-                value: (
-                  <ColumnField
-                    columnId={task.columnId}
-                    columns={columns}
-                    editable={editable}
-                    onChange={(columnId, name) => void fields.setColumn(columnId, name)}
-                  />
-                ),
-              },
-              {
-                id: 'due',
-                label: 'Prazo',
-                value: (
-                  <DueField
-                    due={task.dueOn}
-                    today={today}
-                    late={isOverdue(task.dueOn, today, Boolean(column?.isDone))}
-                    editable={editable}
-                    onChange={(dueOn) => void fields.setDue(dueOn)}
-                  />
-                ),
-              },
-              {
-                id: 'labels',
-                label: 'Etiquetas',
-                value: (
-                  <LabelsField
-                    labelIds={task.labelIds}
-                    labels={labels}
-                    editable={editable}
-                    onChange={(labelIds) => void fields.setLabels(labelIds)}
-                    onCreate={(name) => void fields.addNewLabel(name)}
-                  />
-                ),
-              },
-              {
-                id: 'project',
-                label: 'Projeto',
-                value: (
-                  <ProjectField
-                    projectId={task.projectId}
-                    editable={editable}
-                    onChange={(projectId, name) => void fields.setProject(projectId, name)}
-                  />
-                ),
-              },
+              columnRow({
+                columnId: task.columnId,
+                columns: columns,
+                editable: editable,
+                onChange: (columnId, name) => void fields.setColumn(columnId, name),
+              }),
+              dueRow({
+                due: task.dueOn,
+                today: today,
+                late: isOverdue(task.dueOn, today, Boolean(column?.isDone)),
+                editable: editable,
+                onChange: (dueOn) => void fields.setDue(dueOn),
+              }),
+              labelsRow({
+                labelIds: task.labelIds,
+                labels: labels,
+                editable: editable,
+                onChange: (labelIds) => void fields.setLabels(labelIds),
+                onCreate: (name) => void fields.addNewLabel(name),
+              }),
+              projectRow({
+                projectId: task.projectId,
+                editable: editable,
+                onChange: (projectId, name) => void fields.setProject(projectId, name),
+              }),
               ...(progress.total
                 ? [
                     {

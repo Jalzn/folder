@@ -1,23 +1,13 @@
 import { isOverdue } from '@tinyfold/workspace/domain';
 import { Plus } from 'lucide-react';
-import { type RefObject, useEffect, useId, useRef, useState } from 'react';
-import { api, errorMessage, refreshWorkspace } from '../../lib/api';
-import { openEditor } from '../../lib/autosave/save-registry';
-import { doneAndFirstOpen } from '../../lib/board-order';
-import { useColumns, useLabels, useProjects } from '../../lib/queries';
-import { useCommandSlot } from '../../lib/react/use-command-slot';
-import { useStableHandlers } from '../../lib/react/use-stable-handlers';
-import { useRequest } from '../../lib/writes/use-request';
-import { useOwnerToday } from '../../shell';
-import { type DrawerContent, useTaskDrawer } from '../../shell/state';
-import { useAction } from '../../shell/writes';
-import { AlertDialog, Button, useToast } from '../../ui';
-import { useCreateLabel } from '../labels/use-create-label';
-import { DueField } from './DueField';
-import { type DrawerCommands, EMPTY_DRAWER_COMMANDS } from './drawer-commands';
-import { LabelsField } from './LabelsField';
-import { ColumnField, ProjectField, TaskProperties } from './TaskProperties';
+import type { RefObject } from 'react';
+import type { DrawerContent } from '../../shell/state';
+import { AlertDialog, Button } from '../../ui';
+import type { DrawerCommands } from './drawer-commands';
+import { TaskProperties } from './TaskProperties';
 import { TaskTitleField } from './TaskTitleField';
+import { columnRow, dueRow, labelsRow, projectRow } from './task-property-rows';
+import { useNewTaskDraft } from './use-new-task-draft';
 
 /**
  * A new task in the drawer (docs/etapas/10-quadro-tarefa.md, "Tarefa nova"): the title in focus, Cancelar and
@@ -35,107 +25,36 @@ export function NewTaskForm({
   commands: RefObject<DrawerCommands>;
   onLabel: (label: string) => void;
 }) {
-  const drawer = useTaskDrawer();
-  const toast = useToast();
-  const createLabel = useCreateLabel(useAction());
-  const projects = useProjects(true).data ?? [];
-  const request = useRequest();
-  const errorId = useId();
-  const field = useRef<HTMLTextAreaElement>(null);
-  const initialTitle = content.title ?? '';
-  const columns = useColumns().data?.columns ?? [];
-  const [title, setTitle] = useState(initialTitle);
-  const [projectId, setProjectId] = useState(content.projectId);
-  // Without a column of its own, the task goes to the first open one, as the server does.
-  const [chosenColumn, setColumn] = useState(content.columnId);
-  const columnId = chosenColumn ?? doneAndFirstOpen(columns).open?.id;
-  const column = columns.find((each) => each.id === columnId);
-  const today = useOwnerToday();
-  const labels = useLabels().data ?? [];
-  const [dueOn, setDue] = useState<string | null>(null);
-  const [labelIds, setLabels] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [discarding, setDiscarding] = useState(false);
-  const project = projects.find((each) => each.id === projectId);
-  // "Incorporar no documento" (docs/etapas/11-documento-desenho.md, decision 15): only while the excerpt's
-  // document is open in this tab, whose editor puts the card in; checked to begin with.
-  const sourceDocument = content.source?.documentId;
-  const embedHost = () => (sourceDocument ? openEditor('document', sourceDocument)?.insertEmbedAfter : undefined);
-  const canEmbed = Boolean(content.embedAfter && embedHost());
-  const [embed, setEmbed] = useState(true);
-  const dirty =
-    title !== initialTitle ||
-    projectId !== content.projectId ||
-    chosenColumn !== content.columnId ||
-    dueOn !== null ||
-    labelIds.length > 0;
-  const latestDirty = useRef(dirty);
-  latestDirty.current = dirty;
-
-  useEffect(() => onLabel('Nova tarefa'), [onLabel]);
-  // Leaving with something typed asks first.
-  useEffect(() => {
-    drawer.setCloseGuard(() => {
-      if (!latestDirty.current) return true;
-      setDiscarding(true);
-      return false;
-    });
-    return () => drawer.setCloseGuard(null);
-  }, [drawer]);
-
-  async function create() {
-    if (busy) return;
-    const name = title.trim();
-    if (!name) {
-      setError('Dê um título à tarefa.');
-      field.current?.focus();
-      return;
-    }
-    const source = content.source && {
-      documentId: content.source.documentId,
-      excerpt: content.source.excerpt,
-      ...(content.source.blockId === undefined ? {} : { blockId: content.source.blockId }),
-      ...(content.source.expectedVersion === undefined ? {} : { expectedVersion: content.source.expectedVersion }),
-    };
-    const input = {
-      title: name,
-      projectId,
-      ...(chosenColumn ? { columnId: chosenColumn } : {}),
-      ...(dueOn ? { dueOn } : {}),
-      ...(labelIds.length ? { labelIds } : {}),
-      ...(source ? { source } : {}),
-    };
-    setBusy(true);
-    setError(null);
-    try {
-      const created = await api.workspace.createTask({ ...input, requestId: request.for(input) });
-      request.clear();
-      await refreshWorkspace();
-      drawer.showTask({ id: created.id, projectId: created.projectId, title: name });
-      content.onCreated?.({ id: created.id, projectId: created.projectId });
-      // The document may have closed meanwhile: then the task stays without its card.
-      const insert = canEmbed && embed && content.embedAfter ? embedHost() : undefined;
-      const embedded = Boolean(insert && content.embedAfter && insert(content.embedAfter, created.id));
-      toast(
-        embedded
-          ? 'Tarefa criada. O card entrou abaixo do parágrafo.'
-          : `Tarefa criada em ${column?.name ?? 'o quadro'} · ${project?.name ?? 'o projeto'}.`,
-      );
-    } catch (failure) {
-      setError(errorMessage(failure));
-      await refreshWorkspace();
-    } finally {
-      setBusy(false);
-    }
-  }
-  const primary = useStableHandlers<DrawerCommands>({ primary: () => void create() });
-  useCommandSlot(commands, primary, EMPTY_DRAWER_COMMANDS);
-  /** A label made from the picker goes on the new task at once; the task itself waits for Criar. */
-  async function addNewLabel(name: string) {
-    const created = await createLabel(name);
-    if (created) setLabels((current) => [...current, created]);
-  }
+  const {
+    drawer,
+    errorId,
+    field,
+    title,
+    setTitle,
+    projectId,
+    setProjectId,
+    columnId,
+    setColumn,
+    columns,
+    today,
+    labels,
+    dueOn,
+    setDue,
+    labelIds,
+    setLabels,
+    busy,
+    error,
+    setError,
+    discarding,
+    setDiscarding,
+    project,
+    column,
+    canEmbed,
+    embed,
+    setEmbed,
+    create,
+    addNewLabel,
+  } = useNewTaskDraft(content, commands, onLabel);
 
   return (
     <form
@@ -199,42 +118,22 @@ export function NewTaskForm({
         <TaskProperties
           label="Propriedades da nova tarefa"
           rows={[
-            {
-              id: 'project',
-              label: 'Projeto',
-              value: <ProjectField projectId={projectId} editable onChange={(id) => setProjectId(id)} />,
-            },
-            {
-              id: 'column',
-              label: 'Coluna',
-              value: <ColumnField columnId={columnId} columns={columns} editable onChange={(id) => setColumn(id)} />,
-            },
-            {
-              id: 'due',
-              label: 'Prazo',
-              value: (
-                <DueField
-                  due={dueOn}
-                  today={today}
-                  late={isOverdue(dueOn, today, Boolean(column?.isDone))}
-                  editable
-                  onChange={setDue}
-                />
-              ),
-            },
-            {
-              id: 'labels',
-              label: 'Etiquetas',
-              value: (
-                <LabelsField
-                  labelIds={labelIds}
-                  labels={labels}
-                  editable
-                  onChange={setLabels}
-                  onCreate={(name) => void addNewLabel(name)}
-                />
-              ),
-            },
+            projectRow({ projectId: projectId, editable: true, onChange: (id) => setProjectId(id) }),
+            columnRow({ columnId: columnId, columns: columns, editable: true, onChange: (id) => setColumn(id) }),
+            dueRow({
+              due: dueOn,
+              today: today,
+              late: isOverdue(dueOn, today, Boolean(column?.isDone)),
+              editable: true,
+              onChange: setDue,
+            }),
+            labelsRow({
+              labelIds: labelIds,
+              labels: labels,
+              editable: true,
+              onChange: setLabels,
+              onCreate: (name) => void addNewLabel(name),
+            }),
           ]}
         />
       </div>
