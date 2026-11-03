@@ -13,7 +13,7 @@ export { columnDeletionBlocker } from './columns.js';
 export { documentLead, documentPlainText, RECOVERY_DOCUMENT_LIMITS, readDocumentContent } from './document.js';
 export type { EmbeddedDrawing, EmbeddedItems, EmbeddedTask, EmbedPreview, EmbedProject } from './embed-items.js';
 export { embedResolver } from './embed-resolver.js';
-export { EMBED_TYPES, type EmbedKind, embedIds, figureNumbers } from './embeds.js';
+export { EMBED_TYPES, type EmbedBlockType, type EmbedKind, embedIds, figureNumbers } from './embeds.js';
 export { excerptFromStart } from './excerpt.js';
 export { folderName, folderNameKey } from './folders.js';
 export { LABEL_COLORS, LABEL_LIMITS, type LabelColor } from './labels.js';
