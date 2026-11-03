@@ -3,7 +3,7 @@
  * shared editor sets the document's 15/24 on `.block-editor .bn-editor`, which this overrides.
  */
 .task-description {
-  --editor-type: var(--weight-ui) 14px / 22px var(--font-sans);
+  --editor-type: var(--type-desc);
   --editor-tracking: var(--tracking-desc);
 }
 .task-description [data-content-type="checkListItem"] {
