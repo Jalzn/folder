@@ -20,9 +20,12 @@ Cada pasta é um pacote `@tinyfold/<nome>`. Auth e workspace seguem domínio, ap
 - o domínio e a aplicação não importam infraestrutura, e os módulos não se conhecem;
 - servidor e web chegam a um módulo só pelos arquivos que o `package.json` dele exporta, e a web leva ao navegador só código próprio e domínio puro;
 - só `src/server/mcp/` importa o SDK MCP;
-- as pastas `testing/`, com auxiliares de teste, nunca entram no código de execução.
+- as pastas `testing/`, com auxiliares de teste, nunca entram no código de execução, nem no dos scripts;
+- os scripts de `scripts/` chegam a um módulo só pelos arquivos exportados (o servidor, que compõe, eles reaproveitam) e nunca importam a web;
+- o E2E importa de `src` só tipos;
+- na web, `ui/` não importa o shell, os componentes, as páginas, o editor nem as rotas, e só as rotas e outras páginas importam `pages/`. `lib/` como folha é um aviso até `use-action.ts` sair de lá.
 
-A exclusão do build cobre só `src/*/dist`, então as regras também enxergam os pacotes npm.
+Desde a etapa 12, `pnpm deps` percorre `src`, `scripts` e `e2e`. A exclusão do build cobre só `src/*/dist`, então as regras também enxergam os pacotes npm.
 
 Projetos, documentos, desenhos e tarefas pertencem ao mesmo módulo para preservar as regras de atribuição e gravar a criação de uma tarefa e seu vínculo documental na mesma transação. Desenhos têm contrato próprio; cenas não são blocos do editor de documentos.
 
@@ -37,6 +40,14 @@ Migrações SQL numeradas são executadas atomicamente e registradas com checksu
 As migrações pendentes rodam numa só transação. Desde a etapa 10, o executor (`src/core/infra/migrate.ts`) desliga as chaves estrangeiras antes dela, já que o SQLite não muda essa opção dentro de uma transação, para que uma tabela referenciada possa ser reconstruída sem apagar em cascata as linhas que apontam para ela. Antes do `COMMIT`, `foreign_key_check` recusa toda violação que não existia no começo, com a tabela e o `rowid`; as anteriores, deixadas por SQL manual, vão para um aviso no log. As chaves voltam a ser ligadas também em falha. Em troca, nenhuma cascata dispara dentro de uma migração: uma migração que apague um pai precisa apagar os filhos. Um módulo registra as funções SQL que as migrações usam (`sqlFunctions`; o workspace, `workspace_search_text`, o `searchText` do domínio).
 
 A implantação prevê uma instância e um volume local ao processo. Não há réplica nem banco compartilhado por múltiplos hosts.
+
+## Erros e contrato do RPC
+
+- **Códigos:** `VALIDATION` (400), `UNAUTHENTICATED` (401), `FORBIDDEN_ORIGIN` (403), `NOT_FOUND` (404), `VERSION_CONFLICT` e `REQUEST_REUSED` (409), `DOMAIN_RULE` (422) e `RATE_LIMITED` (429). A web decide pelo código, e desde a etapa 12 a mesma situação tem o mesmo: projeto arquivado é `DOMAIN_RULE`; a referência de ordem que não está mais entre as ativas (pasta, coluna, projeto ou tarefa, inclusive a de outro projeto) é `VERSION_CONFLICT`; um cursor que o servidor não deu é `VALIDATION` (`readClientCursor`).
+- **Conflito de versão:** uma frase só, "Este item mudou em outro dispositivo. Atualize os dados antes de continuar.", vista antes ou durante o UPDATE (`versionConflict`).
+- **Validação:** um erro de esquema responde a primeira frase escrita para a pessoa: as dos validadores de conteúdo, que variam com o conteúdo (`domainIssue`), e as que os esquemas marcam com `domainMessage`, como o título, o prazo e o projeto da tarefa e os IDs incorporados. Sem nenhuma, responde "Revise os dados enviados e tente de novo.": as mensagens do próprio Zod, inclusive as do locale português das ferramentas dos agentes, são para quem desenvolve.
+- **Contexto:** cada chamada recebe a origem permitida, a sessão (dono e ID, sem o token), o cliente e os cookies. O banco e o relógio chegam aos casos de uso pela composição, não pelo contexto.
+- **Guardas:** `src/server/rpc-contract.db.test.ts` fixa os procedimentos e o JSON Schema de cada entrada, como o cliente envia e como o caso de uso recebe (`contract/rpc-inputs.snap`), e o nome de operação de cada escrita (`contract/write-operations.snap`). O nome entra na impressão digital de `core_mutations`: o teste reenvia cada escrita contra um registro de pedido calculado com uma cópia de `canonical()`, e um nome ou uma entrada que mude responderia `REQUEST_REUSED` aos reenvios de até 30 dias.
 
 ## Autenticação
 
@@ -74,6 +85,8 @@ A implantação prevê uma instância e um volume local ao processo. Não há r�
 
 As relações têm chaves estrangeiras, e gatilhos recusam `project_id` nulo em documentos, desenhos e tarefas. Desde a migração `006_folders.sql`, gatilhos também garantem que um item vivo só fica numa pasta ativa do próprio projeto, que a pasta não muda de projeto e que não é excluída com itens vivos dentro; um item na lixeira guarda a pasta excluída como origem. Desde a migração `007_board.sql`, gatilhos garantem que toda tarefa, viva ou na lixeira, está numa coluna ativa, que há exatamente uma coluna de conclusão e que `completed_at` existe exatamente nela; também recusam um `id` já em uso em pastas, colunas e etiquetas, o que fecha o `INSERT OR REPLACE`. A lixeira preserva documentos e vínculos; tarefas continuam disponíveis mesmo com a origem excluída, e excluir o documento de vez deixa na origem o título que ele tinha. Trechos removidos ou modificados apresentam estado de origem indisponível e o contexto capturado permanece.
 
+As convenções das migrações e o catálogo dos gatilhos, com o que cada um garante e o teste que o dispara, estão em [banco](banco.md). O esquema que as migrações deixam fica legível em `src/workspace/infra/schema/current.sql`, que o teste `schema.db.test.ts` confere.
+
 ## Projetos, navegação e lixeira
 
 Todo documento, desenho e tarefa pertence a um projeto ativo na criação. A migração `005_projects_required.sql` levou os itens soltos, inclusive os da lixeira, ao projeto Geral (ID fixo, criado só quando havia itens soltos), sem mudar versões nem datas. As regras completas estão no [README do workspace](../src/workspace/README.md).
@@ -84,8 +97,9 @@ Todo documento, desenho e tarefa pertence a um projeto ativo na criação. A mig
 - **Mover:** só por `moveItem`, que não leva conteúdo nem conta como edição (`updatedAt` fica). Para outro projeto, exige a versão, sobe a versão, para que um editor com a anterior saiba da mudança, e leva o item à raiz, sem fixado. Para outra pasta do mesmo projeto ou para a raiz (`folderId`), não pede nem muda a versão, e o item mantém o fixado se o destino tiver vaga. `saveDocument` e `saveCanvas` não têm `projectId`.
 - **Consultas da interface:** `projectNavigation` (a árvore Itens, `tree`: fixados da raiz, pastas com os fixados e os primeiros itens, e soltos da raiz, até 8 por nível com os totais; mais tarefas abertas e itens na lixeira), `listFolders` (as pastas ativas, para o ⌘K e os menus), `projectOverview` (Agora e Editados recentemente, com o trecho cortado pelo domínio) e `search`, o mesmo caso de uso das ferramentas MCP, numa porta `NavigationReader` com SQL em `infra/navigation/`.
 - **Lixeira por projeto:** `listTrash` traz até 1.000 itens, do excluído mais recentemente, com a pasta de origem de cada documento e desenho, mesmo excluída; a contagem da lateral e da Visão geral é sempre exata. Restaurar devolve o item à pasta, ou à raiz se ela foi excluída (`folderGone`). Excluir de vez (`purgeDocument`, `purgeCanvas`, `purgeTask`) só vale para item na lixeira, e `emptyTrash` recebe exatamente os itens mostrados (até 1.000) e responde `{ purged, skipped }`.
+- **Leitura da lixeira:** `getDocument` e `getCanvas` respondem também o item na lixeira, com `deletedAt`, para que o editor aberto guarde um rascunho local ou o salve como cópia; gravar num item excluído continua recusado. `listDocuments` e `listCanvases` só listam os vivos, por projeto; a busca por texto é `search`. O resumo de cada item são os primeiros 280 pontos de código do texto, cortados pelo SQLite.
 - **Respostas de escrita:** de documentos, desenhos e tarefas são compactas, sem título, conteúdo nem trecho, para que excluir de vez não deixe o texto no registro de pedidos.
-- **Texto que não se desenha:** nomes de pasta, nomes de projeto e títulos perdem os pontos de código ignoráveis (`visibleText`) e ficam em NFC, com exceções para emoji e escritas que precisam deles; o MCP aplica a mesma função ao que devolve.
+- **Texto que não se desenha:** nomes de pasta, nomes de projeto e títulos perdem os pontos de código ignoráveis (`visibleText`, no domínio do `core`) e ficam em NFC, com exceções para emoji e escritas que precisam deles; o MCP aplica a mesma função ao que devolve. O nome do dono passa pela mesma regra na criação da conta, cortado em 100 pontos de código.
 
 ### Desfazer
 

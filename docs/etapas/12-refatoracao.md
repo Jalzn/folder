@@ -699,6 +699,48 @@ As revisões concordam nestes pontos. Eles valem para todos os commits.
 | `validacao.md` | Os portões de cada onda, as revisões, as passagens no Chrome e os tempos do E2E antes e depois |
 | `etapas/README.md` e esta página | O estado, o Resultado e os Desvios |
 
+## Desvios do plano
+
+### Backend
+
+- **Processo:** a pedido do usuário, depois da onda 1, as regras por commit mudaram para fazer a etapa em poucas horas:
+  - um commit por assunto, que pode juntar movimentos;
+  - `check` e `test:db` em cada commit, e `build` e o E2E completo uma vez, ao fim do lote;
+  - uma revisão só, do resultado combinado, sem revisão adversarial por onda.
+
+  As correções decididas continuaram em commits `fix` próprios, cada uma com um teste que falha antes e passa depois.
+- **Commits juntos:** B2.1 e B2.2 entraram num commit só. B2.2 cobriu os 11 testes de aplicação do workspace com a montagem comum; os de quadro, desenhos, persistência, migrações, MCP, auth e servidor guardam a sua.
+- **Correções antes dos movimentos:**
+  - **B3.14a** entrou logo depois da onda 1, porque W5.7a dependia dele.
+  - **Outras correções sem o seu movimento:** B3.6a, B3.14b, B3.16a, B3.22b, B3.29a e B3.31a também entraram sem os movimentos que as preparariam (catálogo de erros, ciclo de vida, atualização versionada e `infra/sql/`).
+  - **Para os movimentos que ficaram:** eles precisam manter os comportamentos novos, e não os de antes.
+- **B3.22a** entrou como `refactor(core)`, porque `visible-text.ts` vai do workspace para o `core`.
+- **B3.6a, mensagem de validação:** o commit leu a decisão 4 de forma estreita. Só as frases dos validadores de documento e de desenho chegavam à pessoa, marcadas com `domainIssue`. O usuário alargou a decisão: toda frase que um esquema escreve para a pessoa aparece, marcada com `domainMessage`, como o título, o prazo e o projeto da tarefa e os IDs incorporados. As mensagens do próprio Zod continuam com o texto genérico.
+- **B3.14b:** os testes que listavam por texto passaram a usar `search`, com as mesmas expectativas para LaTeX e acentos. Como a busca recusa uma consulta só de pontuação, as conferências de `%` e `_` viraram uma busca por "100%". Os testes que listavam a lixeira passaram a ler o próprio item.
+- **B3.16a:** o ramo da referência de ordem que sumiu também responde à referência de outro projeto, que passou de `NOT_FOUND` a `VERSION_CONFLICT`. O usuário manteve.
+- **B3.22b:** vale só na criação do dono; um dono existente guarda o nome. O usuário manteve.
+- **B1.2:** o retrato guarda o JSON Schema dos dois lados, o que o cliente envia e o que o caso de uso recebe. Além do retrato, o teste reenvia cada escrita contra um registro de pedido com a impressão digital, o que fixa o nome e a impressão digital de cada procedimento.
+- **B1.3:** o retrato cobre o `core` e o workspace. O auth fica de fora, porque o workspace não importa outro módulo.
+- **B1.5:** o teste de `backupDatabase` saiu com a função; a parte das chaves estrangeiras ficou.
+- **B1.7:**
+  - **Exports:** saíram 23 exports do domínio, não 17.
+  - **Ficaram para a web:** `folderName` e `folderNameKey`, que a web importa. `EmbedBlockType` voltou na integração, porque a onda 5 o usa.
+  - **Ficou para um teste:** `documentLead`, que um teste fixa como API pública.
+- **B1.1:** mudou o script `deps` do `package.json`, que é da web, porque é o assunto do commit.
+- **E2E ao fim do lote:** 213 passaram e 1 falhou. A falha (`task-drawer.spec.ts:145`, o foco depois de mudar o projeto pela gaveta) é intermitente: rodando só ela 5 vezes, falhou 2 no ramo; na `main` de partida (`438a9b3`), falhou 3 de 5 numa rodada e 0 de 5 noutra.
+- **Ficaram para depois:**
+  - **Onda 3:**
+    - B3.1 a B3.5 (tipos de item, modelos, texto e ordem, catálogo de erros);
+    - a separação do RPC em B3.6;
+    - B3.8 e B3.9 (coleções nomeadas);
+    - B3.10 a B3.14 (portas, buscas, ciclo de vida e um caso de uso por arquivo);
+    - B3.15 a B3.20 (paginação dos agentes, MCP e validadores);
+    - o auth (B3.21 e B3.22: a porta dos segredos e um caso de uso por arquivo);
+    - B3.23 a B3.30 (servidor, raiz de composição, `infra/sql/`, hidratação, predicados e atualização versionada);
+    - B3.31 a B3.33 e os opcionais.
+  - **Caracterização:** os testes B3.0a a B3.0c, que só valem antes desses movimentos.
+  - **Onda 2:** B2.3 a B2.6.
+
 ## Decisões do usuário
 
 Respostas de 2026-11-02, registradas em [decisões](../decisoes.md). O usuário aceitou as seis ondas e todas as recomendações:

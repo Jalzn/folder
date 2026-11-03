@@ -12,6 +12,11 @@ O SQLite guarda todo dado persistido. Esta página reúne as convenções das mi
 - **Funções SQL:** um módulo registra as funções que as suas migrações e consultas usam (`sqlFunctions`). O workspace registra `workspace_search_text`, o `searchText` do domínio.
 - **Retrato:** toda migração nova muda `schema/current.sql`. O diff do retrato entra no mesmo commit, e a revisão confere que os gatilhos de antes continuam lá.
 
+## Testes de banco
+
+- **Um banco por teste:** `useTempDatabase(modules, prefix)`, de `@tinyfold/core/testing`, cria um SQLite migrado numa pasta própria na pasta temporária do sistema e o apaga depois do teste. `useWorkspaceDb({ prefix, start })`, de `src/workspace/testing/database.ts`, junta o serviço do workspace, no relógio de teste (`testClock`) quando há `start`. O banco real nunca entra num teste.
+- **Bancos antigos:** os bancos das etapas anteriores vêm de `testing/fixtures/stage-09-*.sql` e de `testing/legacy-workspace.ts`. As fixtures não são geradas de novo.
+
 ## Gatilhos
 
 ### Convenções
