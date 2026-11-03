@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { type BrowserContext, expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { moveToTrash, newDrawing } from './support/items.js';
 import { overviewAddress, searchProject } from './support/navigation.js';
 import { answers } from './support/rpc.js';

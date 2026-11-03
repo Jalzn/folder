@@ -1,11 +1,11 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { newDocument } from './support/items.js';
 import { pressCommand } from './support/keyboard.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The decided fixes of the open item's page (docs/etapas/12-refatoracao.md, "Correções decididas").
-test.skip(({ isMobile }) => isMobile, 'Desktop: the bands and the Tab order of the page.');
 
 const editor = (page: Page) => page.getByTestId('document-content');
 const idOf = (page: Page) => new URL(page.url()).pathname.split('/').at(-1) ?? '';
@@ -26,7 +26,7 @@ async function savedDocument(page: Page, title: string, line: string) {
 }
 
 async function trashDocument(page: Page, id: string) {
-  const document = await rpc<{ version: number }>(page, 'workspace/getDocument', { id });
+  const document = await rpc(page, 'workspace/getDocument', { id });
   await rpc(page, 'workspace/deleteDocument', {
     id,
     expectedVersion: document.version,
@@ -117,7 +117,7 @@ test('E2: a trashed document or drawing with nothing local offers ⌘K no comman
   expect(documentRows.filter((label) => editorCommands.includes(label))).toEqual([]);
 
   const drawing = await drawingInProject(page, `Lixeira com desenho ${Date.now()}`);
-  const canvas = await rpc<{ version: number }>(page, 'workspace/getCanvas', { id: drawing.id });
+  const canvas = await rpc(page, 'workspace/getCanvas', { id: drawing.id });
   await rpc(page, 'workspace/deleteCanvas', {
     id: drawing.id,
     expectedVersion: canvas.version,
@@ -133,13 +133,13 @@ test('E2: a trashed document or drawing with nothing local offers ⌘K no comman
 
 /** An empty drawing made over RPC in a new project, with the project's ID. */
 async function drawingInProject(page: Page, name: string) {
-  const project = await rpc<{ id: string }>(page, 'workspace/createProject', { requestId: crypto.randomUUID(), name });
-  const created = await rpc<{ created?: { id: string }; id?: string }>(page, 'workspace/createCanvas', {
+  const project = await rpc(page, 'workspace/createProject', { requestId: crypto.randomUUID(), name });
+  const created = await rpc(page, 'workspace/createCanvas', {
     requestId: crypto.randomUUID(),
     projectId: project.id,
     title: 'Planta',
   });
-  return { projectId: project.id, id: created.created?.id ?? created.id ?? '' };
+  return { projectId: project.id, id: created.id ?? '' };
 }
 
 test('W5.7b: an archived project’s drawing opens to read only, with the band, and no save goes out', async ({
@@ -147,12 +147,11 @@ test('W5.7b: an archived project’s drawing opens to read only, with the band, 
 }) => {
   await login(page);
   const { projectId, id } = await drawingInProject(page, `Arquivado com desenho ${Date.now()}`);
-  const project = (await rpc<{ id: string; version: number }[]>(page, 'workspace/listProjects', {})).find(
-    (each) => each.id === projectId,
-  );
+  const project = (await rpc(page, 'workspace/listProjects', {})).find((each) => each.id === projectId);
+  if (!project) throw new Error('Project not found.');
   await rpc(page, 'workspace/updateProject', {
     id: projectId,
-    expectedVersion: project?.version,
+    expectedVersion: project.version,
     archived: true,
     requestId: crypto.randomUUID(),
   });

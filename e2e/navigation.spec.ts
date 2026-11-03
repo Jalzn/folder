@@ -1,4 +1,5 @@
-import { expect, type Locator, test } from '@playwright/test';
+import { expect, type Locator } from '@playwright/test';
+import { test } from './fixtures.js';
 import { newDocument } from './support/items.js';
 import { pressCommand, runCommand } from './support/keyboard.js';
 import {
@@ -95,7 +96,7 @@ test('an open document moves with its unsaved text, stays in the new project and
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   const editor = page.locator('[contenteditable="true"]').first();
   const documentId = new URL(page.url()).pathname.split('/').at(-1) ?? '';
-  const stored = () => rpc<{ projectId: string; plainText: string }>(page, 'workspace/getDocument', { id: documentId });
+  const stored = () => rpc(page, 'workspace/getDocument', { id: documentId });
   const nextSave = () =>
     page.waitForResponse((response) => answers(response, 'workspace/saveDocument') && response.status() === 200);
   await editor.click();

@@ -1,4 +1,6 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
+
 import { clickText, documentEditor, embedCard } from './support/document.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
@@ -6,7 +8,6 @@ import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The keys around embeds, from the stage 11 review: they need a desktop keyboard; narrow.spec.ts has the phone.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the keys of the document’s editor.');
 
 type Block = { id?: string; type: string; props?: Record<string, unknown>; content?: unknown; children?: Block[] };
 
@@ -21,11 +22,11 @@ const textOf = (block: Block) =>
 
 /** A task of the project, made over RPC. */
 const task = async (page: Page, projectId: string, title: string) =>
-  (await rpc<{ id: string }>(page, 'workspace/createTask', { requestId: crypto.randomUUID(), projectId, title })).id;
+  (await rpc(page, 'workspace/createTask', { requestId: crypto.randomUUID(), projectId, title })).id;
 
 /** A drawing of the project, made over RPC. */
 const drawing = async (page: Page, projectId: string, title: string) =>
-  (await rpc<{ id: string }>(page, 'workspace/createCanvas', { requestId: crypto.randomUUID(), projectId, title })).id;
+  (await rpc(page, 'workspace/createCanvas', { requestId: crypto.randomUUID(), projectId, title })).id;
 
 /**
  * Where the editor's caret is: "[id]" for the block selected as a node, "gap" for ProseMirror's gap cursor,
@@ -72,7 +73,7 @@ const paces = { 'with no pause': 0, 'at a person’s pace': 200 } as const;
 
 /** A document with these blocks, made over RPC as the editor saves them, and opened. */
 async function openDocument(page: Page, projectId: string, blocks: Block[]) {
-  const { id } = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+  const { id } = await rpc(page, 'workspace/createDocument', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Teclas e incorporados',
@@ -87,14 +88,15 @@ async function openDocument(page: Page, projectId: string, blocks: Block[]) {
 const nestedUnderEmbed = '.bn-block:has(> .react-renderer > [data-content-type$="Embed"]) > .bn-block-group';
 
 /** What the server holds of the document. */
-const saved = async (page: Page, id: string) =>
-  (await rpc<{ content: Block[] }>(page, 'workspace/getDocument', { id })).content;
+const saved = async (page: Page, id: string) => (await rpc(page, 'workspace/getDocument', { id })).content;
 
 /** The next save the server takes, with status 200. */
 const nextSave = (page: Page) =>
   page.waitForResponse((response) => answers(response, 'workspace/saveDocument') && response.status() === 200);
 
-test('Tab under a card leaves the line where it was, so the document saves and opens again', async ({ page }) => {
+test('Tab under a card leaves the line where it was, so the document saves and opens again', {
+  tag: '@timing',
+}, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Tab sob o card ${Date.now()}`);
   const taskId = await task(page, projectId, 'Card acima do recuo');
@@ -127,9 +129,9 @@ const runs = {
 
 for (const [pace, pause] of Object.entries(paces))
   for (const [name, kinds] of Object.entries(runs))
-    test(`↓ and ↑ go through ${name} in a row a block at a time, ${pace}, at the start, the middle and the end`, async ({
-      page,
-    }) => {
+    test(`↓ and ↑ go through ${name} in a row a block at a time, ${pace}, at the start, the middle and the end`, {
+      tag: '@timing',
+    }, async ({ page }) => {
       await login(page);
       const projectId = await createProject(page, `Setas ${Date.now()}`);
       const run: Block[] = [];
@@ -169,9 +171,9 @@ for (const [pace, pause] of Object.entries(paces))
       expect(await walk(page, ['ArrowUp', 'ArrowUp', 'ArrowUp'], pause)).toEqual(['[x2]', '[x1]', 'Antes']);
     });
 
-test('⌫ after a card and Delete before one select it first, and the second key takes it out with Desfazer', async ({
-  page,
-}) => {
+test('⌫ after a card and Delete before one select it first, and the second key takes it out with Desfazer', {
+  tag: '@timing',
+}, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Apagar ao lado ${Date.now()}`);
   const taskId = await task(page, projectId, 'Card entre parágrafos');
@@ -206,10 +208,12 @@ test('⌫ after a card and Delete before one select it first, and the second key
   expect(await caret(page)).toBe('Depois');
 });
 
-test('Restaurar gives the focus to the card it brings back, selected in the editor', async ({ page }) => {
+test('Restaurar gives the focus to the card it brings back, selected in the editor', { tag: '@timing' }, async ({
+  page,
+}) => {
   await login(page);
   const projectId = await createProject(page, `Restaurar e foco ${Date.now()}`);
-  const trashed = await rpc<{ id: string; version: number }>(page, 'workspace/createTask', {
+  const trashed = await rpc(page, 'workspace/createTask', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Tarefa de volta',
@@ -234,9 +238,9 @@ test('Restaurar gives the focus to the card it brings back, selected in the edit
   expect(await caret(page)).toBe('[card]');
 });
 
-test('an archived project’s document only reads: no typing, no ⌫ on its embeds, no Criar tarefa, no save', async ({
-  page,
-}) => {
+test('an archived project’s document only reads: no typing, no ⌫ on its embeds, no Criar tarefa, no save', {
+  tag: '@timing',
+}, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Só leitura ${Date.now()}`);
   const taskId = await task(page, projectId, 'Card guardado');
@@ -245,12 +249,11 @@ test('an archived project’s document only reads: no typing, no ⌫ on its embe
     { ...card(taskId), id: 'card' },
     { ...paragraph('Depois'), id: 'depois' },
   ]);
-  const project = (await rpc<{ id: string; version: number }[]>(page, 'workspace/listProjects', {})).find(
-    (each) => each.id === projectId,
-  );
+  const project = (await rpc(page, 'workspace/listProjects', {})).find((each) => each.id === projectId);
+  if (!project) throw new Error('Project not found.');
   await rpc(page, 'workspace/updateProject', {
     id: projectId,
-    expectedVersion: project?.version,
+    expectedVersion: project.version,
     archived: true,
     requestId: crypto.randomUUID(),
   });
@@ -289,7 +292,9 @@ test('an archived project’s document only reads: no typing, no ⌫ on its embe
   expect(textOf((await saved(page, id))[0] as Block)).toBe('Texto guardado');
 });
 
-test('typing on a selected card writes in a new paragraph after it, an accent’s composition too', async ({ page }) => {
+test('typing on a selected card writes in a new paragraph after it, an accent’s composition too', {
+  tag: '@timing',
+}, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Digitar no card ${Date.now()}`);
   const taskId = await task(page, projectId, 'Card selecionado');
@@ -321,7 +326,9 @@ test('typing on a selected card writes in a new paragraph after it, an accent’
   await expect.poll(lines).toEqual(['Antes', '[card]', 'á', 'X', 'Depois']);
 });
 
-test('after Restaurar pressed with an embed selected, the arrows still go a block at a time', async ({ page }) => {
+test('after Restaurar pressed with an embed selected, the arrows still go a block at a time', {
+  tag: '@timing',
+}, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Setas depois de restaurar ${Date.now()}`);
   const tasks: { id: string; version: number }[] = [];
@@ -351,9 +358,9 @@ test('after Restaurar pressed with an embed selected, the arrows still go a bloc
   expect(await walk(page, ['ArrowDown', 'ArrowDown', 'ArrowDown'], 200)).toEqual(['[x4]', '[x5]', 'Depois']);
 });
 
-test('from a selected embed, a selection a screen reader or the page’s search sets in the DOM moves it as always', async ({
-  page,
-}) => {
+test('from a selected embed, a selection a screen reader or the page’s search sets in the DOM moves it as always', {
+  tag: '@timing',
+}, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Seleção no DOM ${Date.now()}`);
   const run: Block[] = [];
@@ -372,7 +379,7 @@ test('from a selected embed, a selection a screen reader or the page’s search 
   await expect.poll(() => caret(page)).toBe('Linha 4');
 });
 
-test('⌫ right after a jump to the line start still selects the card first', async ({ page }) => {
+test('⌫ right after a jump to the line start still selects the card first', { tag: '@timing' }, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Teclas rápidas ${Date.now()}`);
   const taskId = await task(page, projectId, 'Card na corrida');
@@ -391,7 +398,9 @@ test('⌫ right after a jump to the line start still selects the card first', as
   await expect(page.locator('.toast').filter({ hasText: 'Bloco removido' })).toHaveCount(0);
 });
 
-test('the arrows walk a document of text, figures and cards at a person’s pace, both ways', async ({ page }) => {
+test('the arrows walk a document of text, figures and cards at a person’s pace, both ways', { tag: '@timing' }, async ({
+  page,
+}) => {
   await login(page);
   const projectId = await createProject(page, `Documento misto ${Date.now()}`);
   const figureOne = await drawing(page, projectId, 'Figura um');
@@ -415,7 +424,9 @@ test('the arrows walk a document of text, figures and cards at a person’s pace
   expect(await walk(page, Array(4).fill('ArrowRight'), 200)).toEqual(['[t1]', '[t2]', '[f2]', 'Fim']);
 });
 
-test('⇧↓ and ⇧↑ from an embed take the block beside it, and Page Down stays, at a person’s pace', async ({ page }) => {
+test('⇧↓ and ⇧↑ from an embed take the block beside it, and Page Down stays, at a person’s pace', {
+  tag: '@timing',
+}, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Shift e página ${Date.now()}`);
   const run: Block[] = [];
@@ -488,7 +499,9 @@ async function fromCard(page: Page, index: number) {
   expect(walked.at(-1)).toBe(`[x${index}]`);
 }
 
-test('⌘↓ and ⌘↑ from any card of a run, the last one too, go to the document’s end and start', async ({ page }) => {
+test('⌘↓ and ⌘↑ from any card of a run, the last one too, go to the document’s end and start', {
+  tag: '@timing',
+}, async ({ page }) => {
   await openRun(page, 'Fim e começo');
   // ⌘ on a Mac, as ProseMirror reads the machine's platform; Ctrl+End and Ctrl+Home elsewhere.
   const apple = process.platform === 'darwin';
@@ -504,7 +517,9 @@ test('⌘↓ and ⌘↑ from any card of a run, the last one too, go to the docu
   }
 });
 
-test('⇧↓ and ⇧↑ grow and shrink a range from an embed a block at a time, at a person’s pace', async ({ page }) => {
+test('⇧↓ and ⇧↑ grow and shrink a range from an embed a block at a time, at a person’s pace', {
+  tag: '@timing',
+}, async ({ page }) => {
   await openRun(page, 'Faixa');
   /** Presses the key, then reads what the selection covers, or the card selected as a node. */
   const step = async (key: string) => {
@@ -526,9 +541,9 @@ test('⇧↓ and ⇧↑ grow and shrink a range from an embed a block at a time,
   expect(await step('Shift+ArrowDown')).toBe('[x2]');
 });
 
-test('⌫ and Delete beside an embed take every letter typed there and select the embed only from the edge', async ({
-  page,
-}) => {
+test('⌫ and Delete beside an embed take every letter typed there and select the embed only from the edge', {
+  tag: '@timing',
+}, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Letras ao lado ${Date.now()}`);
   const taskId = await task(page, projectId, 'Card das letras');

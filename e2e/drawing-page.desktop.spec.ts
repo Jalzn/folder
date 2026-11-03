@@ -1,10 +1,10 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './fixtures.js';
 import { newDrawing } from './support/items.js';
 import { createProject } from './support/navigation.js';
 import { login } from './support/session.js';
 
 // The bar keeps its actions on a desktop; below 720 px they go to the top bar (narrow.spec.ts).
-test.skip(({ isMobile }) => isMobile, 'Desktop: the page bar keeps its actions.');
 
 test('the drawing’s bar has "Exportar ▾" with PNG and the editable file, and its ⋯ imports first', async ({ page }) => {
   await login(page);

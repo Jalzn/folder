@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { cardMenu, column } from './support/board.js';
 import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';

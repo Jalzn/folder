@@ -1,5 +1,6 @@
 import { writeFile } from 'node:fs/promises';
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer } from './support/board.js';
 import { createTaskFromSelection } from './support/document.js';
 import { createFolder, folderRow } from './support/folders.js';
@@ -262,15 +263,8 @@ test('a drawing changed on another device gets a new preview when reopened, and 
   await login(page);
   await createDrawing(page, title, 'Antes');
   const id = new URL(page.url()).pathname.split('/').at(-1);
-  type Drawing = {
-    version: number;
-    title: string;
-    projectId: string | null;
-    scene: { elements: Record<string, unknown>[]; appState: { viewBackgroundColor: string } };
-    previewVersion: number | null;
-    previewCurrent: boolean;
-  };
-  const read = () => rpc<Drawing>(page, 'workspace/getCanvas', { id });
+  if (!id) throw new Error('The item URL has no ID.');
+  const read = () => rpc(page, 'workspace/getCanvas', { id });
   await expect.poll(async () => (await read()).previewCurrent, { timeout: 20_000 }).toBe(true);
 
   // Leave through an in-app link, then another device moves the rectangle.
@@ -284,7 +278,6 @@ test('a drawing changed on another device gets a new preview when reopened, and 
   await rpc(page, 'workspace/saveCanvas', {
     id,
     title: before.title,
-    projectId: before.projectId,
     scene: { ...before.scene, elements },
     expectedVersion: before.version,
     requestId: crypto.randomUUID(),
@@ -317,33 +310,36 @@ test('a drawing changed on another device gets a new preview when reopened, and 
   expect(await read()).toMatchObject({ version: before.version + 2, previewCurrent: true });
 });
 
-test('Claude Code searches one folder of what the interface filed there', async ({ page, baseURL }, info) => {
-  test.skip(isMobile(info.project.name), 'The folder is created from the fixed sidebar; the search is the same.');
-  const marker = `pasta${Date.now()}`;
-  await login(page);
-  const { token } = await generateToken(page, `Pastas — ${info.project.name}`);
-  await closeTokenDialog(page);
-  const mcp = await connectMcp(baseURL as string, token);
-  await page.goto('/');
-  const projectId = await createProject(page, `MCP ${marker}`);
-  const folderId = await createFolder(page, 'Leituras');
-  // Its "+" creates the document inside it; the other one stays at the root.
-  await folderRow(page, 'Leituras').hover();
-  await page.getByRole('button', { name: 'Novo em Leituras', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Documento', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Título do documento' }).fill(`Dentro ${marker}`);
-  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
-  await rpc(page, 'workspace/createDocument', { requestId: crypto.randomUUID(), projectId, title: `Fora ${marker}` });
+test(
+  'Claude Code searches one folder of what the interface filed there',
+  { tag: '@desktop' },
+  async ({ page, baseURL }, info) => {
+    const marker = `pasta${Date.now()}`;
+    await login(page);
+    const { token } = await generateToken(page, `Pastas — ${info.project.name}`);
+    await closeTokenDialog(page);
+    const mcp = await connectMcp(baseURL as string, token);
+    await page.goto('/');
+    const projectId = await createProject(page, `MCP ${marker}`);
+    const folderId = await createFolder(page, 'Leituras');
+    // Its "+" creates the document inside it; the other one stays at the root.
+    await folderRow(page, 'Leituras').hover();
+    await page.getByRole('button', { name: 'Novo em Leituras', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Documento', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Título do documento' }).fill(`Dentro ${marker}`);
+    await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+    await rpc(page, 'workspace/createDocument', { requestId: crypto.randomUUID(), projectId, title: `Fora ${marker}` });
 
-  type Found = { items: { title: string; folder: { id: string; name: string } | null }[] };
-  const all = jsonOf<Found>(await mcp.call('search', { query: marker }));
-  expect(all.items.map((item) => item.title).sort()).toEqual([`Dentro ${marker}`, `Fora ${marker}`]);
-  const inFolder = jsonOf<Found>(await mcp.call('search', { query: marker, folderId }));
-  expect(inFolder.items).toEqual([
-    expect.objectContaining({ title: `Dentro ${marker}`, folder: { id: folderId, name: 'Leituras' } }),
-  ]);
-  await mcp.close();
-});
+    type Found = { items: { title: string; folder: { id: string; name: string } | null }[] };
+    const all = jsonOf<Found>(await mcp.call('search', { query: marker }));
+    expect(all.items.map((item) => item.title).sort()).toEqual([`Dentro ${marker}`, `Fora ${marker}`]);
+    const inFolder = jsonOf<Found>(await mcp.call('search', { query: marker, folderId }));
+    expect(inFolder.items).toEqual([
+      expect.objectContaining({ title: `Dentro ${marker}`, folder: { id: folderId, name: 'Leituras' } }),
+    ]);
+    await mcp.close();
+  },
+);
 
 test('Claude Code reads the tasks a document embeds as links, and follows one to read_task', async ({
   page,
@@ -357,13 +353,13 @@ test('Claude Code reads the tasks a document embeds as links, and follows one to
   await page.goto('/');
   await expect(page).toHaveURL(projectAddress);
   const projectId = new URL(page.url()).pathname.split('/')[2] as string;
-  const task = await rpc<{ id: string }>(page, 'workspace/createTask', {
+  const task = await rpc(page, 'workspace/createTask', {
     requestId: crypto.randomUUID(),
     projectId,
     title: `Tarefa ${mark}`,
   });
   // As the interface saves a document with a card: an embed block with the task's ID.
-  const document = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+  const document = await rpc(page, 'workspace/createDocument', {
     requestId: crypto.randomUUID(),
     projectId,
     title: `Plano ${mark}`,

@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { newDocument } from './support/items.js';
 import { pressCommand } from './support/keyboard.js';
@@ -105,8 +106,7 @@ test('Esc in a new task with a typed title asks before discarding, and Esc there
   await expect(form).toHaveCount(0);
 });
 
-test('the rail’s Itens tree works from the keyboard and closes on a choice', async ({ page }, info) => {
-  test.skip(info.project.name === 'chrome-mobile', 'Phones have no rail.');
+test('the rail’s Itens tree works from the keyboard and closes on a choice', { tag: '@desktop' }, async ({ page }) => {
   const title = `Pela faixa ${Date.now()}`;
   await login(page);
   await newDocument(page);
@@ -159,10 +159,9 @@ test('a new task opened from N gives the focus back to where it was', async ({ p
   await expect(before).toBeFocused();
 });
 
-test('Esc leaves a folder’s rename, then the move menu, one at a time, and never closes a folder', async ({
-  page,
-}, info) => {
-  test.skip(info.project.name === 'chrome-mobile', 'The tree’s keys need the fixed sidebar.');
+test('Esc leaves a folder’s rename, then the move menu, one at a time, and never closes a folder', {
+  tag: '@desktop',
+}, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Esc pastas ${Date.now()}`);
   const folder = await rpcFolder(page, projectId, 'Leituras');

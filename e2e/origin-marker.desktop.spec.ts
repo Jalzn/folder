@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer } from './support/board.js';
 import { clickText, createTaskFromSelection, documentEditor, embedCard, expectSelected } from './support/document.js';
 import { toast } from './support/feedback.js';
@@ -8,7 +9,6 @@ import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The markers need a pointer to hover and a desktop drawer; the phone reaches the tasks by "Tarefas".
-test.skip(({ isMobile }) => isMobile, 'Desktop: hover and the drawer below the document.');
 
 /** The text the hovered marker's underline covers: the CSS highlight "origin-excerpt", or null without one. */
 const underlined = (page: Page) =>
@@ -71,7 +71,8 @@ test('a task from an excerpt leaves a marker after it, which names the task and 
     'Ligar para o banco amanhã.',
   );
   const id = new URL(page.url()).pathname.split('/').at(-1);
-  const saved = await rpc<{ content: unknown[] }>(page, 'workspace/getDocument', { id });
+  if (!id) throw new Error('The item URL has no ID.');
+  const saved = await rpc(page, 'workspace/getDocument', { id });
   expect(JSON.stringify(saved.content)).not.toContain('origin');
 
   // Hovering underlines the excerpt; a click opens the task.

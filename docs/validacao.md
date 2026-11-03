@@ -20,7 +20,50 @@ Executada em 2026-11-02, em três levas com um ramo cada: backend, fundações d
 | `pnpm check` | Último commit de `refactor/final-web` | Passou: dependências sem violação em 988 módulos e 727 testes unitários |
 | E2E dos specs tocados | `refactor/final-web`, porta 5191 | Passaram: `item-page-decisions`, `document-page`, `canvas`, `draft-isolation`, `adversarial`, `app`, `folder-retries`, `trash`, `canvas-navigation`, `palette`, `navigation`, `task-drawer` e `board`. Os E2E novos, do item na lixeira com texto local e da página de aviso, falharam sem a correção; o nome do rascunho e a rede que volta têm testes unitários |
 
-O portão completo de `refactor/final-web` (`check`, `test:db`, `build` e E2E completo) roda na entrada na `main`.
+O portão completo foi executado na retomada, contra a `main` em `48bda92`: `check` com 727 unitários, `test:db` com 274 testes, build e E2E com 220 aprovados e 136 pulados em 16,5 min.
+
+### Retomada: isolamento e paralelismo do E2E
+
+Executada em 2026-11-02, a partir de `48bda92`, no ramo `refactor/e2e-isolation`. Este lote cobre o isolamento dos servidores e projetos, a tipagem RPC, a seleção por dispositivo, o smoke e os helpers de salvamento, navegação e criação. As partes ainda pendentes estão no [resultado da etapa](etapas/12-refatoracao.md#para-depois).
+
+| Verificação | Resultado |
+| --- | --- |
+| `mise exec -- pnpm check` | Passou: lint sem erro, os mesmos 24 avisos de espera do baseline, tipos, limites sem violação em 992 módulos e 727 testes unitários em 120 arquivos |
+| `mise exec -- pnpm test:db` | Passou: 274 testes em 39 arquivos, com SQLite temporário |
+| `mise exec -- pnpm build` | Passou; permaneceu o aviso conhecido de chunks grandes |
+| Lista de títulos e dispositivos | Os 220 cenários executados no baseline foram executados em todas as cinco rodadas: 174 de desktop e 46 de Pixel 7. A comparação normalizou apenas o sufixo `.desktop` e o nome do projeto `chrome-desktop-timing`; nenhum cenário sumiu ou mudou de dispositivo |
+| Ciclo dos servidores | Quatro servidores simultaneamente disponíveis, com quatro portas e diretórios distintos. Após `stop`, portas fechadas e diretórios removidos. Falhas deliberadas de inicialização do servidor e do seed também removeram seus diretórios |
+| Rotas após o ajuste do teste de erro | 8 passaram, no desktop e Pixel 7 |
+| Criação a partir de um documento aberto, após a correção do helper | O cenário W5.7a passou 20 vezes com quatro workers, em 43,8 s |
+
+**Cinco rodadas consecutivas do E2E completo**, com `mise exec -- pnpm e2e --reporter=list,json,html`, após as correções dos helpers:
+
+| Rodada | Tempo do relatório Playwright | Aprovados | Falhas, intermitentes, pulados ou repetições automáticas |
+| --- | --- | --- | --- |
+| 1 | 6 min 50,4 s | 220 | 0 |
+| 2 | 6 min 40,9 s | 220 | 0 |
+| 3 | 7 min 47,2 s | 220 | 0 |
+| 4 | 8 min 20,1 s | 220 | 0 |
+| 5 | 7 min 59,8 s | 220 | 0 |
+
+Total: 1.100 execuções aprovadas. Os relatórios JSON confirmaram uma tentativa por cenário e a mesma lista de títulos e dispositivos nas cinco rodadas. Em cada uma, os 41 testes `@timing` começaram depois do término dos 179 comuns e não se sobrepuseram entre si. Ao fim, não havia diretório `tinyfold-e2e-worker-*` restante. A mediana foi 7 min 47,2 s; o baseline de um worker levou 16,5 min. São medições locais com a carga normal da máquina, sem ambiente exclusivo de benchmark.
+
+A primeira execução de desenvolvimento encontrou duas falhas no mesmo cenário, desktop e celular: o teste provoca um erro que remove o shell, mas o novo helper esperava a lateral do shell saudável. O teste passou a acionar diretamente a abertura no celular, preservando as três asserções da página de erro. Nessa tentativa, 177 passaram e os 41 casos de tempo não rodaram porque dependiam do grupo com falha. Nenhuma correção no produto foi necessária.
+
+A tentativa seguinte encontrou uma corrida antiga de `newItem`: ao criar a partir de um documento aberto, a presença do campo de título antigo satisfazia a espera antes de a navegação terminar. O trace mostrou ambos os preenchimentos ainda na URL anterior, depois do clique de criação; o novo documento abriu vazio. O helper agora espera uma URL diferente e do tipo criado (`d06a56c`), antes de esperar o editor. Essa tentativa teve 178 aprovados, uma falha e 41 não executados. As 20 repetições focadas passaram após o ajuste; a contagem das cinco rodadas completas recomeçou depois dele. Os limites de tempo e as asserções do cenário foram preservados.
+
+**Revisão do lote:** comparação do diff, dos títulos e dos dispositivos, mantendo as asserções de conteúdo, versões, foco, Desfazer, rascunhos e falhas de rede. A tipagem revelou campos opcionais que precisavam de guardas e um `projectId` ignorado no envio de `saveCanvas`; o campo saiu da preparação. A única alteração em `src/` exporta o tipo do cliente RPC. Migrações, regras e interface permaneceram iguais.
+
+**Chrome dentro do Herdr.app:** a passagem usou o Content Viewer, com o motor Chrome confirmado e a sessão `herdr-preview-tinyfold-refactor`. O servidor tinha banco temporário com o exemplo; não foi usado o banco principal. Foram conferidos:
+
+- login, abertura de documento com figura e tarefa incorporadas e abertura/fechamento da gaveta;
+- criação de documento, título e texto, estado salvo e preservação após recarregar;
+- inserção de tarefa pelo menu `/`, digitação de um parágrafo depois dela e preservação de ambos ao recarregar;
+- abertura do desenho e das opções de exportação PNG e `.excalidraw`;
+- navegação pela lateral sobreposta e leitura do documento em viewport de 390 × 844, sem corte horizontal visível; essa passagem foi uma redução da janela, sem emulação de toque;
+- inspeção das capturas do browser e ausência de erros de página registrados na sessão.
+
+Essa passagem cobre os fluxos deste lote. A matriz manual completa da etapa 12, inclusive todos os percursos de teclado entre incorporados em ritmo humano, continua pendente.
 
 ### Revisões
 
@@ -58,8 +101,8 @@ O portão completo de `refactor/final-web` (`check`, `test:db`, `build` e E2E co
 
 ### Pendências
 
-- **Chrome real:** as passagens previstas, inclusive a sessão dos incorporados ao ritmo de uma pessoa, não foram feitas nesta etapa.
-- **Tempos do E2E:** o E2E isolado e paralelo ficou para depois (W2.6 a W2.11), então não há tempos de antes e depois a comparar.
+- **Chrome real:** a retomada fez a passagem descrita acima no Chrome do Herdr. A matriz completa prevista, inclusive todos os percursos entre incorporados ao ritmo de uma pessoa, continua pendente.
+- **Arnês de testes:** os helpers e a adoção direta das fixtures restantes, agrupamento por área e relógio falso estão no [resultado da etapa](etapas/12-refatoracao.md#para-depois).
 
 ## Preparação para Railway e Cloudflare
 

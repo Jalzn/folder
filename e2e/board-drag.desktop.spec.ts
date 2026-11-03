@@ -1,4 +1,5 @@
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { column } from './support/board.js';
 import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
@@ -6,7 +7,6 @@ import { createProject, openBoard } from './support/navigation.js';
 import { login } from './support/session.js';
 
 // The browser's drag needs a fine pointer: the phone moves cards by their ⋯ (narrow.spec.ts).
-test.skip(({ isMobile }) => isMobile, 'Desktop: dragging needs a mouse.');
 
 const titles = (where: Locator) => where.locator('.task-card__title');
 

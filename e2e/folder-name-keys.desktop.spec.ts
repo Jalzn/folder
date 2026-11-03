@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { folderRow, itemsTree, rpcFolder } from './support/folders.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { rpc } from './support/rpc.js';
@@ -6,13 +7,10 @@ import { login } from './support/session.js';
 
 // The folder name field owns its keys (tree.md A1 and M4), typed for real, not filled. Desktop: the fixed
 // sidebar, where F2 and the arrows apply.
-test.skip(({ isMobile }) => isMobile, 'Desktop: F2 and the arrows of the fixed sidebar.');
 
 /** The project's folders as the server has them, by name. */
 const serverFolders = async (page: Page, projectId: string) =>
-  (await rpc<{ folders: { name: string }[] }>(page, 'workspace/listFolders', { projectId })).folders.map(
-    (folder) => folder.name,
-  );
+  (await rpc(page, 'workspace/listFolders', { projectId })).folders.map((folder) => folder.name);
 
 test('in the rename field the arrows move the caret, and only Enter saves', async ({ page }) => {
   await login(page);

@@ -1,11 +1,12 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
+
 import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
 
 // The tree review's keyboard and focus findings (tree.md M2, M3, M5, B1, B4, B5, B6 and B7).
-test.skip(({ isMobile }) => isMobile, 'Desktop and the 900 px sidebar over the page.');
 
 const live = (page: Page) => page.locator('p.sr-only[aria-live="polite"]');
 const focusedRow = (page: Page) =>
@@ -27,9 +28,9 @@ async function sampleProject(page: Page) {
   return { projectId, fluxo: fluxo.id };
 }
 
-test('a folder closed over the open item stays closed when the sidebar comes back, wide and at 900 px', async ({
-  page,
-}) => {
+test('a folder closed over the open item stays closed when the sidebar comes back, wide and at 900 px', {
+  tag: '@timing',
+}, async ({ page }) => {
   const { projectId, fluxo } = await sampleProject(page);
   await page.goto(`/projetos/${projectId}/documentos/${fluxo}`);
   await expect(folderRow(page, 'Arquitetura')).toHaveAttribute('aria-expanded', 'true');
@@ -65,7 +66,9 @@ test('a folder closed over the open item stays closed when the sidebar comes bac
   await expect(treeRow(page, 'Zebra')).toBeFocused();
 });
 
-test('type-to-select keeps the letters that would be shortcuts, which act again after the pause', async ({ page }) => {
+test('type-to-select keeps the letters that would be shortcuts, which act again after the pause', {
+  tag: '@timing',
+}, async ({ page }) => {
   await sampleProject(page);
   await treeRow(page, 'Visão').focus();
   // "op" reaches "Opções de layout": the P goes on the search instead of pinning.
@@ -83,9 +86,9 @@ test('type-to-select keeps the letters that would be shortcuts, which act again 
   await expect(live(page)).toHaveText('Desafixado.');
 });
 
-test('→ on an open folder goes to its first child, Tab comes in at the open item, and ⌥↑ says the end', async ({
-  page,
-}) => {
+test('→ on an open folder goes to its first child, Tab comes in at the open item, and ⌥↑ says the end', {
+  tag: '@timing',
+}, async ({ page }) => {
   const { projectId, fluxo } = await sampleProject(page);
   await folderRow(page, 'Arquitetura').focus();
   await page.keyboard.press('ArrowRight');
@@ -109,7 +112,9 @@ test('→ on an open folder goes to its first child, Tab comes in at the open it
   expect(await focusedRow(page)).toMatch(/^Fluxo, documento/);
 });
 
-test('the layers the tree opens have names: the move popover, the row’s Novo and the folder’s ⋯', async ({ page }) => {
+test('the layers the tree opens have names: the move popover, the row’s Novo and the folder’s ⋯', {
+  tag: '@timing',
+}, async ({ page }) => {
   await sampleProject(page);
   await treeRow(page, 'Zebra').focus();
   await page.keyboard.press('m');
@@ -139,9 +144,9 @@ test('the layers the tree opens have names: the move popover, the row’s Novo a
   ).toBe(0);
 });
 
-test('M on a row opens "Mover para pasta…", which ↓ and Enter drive, in the sidebar and in the rail’s Itens', async ({
-  page,
-}) => {
+test('M on a row opens "Mover para pasta…", which ↓ and Enter drive, in the sidebar and in the rail’s Itens', {
+  tag: '@timing',
+}, async ({ page }) => {
   await sampleProject(page);
   const toast = page.locator('.toast');
   // The menu lists the root, then the folders in their order: Arquitetura (the newest) and Vazia.
@@ -170,9 +175,9 @@ test('M on a row opens "Mover para pasta…", which ↓ and Enter drive, in the 
   await expect(toast).toContainText('Movido para Vazia.');
 });
 
-test('letters that type-to-select finds nothing for stay in the tree: "zp" pins nothing, "an" opens nothing', async ({
-  page,
-}) => {
+test('letters that type-to-select finds nothing for stay in the tree: "zp" pins nothing, "an" opens nothing', {
+  tag: '@timing',
+}, async ({ page }) => {
   const { projectId } = await sampleProject(page);
   const visao = treeRow(page, 'Visão');
   await visao.click();
@@ -193,9 +198,9 @@ test('letters that type-to-select finds nothing for stay in the tree: "zp" pins 
   expect(page.url()).toContain(projectId);
 });
 
-test('↓ from Quadro comes into the tree at the open item’s row, and ↑ from the first row goes back', async ({
-  page,
-}) => {
+test('↓ from Quadro comes into the tree at the open item’s row, and ↑ from the first row goes back', {
+  tag: '@timing',
+}, async ({ page }) => {
   const { projectId, fluxo } = await sampleProject(page);
   await page.goto(`/projetos/${projectId}/documentos/${fluxo}`);
   await expect(treeRow(page, 'Fluxo')).toHaveAttribute('aria-current', 'page');

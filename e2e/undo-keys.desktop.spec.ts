@@ -1,4 +1,6 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
+
 import { drawer, openDrawer } from './support/board.js';
 import { newDocument, newTask } from './support/items.js';
 import { createProject, currentProjectId } from './support/navigation.js';
@@ -6,7 +8,6 @@ import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // Esc and ⌘Z from a hardware keyboard; the phone has neither.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the keys come from a hardware keyboard.');
 
 /**
  * The browser's own undo key on the machine that runs the suite. The devices report Windows, so the app reads
@@ -26,7 +27,9 @@ function countSaves(page: Page, procedure: string) {
 /** Long enough for the autosave's pause (650 ms) and a save to start, had the text changed. */
 const AUTOSAVE_WINDOW_MS = 1_500;
 
-test('⌘Z in the drawer outside its fields leaves the description and its saved version alone', async ({ page }) => {
+test('⌘Z in the drawer outside its fields leaves the description and its saved version alone', {
+  tag: '@timing',
+}, async ({ page }) => {
   await login(page);
   await createProject(page, `Desfazer fora do campo ${Date.now()}`);
   await newTask(page, 'Revisar o contrato');
@@ -44,11 +47,12 @@ test('⌘Z in the drawer outside its fields leaves the description and its saved
   await saved;
   await expect(region.getByText('Salvo', { exact: true })).toBeVisible();
 
-  const board = await rpc<{ tasks: { id: string; title: string }[] }>(page, 'workspace/projectBoard', {
+  const board = await rpc(page, 'workspace/projectBoard', {
     projectId: currentProjectId(page),
   });
   const id = board.tasks.find((task) => task.title === 'Revisar o contrato')?.id;
-  const version = async () => (await rpc<{ textVersion: number }>(page, 'workspace/getTask', { id })).textVersion;
+  if (!id) throw new Error('The created task is missing.');
+  const version = async () => (await rpc(page, 'workspace/getTask', { id })).textVersion;
   const before = await version();
 
   // Esc leaves the description for the drawer; ⌘Z there has no toast to undo and must not reach the editor.
@@ -62,7 +66,9 @@ test('⌘Z in the drawer outside its fields leaves the description and its saved
   expect(await version()).toBe(before);
 });
 
-test('⌘Z on the document page outside the editor leaves the text and its saved version alone', async ({ page }) => {
+test('⌘Z on the document page outside the editor leaves the text and its saved version alone', {
+  tag: '@timing',
+}, async ({ page }) => {
   await login(page);
   await createProject(page, `Desfazer na página ${Date.now()}`);
   await newDocument(page);
@@ -79,7 +85,8 @@ test('⌘Z on the document page outside the editor leaves the text and its saved
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
 
   const id = new URL(page.url()).pathname.split('/').at(-1);
-  const version = async () => (await rpc<{ version: number }>(page, 'workspace/getDocument', { id })).version;
+  if (!id) throw new Error('The item URL has no ID.');
+  const version = async () => (await rpc(page, 'workspace/getDocument', { id })).version;
   const before = await version();
 
   // Esc leaves the editor for the page; ⌘Z there must not reach the editor.

@@ -1,11 +1,11 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { escapeRegExp, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
 
 // The keyboard of a fixed sidebar; narrow.spec.ts covers the tree over the page on a phone.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the sidebar is fixed beside the page.');
 
 const focusedRow = (page: Page) =>
   page.evaluate(() => document.activeElement?.closest('[role="row"]')?.getAttribute('aria-label') ?? null);

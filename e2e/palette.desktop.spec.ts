@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { itemsTree, rpcDocument } from './support/folders.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject } from './support/navigation.js';
@@ -6,7 +7,6 @@ import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // Typing into ⌘K right after opening it needs a hardware keyboard: desktop.
-test.skip(({ isMobile }) => isMobile, 'Desktop: ⌘K typed from the keyboard.');
 
 const palette = (page: Page) => page.getByRole('dialog', { name: 'Buscar e comandar' });
 const field = (page: Page) => palette(page).getByRole('textbox', { name: 'Buscar ou comandar' });

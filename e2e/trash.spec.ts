@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer, drawer, openDrawer } from './support/board.js';
 import { createTaskFromSelection } from './support/document.js';
 import { moveToTrash, newDocument, newDrawing, newTask } from './support/items.js';

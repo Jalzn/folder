@@ -1,5 +1,19 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { pressCommand } from './keyboard.js';
+import { answers } from './rpc.js';
+
+/** Waits for the save carrying this text, so an earlier title save cannot satisfy the wait. */
+export async function writeAndSave(page: Page, text: string) {
+  const saved = page.waitForResponse(
+    (response) =>
+      answers(response, 'workspace/saveDocument') &&
+      response.status() === 200 &&
+      Boolean(response.request().postData()?.includes(text)),
+  );
+  await documentEditor(page).fill(text);
+  await saved;
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
+}
 
 /**
  * ⌘⌥T (Ctrl+Alt+T on the suite's devices): a task from the excerpt selected in the document's editor. It

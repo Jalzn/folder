@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './fixtures.js';
 import { card, drawer, openDrawer } from './support/board.js';
 import { newTask } from './support/items.js';
 import { createProject, openBoard } from './support/navigation.js';
@@ -6,9 +7,6 @@ import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The owner's zone is one for the installation; the test puts it back for the next ones.
-test.skip(({ isMobile }) => isMobile, 'Desktop: one zone change is enough.');
-
-type Session = { owner: { timeZone: string | null } };
 
 test.describe('in São Paulo', () => {
   test.use({ timezoneId: 'America/Sao_Paulo' });
@@ -18,8 +16,9 @@ test.describe('in São Paulo', () => {
     browser,
   }) => {
     await login(page);
-    const before = (await rpc<Session>(page, 'auth/session', {})).owner.timeZone;
+    const before = (await rpc(page, 'auth/session', {})).owner.timeZone;
     expect(before).not.toBeNull();
+    if (!before) throw new Error('The signed-in owner has no time zone.');
     await rpc(page, 'auth/setTimeZone', { timeZone: 'America/Sao_Paulo' });
     // The app reads the zone with the session.
     await page.reload();
@@ -45,6 +44,7 @@ test.describe('in São Paulo', () => {
 
       // A device in Tokyo offers its own zone.
       const tokyo = await browser.newContext({
+        baseURL: new URL(page.url()).origin,
         timezoneId: 'Asia/Tokyo',
         storageState: await page.context().storageState(),
       });

@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { cardMenu, column, drawer, openDrawer } from './support/board.js';
 import { folderRow, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { moveToTrash, newDocument, newTask } from './support/items.js';
@@ -14,8 +15,7 @@ async function nameClearsActions(page: Page) {
   return name.x + name.width <= actions.x;
 }
 
-test('below 720 px a long project name gives way to the page actions', async ({ page }, info) => {
-  test.skip(info.project.name !== 'chrome-mobile', 'Only a phone has the single top bar.');
+test('below 720 px a long project name gives way to the page actions', { tag: '@mobile' }, async ({ page }) => {
   // 40 characters, more than the bar holds beside the actions.
   const name = `Barra estreita com nome comprido ${String(Date.now()).slice(-7)}`;
   await login(page);
@@ -41,8 +41,7 @@ test('below 720 px a long project name gives way to the page actions', async ({ 
   }
 });
 
-test('the page actions keep the focus when the window crosses 720 px', async ({ page }, info) => {
-  test.skip(info.project.name === 'chrome-mobile', 'A phone keeps its width.');
+test('the page actions keep the focus when the window crosses 720 px', { tag: '@desktop' }, async ({ page }) => {
   await login(page);
   await newDocument(page);
   await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
@@ -62,10 +61,9 @@ test('the page actions keep the focus when the window crosses 720 px', async ({ 
   await expect(options).toBeFocused();
 });
 
-test('on a phone the tree opens over the page: a tap opens a folder, its tools show, and ⋯ moves an item', async ({
-  page,
-}, info) => {
-  test.skip(info.project.name !== 'chrome-mobile', 'A phone: touch, no hover and no drag.');
+test('on a phone the tree opens over the page: a tap opens a folder, its tools show, and ⋯ moves an item', {
+  tag: '@mobile',
+}, async ({ page }) => {
   await login(page);
   const project = await createProject(page, `Celular ${Date.now()}`);
   const folder = await rpcFolder(page, project, 'Leituras');
@@ -100,10 +98,9 @@ test('on a phone the tree opens over the page: a tap opens a folder, its tools s
   await page.keyboard.press('Escape');
 });
 
-test('on a phone the board scrolls sideways, ⋯ moves a card, and the drawer covers the page', async ({
-  page,
-}, info) => {
-  test.skip(info.project.name !== 'chrome-mobile', 'A phone: touch, no hover and no drag.');
+test('on a phone the board scrolls sideways, ⋯ moves a card, and the drawer covers the page', {
+  tag: '@mobile',
+}, async ({ page }) => {
   await login(page);
   await createProject(page, `Quadro no celular ${Date.now()}`);
   // newTask opens the board itself: opening it twice on a phone races the sidebar's slide.
@@ -125,18 +122,17 @@ test('on a phone the board scrolls sideways, ⋯ moves a card, and the drawer co
   await expect(drawer(page).getByRole('button', { name: 'Fechar a gaveta', exact: true })).toBeVisible();
 });
 
-test('on a phone the embeds take the width: a tap opens the card in the drawer, Restaurar shows, the figure opens', async ({
-  page,
-}, info) => {
-  test.skip(info.project.name !== 'chrome-mobile', 'The phone layout.');
+test('on a phone the embeds take the width: a tap opens the card in the drawer, Restaurar shows, the figure opens', {
+  tag: '@mobile',
+}, async ({ page }) => {
   await login(page);
   const projectId = await createProject(page, `Incorporados no celular ${Date.now()}`);
-  const task = await rpc<{ id: string }>(page, 'workspace/createTask', {
+  const task = await rpc(page, 'workspace/createTask', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Card no celular',
   });
-  const trashed = await rpc<{ id: string; version: number }>(page, 'workspace/createTask', {
+  const trashed = await rpc(page, 'workspace/createTask', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Na lixeira do celular',
@@ -146,12 +142,12 @@ test('on a phone the embeds take the width: a tap opens the card in the drawer, 
     expectedVersion: trashed.version,
     requestId: crypto.randomUUID(),
   });
-  const drawing = await rpc<{ id: string }>(page, 'workspace/createCanvas', {
+  const drawing = await rpc(page, 'workspace/createCanvas', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Figura no celular',
   });
-  const document = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+  const document = await rpc(page, 'workspace/createDocument', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Documento com incorporados',

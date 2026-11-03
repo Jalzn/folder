@@ -503,10 +503,10 @@ As [decisões do usuário](#decisões-do-usuário) viram 21 commits, mais o movi
 mise exec -- pnpm check
 mise exec -- pnpm test:db
 mise exec -- pnpm build
-E2E_PORT=<porta do agente> mise exec -- pnpm e2e   # desktop e Pixel 7
+mise exec -- pnpm e2e   # desktop e Pixel 7; servidores e portas por worker
 ```
 
-Cada agente usa uma faixa de portas própria. As portas do uso real (3370 e 5170) e as de qualquer servidor de teste do usuário ficam de fora. Depois de W2.11, cada worker usa `E2E_PORT + 2 × índice`.
+Antes de W2.11, cada execução reservava uma faixa de portas com `E2E_PORT`. Na retomada, cada worker passou a obter uma porta disponível do sistema, com servidor e SQLite temporários próprios. As portas do uso real e de outros testes não são reutilizadas. O servidor confirma que conseguiu escutar antes da consulta de prontidão.
 
 A equivalência se prova por quatro evidências:
 
@@ -683,7 +683,7 @@ As revisões concordam nestes pontos. Eles valem para todos os commits.
 - [ ] Cada onda passou pela revisão adversarial, e o que foi corrigido passou pelo reteste.
 - [ ] As passagens no Chrome real estão registradas, com a sessão dos incorporados ao ritmo de uma pessoa.
 - [ ] O `deps` cobre `src`, `scripts` e `e2e`, sem `warn`. O teste de convenções de CSS só tem exceções com motivo.
-- [ ] O E2E roda isolado e em paralelo, e o tempo medido está na validação.
+- [x] O E2E roda isolado e em paralelo, e o tempo medido está na validação.
 - [ ] As 21 correções decididas entraram como commits próprios, cada uma com o seu teste.
 
 ## Documentação ao concluir
@@ -702,6 +702,20 @@ As revisões concordam nestes pontos. Eles valem para todos os commits.
 ## Resultado
 
 Três levas entraram, cada uma num ramo, integradas em `refactor/integrate` e fechadas em `refactor/final-web`: o backend, as fundações da web e as funcionalidades da web. Depois da onda 1, o processo mudou a pedido do usuário (ver [Desvios](#desvios-do-plano)). Os portões e as revisões estão na [validação](../validacao.md#etapa-12-refatoração).
+
+**Retomada do E2E.** A leva seguinte parte de `48bda92`, no ramo `refactor/e2e-isolation`, e reúne a preparação dos testes por assunto:
+
+- W2.2: o salvamento de documento usado em `adversarial` e `draft-isolation` tem um helper comum, que espera a resposta com o texto enviado.
+- W2.5: a navegação abre pelo modo de layout; o teste que provoca a falha do shell aciona diretamente o botão, pois a falha substitui a lateral.
+- W2.6 e W2.7: fixtures de API e projeto, sessão por origem e projeto novo em cada `login` principal. O login independente preserva a segunda sessão da mesma conta. Os specs ainda podem usar os helpers existentes, sem herdar o projeto do teste anterior.
+- W2.8: entradas e respostas RPC vêm do contrato do servidor, sem tipos de resposta escolhidos pelo teste. O servidor só ganhou o export de um tipo; seu comportamento não mudou.
+- W2.9: arquivos `.desktop.spec.ts` e tags nos arquivos mistos selecionam o dispositivo antes da execução. A lista mantém os mesmos 220 cenários por título e dispositivo; os 136 casos incompatíveis deixam de aparecer como pulados.
+- W2.10, em parte: `@smoke` seleciona oito cenários nos dois dispositivos.
+- W2.11: quatro workers, cada um com servidor, porta disponível, conta e SQLite próprios. Os 41 casos `@timing` rodam depois, em um worker. O exemplo usa o mesmo ciclo de vida com seed separado. O encerramento espera o processo antes de apagar os arquivos, inclusive quando a inicialização falha.
+
+O paralelismo também revelou uma corrida do helper de criação: o editor anterior ainda visível podia receber a preparação do próximo documento. `d06a56c` faz o helper esperar a nova URL antes de devolver o controle ao teste; o cenário que expôs a falha passou 20 vezes com quatro workers. Isso muda a sincronização do teste, sem mudar o produto.
+
+As rodadas de estabilidade, a comparação da lista e a passagem manual pelo Chrome do Herdr estão em [validação](../validacao.md#retomada-isolamento-e-paralelismo-do-e2e).
 
 **Guardas.**
 
@@ -772,7 +786,7 @@ Três levas entraram, cada uma num ramo, integradas em `refactor/integrate` e fe
   - `createBeside` (WP-6);
   - WP-8 a WP-14 e WP-16 (a gaveta, o quadro e os slots de comandos);
   - o resto de WP-17 e WP-18.
-- **CSS e E2E:** a onda 6, e W2.2 a W2.13 (o arnês de testes, inclusive o E2E isolado e paralelo).
+- **CSS e E2E:** a onda 6; ampliar W2.2 aos outros helpers de documento; W2.3 e W2.4 (builders, falhas de rede e teclado); adotar diretamente as fixtures no restante dos specs; agrupar os specs por área (resto de W2.10); W2.13 (relógio do Playwright e ritmos nomeados). W2.12 continua opcional, condicionado a um remoto. Os retratos visuais W1.4 também continuam pendentes.
 
 ## Desvios do plano
 
@@ -826,7 +840,8 @@ Três levas entraram, cada uma num ramo, integradas em `refactor/integrate` e fe
 - **Caracterização:** W4.0a a W4.0c não viraram retratos próprios. A tabela de `watchPage` (esconder, rede e saída, em cada estado), os testes de `runUndoableChange` e os E2E de pastas e de lixeira cobrem o mesmo.
 - **Ondas 1 e 2:**
   - W1.4 (retratos visuais) e W1.7 ficaram de fora;
-  - da onda 2, só a parte mecânica de W2.1.
+  - nas três primeiras levas, só a parte mecânica de W2.1;
+  - a retomada reúne o isolamento, o cliente tipado, a seleção por dispositivo e o smoke num commit por assunto, conforme o processo abreviado. A adoção das fixtures é gradual: `login` também cria um projeto próprio para os specs ainda não convertidos. A porta vem do sistema, em vez da fórmula prevista `E2E_PORT + 2 × índice`.
 - **WF-6:** entrou em duas partes. A fundação (o link, `isSessionError`, os eventos e `signOut`) foi da leva das fundações, e as chamadas das funcionalidades saíram na integração.
 - **WF-7:** ficou só `useLatest`. `useStableHandlers` e `useCommandSlot` entraram e saíram no mesmo lote, porque a revisão mostrou que não serviam aos lugares que os adotariam: "Nesta tarefa" oferece um comando só quando ele existe, e o ⌘↵ da gaveta escreve no slot num efeito passivo. Os slots ficam para WP-11, com o tempo de cada lugar.
 - **W4.6a:** a revisão do lote achou uma regressão do próprio commit. Uma sessão recusada de vez não tentava de novo nem depois de uma edição. Uma edição agora limpa `refused`.

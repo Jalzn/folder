@@ -140,4 +140,4 @@ São até 10 tokens ativos, sem validade. O Perfil mostra o último uso de cada 
 
 ## Validação
 
-`pnpm check`, `pnpm test:db`, `pnpm build` e `pnpm e2e` verificam código, banco e interface. O E2E inicia seu próprio servidor e SQLite temporário, usa Google Chrome e executa nos tamanhos desktop e celular. As evidências efetivamente executadas ficam em `docs/validacao.md`.
+`pnpm check`, `pnpm test:db`, `pnpm build` e `pnpm e2e` verificam código, banco e interface. O E2E inicia um servidor e um SQLite temporário por worker, em portas disponíveis, usa Google Chrome e executa nos tamanhos desktop e celular. O recorte `pnpm e2e:smoke` também exige build prévio. As evidências efetivamente executadas ficam em `docs/validacao.md`.

@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { moveToTrash, newDocument, newDrawing, restoreFromTrash, trashRow } from './support/items.js';
 import {
   createProject,

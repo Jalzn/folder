@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { newDocument } from './support/items.js';
 import { answers } from './support/rpc.js';
 import { login } from './support/session.js';

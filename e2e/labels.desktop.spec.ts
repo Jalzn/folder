@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './fixtures.js';
 import { card, closeDrawer, drawer, openDrawer } from './support/board.js';
 import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
@@ -7,7 +8,6 @@ import { createProject, openBoard } from './support/navigation.js';
 import { login } from './support/session.js';
 
 // The dialog's keys need a desktop.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the dialog is driven by the keyboard.');
 
 test('Gerenciar etiquetas creates, renames, recolors and deletes a label in use, which Desfazer brings back', async ({
   page,

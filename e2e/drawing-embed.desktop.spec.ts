@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { documentEditor, embedFigure, pickEmbed, slash } from './support/document.js';
 import { newDocument } from './support/items.js';
 import { createProject } from './support/navigation.js';
@@ -6,7 +7,6 @@ import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The `/` menu and the figure's hover need a desktop; narrow.spec.ts has the phone.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the keys and the hover of the figure.');
 
 /** A scene with one rectangle, as Excalidraw saves it. */
 const scene = {
@@ -45,7 +45,7 @@ const scene = {
 
 /** A drawing with the rectangle and no preview yet, as one made on another device whose tab closed early. */
 async function rpcDrawing(page: Page, projectId: string, title: string) {
-  return rpc<{ id: string }>(page, 'workspace/createCanvas', {
+  return rpc(page, 'workspace/createCanvas', {
     requestId: crypto.randomUUID(),
     projectId,
     title,
@@ -84,9 +84,7 @@ test('a figure without a current preview makes one, shows it from the route and 
   expect(new URL(await image.evaluate((element: HTMLImageElement) => element.src)).pathname).toBe(
     `/arquivos/desenhos/${drawing.id}/previa.png`,
   );
-  expect((await rpc<{ previewCurrent: boolean }>(page, 'workspace/getCanvas', { id: drawing.id })).previewCurrent).toBe(
-    true,
-  );
+  expect((await rpc(page, 'workspace/getCanvas', { id: drawing.id })).previewCurrent).toBe(true);
 
   // Opened again, the browser asks with the tag it holds, and the figure keeps its image.
   const asked = page.waitForRequest((request) => isPreview(request.url(), drawing.id));
@@ -124,7 +122,7 @@ test('dragging the figure drops none of its text into the document', async ({ pa
   await login(page);
   const projectId = await createProject(page, `Arrastar a figura ${Date.now()}`);
   const drawing = await rpcDrawing(page, projectId, 'Figura arrastada');
-  const { id } = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+  const { id } = await rpc(page, 'workspace/createDocument', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Arrastar',
@@ -149,11 +147,9 @@ test('dragging the figure drops none of its text into the document', async ({ pa
   await expect(documentEditor(page).locator('[data-content-type="paragraph"]').first()).toHaveText('Topo');
   await expect(documentEditor(page).locator('[data-content-type="drawingEmbed"]')).toHaveCount(1);
   await page.waitForTimeout(1500);
-  const saved = await rpc<{ content: { type: string; content?: { text?: string }[] }[] }>(
-    page,
-    'workspace/getDocument',
-    { id },
-  );
+  const saved = await rpc(page, 'workspace/getDocument', { id });
   expect(saved.content.map((block) => block.type)).toEqual(['paragraph', 'drawingEmbed']);
-  expect(saved.content[0]?.content?.map((each) => each.text).join('')).toBe('Topo');
+  expect((saved.content[0]?.content as { text?: string }[] | undefined)?.map((each) => each.text).join('')).toBe(
+    'Topo',
+  );
 });

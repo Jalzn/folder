@@ -1,4 +1,5 @@
-import { expect, type Page, type Request, test } from '@playwright/test';
+import { expect, type Page, type Request } from '@playwright/test';
+import { test } from './fixtures.js';
 import { toast } from './support/feedback.js';
 import {
   createFolder,
@@ -15,7 +16,6 @@ import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The tree's keys, hover tools and drag need a desktop; narrow.spec.ts covers the phone.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the sidebar is fixed beside the page.');
 
 /** The shell's live region, where moves and the tree's changes are announced. */
 const live = (page: Page) => page.locator('p.sr-only[aria-live="polite"]');
@@ -248,7 +248,7 @@ test('the trash names an item’s folder, and restores it to the root once the f
   const project = (await page.getByRole('heading', { level: 1 }).textContent()) ?? '';
   const folder = await rpcFolder(page, projectId, 'Antiga');
   const { id } = await rpcDocument(page, projectId, 'Lembrete', folder);
-  const document = await rpc<{ version: number }>(page, 'workspace/getDocument', { id });
+  const document = await rpc(page, 'workspace/getDocument', { id });
   await rpc(page, 'workspace/deleteDocument', {
     requestId: crypto.randomUUID(),
     id,

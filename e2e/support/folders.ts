@@ -53,7 +53,7 @@ export async function moveToFolder(page: Page, rowName: string, target: string) 
 
 /** Creates a document by RPC, in a folder or at the root, as another device would. */
 export async function rpcDocument(page: Page, projectId: string, title: string, folderId?: string) {
-  return rpc<{ id: string }>(page, 'workspace/createDocument', {
+  return rpc(page, 'workspace/createDocument', {
     requestId: crypto.randomUUID(),
     projectId,
     title,
@@ -63,9 +63,7 @@ export async function rpcDocument(page: Page, projectId: string, title: string, 
 
 /** Creates a folder by RPC; returns its id. */
 export async function rpcFolder(page: Page, projectId: string, name: string) {
-  return (
-    await rpc<{ id: string }>(page, 'workspace/createFolder', { requestId: crypto.randomUUID(), projectId, name })
-  ).id;
+  return (await rpc(page, 'workspace/createFolder', { requestId: crypto.randomUUID(), projectId, name })).id;
 }
 
 /**

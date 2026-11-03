@@ -13,7 +13,7 @@
 | 09 | [Pastas](09-pastas.md) | Pastas de um nível para documentos e desenhos, árvore na lateral e Desfazer com ⌘Z | Concluída localmente |
 | 10 | [Quadro e tarefa](10-quadro-tarefa.md) | Colunas configuráveis, gaveta da tarefa, descrição, prazo e etiquetas | Concluída localmente |
 | 11 | [Documento e desenho](11-documento-desenho.md) | Tarefas e desenhos incorporados, marcador de origem e novas páginas de documento e desenho | Concluída localmente |
-| 12 | [Refatoração](12-refatoracao.md) | Guardas automáticas (lint dos testes, camadas, retratos do esquema e do contrato, catraca de CSS, bundle velho recusado), autosave, Desfazer, sessão, escritas e teclas da web com dono, teclado dos incorporados e página do item compartilhados, e as correções decididas | Concluída parcialmente |
+| 12 | [Refatoração](12-refatoracao.md) | Guardas automáticas, autosave, Desfazer, sessão, escritas e teclas da web com dono, página do item compartilhada, correções decididas e E2E isolado por worker com API tipada e smoke | Concluída parcialmente |
 
 As evidências executadas estão em [validação](../validacao.md), [revisão de persistência](../revisao-workspace.md) e [revisão de backend](../revisao-backend.md).
 
@@ -37,7 +37,7 @@ A etapa 12 entrou em parte, com um processo mais curto que o plano ([Desvios](12
   - `createBeside` (WP-6);
   - WP-8 a WP-14 e WP-16;
   - o resto de WP-17 e WP-18.
-- **CSS e E2E:** a onda 6 (CSS e primitivas, com as correções W6.2a, W6.7a, W6.7b e W6.8a), e W2.2 a W2.13 (o arnês de testes: fixtures, E2E isolado e paralelo, smoke e visual).
+- **CSS e E2E:** a onda 6 (CSS e primitivas, com as correções W6.2a, W6.7a, W6.7b e W6.8a); os helpers restantes de documento, rede e teclado (W2.2 a W2.4), adoção direta das fixtures nos outros specs, agrupamento por área (resto de W2.10), relógio e ritmos nomeados (W2.13) e retratos visuais (W1.4). O isolamento por worker, a API tipada, a seleção por dispositivo e o smoke entraram na retomada. W2.12 depende de remoto e continua opcional.
 
 ## Pendências de operação
 

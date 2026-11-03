@@ -1,8 +1,13 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer, drawer } from './support/board.js';
-import { createTaskFromSelection, documentEditor as editor, openDocumentTasks } from './support/document.js';
+import {
+  createTaskFromSelection,
+  documentEditor as editor,
+  openDocumentTasks,
+  writeAndSave,
+} from './support/document.js';
 import { newDocument } from './support/items.js';
-import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
 
 async function createDocument(page: Page, title: string) {
@@ -11,18 +16,6 @@ async function createDocument(page: Page, title: string) {
   await page.getByRole('textbox', { name: 'Título do documento' }).fill(title);
   await writeAndSave(page, 'Ideia original antes de duplicar a aba.');
   return page.url();
-}
-
-async function writeAndSave(page: Page, content: string) {
-  const saved = page.waitForResponse(
-    (response) =>
-      answers(response, 'workspace/saveDocument') &&
-      response.status() === 200 &&
-      Boolean(response.request().postData()?.includes(content)),
-  );
-  await editor(page).fill(content);
-  await saved;
-  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
 }
 
 test('a duplicated tab keeps its unsaved draft when the original tab saves and the duplicate reloads', async ({

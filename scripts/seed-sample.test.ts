@@ -15,7 +15,7 @@ import {
 
 // The sample's content, as data: what the editors save. The web's unit tests round-trip the same
 // documents and descriptions through the real BlockNote; seed-sample.db.test.ts checks what the seed
-// stores, and e2e/seed-sample.spec.ts that opening each item in Chrome saves nothing.
+// stores, and e2e/seed-sample.desktop.spec.ts that opening each item in Chrome saves nothing.
 
 const ids = {
   navigation: '9f3d8e3a-3b5a-4cad-9e4f-2c3d4e5f6071',

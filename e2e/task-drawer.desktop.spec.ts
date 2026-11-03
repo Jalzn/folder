@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './fixtures.js';
 import { card, drawerOf, openDrawer, drawer as openTask } from './support/board.js';
 import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
@@ -7,7 +8,6 @@ import { createProject, openBoard } from './support/navigation.js';
 import { login } from './support/session.js';
 
 // The drawer's fields and text by the keyboard; narrow.spec.ts covers the phone.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the drawer sits below the board.');
 
 test('the drawer edits the due date, the labels and the text, which saves and shows on the card', async ({ page }) => {
   await login(page);

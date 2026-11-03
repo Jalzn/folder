@@ -1,22 +1,15 @@
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { type BrowserContext, expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer, openDrawer } from './support/board.js';
-import { createTaskFromSelection, documentEditor as editor, openDocumentTasks } from './support/document.js';
+import {
+  createTaskFromSelection,
+  documentEditor as editor,
+  openDocumentTasks,
+  writeAndSave,
+} from './support/document.js';
 import { moveToTrash, newDocument, restoreFromTrash } from './support/items.js';
 import { openBoard, overviewAddress } from './support/navigation.js';
-import { answers } from './support/rpc.js';
 import { login } from './support/session.js';
-
-async function writeAndSave(page: Page, text: string) {
-  const saved = page.waitForResponse(
-    (response) =>
-      answers(response, 'workspace/saveDocument') &&
-      response.status() === 200 &&
-      Boolean(response.request().postData()?.includes(text)),
-  );
-  await editor(page).fill(text);
-  await saved;
-  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
-}
 
 async function createDocument(page: Page, title: string, text: string) {
   await newDocument(page);

@@ -15,7 +15,7 @@
  * fractional `index` ("a0", "a1", …), turned `boundElements: null` into `[]`, gave arrows
  * `lastCommittedPoint: null`, and, for the index, raised every `version` and `versionNonce`. Text
  * measurements and the bindings, of arrows to boxes and of labels to their boxes on both sides, were
- * already as it keeps them. e2e/seed-sample.spec.ts opens each item and fails when a new Excalidraw
+ * already as it keeps them. e2e/seed-sample.desktop.spec.ts opens each item and fails when a new Excalidraw
  * or BlockNote changes this again.
  */
 import type { CanvasElement, CanvasScene, DocumentBlock, JsonValue } from '../src/workspace/domain/index.js';

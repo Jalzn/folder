@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { closeDrawer, createInDrawer, drawer, drawerOf, newTaskDrawer } from './support/board.js';
 import {
   createTaskFromSelection,
@@ -16,7 +17,6 @@ import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The bar's keys and its popover need a desktop; narrow.spec.ts covers the phone's bar.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the page bar keeps its actions.');
 
 /** A new document with a title and one paragraph per line, typed with real keys and saved. */
 async function writeDocument(page: Page, title: string, lines: string[]) {
@@ -152,7 +152,7 @@ test('a task’s permanent link opens it on its project’s board', async ({ pag
   await writeDocument(page, 'Origem do link', ['Revisar o contrato.']);
   await taskFromParagraph(page, 'Revisar o contrato.', 'Revisar o contrato');
   const projectId = currentProjectId(page);
-  const board = await rpc<{ tasks: { id: string; title: string }[] }>(page, 'workspace/projectBoard', { projectId });
+  const board = await rpc(page, 'workspace/projectBoard', { projectId });
   const task = board.tasks.find((each) => each.title === 'Revisar o contrato');
   if (!task) throw new Error('The task was not created.');
 
@@ -169,7 +169,7 @@ test('Exportar Markdown writes an embedded task as a link to the app, and the im
 }) => {
   await login(page);
   const projectId = await createProject(page, `Markdown com incorporados ${Date.now()}`);
-  const task = await rpc<{ id: string }>(page, 'workspace/createTask', {
+  const task = await rpc(page, 'workspace/createTask', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Revisar o orçamento',

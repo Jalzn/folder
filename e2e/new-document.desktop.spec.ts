@@ -1,4 +1,6 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
+
 import { documentEditor } from './support/document.js';
 import { pressCommand } from './support/keyboard.js';
 import { createProject, projectNavigation, showSidebar } from './support/navigation.js';
@@ -6,7 +8,6 @@ import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // N, ⌘K and the sidebar's Novo menu with a keyboard; narrow.spec.ts has the phone.
-test.skip(({ isMobile }) => isMobile, 'Desktop: N, ⌘K and the sidebar’s menu.');
 
 /** Chrome on a Mac, where the app reads ⌘ for its shortcuts; the suite's desktop is Windows. */
 const MAC =
@@ -22,7 +23,7 @@ type Block = { content?: { text?: string }[] };
 /** An open document, "Antigo", to make the new one from. */
 async function openOld(page: Page) {
   const projectId = await createProject(page, `Criação ${Date.now()}`);
-  const old = await rpc<{ id: string; version: number }>(page, 'workspace/createDocument', {
+  const old = await rpc(page, 'workspace/createDocument', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Antigo',
@@ -65,7 +66,7 @@ for (const [platform, userAgent] of [
   test.describe(`on ${platform}`, () => {
     if (userAgent) test.use({ userAgent });
     for (const path of paths) {
-      test(`by ${path}, the new document opens with the focus on its title`, async ({ page }) => {
+      test(`by ${path}, the new document opens with the focus on its title`, { tag: '@timing' }, async ({ page }) => {
         await login(page);
         const old = await openOld(page);
         await askForNew(page, path);
@@ -77,9 +78,9 @@ for (const [platform, userAgent] of [
         await expect(titleField(page)).toBeFocused();
       });
 
-      test(`by ${path}, what is typed at once goes to the new title, never to the page being left`, async ({
-        page,
-      }) => {
+      test(`by ${path}, what is typed at once goes to the new title, never to the page being left`, {
+        tag: '@timing',
+      }, async ({ page }) => {
         await login(page);
         const old = await openOld(page);
         // The document takes a moment to be made, as on a slow network: the old page stays meanwhile.
@@ -96,15 +97,15 @@ for (const [platform, userAgent] of [
         await expect(titleField(page)).toHaveValue('Plano da semana de maio');
         await expect(titleField(page)).toBeFocused();
         // The old document is as it was, at its version, and no shortcut ran on its page.
-        const kept = await rpc<{ title: string; version: number; content: Block[] }>(page, 'workspace/getDocument', {
+        const kept = await rpc(page, 'workspace/getDocument', {
           id: old.id,
         });
         expect(kept.version).toBe(old.version);
         expect(kept.title).toBe('Antigo');
-        expect(kept.content.map((block) => block.content?.map((part) => part.text).join(''))).toEqual(['Texto antigo']);
-        expect(
-          (await rpc<{ folders: unknown[] }>(page, 'workspace/listFolders', { projectId: old.projectId })).folders,
-        ).toEqual([]);
+        expect((kept.content as Block[]).map((block) => block.content?.map((part) => part.text).join(''))).toEqual([
+          'Texto antigo',
+        ]);
+        expect((await rpc(page, 'workspace/listFolders', { projectId: old.projectId })).folders).toEqual([]);
       });
     }
   });

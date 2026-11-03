@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { toast } from './support/feedback.js';
 import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { pressCommand } from './support/keyboard.js';
@@ -7,7 +8,6 @@ import { login } from './support/session.js';
 
 // The open item moved from its own page, between a folder and the root (tree.md C1): the page and the tree
 // stay, and the item shows once. Desktop, where the sidebar and the drag are beside the page.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the tree is beside the page.');
 
 /** The document's page is still there, and the tree lists it once, at the level given. */
 async function intact(page: Page, title: string, level: '1' | '2') {

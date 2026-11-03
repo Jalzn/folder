@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { toast } from './support/feedback.js';
 import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { pressCommand } from './support/keyboard.js';
@@ -8,15 +9,10 @@ import { login } from './support/session.js';
 
 // Failures around folders (sec-quality.md S2, S3 and S4): a copy whose folder went, an undo the server
 // refuses, and an undo pressed while another folder write is on its way. Desktop: the fixed sidebar.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the fixed sidebar.');
 
 /** The folder's version, as the tree has it, for a write by RPC. */
 async function folderVersion(page: Page, projectId: string, folderId: string) {
-  const { tree } = await rpc<{ tree: { folders: { id: string; version: number }[] } }>(
-    page,
-    'workspace/projectNavigation',
-    { projectId },
-  );
+  const { tree } = await rpc(page, 'workspace/projectNavigation', { projectId });
   return tree.folders.find((folder) => folder.id === folderId)?.version ?? 0;
 }
 
@@ -29,7 +25,7 @@ test('a draft saved as a copy goes to the root when its folder was deleted elsew
   await expect(page.getByRole('button', { name: 'Pasta Efêmera. Mover para pasta (M)' })).toBeVisible();
 
   // Another device saves the document, then deletes its folder.
-  const saved = await rpc<{ version: number; title: string; content: unknown }>(page, 'workspace/getDocument', { id });
+  const saved = await rpc(page, 'workspace/getDocument', { id });
   await rpc(page, 'workspace/saveDocument', {
     requestId: crypto.randomUUID(),
     id,

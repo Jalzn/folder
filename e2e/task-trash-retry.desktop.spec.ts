@@ -1,11 +1,11 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './fixtures.js';
 import { drawer, openDrawer } from './support/board.js';
 import { createProject, openBoard } from './support/navigation.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The decided fix W5.11a (docs/etapas/12-refatoracao.md, "Correções decididas").
-test.skip(({ isMobile }) => isMobile, 'Desktop: the drawer below the board.');
 
 test('W5.11a: the drawer resends a lost trash answer once, with the same request ID', async ({ page }) => {
   await login(page);

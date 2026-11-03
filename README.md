@@ -65,7 +65,7 @@ mise exec -- pnpm e2e
 
 Os testes E2E usam Google Chrome instalado e bancos temporários isolados, em desktop e emulação de celular. Em uma máquina sem Chrome, instale-o com `pnpm exec playwright install --with-deps chrome`.
 
-Se a porta padrão dos testes estiver ocupada, use `E2E_PORT=5172 mise exec -- pnpm e2e`. Cada execução continua usando seu próprio banco temporário.
+O E2E usa quatro workers, cada um com servidor, porta disponível e banco temporário próprios. Os cenários `@timing` rodam depois, em um worker. Não é preciso reservar uma porta nem definir `E2E_PORT`. Para uma conferência curta dos fluxos principais nos dois dispositivos, use `mise exec -- pnpm e2e:smoke` depois do build.
 
 ## Documentação
 

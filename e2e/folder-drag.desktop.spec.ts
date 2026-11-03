@@ -1,11 +1,11 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { toast } from './support/feedback.js';
 import { drag, folderRow, itemsTree, rpcDocument, rpcFolder, treeRow } from './support/folders.js';
 import { createProject, projectNavigation } from './support/navigation.js';
 import { login } from './support/session.js';
 
 // Dragging is a pointer on a desktop; a phone moves through M or the menus (narrow.spec.ts).
-test.skip(({ isMobile }) => isMobile, 'Desktop only: a phone has no drag in the tree.');
 
 const folderNames = (page: Page) =>
   itemsTree(page)

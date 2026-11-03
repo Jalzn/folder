@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -10,7 +11,7 @@ interface Project {
 }
 
 const setArchived = (page: Page, project: Project, archived: boolean) =>
-  rpc<Project>(page, 'workspace/updateProject', {
+  rpc(page, 'workspace/updateProject', {
     requestId: crypto.randomUUID(),
     id: project.id,
     expectedVersion: project.version,
@@ -23,7 +24,7 @@ const setArchived = (page: Page, project: Project, archived: boolean) =>
  */
 test('without an active project the app waits on /projetos until one comes back', async ({ page }) => {
   await login(page);
-  const active = (await rpc<Project[]>(page, 'workspace/listProjects', {})).filter((project) => !project.archivedAt);
+  const active = (await rpc(page, 'workspace/listProjects', {})).filter((project) => !project.archivedAt);
   const archived = await Promise.all(active.map((project) => setArchived(page, project, true)));
   try {
     await page.goto('/');
@@ -40,7 +41,7 @@ test('without an active project the app waits on /projetos until one comes back'
     await expect(page.getByRole('heading', { name: first.name, level: 1 })).toBeVisible();
   } finally {
     // The other specs expect their projects active.
-    const now = await rpc<Project[]>(page, 'workspace/listProjects', { includeArchived: true });
+    const now = await rpc(page, 'workspace/listProjects', { includeArchived: true });
     for (const project of now)
       if (project.archivedAt && archived.some((item) => item.id === project.id))
         await setArchived(page, project, false);

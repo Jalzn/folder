@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { drawer, drawerOf, newTaskDrawer } from './support/board.js';
 import { clickText, documentEditor, editorUndo, embedCard, embedFigure, pickEmbed, slash } from './support/document.js';
 import { toast } from './support/feedback.js';
@@ -9,16 +10,13 @@ import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The `/` menu, the node selection and the drawer below the page need a desktop; narrow.spec.ts has the phone.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the keys and the drawer below the document.');
-
-type Block = { id: string; type: string; props?: Record<string, unknown> };
 
 /** The document's id, from its address. */
 const documentIdOf = (page: Page) => new URL(page.url()).pathname.split('/').at(-1) ?? '';
 
 /** The embeds the server holds for the open document. */
 async function savedEmbeds(page: Page) {
-  const document = await rpc<{ content: Block[] }>(page, 'workspace/getDocument', { id: documentIdOf(page) });
+  const document = await rpc(page, 'workspace/getDocument', { id: documentIdOf(page) });
   return document.content.filter((block) => block.type === 'taskEmbed' || block.type === 'drawingEmbed');
 }
 
@@ -28,7 +26,7 @@ const expectSavedEmbeds = (page: Page, count: number) =>
 
 /** A task made over RPC in a project, as another tab would. */
 async function rpcTask(page: Page, projectId: string, title: string) {
-  return rpc<{ id: string; version: number }>(page, 'workspace/createTask', {
+  return rpc(page, 'workspace/createTask', {
     requestId: crypto.randomUUID(),
     projectId,
     title,
@@ -161,7 +159,7 @@ test('↵ after typing an existing task’s title in the picker embeds that task
   await page.keyboard.press('Enter');
   await expect(embedCard(page, `Pintar a ${word} da Ação`)).toBeVisible();
   await expect(newTaskDrawer(page)).toHaveCount(0);
-  const found = await rpc<{ items: unknown[] }>(page, 'workspace/search', { query: word, types: ['task'] });
+  const found = await rpc(page, 'workspace/search', { query: word, types: ['task'] });
   expect(found.items).toHaveLength(1);
 });
 
@@ -184,7 +182,7 @@ test('↵ on a title both the document’s project and another one have embeds t
   await expect(card).toBeVisible();
   await expect(card.locator('.project-mark')).toHaveCount(0);
   await expect(newTaskDrawer(page)).toHaveCount(0);
-  const found = await rpc<{ items: unknown[] }>(page, 'workspace/search', { query: word, types: ['task'] });
+  const found = await rpc(page, 'workspace/search', { query: word, types: ['task'] });
   expect(found.items).toHaveLength(2);
 });
 
@@ -240,7 +238,7 @@ test('an embedded task in the trash offers Restaurar; one deleted for good, Remo
   });
   await rpc(page, 'workspace/deleteTask', edit(trashed));
   await rpc(page, 'workspace/deleteTask', edit(purged));
-  const inTrash = await rpc<{ version: number }>(page, 'workspace/getTask', { id: purged.id });
+  const inTrash = await rpc(page, 'workspace/getTask', { id: purged.id });
   await rpc(page, 'workspace/purgeTask', { ...edit(purged), expectedVersion: inTrash.version });
   await page.reload();
 
@@ -250,7 +248,7 @@ test('an embedded task in the trash offers Restaurar; one deleted for good, Remo
   await missing.first().getByRole('button', { name: 'Restaurar “Esboçar tela de boas-vindas”', exact: true }).click();
   await expect(toast(page)).toContainText('“Esboçar tela de boas-vindas” restaurado.');
   await expect(embedCard(page, 'Esboçar tela de boas-vindas')).toBeVisible();
-  expect((await rpc<{ deletedAt: string | null }>(page, 'workspace/getTask', { id: trashed.id })).deletedAt).toBeNull();
+  expect((await rpc(page, 'workspace/getTask', { id: trashed.id })).deletedAt).toBeNull();
 
   await missing.getByRole('button', { name: 'Remover a tarefa excluída', exact: true }).click();
   await expect(toast(page)).toContainText('Bloco removido do documento. O texto ao redor ficou como estava.');
@@ -356,18 +354,17 @@ test('a document of an archived project shows its embeds with no Restaurar or Re
     expectedVersion: task.version,
     requestId: crypto.randomUUID(),
   });
-  const document = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+  const document = await rpc(page, 'workspace/createDocument', {
     requestId: crypto.randomUUID(),
     projectId: here,
     title: 'Documento guardado',
     content: [{ id: 'e1', type: 'taskEmbed', props: { taskId: task.id }, children: [] }],
   });
-  const project = (await rpc<{ id: string; version: number }[]>(page, 'workspace/listProjects', {})).find(
-    (each) => each.id === here,
-  );
+  const project = (await rpc(page, 'workspace/listProjects', {})).find((each) => each.id === here);
+  if (!project) throw new Error('Project not found.');
   await rpc(page, 'workspace/updateProject', {
     id: here,
-    expectedVersion: project?.version,
+    expectedVersion: project.version,
     archived: true,
     requestId: crypto.randomUUID(),
   });
@@ -385,7 +382,7 @@ test('⌘C on a card copies its words and its link, and a paste in a description
   await login(page);
   const projectId = await createProject(page, `Copiar o card ${Date.now()}`);
   const task = await rpcTask(page, projectId, 'Card copiado');
-  const { id } = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+  const { id } = await rpc(page, 'workspace/createDocument', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Copiar',
@@ -430,7 +427,7 @@ test('a pasted embed with an ID the server refuses never lands, and the document
   await login(page);
   const projectId = await createProject(page, `Colar forjado ${Date.now()}`);
   const task = await rpcTask(page, projectId, 'Card legítimo');
-  const { id } = await rpc<{ id: string }>(page, 'workspace/createDocument', {
+  const { id } = await rpc(page, 'workspace/createDocument', {
     requestId: crypto.randomUUID(),
     projectId,
     title: 'Colar',
@@ -466,9 +463,7 @@ test('a pasted embed with an ID the server refuses never lands, and the document
   await expect(documentEditor(page)).toContainText('Colado');
   await expect(documentEditor(page).locator('[data-content-type="taskEmbed"]')).toHaveCount(1);
   await expect(embedCard(page, 'Card legítimo')).toBeVisible();
-  const content = (
-    await rpc<{ content: { type: string; props?: { taskId?: string } }[] }>(page, 'workspace/getDocument', { id })
-  ).content;
+  const content = (await rpc(page, 'workspace/getDocument', { id })).content;
   expect(content.filter((block) => block.type === 'taskEmbed').map((block) => block.props?.taskId)).toEqual([task.id]);
 });
 

@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures.js';
 import { card, cardMenu, closeDrawer, column, createInDrawer, drawer, openDrawer } from './support/board.js';
 import { toast } from './support/feedback.js';
 import { newTask } from './support/items.js';
@@ -8,7 +9,6 @@ import { rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
 // The board's keys and its columns' menus need a desktop; narrow.spec.ts covers the phone.
-test.skip(({ isMobile }) => isMobile, 'Desktop: the board shows its columns side by side.');
 
 /** The columns of a new installation, which every other test expects. */
 const FIRST_COLUMNS = {
@@ -21,8 +21,7 @@ const FIRST_COLUMNS = {
 // first three again.
 test.afterEach(async ({ page }, info) => {
   if (info.status === 'skipped') return;
-  type Column = { id: string; version: number; isDone: boolean };
-  const { columns } = await rpc<{ columns: Column[] }>(page, 'workspace/listColumns', {});
+  const { columns } = await rpc(page, 'workspace/listColumns', {});
   if (!columns.find((each) => each.id === FIRST_COLUMNS.done)?.isDone)
     await rpc(page, 'workspace/setDoneColumn', { requestId: crypto.randomUUID(), id: FIRST_COLUMNS.done });
   const first = new Set(Object.values(FIRST_COLUMNS));
@@ -52,15 +51,12 @@ async function freshBoard(page: Page, name: string) {
   return projectId;
 }
 
-type Ack = { id: string; version: number };
-type BoardTask = { id: string; title: string; columnId: string };
-
 /** Tasks made over RPC, in order, in a column or the first open one; the board reads them again. */
 async function seedTasks(page: Page, projectId: string, titles: string[], columnId?: string) {
   const ids: string[] = [];
   for (const title of titles) {
     const input = { requestId: crypto.randomUUID(), title, projectId, ...(columnId ? { columnId } : {}) };
-    ids.push((await rpc<Ack>(page, 'workspace/createTask', input)).id);
+    ids.push((await rpc(page, 'workspace/createTask', input)).id);
   }
   await page.reload();
   for (const title of titles) await expect(cardTitle(page, title)).toBeVisible();
@@ -69,12 +65,8 @@ async function seedTasks(page: Page, projectId: string, titles: string[], column
 
 /** The board as the server has it: each column's titles, in order. */
 async function serverBoard(page: Page, projectId: string) {
-  const board = await rpc<{ tasks: BoardTask[] }>(page, 'workspace/projectBoard', { projectId });
-  const columns = await rpc<{ columns: { id: string; name: string; isDone: boolean }[] }>(
-    page,
-    'workspace/listColumns',
-    {},
-  );
+  const board = await rpc(page, 'workspace/projectBoard', { projectId });
+  const columns = await rpc(page, 'workspace/listColumns', {});
   return Object.fromEntries(
     columns.columns.map((each) => [
       each.name,
@@ -85,8 +77,7 @@ async function serverBoard(page: Page, projectId: string) {
 
 /** The columns as the server has them: their names in order, the done one marked with ✓. */
 async function serverColumns(page: Page) {
-  type Column = { name: string; position: number; isDone: boolean };
-  const { columns } = await rpc<{ columns: Column[] }>(page, 'workspace/listColumns', {});
+  const { columns } = await rpc(page, 'workspace/listColumns', {});
   return [...columns].sort((a, b) => a.position - b.position).map((each) => `${each.name}${each.isDone ? ' ✓' : ''}`);
 }
 
@@ -141,8 +132,9 @@ test('deleting a column with tasks asks where they go, and ⌘Z gives the column
   page,
 }) => {
   const projectId = await freshBoard(page, 'Excluir coluna');
-  const created = await rpc<Ack>(page, 'workspace/createColumn', { requestId: crypto.randomUUID(), name: 'Revisão' });
+  const created = await rpc(page, 'workspace/createColumn', { requestId: crypto.randomUUID(), name: 'Revisão' });
   const [taskId] = await seedTasks(page, projectId, ['Revisar o texto'], created.id);
+  if (!taskId) throw new Error('The seeded task is missing.');
   await expect(columnNames(page)).toHaveText(['A fazer', 'Em andamento', 'Revisão', 'Concluído']);
   // Moved left of Em andamento, so its left neighbour is A fazer.
   await columnName(page, 'Revisão').focus();
@@ -173,7 +165,7 @@ test('deleting a column with tasks asks where they go, and ⌘Z gives the column
   await pressCommand(page, 'z');
   await expect(toast(page)).toContainText('Coluna Revisão restaurada.');
   expect(await serverColumns(page)).toEqual(['A fazer', 'Revisão', 'Em andamento', 'Concluído ✓']);
-  expect((await rpc<BoardTask>(page, 'workspace/getTask', { id: taskId })).columnId).toBe(created.id);
+  expect((await rpc(page, 'workspace/getTask', { id: taskId })).columnId).toBe(created.id);
   await expect(columnNames(page)).toHaveText(['A fazer', 'Revisão', 'Em andamento', 'Concluído']);
   await expect(column(page, 'Revisão').getByRole('button', { name: 'Revisar o texto', exact: true })).toBeVisible();
 });
@@ -273,6 +265,7 @@ test('⌘↵ reopens and completes a card with Desfazer; ⇧F10 opens its ⋯ an
   const projectId = await freshBoard(page, 'Concluir');
   await seedTasks(page, projectId, ['Primeira', 'Terceira']);
   const [segunda] = await seedTasks(page, projectId, ['Segunda'], FIRST_COLUMNS.done);
+  if (!segunda) throw new Error('The seeded task is missing.');
   await expect(page.getByRole('main').locator('.task-card')).toHaveCount(3);
   const todo = column(page, 'A fazer');
   await cardTitle(page, 'Segunda').focus();
@@ -284,7 +277,7 @@ test('⌘↵ reopens and completes a card with Desfazer; ⇧F10 opens its ⋯ an
   await expect(cardTitle(page, 'Segunda')).toBeFocused();
   await pressCommand(page, 'z');
   await expect(column(page, 'Concluído').getByRole('button', { name: 'Segunda', exact: true })).toBeVisible();
-  expect((await rpc<BoardTask>(page, 'workspace/getTask', { id: segunda })).columnId).toBe(FIRST_COLUMNS.done);
+  expect((await rpc(page, 'workspace/getTask', { id: segunda })).columnId).toBe(FIRST_COLUMNS.done);
   await expect(cardTitle(page, 'Segunda')).toBeFocused();
 
   // ⌘↵ on an open card completes it at the top of the done column.

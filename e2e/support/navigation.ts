@@ -14,9 +14,13 @@ export function currentProjectId(page: Page) {
 
 /** On a narrow screen the sidebar opens over the page from the top bar's menu. */
 export async function showSidebar(page: Page) {
+  const layout = page.locator('.app-layout');
+  await expect(layout).toHaveAttribute('data-mode', /^(wide|medium|narrow)$/);
+  if ((await layout.getAttribute('data-mode')) === 'wide') return;
   if (await page.getByRole('dialog', { name: 'Navegação' }).isVisible()) return;
   const open = page.getByRole('button', { name: 'Abrir navegação', exact: true });
-  if (await open.isVisible()) await open.click();
+  await open.click();
+  await expect(page.getByRole('dialog', { name: 'Navegação' })).toBeVisible();
 }
 
 /** Closes the sidebar over the page, if open, and waits until it is gone. */

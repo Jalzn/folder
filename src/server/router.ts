@@ -1,3 +1,4 @@
+import type { RouterClient } from '@orpc/server';
 import { type AccessTokenService, type AuthService, createAuthRouter } from '@tinyfold/auth';
 import type { Database } from '@tinyfold/core/infra';
 import { createWorkspaceRouter } from '@tinyfold/workspace';
@@ -10,3 +11,4 @@ export function createRouter(db: Database, auth: AuthService, accessTokens: Acce
   };
 }
 export type AppRouter = ReturnType<typeof createRouter>;
+export type AppClient = RouterClient<AppRouter>;
