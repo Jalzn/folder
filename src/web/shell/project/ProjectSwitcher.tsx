@@ -1,10 +1,10 @@
 import './project-switcher.css';
 import { useNavigate } from '@tanstack/react-router';
-import { searchText } from '@tinyfold/workspace/domain';
 import { Check, Plus } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useProjects } from '../../lib/queries';
 import { countOf } from '../../lib/text/count';
+import { matchesAllWords } from '../../lib/text/highlight';
 import type { Project } from '../../lib/types';
 import { paths } from '../../navigation/paths';
 import {
@@ -25,7 +25,7 @@ const NEW_PROJECT = 'new';
 
 /** Accent- and case-insensitive, with the domain's search normalisation; "+ Novo projeto" always shows. */
 const matches = (text: string, input: string, key: string | number) =>
-  key === NEW_PROJECT || searchText(text).includes(searchText(input));
+  key === NEW_PROJECT || matchesAllWords(text, input);
 
 function ProjectOption({
   project,
