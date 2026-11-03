@@ -1,6 +1,6 @@
 # Banco de dados
 
-O SQLite guarda todo dado persistido. Esta página reúne as convenções das migrações e o catálogo dos gatilhos. O esquema atual, legível num lugar só, está em [`src/workspace/infra/schema/current.sql`](../src/workspace/infra/schema/current.sql): as tabelas do `core` e do workspace, cada uma com os seus índices e gatilhos. O teste `schema.db.test.ts` o escreve a partir das migrações e falha quando ele muda.
+O SQLite guarda todo dado persistido. Esta página reúne as convenções das migrações e o catálogo dos gatilhos. O esquema atual, legível num lugar só, está em [`src/workspace/infra/schema/current.sql`](../src/workspace/infra/schema/current.sql): as tabelas do `core` e as tabelas históricas `workspace_*`, cada uma com os seus índices e gatilhos. O teste `schema.db.test.ts` o escreve a partir das migrações e falha quando ele muda.
 
 ## Migrações
 
@@ -12,10 +12,18 @@ O SQLite guarda todo dado persistido. Esta página reúne as convenções das mi
 - **Funções SQL:** um módulo registra as funções que as suas migrações e consultas usam (`sqlFunctions`). O workspace registra `workspace_search_text`, o `searchText` do domínio.
 - **Retrato:** toda migração nova muda `schema/current.sql`. O diff do retrato entra no mesmo commit, e a revisão confere que os gatilhos de antes continuam lá.
 
+## Donos e coordenação
+
+Desde a etapa 13, o prefixo SQL `workspace_*` é histórico. `projects` escreve projetos e pastas; `documents`, documentos; `drawings`, cenas e prévias; `board`, tarefas, origens, colunas, etiquetas e revisão. Cada repositório vive no módulo dono. O workspace mantém consultas agregadas somente leitura e coordena os fluxos que atravessam donos por portas fornecidas pelo servidor.
+
+A unidade de trabalho do core reutiliza `BEGIN IMMEDIATE` e o registro idempotente existentes. Cada fluxo composto usa uma conexão, uma transação e um fingerprint da entrada completa; participantes não abrem outra transação. Eventos internos são entregues após commit, nunca após rollback ou replay, sem outbox persistente.
+
+A extração não alterou migrações aplicadas, nomes de tabela, gatilhos, índices ou a função `workspace_search_text`. As migrações históricas 001–007 continuam em `workspace/infra/migrations/`; as classes de módulo são independentes desse registro. Consultas agregadas podem ler várias tabelas; escritas continuam nos donos, além das cascatas e gatilhos já existentes.
+
 ## Testes de banco
 
-- **Um banco por teste:** `useTempDatabase(modules, prefix)`, de `@tinyfold/core/testing`, cria um SQLite migrado numa pasta própria na pasta temporária do sistema e o apaga depois do teste. `useWorkspaceDb({ prefix, start })`, de `src/workspace/testing/database.ts`, junta o serviço do workspace, no relógio de teste (`testClock`) quando há `start`. O banco real nunca entra num teste.
-- **Bancos antigos:** os bancos das etapas anteriores vêm de `testing/fixtures/stage-09-*.sql` e de `testing/legacy-workspace.ts`. As fixtures não são geradas de novo.
+- **Um banco por teste:** `useTempDatabase(modules, prefix)`, de `@tinyfold/core/testing`, cria um SQLite migrado numa pasta própria na pasta temporária do sistema e o apaga depois do teste. `useWorkspaceDb({ prefix, start })`, de `src/server/testing/workspace/database.ts`, junta o serviço do workspace, no relógio de teste (`testClock`) quando há `start`. O banco real nunca entra num teste.
+- **Bancos antigos:** os bancos das etapas anteriores vêm de `src/server/testing/workspace/fixtures/stage-09-*.sql` e de `src/server/testing/workspace/legacy-workspace.ts`. As fixtures não são geradas de novo.
 
 ## Gatilhos
 

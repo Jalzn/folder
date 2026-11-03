@@ -1,8 +1,6 @@
 # Tinyfold — Arquitetura
 
-**Estado:** implementada, com operação local e implantação no Railway validadas. DNS, HTTPS e login em `folder.jalzn.com` foram verificados.
-
-**Próxima etapa planejada:** a [etapa 13](etapas/13-modulos.md) detalha a separação do workspace em módulos de negócio, classes com contratos públicos e eventos após commit. Essa separação ainda não está implementada; a estrutura abaixo descreve o código atual.
+**Estado:** o código da [etapa 13](etapas/13-modulos.md) separa os módulos e preserva os contratos externos. A verificação integrada dessa etapa está concluída localmente; os resultados executados e a versão publicada ficam em [validação](validacao.md). A implantação no Railway continua independente da refatoração local.
 
 ## Base e módulos
 
@@ -10,28 +8,57 @@ O Orbis serviu de referência para o workspace pnpm, TypeScript, SPA React/Vite,
 
 ```text
 src/
-├── core/          erros, banco, transações, migrações e idempotência
-├── auth/          conta pessoal, senha, sessões e tokens de acesso
-├── workspace/     projetos, documentos, desenhos, tarefas, vínculos e leitura por agentes
-├── server/        Hono, oRPC, MCP, composição, configuração e comandos
-└── web/           React: shell do projeto (lateral, ⌘K e teclado), páginas, editores, quadro e Perfil
+├── core/          datas, erros, transações, migrações, idempotência e eventos
+├── auth/          conta pessoal, senha, sessões, tokens e fuso
+├── rich-text/     formato de blocos, validação, trechos e Markdown puros
+├── projects/      projetos e pastas
+├── documents/     conteúdo, versões e ciclo de vida documental
+├── drawings/      cenas, versões e prévias PNG
+├── board/         tarefas, descrições, colunas, etiquetas, origens e revisão
+├── workspace/     fluxos conjuntos, consultas agregadas e migrações históricas
+├── server/        composição, Hono, oRPC, MCP, arquivos e comandos
+└── web/           React: shell, páginas, editores, quadro e Perfil
 ```
 
-Cada pasta é um pacote `@tinyfold/<nome>`. Auth e workspace seguem domínio, aplicação e infraestrutura. O domínio é puro; casos de uso dependem de portas; a infraestrutura implementa SQL e transporte. O servidor compõe os módulos e a web importa tipos e regras puras. Dependency-cruiser verifica os limites:
+Cada pasta é um pacote `@tinyfold/<nome>`. Os módulos de negócio separam `domain/`, `application/` e `infra/`. O domínio é puro; a aplicação usa portas locais; a infraestrutura implementa persistência e montagem. `rich-text` é uma biblioteca pura, sem classe, SQL, HTTP ou React. Auth conserva sua API existente.
 
-- o domínio e a aplicação não importam infraestrutura, e os módulos não se conhecem;
-- servidor e web chegam a um módulo só pelos arquivos que o `package.json` dele exporta, e a web leva ao navegador só código próprio e domínio puro;
-- só `src/server/mcp/` importa o SDK MCP;
-- as pastas `testing/`, com auxiliares de teste, nunca entram no código de execução, nem no dos scripts;
-- os scripts de `scripts/` chegam a um módulo só pelos arquivos exportados (o servidor, que compõe, eles reaproveitam) e nunca importam a web;
-- o E2E importa de `src` só tipos;
-- na web, `ui/` não importa o shell, os componentes, as páginas, o editor nem as rotas, e só as rotas e outras páginas importam `pages/`. `lib/` é folha: não importa nenhuma outra camada da web, e as escritas que mostram toast ficam em `shell/writes/`.
+`ProjectsModule`, `DocumentsModule`, `DrawingsModule`, `BoardModule` e `WorkspaceModule` expõem `id`, `commands`, `queries` e `events`. Cada composição possui suas instâncias; as classes vinculam casos de uso e dependências, sem herança de uma classe-base e sem migração no construtor. `RuntimeModule`, em `core/application`, descreve esse contrato e é distinto de `ModuleDefinition`, o registro histórico de migrações.
 
-As regras `workspace-read-models-share-sql-only`, `web-shell-through-public-entries` e `web-router-only-mounts-routes` também impedem dependências entre os modelos de leitura, acesso interno ao shell e lógica de navegação nas rotas.
+| Entrada pública | Uso |
+| --- | --- |
+| `.` | Classe do módulo e tipos da API |
+| `./domain` | Regras puras e tipos selecionados; permitidos no navegador |
+| `./contracts` | Schemas, entradas, resultados e eventos; a web importa somente tipos |
+| `./composition` | Participantes e montagem, acessíveis ao próprio módulo e ao servidor |
 
-Desde a etapa 12, `pnpm deps` percorre `src`, `scripts` e `e2e`. A exclusão do build cobre só `src/*/dist`, então as regras também enxergam os pacotes npm.
+Essas quatro entradas pertencem aos cinco módulos novos. `rich-text` exporta somente `./domain`; `core` e `auth` mantêm suas entradas explícitas nos respectivos `package.json`.
 
-Projetos, documentos, desenhos e tarefas pertencem ao mesmo módulo para preservar as regras de atribuição e gravar a criação de uma tarefa e seu vínculo documental na mesma transação. Desenhos têm contrato próprio; cenas não são blocos do editor de documentos.
+Dependency-cruiser verifica estas regras em `src`, `scripts` e `e2e`:
+
+- módulos de negócio não importam outros módulos de negócio, nem por `import type` ou reexportação; definem suas próprias portas e projeções, ligadas pelo servidor;
+- domínio e aplicação não importam infraestrutura; as dependências compartilhadas usam apenas entradas públicas de `core` e `rich-text`;
+- servidor e web alcançam módulos por entradas exportadas; `./composition` não pode ser consumido pela web, por scripts ou por outro módulo;
+- o navegador executa somente código próprio e domínio puro; contratos e APIs do servidor entram somente como tipos;
+- só `src/server/mcp/` importa o SDK MCP; auxiliares `testing/` ficam nos testes, e o E2E importa de `src` somente tipos;
+- scripts reutilizam a composição de `server` e entradas permitidas; testes que ligam vários módulos ficam no servidor;
+- na web, `ui/` e `lib/` permanecem nas camadas inferiores, `pages/` é consumida pelas rotas/outras páginas, o shell usa entradas públicas e rotas não concentram lógica de navegação.
+
+A exclusão do grafo cobre apenas `src/*/dist`; pacotes npm continuam visíveis. `scripts/module-policy.test.ts` verifica importações permitidas e proibidas em fixtures isoladas, incluindo tipos, reexports, entradas privadas e a pureza de `rich-text`.
+
+## Propriedade dos dados
+
+| Dono da escrita | Tabelas |
+| --- | --- |
+| `projects` | `workspace_projects`, `workspace_folders` |
+| `documents` | `workspace_documents` |
+| `drawings` | `workspace_canvases`, `workspace_canvas_previews` |
+| `board` | `workspace_tasks`, `workspace_columns`, `workspace_labels`, `workspace_task_labels`, `workspace_task_sources`, `workspace_state` |
+| `auth` | Tabelas `auth_*` |
+| `core` | `core_mutations`, `core_schema_migrations` |
+
+`workspace` coordena escritas pelos participantes dos donos, inclusive localização e fixados. Seus leitores agregados consultam tabelas de várias áreas, com DTOs locais e dependência explícita do esquema; não escrevem nem importam repositórios dos outros módulos. Cascatas e gatilhos SQLite continuam relacionando essas tabelas, com as mesmas regras.
+
+Os arquivos `workspace/infra/migrations/001_workspace.sql` a `007_board.sql` permanecem registrados sob o ID `workspace`, junto da função SQL `workspace_search_text`. A extração não renomeia tabelas, copia migrações para os novos pacotes ou cria pastas de migração vazias. O servidor registra os descritores históricos em `server/modules.ts`, separadamente das instâncias de execução.
 
 ## Execução e SQLite
 
@@ -47,19 +74,51 @@ A implantação prevê uma instância e um volume local ao processo. Não há r�
 
 ## Composição e contratos internos
 
-`createWorkspace(db, { clock, timeZone, logError })`, em `workspace/infra/runtime.ts`, monta os contextos e o registro de operações uma vez e fornece `router`, `service`, `tools` e `files`. O servidor usa a mesma instância para RPC, MCP e prévias. Os construtores específicos continuam disponíveis para scripts e testes. A sessão por cookie é compartilhada entre RPC e arquivos; origem, contexto RPC, códigos HTTP, cabeçalhos de segurança e SPA têm módulos próprios.
+`composeWorkspace`, em `server/workspace/operations.ts`, cria uma unidade de trabalho e as cinco instâncias, liga portas e monta o registro de operações. `createWorkspace(db, { clock, timeZone, logError })`, em `server/workspace/index.ts`, acrescenta `router`, `service`, `tools` e `files`. A mesma instância atende RPC, MCP e prévias; scripts e fixtures usam `createWorkspaceService` do servidor. O encerramento aguarda requisições aceitas e ferramentas MCP em execução, mesmo após desconexão ou resposta SSE, libera assinaturas dos módulos e só então fecha o banco; novas requisições são recusadas durante essa liberação. Os nomes externos `workspace.*` continuam no RPC e no registro idempotente.
 
-O domínio separa modelos de documento, desenho, projeto, tarefa e itens. `FiledItem` representa documento ou desenho com pasta; `ItemAck` e `RestoreAck` preservam os retornos compactos de escrita. Portas são divididas por agregado e reexportadas por `application/ports.ts`; `TaskForReading` e os demais modelos de consulta ficam em `application/reading/read-models.ts`. Casos de uso de documentos, desenhos, projetos, pins e auth ficam em arquivos próprios, com ciclo de vida, nomes e ordem compartilhados onde as regras coincidem.
+Os registros `Operation` associam schema e execução. Métodos públicos são funções vinculadas e validam a entrada; adaptadores que já a validaram executam a operação com o valor resultante. O servidor encaminha `createTask` com origem documental para o fluxo do workspace e o ramo sem origem para o board, conservando schema, entrada completa e nome da mutação.
 
-`workspace/infra/sql/` concentra tabelas, mapeadores, referências, pastas, colunas ativas, etiquetas e origens das tarefas. Repositório e leitores compartilham hidratação e predicados SQL, com a visibilidade de itens explicitada pelo consumidor. `versionedUpdate` faz o UPDATE condicional e traduz a falta de uma linha atualizada para conflito. Os selects trazem só as colunas usadas; testes de paridade conferem `openTask` e `overdueOn` contra o domínio. `readTransaction` continua usando `BEGIN IMMEDIATE`, como a escrita; esta refatoração não mudou a reserva do escritor. Chamadas dentro dessas transações são sequenciais.
+`WorkspaceFlowPorts` contém somente capacidades de coordenação. Pastas, movimentos, pins e lixeira usam subconjuntos próprios (`FolderLifecyclePorts`, `MovePorts`, `PinPorts`, `TrashPorts`); não recebem métodos de criação ou salvamento de conteúdo. Projetos e documentos fornecem fatos por portas locais: o board obtém origens em lote, e o servidor resolve as regras de prévia de desenhos para os leitores agregados.
 
-`afterKeyset`, em `workspace/infra/sql/keyset.ts`, constrói a comparação lexicográfica de chaves não nulas, com direção ascendente ou descendente por campo e valores parametrizados. Projetos, busca, tarefas e concluídas compartilham esse predicado, mantendo suas ordens e cursores. O teste SQLite cobre empates, ranks constantes por tipo e todas as posições de cursor.
+### Transações e idempotência
 
-`CivilDate` e `IsoInstant` são strings com marcas distintas em `core/domain`: a primeira representa um dia do calendário (`YYYY-MM-DD`); a segunda, um instante UTC. Relógios usam `toIsoInstant(Date)`; `todayIn` e `addDays` produzem datas civis, e `startOfDayIn` produz um instante. As marcas atravessam domínio, portas, modelos de leitura, tabelas tipadas e interface, mas não alteram JSON, SQLite nem a validação existente dos cursores. `readCivilDate` e `readIsoInstant` validam construções explícitas; os schemas mantêm suas mensagens e representações públicas.
+`createUnitOfWork`, em `core/infra`, usa o protocolo existente de `idempotentWrite`. A entrada externa validada, o nome histórico da operação e `requestId` determinam o fingerprint. Alterações, resposta compacta e registro do pedido ficam na mesma transação. Reenvio idêntico devolve a resposta guardada sem executar participantes; outra entrada com o mesmo ID responde `REQUEST_REUSED`.
 
-O domínio agrupa o serializador e as páginas em `workspace/domain/markdown/`, e modelos, validação, PNG, prévias e impressão digital em `workspace/domain/canvas/`. Os testes acompanham os arquivos; os exports públicos continuam no mesmo ponto de entrada.
+`ModuleContext<Ports>` oferece aos casos de uso apenas as portas declaradas. A infraestrutura recebe um `TransactionScope` opaco para construir participantes vinculados à conexão; chamadas de escrita nesses participantes executam no escopo recebido, sem outra transação ou registro. Portas e métodos capturados deixam de funcionar depois do callback; um escopo de leitura não permite mutações. Kysely e a conexão ficam na infraestrutura. O trabalho dentro de uma transação é sequencial.
 
-Os catálogos de erros de aplicação preservam mensagens específicas da operação. Auth recebe a porta `TokenSecrets`, separando geração, hash e leitura da persistência. Os validadores de documento e desenho compartilham guardas básicas, preservando formatos, profundidades e limites próprios. Não houve alteração das migrações aplicadas nem dos retratos do esquema e contrato nesta retomada.
+| Fluxo coordenado por workspace | Participação |
+| --- | --- |
+| Tarefa originada em documento | Documents valida versão, bloco e trecho; board grava tarefa e origem juntas |
+| Excluir/restaurar pasta | Projects altera a pasta; documents/drawings alteram seus itens e preservam as listas de Desfazer |
+| Mover/fixar item | Fatos de organização e contagem combinada definem a mudança; o dono persiste sua linha |
+| Purge documental | Board conserva o título nas origens antes da remoção pelo documents |
+| Esvaziar lixeira | Itens elegíveis dos três donos são removidos juntos; versões/projetos alterados são ignorados |
+
+Falha em qualquer participante desfaz todos os passos e o registro do pedido. Pins e prévias mantêm escritas repetíveis sem `core_mutations`. Relógio, fuso e IDs são dependências da composição; a geração de IDs e instantes dos eventos é independente dos IDs e relógios de negócio. Criar a tarefa e inserir seu bloco no editor continuam sendo ações distintas do protocolo de autosave.
+
+### Eventos
+
+`events.on(type, handler)` devolve a função de remoção da assinatura. Só a infraestrutura publica; consumidores não recebem o canal publicador. Os envelopes contêm `eventId`, `type`, `occurredAt`, `entityId`, `requestId` quando houver e metadados tipados, sem documento, descrição, trecho, cena ou PNG completos.
+
+| Módulo | Notificações |
+| --- | --- |
+| Projects | Criação, edição, ordem e ciclo de vida das pastas/projetos |
+| Documents | `document.created/saved/trashed/restored/purged/placementChanged` |
+| Drawings | `drawing.created/saved/trashed/restored/purged/placementChanged/previewStored` |
+| Board | `task.created/updated/textSaved/trashed/restored/purged` e `board.changed` |
+| Workspace | `workspace.changed`, com motivo e escopo do fluxo conjunto |
+
+A unidade de trabalho acumula o lote e só o publica depois do commit. Rollback, falha de serialização ou falha no commit descartam as notificações; replay não as repete. Pins e movimentos sem mudança, lixeira sem exclusões e prévias ignoradas não geram evento de alteração. Efeitos em lote dos gatilhos de coluna usam `board.changed`, sem atribuir versões novas a cada tarefa; `task.updated` informa os campos alterados, incluindo etiquetas.
+
+Eventos são snapshots imutáveis e locais à instância. O lote é agendado na ordem de produção; a conclusão de handlers assíncronos não tem ordem global. Falhas síncronas/assíncronas de assinantes são registradas sem mudar o resultado persistido, e o encerramento remove as assinaturas. A entrega é de melhor esforço, em memória: o processo pode encerrar entre commit e notificação. Não há outbox, replay durável ou regra de consistência dependente de assinante.
+
+### Consultas e código compartilhado
+
+Leituras agregadas do workspace ficam em `infra/reader/`, `infra/navigation/` e `infra/flow-reader.ts`. Documento, origens e incorporados de uma resposta compartilham uma transação de leitura; leituras MCP de tarefas e desenhos pertencem aos respectivos módulos. A formatação e os adaptadores MCP ficam em `server/mcp/workspace-tools/`. `readTransaction` continua usando `BEGIN IMMEDIATE`, sem mudança da reserva do escritor nesta etapa.
+
+`versionedUpdate` e `afterKeyset`, em `core/infra`, preservam UPDATE condicional e comparação lexicográfica de chaves parametrizadas. Os módulos possuem seus mapeadores e tabelas tipadas; os leitores agregados conservam projeções SQL próprias. Cursores, desempates e consultas em lote permanecem contratos das consultas.
+
+`CivilDate` e `IsoInstant`, de `core/domain`, distinguem dias de instantes UTC sem mudar JSON ou SQLite. `rich-text/domain` reúne validação de blocos, texto simples, IDs, checklist, trechos, incorporados e Markdown. O chamador resolve entidades para o serializador; a biblioteca não consulta persistência. `drawings/domain` mantém cena, PNG, estrutura e fingerprint, sem runtime do Excalidraw.
 
 ## Erros e contrato do RPC
 
@@ -131,7 +190,7 @@ Desde a etapa 12, esse protocolo tem um núcleo só, `runUndoableChange` (`lib/w
 
 ## Quadro e tarefas
 
-As regras completas estão no [README do workspace](../src/workspace/README.md); o plano e os desvios, na [etapa 10](etapas/10-quadro-tarefa.md).
+As regras completas estão no [README do board](../src/board/README.md); o plano e os desvios, na [etapa 10](etapas/10-quadro-tarefa.md).
 
 - **Colunas:** um conjunto para todo o espaço, até 20 ativas, com nome único pela chave das pastas e sempre uma de conclusão e uma aberta. Excluir uma coluna leva todas as tarefas dela, vivas e na lixeira, de todos os projetos, ao destino escolhido. Trocar a de conclusão conclui as tarefas da nova e reabre as da antiga, sem mudar versão nem data de edição.
 - **Conclusão:** entrar na coluna de conclusão grava `completed_at`, e sair dela o apaga. Concluir põe a tarefa no topo da coluna de conclusão; Reabrir, no fim da primeira aberta.
@@ -303,7 +362,7 @@ As ferramentas do workspace são objetos simples (`createWorkspaceTools(db, { lo
 - **Projetos e origens:** `list_projects` traz cor, posição, `folderCount` e até 50 pastas por projeto, com a contagem de itens, sem `withoutProject`; a busca diz se o item está fixado e em que pasta está (`folder`), e aceita `folderId`; `read_document` e `read_drawing` trazem a linha da pasta no cabeçalho; uma origem de tarefa cujo documento foi excluído de vez vem com `documentId: null` e o título guardado.
 - **Respostas:** têm até 45.000 caracteres de texto, rodapés e erros incluídos, só em `content`, sem `structuredContent`. O Claude Code 2.1.310 grava num arquivo o resultado que passa de 50.000 e mostra ao modelo só uma prévia. Cada ferramenta cabe no teto pelo próprio orçamento, e `withTextCeiling` corta, com aviso, o que ainda passasse.
 
-O [README do workspace](../src/workspace/README.md) descreve as regras e as perdas conhecidas do Markdown no parser do BlockNote.
+O [README de rich-text](../src/rich-text/README.md) descreve o Markdown e suas perdas conhecidas no parser do BlockNote; o [adaptador MCP](../src/server/mcp/workspace-tools/README.md) registra os limites das respostas.
 
 ### Prévias de desenho
 
@@ -316,7 +375,11 @@ O editor gera a prévia ao abrir um desenho sem prévia atual, ao adotar uma ver
 ### Módulos e portas
 
 - **auth:** `domain/access-token.ts`, os casos de uso em `application/access-tokens/` e, na infraestrutura, o repositório, os segredos e `createAccessTokens`.
-- **workspace:** no domínio, `markdown/` reúne serializador e páginas; `canvas/` reúne estrutura da cena, `png.ts`, `scene-fingerprint.ts` e limites; na aplicação, `reading/` e `canvas-previews.ts`, que valida a prévia pela porta `PngImageData`; na infraestrutura, `reader/`, `mcp/` (ferramentas e formatação) e `png-image-data.ts`.
+- **rich-text:** validação e serialização/paginação Markdown puras.
+- **drawings:** cena, PNG e fingerprint no domínio; aplicação de prévias pela porta `PngImageData`; leitura para agentes e adaptador de descompressão na infraestrutura.
+- **board:** consultas de tarefas, origens, colunas e etiquetas para owner e agentes.
+- **workspace:** leitura agregada de documentos com incorporados, projetos, navegação e busca.
+- **server/mcp/workspace-tools:** formata as seis ferramentas a partir das consultas compostas pelo servidor.
 - **server:** serve a prévia aos documentos em `src/server/files/canvas-preview-route.ts`, antes do fallback da SPA, e compõe o MCP em `src/server/mcp/`, com `bearer.ts`, `request-body.ts`, `mcp-server.ts` (registro das ferramentas no SDK) e `endpoint.ts` (`mountMcp`), e o IP do cliente em `client-ip.ts`.
 - **Migrações:** `auth/002_access_tokens.sql`, `workspace/003_canvas_previews.sql` e `workspace/004_canvas_preview_fingerprint.sql`.
 

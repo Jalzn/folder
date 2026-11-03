@@ -2,6 +2,48 @@
 
 Validação local a partir de 29 de outubro de 2026. A primeira versão foi implementada com três subagentes — backend, workspace e interface — e duas rodadas de revisão cruzada; cada etapa seguinte tem sua seção, a mais recente primeiro. A publicação anterior no Railway está registrada adiante; esta retomada de refatoração não realizou deploy.
 
+## Etapa 13: módulos e contratos públicos
+
+Executada em 2026-11-03, na branch `refactor/stage13-modules`, partindo de `2090dea`. Plano em `b084c1f`; implementação integrada em `59f6306`. Três subagentes trabalharam em fundações/Board, texto/Drawings e política/Documents, com revisão cruzada; o agente principal implementou Projects, composição, migração dos consumidores e integração. As evidências abaixo são locais; não houve push, merge em `main` ou deploy desta etapa.
+
+| Verificação executada | Resultado |
+| --- | --- |
+| Referência `2090dea`, checkout separado | 747 unitários, 288 SQLite, build e 40 capturas executados novamente; os 227 E2E anteriores do mesmo SHA foram usados como referência histórica |
+| `mise exec -- pnpm check` sobre o código final | Lint, tipos e fronteiras aprovados; 776 unitários em 128 arquivos; 1.238 módulos e 5.110 dependências sem violações |
+| `mise exec -- pnpm test:db` sobre o código final | 331 testes em 56 arquivos, 6,55 s; SQLite isolado, sem acessar o banco principal |
+| `mise exec -- pnpm build` sobre o código final | Aprovado, 1,65 s; permanece o aviso conhecido de chunks grandes |
+| Primeiro E2E integrado | 227 aprovados em 7,0 min: desktop, Pixel 7 emulado e grupo de timing; sem falhas, pulados ou retries |
+| E2E após a revisão final de eventos/encerramento | 227 aprovados em 8,1 min: 138 desktop, 48 Pixel 7 e 41 de timing; sem falhas, pulados ou retries |
+| Comparação visual | 40 capturas em quatro combinações de tema/dispositivo aprovadas após revisão final em 42,8 s; referência `2090dea` preservada, sem atualizar snapshots. A primeira rodada também passou (39,2 s) |
+| Contratos e compatibilidade SQLite | 57 operações e schemas RPC (entrada enviada/validada), 78 objetos `sqlite_master` e 11 migrações/checksums iguais à referência; snapshots sem alteração |
+| Atualização e reversão de código | Banco temporário criado pela versão antiga aberto/escrito pela nova e banco criado pela nova aberto pela antiga; projeto/documento/tarefa equivalentes, zero migrações pendentes |
+| Encerramento | SIGTERM com `/ready` 200 encerrou com código 0 e `quick_check=ok`; falha de porta ocupada liberou recursos e encerrou com `EADDRINUSE` |
+| Diff | Migrações aplicadas, schema SQL e primitivas existentes de DB/migração/idempotência intactos; `git diff --check` aprovado |
+
+**Revisão de módulos.** As cinco classes implementam `RuntimeModule` e expõem comandos, consultas e assinatura de eventos. O verificador recusa imports entre módulos de negócio, inclusive tipos/reexports; exige entradas públicas e restringe `./composition` ao servidor. Vinte cenários de política exercitam o grafo real em fixtures isoladas. Cada dono escreve suas tabelas; leitores de workspace usam apenas SELECT. A unidade de trabalho conserva entrada completa, nome legado, transação única, resposta compacta e escopo temporário. As asserções anteriores foram preservadas ao mover testes; a cobertura cresceu de 747/288 para 776/331. O TypeScript de produção em `src/workspace` caiu de 260 arquivos/10.845 linhas para 96 arquivos/3.764 linhas (excluídos testes e `testing/`); o código foi redistribuído aos donos, não removido do produto.
+
+**Achados corrigidos.** A revisão encontrou escrita de Projects sem guarda prévia em escopo de leitura; coordenação documental que ainda precisava passar pelo Workspace; consulta de origem carregando conteúdo desnecessário; portas do servidor espalhando repositórios completos; e notificações de operações sem alteração. Os participantes agora recusam escrita antes do SQL em escopo de leitura, as portas selecionam capacidades explícitas, metadados documentais são consultados em lote sem corpos e pins/movimentos/lixeira sem alteração não notificam. Testes verificam rollback entre donos, replay com um único registro, ausência de eventos em rollback/replay/no-op, isolamento entre instâncias, escopo expirado e erros de observadores.
+
+**MCP durante encerramento.** A revisão do SDK instalado confirmou que a resposta SSE legada pode chegar antes da conclusão da ferramenta e que um cliente moderno abortado pode receber 499 enquanto o handler ainda executa. Dois testes reproduziram o descarte precoce antes da correção. A aplicação agora acompanha as promises reais das ferramentas, além das requisições HTTP; encerra observadores e banco depois dessas execuções. Os 19 testes direcionados de MCP/lifecycle passaram, seguidos da suíte SQLite completa. Não houve mudança no protocolo ou nas seis ferramentas públicas.
+
+**Chrome dentro do Herdr.** A sessão `herdr-preview-6500d019-d8a4-47c5-afe6-d1bf77f67309` foi aberta no espaço Tinyfold, em `http://localhost:61356`, com conta e SQLite temporários. O agente operou a página visível por `herdr-preview` e pelo CDP confirmado da própria sessão Chrome. O preview e o servidor temporário foram encerrados ao terminar.
+
+Percursos realizados:
+
+- Criar projeto/tarefa, selecionar amanhã pelo teclado, recarregar, concluir e conferir agrupamento por mês; criar etiqueta e descrição, recarregar e desfazer conclusão.
+- Importar/exportar Markdown com ênfase, checklist, equação e código; recarregar e inspecionar capturas no tema claro. Desenhar, exportar PNG/Excalidraw, reimportar e conferir a cena.
+- Interromper a rede durante edição e recuperar o rascunho após recarga; editar em duas abas, provocar conflito e salvar cópia preservando ambas as versões; mover documento ao lixo durante edição sem perder o rascunho.
+- Criar tarefa a partir da seleção, incorporar e conferir marcador após recarga; excluir definitivamente o documento pela interface e conferir título/trecho preservados na tarefa.
+- Criar pasta, mover e fixar documento, excluir para a raiz e com itens para a lixeira, desfazer ambos; preparar quatro documentos e quatro desenhos fixados e conferir a recusa do nono pela interface.
+- Mover desenho entre projetos por RPC de preparação, incorporar sua prévia pela interface e conferir após recarga; buscar documento pelas palavras na lateral.
+- Confirmar uma lista mista da lixeira depois de restaurar um documento por outra chamada: o documento foi preservado e o desenho excluído. O caso usa RPC para simular o outro dispositivo, sem alegar dois dispositivos físicos.
+- Conferir desenho de projeto arquivado sem escrita por teclado/drag e navegação por Tab; verificar documentos/concluídas em 390 × 844, tema escuro, sem overflow horizontal. Capturas de Markdown, incorporado, origem removida e limite de pins foram inspecionadas.
+
+Os roteiros assistidos precisaram corrigir seletores para o menu de documento, o estado após Desfazer e o botão de confirmação de esvaziamento. Essas falhas de roteiro foram retomadas e concluídas; não motivaram mudança de produto. Nenhuma diferença visual nova foi encontrada. Reordenação detalhada, filtros/paginação e fuso são cobertos pela suíte E2E/SQLite; a passagem assistida não se apresenta como teste em dispositivo físico ou leitor de tela real.
+
+Artefatos locais: `/tmp/tinyfold-stage13-{check,db,build}-final.log`, `/tmp/tinyfold-stage13-e2e-final*.log`, `/tmp/tinyfold-stage13-visual-final*.log`, `/tmp/tinyfold-stage13-audit/`, `/tmp/tinyfold-stage13-visual-baseline/` e `/tmp/tinyfold-stage13-herdr*.{log,png,mjs}`. Auditoria reproduzível local em `/tmp/tinyfold-stage13-audit.mjs`; os testes de contrato e integração que permanecem no repositório verificam os mesmos mecanismos nas próximas mudanças. Os artefatos temporários não foram adicionados ao Git.
+
+
 ## GitHub e deploy automático no Railway
 
 Configurado em 2026-11-03, a pedido do usuário. O repositório público [Jalzn/folder](https://github.com/Jalzn/folder) fornece a branch `main` ao serviço `tinyfold` do ambiente `production`. A API confirmou `enabled=true`, `canEnable=true`, `repository=Jalzn/folder`, `branch=main` e `checkSuites=true`. O workflow foi ajustado para explicitar `push.branches: [main]`, mantendo pull requests.

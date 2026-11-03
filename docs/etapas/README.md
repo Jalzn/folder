@@ -14,7 +14,7 @@
 | 10 | [Quadro e tarefa](10-quadro-tarefa.md) | Colunas configuráveis, gaveta da tarefa, descrição, prazo e etiquetas | Concluída localmente |
 | 11 | [Documento e desenho](11-documento-desenho.md) | Tarefas e desenhos incorporados, marcador de origem e novas páginas de documento e desenho | Concluída localmente |
 | 12 | [Refatoração](12-refatoracao.md) | Contratos, composição e SQL compartilhados; shell e funcionalidades separados; CSS/primitivas; fixtures, timing e retratos visuais; correções aprovadas | Concluída localmente |
-| 13 | [Módulos e contratos públicos](13-modulos.md) | Separação de projetos, documentos, desenhos e quadro; classes de módulo, composição transacional e eventos internos | Planejada |
+| 13 | [Módulos e contratos públicos](13-modulos.md) | Separação de projetos, documentos, desenhos e quadro; classes de módulo, composição transacional e eventos internos | Concluída localmente |
 
 As evidências executadas estão em [validação](../validacao.md), [revisão de persistência](../revisao-workspace.md) e [revisão de backend](../revisao-backend.md).
 
@@ -26,9 +26,11 @@ As seis ondas obrigatórias foram concluídas em 2026-11-03, pelo [processo abre
 
 Na sequência, o usuário pediu também W2.12 e B3.34–B3.36. Os quatro foram implementados: dois shards de CI com relatório unificado, predicados keyset compartilhados, marcas para datas civis/instantes e pastas de domínio para Markdown/canvas. O [complemento](12-refatoracao.md#complemento-quatro-opcionais) e a [validação](../validacao.md#complemento-da-etapa-12) registram os commits, 747 unitários, 288 testes de banco, 227 E2E e 40 capturas, além da correção de contraste encontrada no Herdr. Não há refatoração pendente da etapa 12. O remoto público [jalzn/folder](https://github.com/jalzn/folder) foi criado após esse portão local; o workflow executa em push e pull request, com resultados no [GitHub Actions](https://github.com/jalzn/folder/actions).
 
-## Etapa 13: próxima refatoração
+## Etapa 13: módulos e contratos públicos
 
-O [plano completo](13-modulos.md) define os módulos de destino, as classes e entradas públicas, o inventário das 57 operações atuais, a composição das transações, os eventos após commit e a preservação do histórico de migrações. A execução está dividida nas ondas M0–M8, com tarefas, pontes temporárias, critérios de pronto e validação automática/manual no Chrome do Herdr. A implementação desta etapa ainda não começou; os resultados da etapa 12 continuam sendo a referência histórica.
+A [etapa 13](13-modulos.md) foi concluída localmente em `refactor/stage13-modules`, com implementação em `59f6306`, três subagentes e revisão cruzada. Projects, Documents, Drawings e Board têm classes e donos de persistência próprios; Workspace coordena fluxos e leituras agregadas; `rich-text` concentra texto puro. A composição transacional e os eventos após commit preservam as 57 operações, seis ferramentas MCP e migrações históricas.
+
+Passaram 776 unitários, 331 testes SQLite, build, 227 E2E após a revisão final e 40 capturas comparadas à referência anterior. A validação assistida usou Chrome dentro do Herdr e banco temporário. O [registro de execução](13-modulos.md#registro-de-execução) e as [evidências](../validacao.md#etapa-13-módulos-e-contratos-públicos) detalham as correções e os limites. Não houve publicação desta etapa; `main` e o Railway permanecem no código anterior.
 
 ## Pendências de operação
 

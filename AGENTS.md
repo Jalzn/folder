@@ -8,9 +8,11 @@ Read `docs/produto.md`, `docs/arquitetura.md` and the current stage in `docs/eta
 
 - Code, identifiers, code comments, commits and PRs: English.
 - UI and documentation: Brazilian Portuguese. Use Portuguese URLs and English module names.
-- Follow the pnpm workspace: `core`, `auth`, `workspace`, `server`, `web`.
+- Follow the pnpm workspace: `core`, `auth`, `rich-text`, `projects`, `documents`, `drawings`, `board`, `workspace`, `server`, `web`.
 - Business modules use `domain/`, `application/` and `infra/`, with explicit public exports.
-- Domain rules are pure. Application code depends on ports, not SQL, HTTP or React. The server composes modules.
+- Domain rules and `rich-text` are pure. Application code depends on local ports, not SQL, HTTP or React. Business modules never import each other, including type-only imports; the server connects their ports through public entries.
+- Runtime business classes expose `id`, `commands`, `queries` and subscription-only `events`. The `./composition` entries are restricted to the owning module and server, including integrated tests; scripts reuse server composition.
+- Each module writes only its owned tables. Workspace coordinates through scoped participants and has explicit read-only aggregate SQL adapters. A coordinated write uses one unit of work and one legacy idempotency record; participants never escape the transaction. Events publish after commit and never implement atomic business rules.
 - Keep all persisted data on server-side SQLite. Use the Orbis account/password/session pattern.
 - Document edits must preserve drafts, detect stale versions and allow safe retries.
 - Applied migrations are immutable; append a new migration to change the database.

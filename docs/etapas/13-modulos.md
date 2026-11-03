@@ -1,6 +1,6 @@
 # Etapa 13 — Módulos de negócio e contratos públicos
 
-**Estado:** planejada. O plano está registrado; a implementação e as validações desta etapa ainda não foram executadas.
+**Estado:** concluída localmente em `refactor/stage13-modules`. Código em `59f6306`; validação automática, comparação visual e passagem assistida no Chrome do Herdr aprovadas. O registro abaixo distingue o plano original da execução.
 
 **Referência para o inventário:** `2090dea`, em 2026-11-03. A [etapa 12](12-refatoracao.md) está concluída. Esta etapa amplia a separação arquitetural, preservando o comportamento do produto.
 
@@ -14,7 +14,7 @@ Entram nesta etapa a separação dos pacotes, a composição transacional, event
 
 Outbox persistente, filas externas, event sourcing, serviços separados, injeção por decorators, descoberta automática de módulos e alterações visuais ficam fora deste escopo. Nenhuma migração nova é necessária para a entrega definida aqui.
 
-## Evidências e restrições atuais
+## Evidências e restrições do ponto de partida
 
 - `workspace/infra/operations/` registra **57 operações públicas**, inventariadas adiante.
 - `application/ports/context.ts` reúne 12 interfaces no `WorkspaceRepository`. Os casos de uso que recebem esse contexto alcançam responsabilidades alheias à sua operação.
@@ -261,78 +261,78 @@ Cada ID é uma unidade revisável; pode ser dividido em commits menores que cont
 
 ### Onda 0 — Referência e proteção dos contratos
 
-- [ ] **M0.1** Registrar o SHA de início efetivo, estado do checkout e histórico de validação; trabalhar em branch/worktree próprio, preservando os existentes. Comparar com `2090dea` caso a base tenha avançado.
-- [ ] **M0.2** Conferir este inventário contra os registros RPC, MCP, arquivos e scripts; listar os consumidores de exports e fixtures integradas. Alterar o plano se uma operação nova tiver entrado na base.
-- [ ] **M0.3** Capturar a referência visual local do SHA inicial e executar o portão inicial. Reutilizar resultados confiáveis do mesmo SHA/ambiente, registrando quais; diferenças anteriores à etapa são descritas separadamente.
-- [ ] **M0.4** Complementar apenas as lacunas de caracterização: rollback conjunto, entrada completa da idempotência e leitura coerente. Manter asserções existentes em movimentos de arquivos/imports.
+- [x] **M0.1** Registrar o SHA de início efetivo, estado do checkout e histórico de validação; trabalhar em branch/worktree próprio, preservando os existentes. Comparar com `2090dea` caso a base tenha avançado.
+- [x] **M0.2** Conferir este inventário contra os registros RPC, MCP, arquivos e scripts; listar os consumidores de exports e fixtures integradas. Alterar o plano se uma operação nova tiver entrado na base.
+- [x] **M0.3** Capturar a referência visual local do SHA inicial e executar o portão inicial. Reutilizar resultados confiáveis do mesmo SHA/ambiente, registrando quais; diferenças anteriores à etapa são descritas separadamente.
+- [x] **M0.4** Complementar apenas as lacunas de caracterização: rollback conjunto, entrada completa da idempotência e leitura coerente. Manter asserções existentes em movimentos de arquivos/imports.
 
 **Saída:** referência reproduzível, inventário fechado e verificações de compatibilidade disponíveis antes das extrações.
 
 ### Onda 1 — Contratos e texto compartilhado
 
-- [ ] **M1.1** Adicionar `RuntimeModule`, contratos de assinatura/publicação de eventos e escopo transacional opaco em entradas adequadas de `core`; manter o descritor de migrações existente.
-- [ ] **M1.2** Criar `@tinyfold/rich-text`, mover formatos, validação, texto, IDs, checklist e Markdown com testes equivalentes; atualizar consumidores atuais antes de extrair agregados.
-- [ ] **M1.3** Separar primitivas genéricas realmente compartilhadas, incluindo SQL parametrizado; eliminar dependências de `core` em modelos específicos. Preservar `workspace_search_text` e a semântica dos cursores.
-- [ ] **M1.4** Atualizar regras de dependência, pacotes e convenções do projeto para distinguir biblioteca pura e módulos de negócio. Testar que imports proibidos continuam falhando.
+- [x] **M1.1** Adicionar `RuntimeModule`, contratos de assinatura/publicação de eventos e escopo transacional opaco em entradas adequadas de `core`; manter o descritor de migrações existente.
+- [x] **M1.2** Criar `@tinyfold/rich-text`, mover formatos, validação, texto, IDs, checklist e Markdown com testes equivalentes; atualizar consumidores atuais antes de extrair agregados.
+- [x] **M1.3** Separar primitivas genéricas realmente compartilhadas, incluindo SQL parametrizado; eliminar dependências de `core` em modelos específicos. Preservar `workspace_search_text` e a semântica dos cursores.
+- [x] **M1.4** Atualizar regras de dependência, pacotes e convenções do projeto para distinguir biblioteca pura e módulos de negócio. Testar que imports proibidos continuam falhando.
 
 **Saída:** o quadro consegue usar texto/Markdown sem importar documentos; a biblioteca pura não alcança módulos de negócio ou infraestrutura.
 
 ### Onda 2 — Composição transacional e compatibilidade
 
-- [ ] **M2.1** Implementar unidade de trabalho com portas vinculadas, execução de participantes, coleta de eventos e publicação somente após commit. Preservar `BEGIN IMMEDIATE`, política de leitura e resposta JSON da idempotência.
-- [ ] **M2.2** Separar a entrada pública de escrita do corpo transacional nos casos conjuntos. Integrar a unidade de trabalho aos contextos atuais antes de mudar a localização das funcionalidades.
-- [ ] **M2.3** Criar a composição em `server/workspace/` e o mapeamento legado de operações. Montar RPC, MCP, arquivos e serviços de scripts a partir de uma mesma composição e dos mesmos relógios.
-- [ ] **M2.4** Criar adaptadores temporários somente na composição do servidor, com participantes do workspace atual. Registrar cada ponte na tabela de transição abaixo.
+- [x] **M2.1** Implementar unidade de trabalho com portas vinculadas, execução de participantes, coleta de eventos e publicação somente após commit. Preservar `BEGIN IMMEDIATE`, política de leitura e resposta JSON da idempotência.
+- [x] **M2.2** Separar a entrada pública de escrita do corpo transacional nos casos conjuntos. Integrar a unidade de trabalho aos contextos atuais antes de mudar a localização das funcionalidades.
+- [x] **M2.3** Criar a composição em `server/workspace/` e o mapeamento legado de operações. Montar RPC, MCP, arquivos e serviços de scripts a partir de uma mesma composição e dos mesmos relógios.
+- [x] **M2.4** Criar adaptadores temporários somente na composição do servidor, com participantes do workspace atual. Registrar cada ponte na tabela de transição abaixo.
 
 **Saída:** um fluxo com dois participantes confirma ou desfaz tudo junto, registra um pedido e entrega um único lote de eventos; RPC e schema continuam equivalentes.
 
 ### Onda 3 — Desenhos como primeira extração
 
-- [ ] **M3.1** Criar `@tinyfold/drawings`, `DrawingsModule` e entradas públicas; mover domínio de cena, PNG, preview, outline e testes.
-- [ ] **M3.2** Mover casos de uso, schemas, repositórios e consultas específicas, incluindo arquivo de prévia e leitura para agente. Implementar portas de organização e participantes de placement/ciclo de vida.
-- [ ] **M3.3** Ligar a classe na composição, migrar imports da web/scripts/testes e ativar seus eventos. Remover código de desenho duplicado do workspace; leitores agregados conservam suas projeções estreitas.
+- [x] **M3.1** Criar `@tinyfold/drawings`, `DrawingsModule` e entradas públicas; mover domínio de cena, PNG, preview, outline e testes.
+- [x] **M3.2** Mover casos de uso, schemas, repositórios e consultas específicas, incluindo arquivo de prévia e leitura para agente. Implementar portas de organização e participantes de placement/ciclo de vida.
+- [x] **M3.3** Ligar a classe na composição, migrar imports da web/scripts/testes e ativar seus eventos. Remover código de desenho duplicado do workspace; leitores agregados conservam suas projeções estreitas.
 
 **Saída:** cena, rascunhos, conflito, PNG/ETag, MCP e importação/exportação funcionam pela nova classe. A primeira extração valida o desenho antes de replicá-lo.
 
 ### Onda 4 — Projetos e pastas
 
-- [ ] **M4.1** Criar `@tinyfold/projects`, modelos, contratos, classe, repositórios e leituras locais. Preservar limites, nomes sem caixa/acentos, cores e arquivamento.
-- [ ] **M4.2** Expor participantes específicos para organização, validação e alteração de pasta. Mover coordenação de exclusão/restauração de pasta para `workspace/application/flows/`, mantendo a entrada de Desfazer.
-- [ ] **M4.3** Substituir adaptadores temporários de organização, migrar imports e ativar eventos. Preservar contagens em lote por porta de leitura.
+- [x] **M4.1** Criar `@tinyfold/projects`, modelos, contratos, classe, repositórios e leituras locais. Preservar limites, nomes sem caixa/acentos, cores e arquivamento.
+- [x] **M4.2** Expor participantes específicos para organização, validação e alteração de pasta. Mover coordenação de exclusão/restauração de pasta para `workspace/application/flows/`, mantendo a entrada de Desfazer.
+- [x] **M4.3** Substituir adaptadores temporários de organização, migrar imports e ativar eventos. Preservar contagens em lote por porta de leitura.
 
 **Saída:** projetos e pastas têm um dono; excluir/restaurar pasta continua preservando seus itens, versões e limite combinado de pins.
 
 ### Onda 5 — Documentos
 
-- [ ] **M5.1** Criar `@tinyfold/documents`, modelos, contratos, classe, casos de uso, repositórios e participantes de conteúdo/ciclo de vida/localização.
-- [ ] **M5.2** Expor consulta documental e validação de origem em lote pelas portas necessárias. Ligar Markdown ao `rich-text` e manter a coordenação de origens/incorporados em `workspace`.
-- [ ] **M5.3** Migrar consumidores, ativar eventos e remover cópias antigas. Preservar IDs de blocos, versões, acks compactos e leitura de lixeira.
+- [x] **M5.1** Criar `@tinyfold/documents`, modelos, contratos, classe, casos de uso, repositórios e participantes de conteúdo/ciclo de vida/localização.
+- [x] **M5.2** Expor consulta documental e validação de origem em lote pelas portas necessárias. Ligar Markdown ao `rich-text` e manter a coordenação de origens/incorporados em `workspace`.
+- [x] **M5.3** Migrar consumidores, ativar eventos e remover cópias antigas. Preservar IDs de blocos, versões, acks compactos e leitura de lixeira.
 
 **Saída:** salvamento, conflitos, cópias, recuperação, Markdown e marcadores de origem equivalentes, incluindo referências entre documentos e tarefas ainda em transição.
 
 ### Onda 6 — Quadro
 
-- [ ] **M6.1** Criar `@tinyfold/board`, classe, contratos, tarefas, colunas, etiquetas, origens, revisão, calendário e persistência correspondente.
-- [ ] **M6.2** Separar criação direta de tarefa da coordenação por origem; hidratar fatos documentais por porta em lote e fornecer participante que preserva títulos na exclusão documental.
-- [ ] **M6.3** Migrar consumidores e MCP, ativar eventos de tarefa/quadro, remover código antigo e preservar efeitos em lote dos gatilhos e respostas de Desfazer.
+- [x] **M6.1** Criar `@tinyfold/board`, classe, contratos, tarefas, colunas, etiquetas, origens, revisão, calendário e persistência correspondente.
+- [x] **M6.2** Separar criação direta de tarefa da coordenação por origem; hidratar fatos documentais por porta em lote e fornecer participante que preserva títulos na exclusão documental.
+- [x] **M6.3** Migrar consumidores e MCP, ativar eventos de tarefa/quadro, remover código antigo e preservar efeitos em lote dos gatilhos e respostas de Desfazer.
 
 **Saída:** tarefa e origem atômicas, versões de texto/campos independentes, datas civis, paginação, colunas globais e etiquetas equivalentes.
 
 ### Onda 7 — Workspace de integração e remoção das pontes
 
-- [ ] **M7.1** Consolidar `WorkspaceModule` com fluxos de pasta, movimentos, pins, origem documental, purge documental e lixeira; remover `WorkspaceRepository` e seu contexto universal.
-- [ ] **M7.2** Fechar portas de leitura e adaptadores agregados, preservando consultas em lote, ordenação e cursores. Reduzir os modelos de leitura aos DTOs de cada consulta.
-- [ ] **M7.3** Finalizar adaptadores RPC/MCP/arquivos no servidor, contratos de eventos e imports públicos na web, scripts e testes. Remover fábricas/exportações antigas sem consumidores.
-- [ ] **M7.4** Eliminar todas as pontes temporárias e exceções transitórias de dependência. Rever que nenhum módulo escreve tabelas alheias fora das cascatas/gatilhos preservados e que leitores agregados são somente leitura.
+- [x] **M7.1** Consolidar `WorkspaceModule` com fluxos de pasta, movimentos, pins, origem documental, purge documental e lixeira; remover `WorkspaceRepository` e seu contexto universal.
+- [x] **M7.2** Fechar portas de leitura e adaptadores agregados, preservando consultas em lote, ordenação e cursores. Reduzir os modelos de leitura aos DTOs de cada consulta.
+- [x] **M7.3** Finalizar adaptadores RPC/MCP/arquivos no servidor, contratos de eventos e imports públicos na web, scripts e testes. Remover fábricas/exportações antigas sem consumidores.
+- [x] **M7.4** Eliminar todas as pontes temporárias e exceções transitórias de dependência. Rever que nenhum módulo escreve tabelas alheias fora das cascatas/gatilhos preservados e que leitores agregados são somente leitura.
 
 **Saída:** cinco classes de negócio compostas pelo servidor, nenhum import entre módulos de negócio e nenhuma implementação legada ativa em paralelo.
 
 ### Onda 8 — Verificação integrada e documentação
 
-- [ ] **M8.1** Executar matriz automática final e comparar contratos, migrações, esquema e cobertura de operações com a referência.
-- [ ] **M8.2** Executar a matriz manual no Chrome do Herdr com banco temporário, além das comparações visuais; registrar evidências e eventuais diferenças.
-- [ ] **M8.3** Atualizar `AGENTS.md`, README dos módulos, `docs/arquitetura.md`, `docs/banco.md`, índice de etapas e evidências em `docs/validacao.md`. A arquitetura atual só passa a descrever o destino depois de implementado.
-- [ ] **M8.4** Revisar o diff integrado, registrar SHAs e encerrar a etapa pelos critérios de pronto. A integração/publicação é uma ação posterior ao planejamento, seguindo a autorização da sessão e o CI.
+- [x] **M8.1** Executar matriz automática final e comparar contratos, migrações, esquema e cobertura de operações com a referência.
+- [x] **M8.2** Executar a matriz manual no Chrome do Herdr com banco temporário, além das comparações visuais; registrar evidências e eventuais diferenças.
+- [x] **M8.3** Atualizar `AGENTS.md`, README dos módulos, `docs/arquitetura.md`, `docs/banco.md`, índice de etapas e evidências em `docs/validacao.md`. A arquitetura atual só passa a descrever o destino depois de implementado.
+- [x] **M8.4** Revisar o diff integrado, registrar SHAs e encerrar a etapa pelos critérios de pronto. A integração/publicação é uma ação posterior ao planejamento, seguindo a autorização da sessão e o CI.
 
 **Saída:** resultado reproduzível e revisável, com validação executada distinguida de verificações previstas.
 
@@ -412,27 +412,30 @@ MCP é validado pelos testes de contrato e integração; a passagem visual não 
 
 ## Critérios de pronto
 
-- [ ] Os cinco módulos de negócio previstos têm classes e contratos públicos explícitos, com casos de uso separados da montagem.
-- [ ] `rich-text` atende documentos e tarefas sem depender de módulos de negócio, React, HTTP ou banco.
-- [ ] `WorkspaceRepository` universal e implementações duplicadas em transição foram removidos; o workspace restante contém integração, consultas agregadas e o histórico de migrações.
-- [ ] Nenhum módulo importa outro módulo de negócio; o servidor liga as portas e o verificador impede acessos indevidos.
-- [ ] Escritas são feitas pelos donos dos dados, com fluxos conjuntos em uma transação e um registro de idempotência.
-- [ ] Eventos tipados são observáveis após commit, isolados por instância, sem republicação por replay e com limites de entrega documentados.
-- [ ] As 57 operações externas, seis ferramentas MCP e endpoint de prévia preservam seus contratos e políticas de acesso.
-- [ ] Migrações, função SQL histórica, esquema, dados existentes e formato dos rascunhos continuam compatíveis.
-- [ ] Todos os portões automáticos finais e a matriz manual aplicável foram executados; falhas/diferenças materiais estão resolvidas ou explicitamente decididas.
-- [ ] Não há pontes transitórias ou exceções de dependência sem remoção; documentação descreve o resultado real e referencia os SHAs/evidências.
+- [x] Os cinco módulos de negócio previstos têm classes e contratos públicos explícitos, com casos de uso separados da montagem.
+- [x] `rich-text` atende documentos e tarefas sem depender de módulos de negócio, React, HTTP ou banco.
+- [x] `WorkspaceRepository` universal e implementações duplicadas em transição foram removidos; o workspace restante contém integração, consultas agregadas e o histórico de migrações.
+- [x] Nenhum módulo importa outro módulo de negócio; o servidor liga as portas e o verificador impede acessos indevidos.
+- [x] Escritas são feitas pelos donos dos dados, com fluxos conjuntos em uma transação e um registro de idempotência.
+- [x] Eventos tipados são observáveis após commit, isolados por instância, sem republicação por replay e com limites de entrega documentados.
+- [x] As 57 operações externas, seis ferramentas MCP e endpoint de prévia preservam seus contratos e políticas de acesso.
+- [x] Migrações, função SQL histórica, esquema, dados existentes e formato dos rascunhos continuam compatíveis.
+- [x] Todos os portões automáticos finais e a matriz manual aplicável foram executados; falhas/diferenças materiais estão resolvidas ou explicitamente decididas.
+- [x] Não há pontes transitórias ou exceções de dependência sem remoção; documentação descreve o resultado real e referencia os SHAs/evidências.
 
 ## Registro de execução
 
-Preencher durante a implementação; não copiar resultados da etapa 12 como se fossem desta etapa.
+A implementação partiu de `2090dea` e preservou os checkouts existentes. O plano foi registrado em `b084c1f` e o código integrado em `59f6306`. A branch `refactor/stage13-modules` contém o trabalho; `../tinyfold-stage13-baseline` mantém o ponto anterior para auditoria.
 
-| Item | Registro |
+A pedido do usuário, três subagentes dividiram implementação e revisão. Foundation trabalhou em unidade de trabalho, eventos e Board; rich_text, em texto puro e Drawings; review_policy, em regras de importação e Documents. O agente principal implementou Projects, composição do servidor e migração dos consumidores. Houve revisão cruzada: proteção de escrita em transação de leitura, coordenação da tarefa com origem, metadados documentais em lote, portas estreitas e encerramento de ferramentas MCP foram corrigidos durante a integração.
+
+**Organização da execução.** As extrações ocorreram em paralelo, em vez de manter pontes intermediárias publicadas por onda. Os portões por módulo foram executados durante o trabalho; o portão global valida o lote integrado. Os commits registram plano, implementação integrada e evidências, sem alegar 32 commits validados separadamente. Fluxos de pasta/movimento/pin/lixeira conservam suas pastas específicas em `application/`; `flows/source-task.ts` coordena a nova entrada da origem documental. Não resta ponte temporária nem exceção transitória no verificador.
+
+| Itens | Resultado e evidência |
 | --- | --- |
-| SHA inicial efetivo | Pendente |
-| Branch/worktree de implementação | Pendente |
-| Onda atual e último ID concluído | Nenhum |
-| Commits por ID e pontes restantes | Pendente |
-| Verificações executadas e artefatos | Pendente |
-| Diferenças de comportamento encontradas e decisões | Pendente |
-| SHA integrado e publicação, se realizada | Pendente |
+| M0.1–M0.4 | Base `2090dea`; 747 unitários, 288 testes SQLite e build repetidos no checkout de referência; 40 capturas novas. Os 227 E2E anteriores do mesmo SHA foram reutilizados como referência histórica, e a versão nova executa a suíte completa. |
+| M1.1–M2.4 | Core transacional/eventos, `rich-text`, política com casos negativos e composição do servidor; testes de escopo, rollback, replay, clocks e observadores. |
+| M3.1–M6.3 | Quatro donos extraídos, com classes/contratos/participantes; antigos consumidores e testes migrados. |
+| M7.1–M7.4 | Workspace restrito a coordenação e leituras agregadas; repositório universal, adaptadores antigos e reexports de transição removidos. |
+| M8.1–M8.4 | Código `59f6306` revisado; 776 unitários, 331 SQLite, build, 227 E2E finais e 40 capturas aprovados; passagem no Chrome do Herdr concluída. Comandos, artefatos e limites em [validação](../validacao.md#etapa-13-módulos-e-contratos-públicos). |
+| Publicação | Nenhum push, merge em `main` ou deploy desta etapa. |
