@@ -1,6 +1,6 @@
 # Etapa 12 — Refatoração
 
-**Estado:** concluída parcialmente em 2026-11-02. Detalhada no mesmo dia, com as [decisões do usuário](#decisões-do-usuário); o [Resultado](#resultado) diz o que entrou e o que ficou para depois.
+**Estado:** concluída parcialmente, com retomadas até 2026-11-03. Detalhada em 2026-11-02, com as [decisões do usuário](#decisões-do-usuário); o [Resultado](#resultado) diz o que entrou e o que ficou para depois.
 
 O plano consolida cinco revisões somente leitura de `main` (`4c185b6`), cada uma com IDs próprios:
 
@@ -717,6 +717,14 @@ O paralelismo também revelou uma corrida do helper de criação: o editor anter
 
 As rodadas de estabilidade, a comparação da lista e a passagem manual pelo Chrome do Herdr estão em [validação](../validacao.md#retomada-isolamento-e-paralelismo-do-e2e).
 
+**Helpers do E2E.** O lote seguinte, em `refactor/e2e-support`, parte de `4a39f18` e conclui W2.2 a W2.4:
+
+- `a950468`: nomes explícitos para os atalhos do aplicativo, do sistema e do editor, com as diferenças de plataforma concentradas em `support/keyboard.ts`;
+- `fab7698`: builders tipados para a preparação por API e falhas de rede em `support/builders.ts` e `support/network.ts`, preservando a gravação real antes de perder a resposta, os payloads e as chaves de reenvio;
+- `b870aae`: criação e escrita de documentos compartilhadas, com preenchimento ou digitação real, mantendo os preparativos de foco de cada cenário. A espera pelo texto salvo é armada antes da edição, inclusive nos marcadores de origem.
+
+Os wrappers específicos de conteúdo, seleção e foco continuam nos specs. Nenhum arquivo de produção mudou neste lote. As verificações estão em [validação](../validacao.md#helpers-de-documento-rede-e-teclado).
+
 **Guardas.**
 
 - **Lint:** o lint recusa uma chamada do Playwright sem `await`, um teste focado e a especificidade descendente no CSS, e o CI recusa `test.only`.
@@ -786,7 +794,7 @@ As rodadas de estabilidade, a comparação da lista e a passagem manual pelo Chr
   - `createBeside` (WP-6);
   - WP-8 a WP-14 e WP-16 (a gaveta, o quadro e os slots de comandos);
   - o resto de WP-17 e WP-18.
-- **CSS e E2E:** a onda 6; ampliar W2.2 aos outros helpers de documento; W2.3 e W2.4 (builders, falhas de rede e teclado); adotar diretamente as fixtures no restante dos specs; agrupar os specs por área (resto de W2.10); W2.13 (relógio do Playwright e ritmos nomeados). W2.12 continua opcional, condicionado a um remoto. Os retratos visuais W1.4 também continuam pendentes.
+- **CSS e E2E:** a onda 6; adotar diretamente as fixtures no restante dos specs; agrupar os specs por área (resto de W2.10); W2.13 (relógio do Playwright e ritmos nomeados). W2.12 continua opcional, condicionado a um remoto. Os retratos visuais W1.4 também continuam pendentes.
 
 ## Desvios do plano
 

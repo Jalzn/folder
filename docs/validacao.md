@@ -22,6 +22,27 @@ Executada em 2026-11-02, em três levas com um ramo cada: backend, fundações d
 
 O portão completo foi executado na retomada, contra a `main` em `48bda92`: `check` com 727 unitários, `test:db` com 274 testes, build e E2E com 220 aprovados e 136 pulados em 16,5 min.
 
+### Helpers de documento, rede e teclado
+
+Executada em 2026-11-03, a partir de `4a39f18`, no ramo `refactor/e2e-support`. Os commits `a950468`, `fab7698` e `b870aae` concluem W2.2 a W2.4, com helpers compartilhados de teclado, criação por RPC, falhas de rede e escrita de documentos. Nenhum arquivo de produção, configuração do Playwright ou limite de tempo mudou.
+
+| Verificação | Resultado |
+| --- | --- |
+| `mise exec -- pnpm check` | Passou em cada commit de código: lint sem erro, os mesmos 24 avisos de espera, tipos, limites sem violação em 994 módulos e 727 testes unitários em 120 arquivos no último commit |
+| `mise exec -- pnpm test:db` | Passou: 274 testes em 39 arquivos, com SQLite temporário |
+| `mise exec -- pnpm build` | Passou; permaneceu o aviso conhecido de chunks grandes |
+| Lista antes e depois | Mesmos 220 títulos, arquivos e projetos: 133 de desktop comum, 41 de desktop `@timing` e 46 de Pixel 7 |
+| E2E completo | 220 aprovados em 6 min 30,9 s: 174 de desktop e 46 de Pixel 7; sem falhas, intermitentes, pulados ou repetição automática |
+| Encerramento | Nenhum diretório `tinyfold-e2e-worker-*` nem sessão própria do preview restante |
+
+O relatório JSON do E2E confirmou a mesma lista anterior e uma execução aprovada por cenário. Esta leva executou uma rodada completa, conforme o processo por lote.
+
+**Revisão do lote:** conferidos os payloads de preparação, os retornos dos builders, a distinção entre os atalhos da plataforma emulada e do sistema, e as verificações de conteúdo, foco, conflito, rascunho e reenvio. A revisão antes do E2E repôs o login que a extração inicial retirava do wrapper de `draft-isolation`. As esperas de documento agora começam antes de digitar e procuram o texto codificado no payload; “Salvo” continua sendo conferido. A perda de resposta só é simulada depois de uma resposta real 200, inclusive nos cenários de exclusão de pasta e tarefa. Os handlers são removidos individualmente, e a retenção de chamadas é liberada no encerramento da página.
+
+**Chrome dentro do Herdr.app:** sessão `herdr-preview-tinyfold-support`, motor Chrome confirmado, servidor e SQLite temporários com o exemplo. Conferidos login, paleta com ⌘K, criação do documento, Enter do título para o editor, texto com aspas e acentos, parágrafos, Desfazer e persistência ao recarregar. O menu `/tarefa` incorporou uma tarefa existente; ↓ saiu do card selecionado para digitar depois dele. A tarefa abriu e fechou a gaveta, e o card e o texto seguinte sobreviveram à recarga. Em 390 × 844, o documento ficou legível sem corte horizontal visível e a lateral abriu e fechou sobre a página; foi redução da janela, sem emulação de toque. Capturas do browser foram inspecionadas, sem erros de página registrados. A sessão e o servidor foram encerrados ao fim.
+
+Essa passagem cobre o lote; a matriz manual completa de teclado entre todos os incorporados continua pendente. As cinco rodadas de estabilidade de W2.11, abaixo, pertencem ao lote anterior.
+
 ### Retomada: isolamento e paralelismo do E2E
 
 Executada em 2026-11-02, a partir de `48bda92`, no ramo `refactor/e2e-isolation`. Este lote cobre o isolamento dos servidores e projetos, a tipagem RPC, a seleção por dispositivo, o smoke e os helpers de salvamento, navegação e criação. As partes ainda pendentes estão no [resultado da etapa](etapas/12-refatoracao.md#para-depois).
@@ -102,7 +123,7 @@ Essa passagem cobre os fluxos deste lote. A matriz manual completa da etapa 12, 
 ### Pendências
 
 - **Chrome real:** a retomada fez a passagem descrita acima no Chrome do Herdr. A matriz completa prevista, inclusive todos os percursos entre incorporados ao ritmo de uma pessoa, continua pendente.
-- **Arnês de testes:** os helpers e a adoção direta das fixtures restantes, agrupamento por área e relógio falso estão no [resultado da etapa](etapas/12-refatoracao.md#para-depois).
+- **Arnês de testes:** a adoção direta das fixtures restantes, agrupamento por área e relógio falso estão no [resultado da etapa](etapas/12-refatoracao.md#para-depois).
 
 ## Preparação para Railway e Cloudflare
 

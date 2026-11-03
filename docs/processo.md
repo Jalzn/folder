@@ -27,6 +27,13 @@ Os specs importam `test` de `e2e/fixtures.ts`. Cada worker tem processo Node, co
 
 `signIn` autentica sem criar projetos; `login` abre um projeto novo para cada cenário, preservando as entradas pela interface. As fixtures `api` e `project` oferecem o cliente RPC tipado e um projeto criado pela API. O login independente continua criando outra sessão da mesma conta para os cenários de conflito. Cookies só são reutilizados na mesma origem. O exemplo usa a opção `sample` da fixture e o mesmo ciclo de encerramento.
 
+Os helpers comuns ficam em `e2e/support/`:
+
+- `document.ts`: `createSavedDocument` cria pela interface; `writeAndSave` preenche o editor e `typeAndSave` digita parágrafos com Enter real. A espera de resposta começa antes da edição, confere o texto no payload e depois espera “Salvo”. Cada cenário continua responsável por foco e seleção.
+- `builders.ts`: cria projetos, pastas, documentos, desenhos e tarefas pela API pública, com entradas tipadas e um `requestId` novo por criação. A pasta devolve o ID diretamente; os demais devolvem a resposta RPC.
+- `network.ts`: aborta, segura ou atrasa uma chamada, fornece uma resposta deliberada ou perde a primeira resposta depois de confirmar a gravação real. `restore` remove só o handler instalado; uma chamada segurada pode ser liberada explicitamente e também é liberada ao fechar a página. Os testes conferem o payload e a chave de reenvio.
+- `keyboard.ts`: `appShortcut` segue a plataforma que o aplicativo vê; `hostShortcut`, `hostKey` e `editorUndo` seguem o sistema real do browser. Essa diferença importa quando o Chrome no macOS emula Windows ou Android.
+
 São quatro workers para arquivos distintos; os testes de cada arquivo continuam sequenciais. Colunas e fuso pertencem à instalação: os testes que os alteram continuam restaurando o estado. Casos de teclado, digitação e ausência de salvamento marcados com `@timing` rodam no projeto `chrome-desktop-timing`, em um worker, depois dos projetos comuns. Para rodar só esse grupo: `mise exec -- pnpm e2e --project=chrome-desktop-timing --no-deps`.
 
 Arquivos exclusivos do desktop usam `.desktop.spec.ts`, e os exclusivos do celular podem usar `.mobile.spec.ts`. Num arquivo misto, o caso recebe `@desktop` ou `@mobile`. A configuração seleciona o dispositivo antes da execução, sem registrar como pulados os casos que não se aplicam. `e2e:smoke` seleciona os oito cenários de captura, Markdown, tarefas e recuperação offline, nos dois dispositivos. A lista completa continua verificável com `mise exec -- pnpm e2e --list`.
