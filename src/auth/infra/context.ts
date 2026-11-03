@@ -10,7 +10,7 @@ export function createAuthService(
   options: { clock?: () => Date; throttle?: LoginThrottle; warn?: (message: string) => void } = {},
 ) {
   return authService({
-    read: authRepository(db),
+    store: authRepository(db),
     transaction: (work) => writeTransaction(db, (trx) => work(authRepository(trx))),
     password: passwordHasher,
     tokens: sessionTokens,

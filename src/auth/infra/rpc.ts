@@ -1,15 +1,18 @@
 import { authedProcedure, pub } from '@tinyfold/core/infra';
 import { z } from 'zod';
 import type { AuthService } from '../application/service.js';
+import { PASSWORD_LIMITS } from '../domain/index.js';
 import type { AccessTokenService } from './access-tokens.js';
 
 export function createAuthRouter(auth: AuthService, accessTokens: AccessTokenService) {
   return {
-    login: pub.input(z.object({ password: z.string().min(1).max(256) })).handler(async ({ input, context }) => {
-      const result = await auth.login(input, context.client);
-      context.cookies.setSession(result.token, result.expiresAt);
-      return { owner: result.owner };
-    }),
+    login: pub
+      .input(z.object({ password: z.string().min(1).max(PASSWORD_LIMITS.max) }))
+      .handler(async ({ input, context }) => {
+        const result = await auth.login(input, context.client);
+        context.cookies.setSession(result.token, result.expiresAt);
+        return { owner: result.owner };
+      }),
     session: authedProcedure.handler(({ context }) => ({
       owner: context.session.owner,
       sessionId: context.session.sessionId,
@@ -20,7 +23,12 @@ export function createAuthRouter(auth: AuthService, accessTokens: AccessTokenSer
       return result;
     }),
     changePassword: authedProcedure
-      .input(z.object({ currentPassword: z.string().max(256), newPassword: z.string().min(12).max(256) }))
+      .input(
+        z.object({
+          currentPassword: z.string().max(PASSWORD_LIMITS.max),
+          newPassword: z.string().min(PASSWORD_LIMITS.min).max(PASSWORD_LIMITS.max),
+        }),
+      )
       .handler(({ input, context }) => auth.changePassword(context.session.sessionId, input)),
     listSessions: authedProcedure.handler(({ context }) => auth.listSessions(context.session.sessionId)),
     /** The owner's time zone; repeatable, with no requestId. */

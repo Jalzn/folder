@@ -1,4 +1,5 @@
 import type { AccessTokenScope } from '../../domain/access-token.js';
+import type { TokenSecrets } from '../token-secrets.js';
 
 /** What the owner sees in the Perfil. The secret is shown once on creation and never stored. */
 export interface AccessToken {
@@ -25,15 +26,11 @@ export interface AccessTokenRepository {
   deleteAll(): Promise<void>;
 }
 
-export interface AccessTokenSecrets {
-  /** A new random token; only its digest is stored. */
-  create(): { token: string; digest: string };
-  digest(token: string): string;
-  isWellFormed(token: string): boolean;
-}
+export type AccessTokenSecrets = TokenSecrets;
 
 export interface AccessTokenDeps {
-  read: AccessTokenRepository;
+  /** Autocommit access; multi-step invariants use transaction. */
+  store: AccessTokenRepository;
   transaction<T>(work: (repository: AccessTokenRepository) => Promise<T>): Promise<T>;
   secrets: AccessTokenSecrets;
   id(): string;

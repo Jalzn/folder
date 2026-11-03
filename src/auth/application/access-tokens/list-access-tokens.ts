@@ -9,5 +9,5 @@ export const accessTokenView = ({ id, name, prefix, createdAt, lastUsedAt }: Acc
 });
 
 export async function listAccessTokens(deps: AccessTokenDeps): Promise<AccessToken[]> {
-  return (await deps.read.list()).map(accessTokenView);
+  return (await deps.store.list()).map(accessTokenView);
 }

@@ -18,7 +18,7 @@ export interface AccessTokenOptions {
 /** Personal access tokens for agents such as Claude Code, bound to this database. */
 export function createAccessTokens(db: Database, options: AccessTokenOptions = {}) {
   const deps: AccessTokenDeps = {
-    read: accessTokenRepository(db),
+    store: accessTokenRepository(db),
     transaction: (work) => writeTransaction(db, (trx) => work(accessTokenRepository(trx))),
     secrets: accessTokenSecrets,
     id: randomUUID,

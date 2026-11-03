@@ -5,33 +5,36 @@ export * from './access-token.js';
 export const sessionLifetimeMs = 30 * 86_400_000;
 export const renewalIntervalMs = 86_400_000;
 
+export const PASSWORD_LIMITS = { min: 12, max: 256 } as const;
+
 export function validatePassword(password: string): void {
-  if (password.length < 12 || password.length > 256)
+  if (password.length < PASSWORD_LIMITS.min || password.length > PASSWORD_LIMITS.max)
     throw new DomainError('A senha precisa ter entre 12 e 256 caracteres.');
 }
 
 export function deviceLabel(userAgent: string | undefined): string {
   const ua = userAgent ?? '';
-  const browser = /Edg\//.test(ua)
-    ? 'Edge'
-    : /Firefox\//.test(ua)
-      ? 'Firefox'
-      : /Chrome\//.test(ua)
-        ? 'Chrome'
-        : /Safari\//.test(ua)
-          ? 'Safari'
-          : 'Navegador';
-  const system = /Android/.test(ua)
-    ? 'Android'
-    : /iPhone|iPad/.test(ua)
-      ? 'iOS'
-      : /Windows/.test(ua)
-        ? 'Windows'
-        : /Macintosh/.test(ua)
-          ? 'macOS'
-          : /Linux/.test(ua)
-            ? 'Linux'
-            : 'Dispositivo';
+  const browser = deviceMatch(
+    ua,
+    [
+      [/Edg\//, 'Edge'],
+      [/Firefox\//, 'Firefox'],
+      [/Chrome\//, 'Chrome'],
+      [/Safari\//, 'Safari'],
+    ],
+    'Navegador',
+  );
+  const system = deviceMatch(
+    ua,
+    [
+      [/Android/, 'Android'],
+      [/iPhone|iPad/, 'iOS'],
+      [/Windows/, 'Windows'],
+      [/Macintosh/, 'macOS'],
+      [/Linux/, 'Linux'],
+    ],
+    'Dispositivo',
+  );
   return `${browser} · ${system}`;
 }
 
@@ -45,3 +48,7 @@ export const OWNER_NAME_CHARS = 100;
 export function ownerName(raw: string): string {
   return visibleText(Array.from(visibleText(raw)).slice(0, OWNER_NAME_CHARS).join('')) || 'Você';
 }
+
+const deviceMatch = (ua: string, table: readonly (readonly [RegExp, string])[], fallback: string): string =>
+  table.find(([pattern]) => pattern.test(ua))?.[1] ?? fallback;
+export const isOffset = (timeZone: string): boolean => /^\s*[+-]/u.test(timeZone);

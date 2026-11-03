@@ -1,4 +1,5 @@
 import type { Owner } from '@tinyfold/core/application';
+import type { TokenSecrets } from './token-secrets.js';
 
 export interface StoredOwner extends Owner {
   passwordHash: string;
@@ -31,13 +32,19 @@ export interface LoginThrottle {
   check(ip: string, now: number): void;
 }
 export interface AuthDependencies {
-  read: AuthRepository;
+  /** Autocommit access; multi-step invariants use transaction. */
+  store: AuthRepository;
   transaction<T>(work: (repo: AuthRepository) => Promise<T>): Promise<T>;
   password: { hash(value: string): Promise<string>; verify(value: string, encoded: string): Promise<boolean> };
-  tokens: { create(): { token: string; digest: string }; digest(token: string): string; valid(token: string): boolean };
+  tokens: TokenSecrets;
   id(): string;
   now(): Date;
   throttle: LoginThrottle;
   /** Receives what the service works around but someone should repair, such as a bad stored zone. */
   warn(message: string): void;
+}
+
+export interface AuthContext extends AuthDependencies {
+  profile(owner: StoredOwner): Owner;
+  storedZone(owner: StoredOwner): string | null;
 }
