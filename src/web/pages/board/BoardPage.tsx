@@ -5,7 +5,7 @@ import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../../lib/api';
 import { civilDateIn } from '../../lib/dates/civil-date';
 import { shortCivilDate } from '../../lib/dates/task-dates';
-import { useColumns, useLabels, useProject, useProjectBoard } from '../../lib/queries';
+import { useColumns, useLabelMap, useLabels, useProject, useProjectBoard } from '../../lib/queries';
 import type { Task } from '../../lib/types';
 import { paths } from '../../navigation/paths';
 import { PageFrame, useAnnounce, useApp, useOwnerToday, usePageCommands, useTaskDrawer } from '../../shell';
@@ -52,7 +52,7 @@ export function BoardPage() {
   const board = useProjectBoard(projectId);
   const columns = useColumns();
   const labelList = useLabels().data;
-  const labels = useMemo(() => new Map((labelList ?? []).map((label) => [label.id, label])), [labelList]);
+  const labels = useLabelMap(labelList);
   const [filterOpen, setFilterOpen] = useState(false);
   const list = board.data?.tasks;
   const visible = (task: Task) => chosen.every((id) => task.labelIds.includes(id));

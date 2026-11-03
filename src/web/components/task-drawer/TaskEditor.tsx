@@ -3,7 +3,7 @@ import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } fro
 import { useAutosaveLifecycle } from '../../lib/autosave/use-autosave-lifecycle';
 import { type ColumnSummary, type TaskWithText, useLabels } from '../../lib/queries';
 import { useCommandSlot } from '../../lib/react/use-command-slot';
-import { type Task, UNTITLED } from '../../lib/types';
+import { editableTitle, type Task, UNTITLED } from '../../lib/types';
 import { paths } from '../../navigation/paths';
 import { useApp, useOwnerToday } from '../../shell';
 import { useTaskDrawer } from '../../shell/state';
@@ -89,7 +89,7 @@ export function TaskEditor({
   const change = (patch: Partial<typeof state.snapshot>) =>
     controller.change({ ...controller.getState().snapshot, ...patch });
   async function copyLink() {
-    const link = new URL(paths.task(task.projectId, task.id), window.location.origin).href;
+    const link = paths.permanent(paths.task(task.projectId, task.id));
     try {
       await navigator.clipboard.writeText(link);
       toast('Link da tarefa copiado.');
@@ -97,7 +97,7 @@ export function TaskEditor({
       toast('Não foi possível copiar o link.', 'error');
     }
   }
-  const title = state.snapshot.title === UNTITLED ? '' : state.snapshot.title;
+  const title = editableTitle(state.snapshot.title);
 
   return (
     <>

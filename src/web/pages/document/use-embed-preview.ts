@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, queryClient } from '../../lib/api';
 import { renderPreview } from '../../lib/files/canvas-preview';
 import { type EmbeddedDrawing, embedsKey } from '../../lib/queries';
+import { useLatest } from '../../lib/react/use-latest';
 
 /** What a figure shows while its preview is made again: the old image with "Atualizando…", or none fits. */
 export type PreviewWork = 'updating' | 'unavailable';
@@ -26,8 +27,7 @@ const whenIdle = () =>
  */
 export function useEmbedPreviews(drawings: ReadonlyMap<string, EmbeddedDrawing>) {
   const [work, setWork] = useState<ReadonlyMap<string, PreviewWork>>(new Map());
-  const latest = useRef(drawings);
-  latest.current = drawings;
+  const latest = useLatest(drawings);
   const tried = useRef(new Set<string>());
   const running = useRef(false);
   // A job outlives the renders that started it; only leaving the page stops its updates.
@@ -57,11 +57,9 @@ export function useEmbedPreviews(drawings: ReadonlyMap<string, EmbeddedDrawing>)
         const canvas = await api.workspace.getCanvas({ id: next.id });
         if (canvas.deletedAt) return mark(null);
         await import('../../lib/files/excalidraw-assets');
-        const { renderCanvasPng } = await import('../../lib/files/canvas-png');
+        const { renderLightPreview } = await import('../../lib/files/canvas-png');
         // A light rendering with background, as the drawing's own previews.
-        const png = await renderPreview(canvas.scene, (scene, maxSide) =>
-          renderCanvasPng(scene, { maxSide, darkMode: false }),
-        );
+        const png = await renderPreview(canvas.scene, renderLightPreview);
         if (!png) return mark('unavailable');
         await api.workspace.saveCanvasPreview({
           id: canvas.id,

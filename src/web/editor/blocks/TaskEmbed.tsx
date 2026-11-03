@@ -1,6 +1,7 @@
 import { useId, useRef } from 'react';
 import { TaskMeta } from '../../components/task/TaskMeta';
 import { ColumnRing, ProjectMark } from '../../ui';
+import { AbsentEmbed, EmbedLoading } from './EmbedFallback';
 import { taskEmbedView } from './embed-view';
 import { useEmbedsContext } from './embeds-context';
 import { UnavailableEmbed } from './UnavailableEmbed';
@@ -18,27 +19,9 @@ export function TaskEmbed({ taskId, blockId }: { taskId: string; blockId: string
   const embeds = useEmbedsContext();
   const metaId = useId();
   const pointer = useRef('');
-  if (!embeds)
-    return (
-      <UnavailableEmbed
-        view={{
-          kind: 'unavailable',
-          text: 'Tarefa incorporada',
-          subject: 'a tarefa incorporada',
-          restore: null,
-          remove: false,
-        }}
-        kind="task"
-        blockId={blockId}
-      />
-    );
+  if (!embeds) return <AbsentEmbed kind="task" blockId={blockId} />;
   const view = taskEmbedView(embeds.tasks.get(taskId), embeds);
-  if (view.kind === 'loading')
-    return (
-      <div className="embed-loading" contentEditable={false}>
-        <span className="sr-only">Carregando a tarefa incorporada…</span>
-      </div>
-    );
+  if (view.kind === 'loading') return <EmbedLoading kind="task" />;
   if (view.kind === 'unavailable') return <UnavailableEmbed view={view} kind="task" blockId={blockId} />;
   const { task } = view;
   const { columns } = embeds;

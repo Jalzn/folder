@@ -1,8 +1,7 @@
 import '../project-page.css';
 import './overview.css';
 import { useParams } from '@tanstack/react-router';
-import { useMemo } from 'react';
-import { useColumns, useLabels, useProject, useProjectOverview } from '../../../lib/queries';
+import { useColumns, useLabelMap, useLabels, useProject, useProjectOverview } from '../../../lib/queries';
 import { PageFrame, ProjectMenu, useProjectActions } from '../../../shell';
 import { Banner, Button, ErrorNotice, PageHeader, Spinner } from '../../../ui';
 import { DoneSection } from './DoneSection';
@@ -22,7 +21,7 @@ export function OverviewPage() {
   const actions = useProjectActions();
   const columns = useColumns().data?.columns ?? [];
   const labelList = useLabels().data;
-  const labels = useMemo(() => new Map((labelList ?? []).map((label) => [label.id, label])), [labelList]);
+  const labels = useLabelMap(labelList);
   if (!project) return null;
   const data = overview.data;
   const empty = data && !data.openTasks && !data.recent.length;

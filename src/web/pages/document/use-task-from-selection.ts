@@ -1,5 +1,5 @@
-import type { BlockNoteEditor } from '@blocknote/core';
 import { useState } from 'react';
+import type { AnyBlockEditor } from '../../editor/types';
 import type { AutosaveController, Snapshot } from '../../lib/autosave';
 import { type Document, displayTitle } from '../../lib/types';
 import { useTaskDrawer } from '../../shell';
@@ -9,8 +9,7 @@ import { useToast } from '../../ui';
 export const NO_EXCERPT = 'Selecione um trecho do documento primeiro.';
 
 /** The text selected in the editor, as plain text. */
-// biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
-export function selectedText(editor: BlockNoteEditor<any, any, any>) {
+export function selectedText(editor: AnyBlockEditor) {
   const { doc, selection } = editor.prosemirrorState;
   return doc.textBetween(selection.from, selection.to, '\n').trim();
 }
@@ -20,8 +19,7 @@ export function selectedText(editor: BlockNoteEditor<any, any, any>) {
  * excerpt, then opens the drawer on a new task with the excerpt as its origin and title.
  */
 export function useTaskFromSelection(
-  // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
-  editor: BlockNoteEditor<any, any, any>,
+  editor: AnyBlockEditor,
   controller: AutosaveController<Snapshot>,
   document: Document,
 ) {

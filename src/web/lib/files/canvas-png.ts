@@ -19,3 +19,7 @@ export async function renderCanvasPng(
     maxWidthOrHeight: maxSide,
   });
 }
+
+/** Stored previews always use the light theme and a background. */
+export const renderLightPreview = (scene: CanvasScene, maxSide: number) =>
+  renderCanvasPng(scene, { maxSide, darkMode: false });

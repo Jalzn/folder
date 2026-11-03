@@ -8,7 +8,7 @@ import {
   withCleanLinks,
 } from '../../lib/autosave/canvas-autosave';
 import { defineItemSession, type ItemSession } from '../../lib/autosave/item-session';
-import { renderCanvasPng } from '../../lib/files/canvas-png';
+import { renderLightPreview } from '../../lib/files/canvas-png';
 import { CanvasPreviewUploader } from '../../lib/files/canvas-preview';
 import { canvasQuery, embedsKey, keys } from '../../lib/queries';
 import { displayTitle } from '../../lib/types';
@@ -90,7 +90,7 @@ export const canvasSession = defineItemSession<CanvasSnapshot, EditableCanvas, {
       id: canvas.id,
       previewVersion: canvas.previewVersion,
       // A light rendering with background, whatever the editor theme.
-      render: (scene, maxSide) => renderCanvasPng(scene, { maxSide, darkMode: false }),
+      render: renderLightPreview,
       upload: async (input) => {
         const ack = await api.workspace.saveCanvasPreview(input);
         void queryClient.invalidateQueries({ queryKey: embedsKey });

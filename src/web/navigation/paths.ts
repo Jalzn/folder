@@ -16,6 +16,7 @@ export interface IndexSearch {
 const encode = encodeURIComponent;
 
 export const paths = {
+  permanent: (href: string, origin = window.location.origin) => new URL(href, origin).href,
   start: '/',
   noProject: '/projetos',
   login: '/entrar',

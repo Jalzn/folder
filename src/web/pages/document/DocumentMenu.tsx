@@ -1,9 +1,9 @@
 import { ArrowDownToLine, ArrowUpFromLine, Plus } from 'lucide-react';
+import { ARCHIVED_NOTE } from '../../lib/text/project-text';
 import { ItemMenu, type ItemMenuAction } from '../../shell';
 import { KEYS } from '../../shell/keyboard';
 
 /** Why an archived project's document makes no task, in the ⋯ and in the toast of ⌘⌥T. */
-export const ARCHIVED_NOTE = 'Projeto arquivado: desarquive para criar itens.';
 
 /** The ⌘⌥T of "Criar tarefa": ⌘⌥T on Apple platforms, Ctrl+Alt+T elsewhere. */
 export const CREATE_TASK_KEYS = KEYS.createTask;

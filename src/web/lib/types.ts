@@ -28,3 +28,6 @@ export const itemTypeLabels: Record<ItemType | 'task', string> = {
   drawing: 'Desenho',
   task: 'Tarefa',
 };
+
+/** Untitled items start with an empty editable field. */
+export const editableTitle = (title: string) => (title === UNTITLED ? '' : title);

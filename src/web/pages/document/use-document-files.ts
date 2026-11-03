@@ -1,9 +1,9 @@
-import type { BlockNoteEditor } from '@blocknote/core';
 import { useNavigate } from '@tanstack/react-router';
 import type { DocumentBlock } from '@tinyfold/workspace/domain';
 import { useState } from 'react';
 import { DRAFT_DOWNLOADED, downloadDraft } from '../../components/item-page/draft-download';
 import { oneAtATime } from '../../components/item-page/one-at-a-time';
+import type { AnyBlockEditor } from '../../editor/types';
 import { api, errorMessage, queryClient, refreshWorkspace } from '../../lib/api';
 import type { AutosaveController, Snapshot } from '../../lib/autosave';
 import { downloadFile, fileNameFrom } from '../../lib/files/download';
@@ -24,12 +24,7 @@ const MAX_IMPORT_BYTES = 1_048_576;
  * that could not open. An import goes to the document's project and folder, or to the root of another project
  * while that one is archived.
  */
-export function useDocumentFiles(
-  // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
-  editor: BlockNoteEditor<any, any, any>,
-  controller: AutosaveController<Snapshot>,
-  documentId: string,
-) {
+export function useDocumentFiles(editor: AnyBlockEditor, controller: AutosaveController<Snapshot>, documentId: string) {
   const toast = useToast();
   const navigate = useNavigate();
   const importRequest = useRequest();

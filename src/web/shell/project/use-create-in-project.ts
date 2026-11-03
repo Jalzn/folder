@@ -1,3 +1,4 @@
+import { ARCHIVED_NOTE } from '../../lib/text/project-text';
 import type { ItemType, Project } from '../../lib/types';
 import { useToast } from '../../ui';
 import { useNewItems } from '../new-items';
@@ -17,7 +18,7 @@ export function useCreateInProject(project: Project | null, folder: NewItemFolde
   const toast = useToast();
   return (kind: NewKind) => {
     if (!project) return;
-    if (project.archivedAt) return toast('Projeto arquivado: desarquive para criar itens.', 'error');
+    if (project.archivedAt) return toast(ARCHIVED_NOTE, 'error');
     if (kind === 'here:document' && folder) void app.newDocument(project.id, folder.id);
     else if (kind === 'here:drawing' && folder) void app.newCanvas(project.id, folder.id);
     else if (kind === 'document') void app.newDocument(project.id);

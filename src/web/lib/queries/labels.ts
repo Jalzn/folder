@@ -1,4 +1,5 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { api } from '../api';
 import { keys } from './keys';
 
@@ -14,3 +15,7 @@ export function useLabels() {
 }
 
 export type LabelSummary = Awaited<ReturnType<typeof api.workspace.listLabels>>['labels'][number];
+
+export function useLabelMap(labels: readonly LabelSummary[] | undefined) {
+  return useMemo(() => new Map((labels ?? []).map((label) => [label.id, label])), [labels]);
+}

@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { isItemPinned } from '../../lib/queries';
+import { ARCHIVED_NOTE } from '../../lib/text/project-text';
 import type { Project } from '../../lib/types';
 import { parseProjectPath, paths } from '../../navigation/paths';
 import { useToast, useUndoLatest } from '../../ui';
@@ -64,7 +65,7 @@ export function useShortcutActions(layout: ShortcutLayout) {
   }
   function newItem() {
     if (!project || !activeProjects(layout.projects).length) return app.openProjectDialog();
-    if (project.archivedAt) return toast('Projeto arquivado: desarquive para criar itens.', 'error');
+    if (project.archivedAt) return toast(ARCHIVED_NOTE, 'error');
     // The board's column in focus is read now, before the menu takes the focus.
     ui.setNewItemOpen(true, ui.page.current.newTaskColumn?.());
   }

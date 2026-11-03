@@ -1,5 +1,6 @@
+import type { AnyBlockEditor } from './types';
 import './editor.css';
-import { type BlockNoteEditor, combineByGroup } from '@blocknote/core';
+import { combineByGroup } from '@blocknote/core';
 import { filterSuggestionItems } from '@blocknote/core/extensions';
 import { BlockNoteView } from '@blocknote/mantine';
 import { getMathBlockTypeSelectItems, getMathSlashMenuItems } from '@blocknote/math-block';
@@ -48,8 +49,7 @@ export function BlockEditor({
   slashItems,
   editable = true,
 }: {
-  // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
-  editor: BlockNoteEditor<any, any, any>;
+  editor: AnyBlockEditor;
   theme: 'light' | 'dark';
   className?: string;
   onChange: () => void;

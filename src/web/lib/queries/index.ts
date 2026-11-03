@@ -17,7 +17,7 @@ export {
 export { type FolderSummary, foldersQuery, useAllFolders, useFolders } from './folders';
 export { itemQuery } from './items';
 export { keys } from './keys';
-export { type LabelSummary, labelsQuery, useLabels } from './labels';
+export { type LabelSummary, labelsQuery, useLabelMap, useLabels } from './labels';
 export { useProjectNavigation } from './navigation';
 export { type ProjectOverview, useProjectOverview } from './overview';
 export { projectsQuery, useHasActiveProject, useProject, useProjects } from './projects';

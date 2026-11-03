@@ -7,7 +7,7 @@ import { errorMessage } from '../../../lib/api';
 import { type CompletedTask, useCompletedTasks, useProject } from '../../../lib/queries';
 import type { Project } from '../../../lib/types';
 import { paths } from '../../../navigation/paths';
-import { PageFrame, useApp, useDrawerContent, useTaskDrawer } from '../../../shell';
+import { PageFrame, useApp, useOpenTaskId, useTaskDrawer } from '../../../shell';
 import {
   Button,
   ErrorNotice,
@@ -39,7 +39,6 @@ function CompletedContent({ project }: { project: Project }) {
   const completed = useCompletedTasks(project.id);
   const { timeZone } = useApp();
   const drawer = useTaskDrawer();
-  const content = useDrawerContent();
   const toast = useToast();
   const titles = useElementRefs<HTMLElement>();
   const list = useRef<HTMLDivElement>(null);
@@ -49,7 +48,7 @@ function CompletedContent({ project }: { project: Project }) {
   const items = useMemo(() => completedItems(pages ?? []), [pages]);
   const groups = useMemo(() => groupCompleted(items, timeZone), [items, timeZone]);
   const total = pages?.at(-1)?.total;
-  const openId = content?.mode === 'task' ? content.id : null;
+  const openId = useOpenTaskId();
 
   /** The row that takes the place of one that leaves: the next one, or the one before the last. */
   function reopenTask(task: CompletedTask) {

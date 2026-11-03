@@ -2,10 +2,10 @@ import { ArrowDownToLine, ArrowUpFromLine, ListTodo, Plus, Shapes } from 'lucide
 import type { RefObject } from 'react';
 import type { useItemEditor } from '../../components/item-page';
 import type { BlockEditorInstance } from '../../editor/use-block-editor';
+import { ARCHIVED_NOTE } from '../../lib/text/project-text';
 import { usePageCommands, useTaskDrawer } from '../../shell';
 import { useToast } from '../../ui';
 import type { EmbedCommands } from './DocumentEmbeds';
-import { ARCHIVED_NOTE } from './DocumentMenu';
 import type { documentController } from './document-session';
 import type { useDocumentFiles } from './use-document-files';
 import { NO_EXCERPT, selectedText, type useTaskFromSelection } from './use-task-from-selection';

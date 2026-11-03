@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { LiveDrawing } from '../../lib/queries/embeds';
 import { paths } from '../../navigation/paths';
+import { AbsentEmbed, EmbedLoading } from './EmbedFallback';
 import { drawingEmbedView } from './embed-view';
 import { useEmbedsContext } from './embeds-context';
 import { UnavailableEmbed } from './UnavailableEmbed';
@@ -25,27 +26,9 @@ export const previewSrc = (drawing: LiveDrawing) =>
  */
 export function DrawingEmbed({ canvasId, blockId }: { canvasId: string; blockId: string }) {
   const embeds = useEmbedsContext();
-  if (!embeds)
-    return (
-      <UnavailableEmbed
-        view={{
-          kind: 'unavailable',
-          text: 'Desenho incorporado',
-          subject: 'o desenho incorporado',
-          restore: null,
-          remove: false,
-        }}
-        kind="drawing"
-        blockId={blockId}
-      />
-    );
+  if (!embeds) return <AbsentEmbed kind="drawing" blockId={blockId} />;
   const view = drawingEmbedView(embeds.drawings.get(canvasId), embeds.figures.get(blockId) ?? 0, embeds);
-  if (view.kind === 'loading')
-    return (
-      <div className="embed-loading embed-loading--figure" contentEditable={false}>
-        <span className="sr-only">Carregando o desenho incorporado…</span>
-      </div>
-    );
+  if (view.kind === 'loading') return <EmbedLoading kind="drawing" />;
   if (view.kind === 'unavailable') return <UnavailableEmbed view={view} kind="drawing" blockId={blockId} />;
   const { drawing } = view;
   const src = previewSrc(drawing);

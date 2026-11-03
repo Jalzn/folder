@@ -17,5 +17,6 @@ export {
   type NewTaskOptions,
   type TaskOrigin,
   useDrawerContent,
+  useOpenTaskId,
   useTaskDrawer,
 } from './task-drawer-state';

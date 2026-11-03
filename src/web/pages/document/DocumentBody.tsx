@@ -1,7 +1,7 @@
-import type { BlockNoteEditor } from '@blocknote/core';
 import type { DefaultReactSuggestionItem } from '@blocknote/react';
 import type { RefObject } from 'react';
 import { BlockEditor } from '../../editor/BlockEditor';
+import type { AnyBlockEditor } from '../../editor/types';
 import { displayTitle } from '../../lib/types';
 import { DocumentTitle } from './DocumentTitle';
 
@@ -22,8 +22,7 @@ export function DocumentBody({
   slashItems,
   readOnly = false,
 }: {
-  // biome-ignore lint/suspicious/noExplicitAny: BlockNote's editor type depends on the schema's generics.
-  editor: BlockNoteEditor<any, any, any>;
+  editor: AnyBlockEditor;
   title: string;
   /** The title's field, for the page that gives it the focus. */
   titleRef: RefObject<HTMLTextAreaElement | null>;

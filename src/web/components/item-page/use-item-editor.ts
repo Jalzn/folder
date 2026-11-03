@@ -5,7 +5,7 @@ import { type OpenEditor, registerOpenEditor } from '../../lib/autosave/save-reg
 import { useAutosaveLifecycle } from '../../lib/autosave/use-autosave-lifecycle';
 import { useHasActiveProject } from '../../lib/queries';
 import { usePageTitle } from '../../lib/react/use-page-title';
-import { UNTITLED } from '../../lib/types';
+import { editableTitle } from '../../lib/types';
 import type { ItemEditorDialogsProps } from './ItemEditorDialogs';
 import { type ItemAdapter, useItemActions } from './use-item-actions';
 
@@ -75,7 +75,7 @@ export function useItemEditor<Snapshot extends ItemSnapshot, Item extends { vers
   return {
     state,
     /** The title as the field shows it: empty while the item is untitled. */
-    title: state.snapshot.title === UNTITLED ? '' : state.snapshot.title,
+    title: editableTitle(state.snapshot.title),
     change,
     actions,
     fileInput,

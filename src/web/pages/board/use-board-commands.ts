@@ -3,7 +3,7 @@ import { useTaskCompletion } from '../../components/task/use-task-completion';
 import { type ColumnSummary, cachedColumns } from '../../lib/queries';
 import type { Task } from '../../lib/types';
 import { useAnnounce } from '../../shell';
-import { useDrawerContent, useTaskDrawer } from '../../shell/state';
+import { useOpenTaskId, useTaskDrawer } from '../../shell/state';
 import type { WriteRunner } from '../../shell/writes';
 import type { ElementRefs } from '../../ui';
 import type { BoardColumnView } from './board-columns';
@@ -43,8 +43,7 @@ export function useBoardCommands({
   layout: RefObject<BoardLayout>;
 }) {
   const drawer = useTaskDrawer();
-  const content = useDrawerContent();
-  const openId = content?.mode === 'task' ? content.id : null;
+  const openId = useOpenTaskId();
   const announce = useAnnounce();
   const columnActions = useColumnActions(action);
   const completion = useTaskCompletion(action);

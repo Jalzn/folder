@@ -8,7 +8,7 @@ import type { BlockEditorInstance } from '../../editor/use-block-editor';
 import { useColumns } from '../../lib/queries';
 import { useCommandSlot } from '../../lib/react/use-command-slot';
 import { useStableHandlers } from '../../lib/react/use-stable-handlers';
-import { useDrawerContent, useOwnerToday } from '../../shell';
+import { useOpenTaskId, useOwnerToday } from '../../shell';
 import { useDocumentEmbeds } from './use-document-embeds';
 import { useEmbedActions } from './use-embed-actions';
 import { useEmbedPreviews } from './use-embed-preview';
@@ -72,7 +72,6 @@ export function DocumentEmbeds({
   const states = useDocumentEmbeds(documentId, editor);
   const previews = useEmbedPreviews(states.drawings);
   const { actions, insert, newTask, newDrawing } = useEmbedActions({ editor, documentId, projectId, folderId });
-  const content = useDrawerContent();
   const today = useOwnerToday();
   const [picker, setPicker] = useState<{ kind: EmbedKind; blockId: string } | null>(null);
   /** The block the picker was opened on, which it hangs from (pickerAnchor), found again at each read. */
@@ -85,7 +84,7 @@ export function DocumentEmbeds({
     }),
     [editor],
   );
-  const openTaskId = content?.mode === 'task' ? content.id : null;
+  const openTaskId = useOpenTaskId();
   const board = useColumns().data?.columns;
   const columns = useMemo(() => board?.map((column) => column.id) ?? [], [board]);
   const value = useMemo<EmbedsValue>(

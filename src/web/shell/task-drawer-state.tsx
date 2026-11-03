@@ -128,3 +128,8 @@ export function TaskDrawerProvider({ children }: { children: ReactNode }) {
     </ActionsContext.Provider>
   );
 }
+
+export function useOpenTaskId() {
+  const content = useDrawerContent();
+  return content?.mode === 'task' ? content.id : null;
+}
