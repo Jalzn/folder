@@ -10,7 +10,7 @@ O planejamento segue o formato do Orbis: produto, arquitetura, stack, identidade
 4. Atualizar documentação e registrar mudanças de decisão.
 5. Marcar conclusão somente com os critérios atendidos.
 
-Quando houver remoto, propor uma branch e PR por entrega, Conventional Commits e integração com CI verde, como no Orbis. O repositório ainda não tem remoto nem CI remoto configurado; a implantação Railway está documentada separadamente.
+O remoto público é [jalzn/folder](https://github.com/jalzn/folder), criado em 2026-11-03. Para as próximas entregas, propor uma branch e PR por entrega, Conventional Commits e integração com CI verde, como no Orbis. O workflow executa em push e pull request; os resultados ficam no [GitHub Actions](https://github.com/jalzn/folder/actions). A implantação Railway está documentada separadamente.
 
 ## Verificação
 
@@ -43,7 +43,7 @@ pnpm e2e --project=chrome-desktop --project=chrome-mobile --shard=1/2 --reporter
 # No segundo runner: --shard=2/2.
 ```
 
-O sharding distribui arquivos, mantendo cada arquivo sequencial. Depois dos dois shards, um job separado executa `chrome-desktop-timing --no-deps` uma única vez, em um worker. Os três blobs são publicados por 14 dias e reunidos por `playwright merge-reports --reporter=html`; o relatório também é gerado quando os testes falham. A divisão segue o [sharding do Playwright](https://playwright.dev/docs/test-sharding), e `--no-deps` evita repetir os projetos comuns. Sem remoto configurado, a execução hospedada ainda não ocorreu; a divisão e a união dos relatórios são verificáveis localmente.
+O sharding distribui arquivos, mantendo cada arquivo sequencial. Depois dos dois shards, um job separado executa `chrome-desktop-timing --no-deps` uma única vez, em um worker. Os três blobs são publicados por 14 dias e reunidos por `playwright merge-reports --reporter=html`; o relatório também é gerado quando os testes falham. A divisão segue o [sharding do Playwright](https://playwright.dev/docs/test-sharding), e `--no-deps` evita repetir os projetos comuns. O remoto público foi configurado depois da validação local; as execuções hospedadas ficam no [GitHub Actions](https://github.com/jalzn/folder/actions). A divisão e a união dos relatórios também são verificáveis localmente.
 
 Arquivos exclusivos do desktop usam `.desktop.spec.ts`, e os exclusivos do celular podem usar `.mobile.spec.ts`. Num arquivo misto, o caso recebe `@desktop` ou `@mobile`. A configuração seleciona o dispositivo antes da execução, sem registrar como pulados os casos que não se aplicam. `e2e:smoke` seleciona os oito cenários de captura, Markdown, tarefas e recuperação offline, nos dois dispositivos. A lista completa continua verificável com `mise exec -- pnpm e2e --list`.
 

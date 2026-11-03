@@ -725,7 +725,7 @@ O Orbis foi consultado para datas civis e CI; seu alias de data virou uma marca 
 
 A conferência no Chrome do Herdr revelou ainda texto branco sobre fundo branco nos blocos de código. A regra já estava na base; `77c5503` corrige a cor com o token do tema, em commit próprio, com regressão que falhou antes e passou depois em desktop/celular e claro/escuro.
 
-A execução hospedada do workflow depende de um remoto ainda não configurado. Backups remotos automáticos e teste em dispositivos físicos continuam nas [pendências de operação](README.md#pendências-de-operação).
+Após o portão local, o usuário pediu a criação do remoto público [jalzn/folder](https://github.com/jalzn/folder). O workflow executa em push e pull request; seus resultados hospedados ficam no [GitHub Actions](https://github.com/jalzn/folder/actions). Backups remotos automáticos e teste em dispositivos físicos continuam nas [pendências de operação](README.md#pendências-de-operação).
 
 ## Desvios do plano
 

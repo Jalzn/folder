@@ -2,7 +2,9 @@
 
 Um espaço pessoal e minimalista para conduzir projetos: escrever, desenhar e acompanhar tarefas em Kanban no mesmo lugar, sempre dentro de um projeto. Interface Sumário, limpa e tipográfica, em tema claro e escuro, com dados em SQLite no servidor e autenticação por senha.
 
-**Estado:** implementado até a [etapa 11](docs/etapas/11-documento-desenho.md) e implantado no Railway, com SQLite persistente e uma instalação iniciada vazia. Disponível em [folder.jalzn.com](https://folder.jalzn.com), com DNS, HTTPS e login verificados. Snapshot remoto baixado e restauração verificada; backups automáticos externos continuam pendentes. Ver [operação no Railway](docs/railway.md).
+**Código:** [etapa 12 concluída](docs/etapas/12-refatoracao.md), incluindo os quatro opcionais. Repositório público: [jalzn/folder](https://github.com/jalzn/folder).
+
+**Implantação:** [etapa 11](docs/etapas/11-documento-desenho.md) no Railway, com SQLite persistente e uma instalação iniciada vazia. Disponível em [folder.jalzn.com](https://folder.jalzn.com), com DNS, HTTPS e login verificados. Snapshot remoto baixado e restauração verificada; backups automáticos externos continuam pendentes. Ver [operação no Railway](docs/railway.md).
 
 ## O que funciona
 
