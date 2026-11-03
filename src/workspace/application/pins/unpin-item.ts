@@ -5,7 +5,7 @@ import type { PinItemInput } from '../schemas/pins.js';
 export function unpinItem(ctx: WorkspaceContext, input: PinItemInput): Promise<{ pinnedAt: string | null }> {
   return ctx.writeWithoutRequestRecord(async (repo) => {
     const item = await requireLiveItem(repo, input.type, input.id);
-    if (item.pinnedAt) await repo.setPinnedAt(input.type, item.id, null);
+    if (item.pinnedAt) await repo.setPinnedAt({ type: input.type, id: item.id, pinnedAt: null });
     return { pinnedAt: null };
   });
 }

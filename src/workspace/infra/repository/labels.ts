@@ -33,23 +33,24 @@ export function labelRepository(connection: Database): LabelRepository {
     },
     async labelSummaries() {
       const [labels, counts] = [
-        await db.selectFrom('workspace_labels').selectAll().where('deleted_at', 'is', null).execute(),
+        await db
+          .selectFrom('workspace_labels')
+          .select(['id', 'name', 'color', 'version'])
+          .where('deleted_at', 'is', null)
+          .execute(),
         await liveLinks()
           .select((eb) => ['link.label_id', eb.fn.countAll<number>().as('count')])
           .groupBy('link.label_id')
           .execute(),
       ];
       const countOf = new Map(counts.map((row) => [row.label_id, row.count]));
-      return labels
-        .map(labelModel)
-        .sort(byLabelName)
-        .map((label) => ({
-          id: label.id,
-          name: label.name,
-          color: label.color,
-          version: label.version,
-          taskCount: countOf.get(label.id) ?? 0,
-        }));
+      return labels.sort(byLabelName).map((label) => ({
+        id: label.id,
+        name: label.name,
+        color: label.color,
+        version: label.version,
+        taskCount: countOf.get(label.id) ?? 0,
+      }));
     },
     async liveTasksWithLabel(labelId) {
       const row = await liveLinks()

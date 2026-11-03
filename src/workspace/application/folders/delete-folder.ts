@@ -54,7 +54,7 @@ export function deleteFolder(ctx: WorkspaceContext, input: DeleteFolderInput) {
         trashed.push({ type: item.type, id: item.id, version: item.version + 1, pinnedAt: item.pinnedAt });
       }
     else {
-      let rootPins = await repo.pinnedInScope(folder.projectId, null);
+      let rootPins = await repo.pinnedInScope({ projectId: folder.projectId, folderId: null });
       for (const item of items) {
         const keepsPin = item.pinnedAt !== null && rootPins < MAX_PINNED;
         if (keepsPin) rootPins += 1;

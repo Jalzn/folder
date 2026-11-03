@@ -15,7 +15,7 @@ export function pinItem(ctx: WorkspaceContext, input: PinItemInput): Promise<{ p
     if (item.pinnedAt) return { pinnedAt: item.pinnedAt };
     await assertRoomForPin(repo, item);
     const pinnedAt = ctx.now();
-    await repo.setPinnedAt(input.type, item.id, pinnedAt);
+    await repo.setPinnedAt({ type: input.type, id: item.id, pinnedAt });
     return { pinnedAt };
   });
 }

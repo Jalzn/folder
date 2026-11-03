@@ -10,7 +10,7 @@ export async function keepPinIfRoom(
   folderId: string | null,
 ): Promise<string | null> {
   if (item.pinnedAt === null) return null;
-  return (await repo.pinnedInScope(item.projectId, folderId)) < MAX_PINNED ? item.pinnedAt : null;
+  return (await repo.pinnedInScope({ projectId: item.projectId, folderId })) < MAX_PINNED ? item.pinnedAt : null;
 }
 
 /** Refuses a pin beyond MAX_PINNED in the item's scope, naming it: the project's root or the folder. */
@@ -18,7 +18,7 @@ export async function assertRoomForPin(
   repo: Pick<PinRepository, 'pinnedInScope'> & Pick<FolderRepository, 'findFolder'>,
   item: { projectId: string; folderId: string | null },
 ): Promise<void> {
-  if ((await repo.pinnedInScope(item.projectId, item.folderId)) < MAX_PINNED) return;
+  if ((await repo.pinnedInScope({ projectId: item.projectId, folderId: item.folderId })) < MAX_PINNED) return;
   const folder = item.folderId ? await repo.findFolder(item.folderId) : undefined;
   const scope = folder ? `em ${folder.name}` : 'na raiz do projeto';
   throw workspaceErrors.pinLimit(scope);

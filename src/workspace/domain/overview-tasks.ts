@@ -1,5 +1,6 @@
 import { addDays } from '@tinyfold/core/domain';
 import type { Column } from './columns.js';
+import { byPosition } from './order.js';
 import { isOverdue } from './task-dates.js';
 
 /** What "Agora" needs of a task: its column, place and due date. */
@@ -41,9 +42,7 @@ export function overviewTasks<T extends AgendaTask>(
   const open = columns.filter((column) => !column.isDone);
   const columnRank = new Map(open.map((column, index) => [column.id, index]));
   const byBoard = (a: T, b: T) =>
-    (columnRank.get(a.columnId) ?? 0) - (columnRank.get(b.columnId) ?? 0) ||
-    a.position - b.position ||
-    (a.id < b.id ? -1 : 1);
+    (columnRank.get(a.columnId) ?? 0) - (columnRank.get(b.columnId) ?? 0) || byPosition(a, b) || (a.id < b.id ? -1 : 1);
   const byDue = (a: T, b: T) => (a.dueOn ?? '9').localeCompare(b.dueOn ?? '9') || byBoard(a, b);
   const inOpen = tasks.filter((task) => columnRank.has(task.columnId)).sort(byBoard);
   const late = (task: T) => isOverdue(task.dueOn, today, false);

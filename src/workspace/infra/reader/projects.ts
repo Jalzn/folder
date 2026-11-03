@@ -3,6 +3,7 @@ import type { WorkspaceReader } from '../../application/reading/ports.js';
 import type { FolderWithCount, ItemCounts } from '../../application/reading/read-models.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
 import type { WorkspaceTables } from '../sql/tables.js';
+import { openTask } from '../sql/task-predicates.js';
 
 type ProjectReads = Pick<WorkspaceReader, 'projectsWithCounts'>;
 
@@ -25,8 +26,7 @@ export function projectReads(db: Kysely<WorkspaceTables>): ProjectReads {
       await db
         .selectFrom('workspace_tasks')
         .select((eb) => ['project_id', eb.fn.countAll<number>().as('count')])
-        .where('deleted_at', 'is', null)
-        .where('column_id', 'not in', db.selectFrom('workspace_columns').select('id').where('is_done', '=', 1))
+        .where(openTask('workspace_tasks'))
         .groupBy('project_id')
         .execute(),
     ];

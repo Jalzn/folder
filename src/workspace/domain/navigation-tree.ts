@@ -1,4 +1,5 @@
 import { byPinOrder, bySort, type NavItem, type NavSort } from './navigation.js';
+import { byPosition, compareCodeUnits } from './order.js';
 
 /** An active folder of the sidebar's tree, with its first children. */
 export interface NavFolder {
@@ -43,7 +44,7 @@ export function navTree(
     total: items.length,
     pinned: atRoot.filter((item) => item.pinnedAt !== null).sort(byPinOrder),
     folders: [...folders]
-      .sort((a, b) => a.position - b.position || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+      .sort((a, b) => byPosition(a, b) || compareCodeUnits(a.id, b.id))
       .map((folder) => {
         const children = items.filter((item) => item.folderId === folder.id);
         const pinned = children.filter((item) => item.pinnedAt !== null).sort(byPinOrder);

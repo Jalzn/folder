@@ -1,5 +1,7 @@
+import { reorderById } from '../../domain/order.js';
 import type { Project } from '../../domain/project-models.js';
 import { workspaceErrors } from '../errors.js';
+import { renumber } from '../named-collection.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { MoveProjectInput } from '../schemas/projects.js';
 import { requireProject } from './project-lookups.js';
@@ -13,13 +15,9 @@ export function moveProject(ctx: WorkspaceContext, input: MoveProjectInput): Pro
     const project = await requireProject(repo, input.id);
     if (project.archivedAt) throw workspaceErrors.projectOrderArchived();
     if (input.beforeProjectId === project.id) throw workspaceErrors.sameProjectReference();
-    const others = (await repo.listProjects(false)).filter((item) => item.id !== project.id);
-    const index =
-      input.beforeProjectId === null ? others.length : others.findIndex((item) => item.id === input.beforeProjectId);
-    if (index < 0) throw workspaceErrors.staleProjectReference();
-    const ordered = others.toSpliced(index, 0, project);
-    for (const [position, item] of ordered.entries())
-      if (item.position !== position) await repo.setProjectPosition(item.id, position);
+    const ordered = reorderById(await repo.listProjects(false), project.id, input.beforeProjectId);
+    if (!ordered) throw workspaceErrors.staleProjectReference();
+    await renumber(ordered, (id, position) => repo.setProjectPosition(id, position));
     return ordered.map((item, position) => ({ ...item, position }));
   });
 }
