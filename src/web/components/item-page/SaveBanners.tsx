@@ -9,7 +9,8 @@ import { Banner, Button, ButtonLink } from '../../ui';
 /**
  * The bands of an open document or drawing, under the page bar: a draft that could not open, an edit made
  * elsewhere or a move to the trash while editing, a failed save, and a draft the browser could not keep.
- * A copy goes to a project; without an active one, the draft can only be downloaded. `children` adds the
+ * A copy goes to a project; without an active one, the draft can only be downloaded. In the trash, the trash
+ * band is the only word on the save: nothing is sent there, so no failure shows beside it. `children` adds the
  * page's own bands, such as a task's excerpt that is gone.
  */
 export function SaveBanners({
@@ -83,6 +84,11 @@ export function SaveBanners({
                 </Button>
               )}
               {copy}
+              {trashed && canCopy && (
+                <Button size="sm" variant="ghost" onPress={onExport}>
+                  Baixar cópia
+                </Button>
+              )}
             </>
           }
         >
@@ -90,7 +96,7 @@ export function SaveBanners({
           rascunho está preservado. Escolha como continuar.
         </Banner>
       )}
-      {state.status === 'error' && (
+      {state.status === 'error' && !trashed && (
         <Banner
           tone="failure"
           urgent
@@ -102,7 +108,7 @@ export function SaveBanners({
               <Button size="sm" variant="ghost" onPress={onExport}>
                 Exportar cópia
               </Button>
-              {!trashed && canCopy && copy}
+              {canCopy && copy}
             </>
           }
         >

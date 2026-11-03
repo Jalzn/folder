@@ -29,6 +29,7 @@ export class AutosaveController<T> {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private draftTimer: ReturnType<typeof setTimeout> | undefined;
   private inFlight: Promise<boolean> | null = null;
+  private held = false;
   private remote: { snapshot: T; version: number };
 
   constructor(
@@ -119,7 +120,18 @@ export class AutosaveController<T> {
   }
   private schedule() {
     clearTimeout(this.timer);
+    if (this.held) return;
     this.timer = setTimeout(() => void this.flush(), SEND_DELAY_MS);
+  }
+  /**
+   * Holds the saves of an item the server will not take, as one in the trash: nothing is sent, and a save asked
+   * meanwhile resolves false, while every edit still goes to the local draft. Let go, a waiting edit goes out.
+   */
+  hold(held: boolean) {
+    if (held === this.held) return;
+    this.held = held;
+    if (held) clearTimeout(this.timer);
+    else if (this.state.status === 'dirty') this.schedule();
   }
   persistDraft() {
     if (this.state.status !== 'saved' || this.state.recoveryData) this.persist();
@@ -141,6 +153,8 @@ export class AutosaveController<T> {
   }
   async flush(): Promise<boolean> {
     clearTimeout(this.timer);
+    // Nothing goes out while held: saved stays saved, and anything else waits.
+    if (this.held) return this.state.status === 'saved';
     if (this.inFlight) {
       await this.inFlight;
       return this.state.status === 'saved' || (this.state.status === 'dirty' ? this.flush() : false);

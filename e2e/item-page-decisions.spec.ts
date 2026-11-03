@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { newDocument } from './support/items.js';
+import { pressCommand } from './support/keyboard.js';
 import { answers, rpc } from './support/rpc.js';
 import { login } from './support/session.js';
 
@@ -49,7 +50,25 @@ test('W5.7a: a document trashed elsewhere keeps its editor while it holds unsave
   await expect(editor(page)).toContainText('Texto que não chegou ao servidor.');
   await expect(page.getByText('Este documento foi movido para a lixeira.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Salvar meu rascunho como cópia' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Baixar cópia' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Abrir lixeira' })).toBeVisible();
+  // The trash band alone: no failure beside it, and no save state to retry in the bar.
+  await expect(page.getByText('Seu rascunho continua aqui.')).toHaveCount(0);
+  await expect(page.getByText('Não salvou', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Tentar de novo' })).toHaveCount(0);
+
+  // Nothing is sent to the trashed document: not when the network returns, nor by ⌘S, nor as the page leaves
+  // and opens again. The text stays in the draft on this device.
+  const saves: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/rpc/workspace/saveDocument') saves.push(request.url());
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await pressCommand(page, 's');
+  await page.reload();
+  await expect(editor(page)).toContainText('Texto que não chegou ao servidor.');
+  await expect(page.getByText('Este documento foi movido para a lixeira.')).toBeVisible();
+  expect(saves).toEqual([]);
 
   // With nothing local, the page only leads to the trash.
   const plain = await savedDocument(page, `Excluído sem rascunho ${Date.now()}`, 'Tudo salvo.');

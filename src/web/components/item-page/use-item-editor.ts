@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { AutosaveController } from '../../lib/autosave';
 import { moveThroughController } from '../../lib/editor-move';
 import { useHasActiveProject } from '../../lib/queries';
@@ -22,9 +22,15 @@ export function useItemEditor<Snapshot extends ItemSnapshot, Item extends { vers
   item,
   openEditor,
   persistDraft = false,
+  trashed,
 }: {
   controller: AutosaveController<Snapshot>;
   item: ItemAdapter<Snapshot, Item>;
+  /**
+   * The item is in the trash, where the server takes no save: its local text stays in the draft, nothing is
+   * sent, and the page offers the copy instead.
+   */
+  trashed: boolean;
   /** More the open editor answers besides moves, as the document's embeds. */
   openEditor?: Omit<OpenEditor, 'moveTo'>;
   /** Keep the draft in storage when the page hides, as the drawing does. */
@@ -40,6 +46,8 @@ export function useItemEditor<Snapshot extends ItemSnapshot, Item extends { vers
       }),
     [controller, item.type, item.id],
   );
+  // Before the lifecycle's effects, which send a recovered draft as the page opens.
+  useLayoutEffect(() => controller.hold(trashed), [controller, trashed]);
   useAutosaveLifecycle(controller, { persistDraft });
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   usePageTitle(state.snapshot.title);

@@ -6,15 +6,17 @@ import { DocumentTasks } from './DocumentTasks';
 
 /**
  * The actions of the document's bar, right of its folder: the save state ("Salvo · editado hoje", or "Não
- * salvou" with "Tentar de novo"), "Tarefas · n" and the ⋯.
+ * salvou" with "Tentar de novo"), which a document in the trash does without, "Tarefas · n" and the ⋯.
  */
 export function DocumentHeader({
   status,
+  trashed,
   updatedAt,
   onRetry,
   menu,
 }: {
   status: SaveStatus;
+  trashed: boolean;
   updatedAt: string;
   onRetry: () => void;
   menu: ComponentProps<typeof DocumentMenu>;
@@ -22,7 +24,7 @@ export function DocumentHeader({
   const edited = useEdited(updatedAt);
   return (
     <>
-      <SaveState status={status} edited={edited} onRetry={onRetry} retryKeys={['mod', 'S']} />
+      {!trashed && <SaveState status={status} edited={edited} onRetry={onRetry} retryKeys={['mod', 'S']} />}
       <DocumentTasks documentId={menu.document.id} />
       <DocumentMenu {...menu} />
     </>

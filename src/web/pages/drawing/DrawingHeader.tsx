@@ -12,6 +12,7 @@ export function DrawingHeader({
   canvas,
   projectId,
   status,
+  trashed,
   files,
   onRetry,
   onImport,
@@ -20,6 +21,8 @@ export function DrawingHeader({
   canvas: { id: string; folderId: string | null; pinnedAt: string | null; updatedAt: string };
   projectId: string;
   status: SaveStatus;
+  /** In the trash, the drawing shows no save state: nothing is sent, and its band says why. */
+  trashed: boolean;
   files: { exporting: boolean; importing: boolean; exportPNG: () => void; exportEditable: () => void };
   onRetry: () => void;
   onImport: () => void;
@@ -28,7 +31,7 @@ export function DrawingHeader({
   const edited = useEdited(canvas.updatedAt);
   return (
     <>
-      <SaveState status={status} edited={edited} onRetry={onRetry} retryKeys={['mod', 'S']} />
+      {!trashed && <SaveState status={status} edited={edited} onRetry={onRetry} retryKeys={['mod', 'S']} />}
       <ExportMenu exporting={files.exporting} onPNG={files.exportPNG} onEditable={files.exportEditable} />
       <ItemMenu
         type="drawing"

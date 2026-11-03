@@ -38,6 +38,7 @@ export function DocumentEditor({ document }: { document: Document }) {
   const page = useItemEditor({
     controller,
     item: documentItem(document.id),
+    trashed: Boolean(document.deletedAt),
     openEditor: {
       insertEmbedAfter: (blockId, taskId) => embedCommands.current?.insertTaskAfter(blockId, taskId) ?? false,
     },
@@ -135,6 +136,7 @@ export function DocumentEditor({ document }: { document: Document }) {
       actions={
         <DocumentHeader
           status={state.status}
+          trashed={Boolean(document.deletedAt)}
           updatedAt={document.updatedAt}
           onRetry={() => void controller.flush()}
           menu={{

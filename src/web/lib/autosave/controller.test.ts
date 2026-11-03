@@ -275,4 +275,29 @@ describe('document autosave', () => {
     expect(calls[1]?.title).toBe('Corrigida');
     expect(calls[1]?.requestId).not.toBe(calls[0]?.requestId);
   });
+  it('sends nothing while held, as in the trash, keeps every edit in the draft, and sends once let go', async () => {
+    vi.useFakeTimers();
+    try {
+      const send = vi.fn(async (input: SaveInput<Snapshot>) => ({
+        id: input.id,
+        version: input.expectedVersion + 1,
+        updatedAt: 'now',
+      }));
+      const { controller, stored } = setup(send);
+      controller.hold(true);
+      controller.change(changed);
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(await controller.flush()).toBe(false);
+      expect(send).not.toHaveBeenCalled();
+      expect(controller.getState().status).toBe('dirty');
+      expect(JSON.parse(stored() ?? '{}').snapshot.title).toBe('Nova ideia');
+
+      controller.hold(false);
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(send).toHaveBeenCalledOnce();
+      expect(controller.getState().status).toBe('saved');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

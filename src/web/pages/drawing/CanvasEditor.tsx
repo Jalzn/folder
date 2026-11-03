@@ -29,7 +29,12 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
   const app = useApp();
   const theme = useTheme();
   const [{ controller, previews }] = useState(() => canvasSession(canvas, app.owner.installationId));
-  const page = useItemEditor({ controller, item: canvasItem(canvas.id), persistDraft: true });
+  const page = useItemEditor({
+    controller,
+    item: canvasItem(canvas.id),
+    persistDraft: true,
+    trashed: Boolean(canvas.deletedAt),
+  });
   const { state, fileInput, openImport } = page;
   const editor = useRef<ExcalidrawImperativeAPI | null>(null);
   const scene = useSceneChanges(controller, state, editor);
@@ -86,6 +91,7 @@ export function CanvasEditor({ canvas }: { canvas: EditableCanvas }) {
           canvas={canvas}
           projectId={projectId}
           status={state.status}
+          trashed={Boolean(canvas.deletedAt)}
           files={{ ...files, exportPNG: () => void files.exportPNG() }}
           onRetry={() => void controller.flush()}
           onImport={openImport}
