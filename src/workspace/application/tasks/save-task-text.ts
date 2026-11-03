@@ -1,7 +1,8 @@
 import type { TaskTextAck } from '../../domain/tasks.js';
-import { assertVersion, requireTask } from '../helpers.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { SaveTaskTextInput } from '../schemas/tasks.js';
+import { assertVersion } from '../version.js';
+import { requireTask } from './task-lookups.js';
 import { taskText } from './task-rules.js';
 
 /**

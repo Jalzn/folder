@@ -1,7 +1,7 @@
 import { listProjects } from '../../application/reading/list-projects.js';
 import type { ReadingContext } from '../../application/reading/ports.js';
 import { ListProjectsInput } from '../../application/reading/schemas.js';
-import { compactJson, fitItems, textResult } from './format.js';
+import { keysetJsonResult } from './paged-result.js';
 import { defineTool, readOnlyAnnotations } from './types.js';
 
 export const listProjectsTool = (reading: ReadingContext) =>
@@ -20,9 +20,6 @@ export const listProjectsTool = (reading: ReadingContext) =>
     annotations: readOnlyAnnotations,
     async handler(input) {
       const page = await listProjects(reading, input);
-      const text = fitItems(page.items, (shown) =>
-        compactJson({ projects: shown, nextCursor: page.nextCursor(shown.length) }),
-      );
-      return textResult(text);
+      return keysetJsonResult(page.items, (shown) => ({ projects: shown, nextCursor: page.nextCursor(shown.length) }));
     },
   });

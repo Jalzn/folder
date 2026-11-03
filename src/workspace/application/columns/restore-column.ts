@@ -1,8 +1,8 @@
-import { AppError } from '@tinyfold/core/application';
 import { restoredPosition } from '../../domain/order.js';
-import { assertVersion } from '../helpers.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { RestoreColumnInput } from '../schemas/columns.js';
+import { assertVersion } from '../version.js';
 import { assertColumnNameFree, assertPastCompletions, assertRoomForColumn, renumberColumns } from './column-rules.js';
 
 /**
@@ -21,9 +21,9 @@ export function restoreColumn(ctx: WorkspaceContext, input: RestoreColumnInput) 
       ctx.now(),
     );
     const column = await repo.findColumn(input.id);
-    if (!column) throw new AppError('NOT_FOUND', 'A coluna não está disponível.');
+    if (!column) throw workspaceErrors.columnMissing();
     assertVersion(column.version, input.expectedVersion);
-    if (!column.deletedAt) throw new AppError('DOMAIN_RULE', 'Esta coluna não foi excluída.');
+    if (!column.deletedAt) throw workspaceErrors.columnNotTrashed();
     const columns = await repo.activeColumns();
     assertColumnNameFree(columns, column.name, column.id, ' Renomeie-a antes de desfazer.');
     assertRoomForColumn(columns);

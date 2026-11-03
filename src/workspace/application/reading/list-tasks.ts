@@ -1,8 +1,10 @@
 import { AppError } from '@tinyfold/core/application';
+import { boardKey } from '../../domain/list-order.js';
 import { nameKey } from '../../domain/names.js';
 import { boardCursor, readBoardCursor } from '../../domain/paging.js';
+import { workspaceErrors } from '../errors.js';
 import { keysetPage } from './keyset-page.js';
-import { boardKey } from './list-order.js';
+import { optionalCursor } from './optional-cursor.js';
 import type { ReadingContext } from './ports.js';
 import { queryTerms } from './query-terms.js';
 import type { ListTasksInput } from './schemas.js';
@@ -35,13 +37,12 @@ function idsByName(
  * the active columns, in board order, and the owner's `today`, for overdue tasks.
  */
 export async function listTasks(ctx: ReadingContext, input: ListTasksInput) {
-  const cursor = input.cursor === undefined ? undefined : readBoardCursor(input.cursor);
+  const cursor = optionalCursor(input.cursor, readBoardCursor);
   const terms = queryTerms(input.query);
   const { today } = await ctx.calendar();
   const { revision, columns, page } = await ctx.read(async (reader) => {
     const current = await reader.boardRevision();
-    if (cursor && cursor.revision !== current)
-      throw new AppError('VERSION_CONFLICT', 'O quadro mudou desde a primeira página. Liste de novo sem cursor.');
+    if (cursor && cursor.revision !== current) throw workspaceErrors.boardPageChanged();
     const active = await reader.columns();
     const tasks = await reader.tasks({
       projectId: input.projectId,

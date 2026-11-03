@@ -2,6 +2,7 @@ import { visibleText } from '@tinyfold/core/domain';
 import type { DocumentBlock } from './document-models.js';
 import { type EmbedKind, embedOf } from './embeds.js';
 import { inlineMarkdown } from './markdown-inline.js';
+import { collapseWhitespace } from './text.js';
 
 /**
  * How documentToMarkdown writes embeds: `resolve` gives an item's title, and a task's column, or
@@ -18,7 +19,7 @@ export interface EmbedResolver {
 export const UNAVAILABLE_EMBED = '[Item indisponível]';
 
 /** A title or name on the link's single line: without hidden characters, its whitespace one space. */
-const oneLine = (text: string) => visibleText(text).replace(/\s+/gu, ' ').trim();
+const oneLine = (text: string) => collapseWhitespace(visibleText(text));
 
 /**
  * An embed's line: `[Tarefa: <title> (<column>)](<href>)` or `[Desenho: <title>](<href>)`, with the

@@ -2,7 +2,7 @@ import type { ReadingContext } from '../../application/reading/ports.js';
 import type { SearchHit } from '../../application/reading/read-models.js';
 import { SearchInput } from '../../application/reading/schemas.js';
 import { search } from '../../application/reading/search.js';
-import { compactJson, fitItems, textResult } from './format.js';
+import { keysetJsonResult } from './paged-result.js';
 import { defineTool, readOnlyAnnotations } from './types.js';
 
 const hitView = ({ projectId, projectName, projectArchived, updatedAt, titleRank: _rank, ...hit }: SearchHit) =>
@@ -48,9 +48,9 @@ export const searchTool = (reading: ReadingContext) =>
     annotations: readOnlyAnnotations,
     async handler(input) {
       const page = await search(reading, input);
-      const text = fitItems(page.items, (shown) =>
-        compactJson({ items: shown.map(hitView), nextCursor: page.nextCursor(shown.length) }),
-      );
-      return textResult(text);
+      return keysetJsonResult(page.items, (shown) => ({
+        items: shown.map(hitView),
+        nextCursor: page.nextCursor(shown.length),
+      }));
     },
   });

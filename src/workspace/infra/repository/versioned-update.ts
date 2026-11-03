@@ -1,4 +1,4 @@
-import { versionConflict } from '../../application/helpers.js';
+import { versionConflict } from '../../application/version.js';
 
 /** A versioned UPDATE that matched no row lost a race with another device. */
 export function expectUpdated(count: bigint): void {

@@ -1,7 +1,8 @@
 import { documentPlainText, findBlock } from './document.js';
 import type { Document } from './document-models.js';
+import { collapseWhitespace } from './text.js';
 
-const collapseSpaces = (text: string) => text.replace(/\s+/gu, ' ').trim();
+const collapseSpaces = collapseWhitespace;
 
 /**
  * Whether a captured excerpt is still in its document: in the anchored block when the task has one,

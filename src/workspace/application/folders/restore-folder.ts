@@ -1,9 +1,9 @@
-import { AppError } from '@tinyfold/core/application';
 import { restoredPosition } from '../../domain/order.js';
 import { MAX_PINNED } from '../../domain/project.js';
-import { assertVersion } from '../helpers.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { RestoreFolderInput } from '../schemas/folders.js';
+import { assertVersion } from '../version.js';
 import {
   assertFolderNameFree,
   assertRoomForFolder,
@@ -31,10 +31,10 @@ import {
 export function restoreFolder(ctx: WorkspaceContext, input: RestoreFolderInput) {
   return ctx.write('workspace.restoreFolder', input, async (repo) => {
     const folder = await repo.findFolder(input.id);
-    if (!folder) throw new AppError('NOT_FOUND', 'A pasta não está disponível.');
+    if (!folder) throw workspaceErrors.folderMissing();
     assertVersion(folder.version, input.expectedVersion);
     const { deletedAt } = folder;
-    if (!deletedAt) throw new AppError('DOMAIN_RULE', 'Esta pasta não foi excluída.');
+    if (!deletedAt) throw workspaceErrors.folderNotTrashed();
     await requireProjectForFolders(repo, folder.projectId);
     const folders = await repo.activeFolders(folder.projectId);
     assertFolderNameFree(folders, folder.name, folder.id, ' Renomeie-a antes de desfazer.');

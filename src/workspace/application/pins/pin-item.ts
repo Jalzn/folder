@@ -1,7 +1,7 @@
-import { requireLiveItem } from './helpers.js';
-import { assertRoomForPin } from './moves/pin-scope.js';
-import type { WorkspaceContext } from './ports/context.js';
-import type { PinItemInput } from './schemas/pins.js';
+import { requireLiveItem } from '../items/require-item.js';
+import { assertRoomForPin } from '../moves/pin-scope.js';
+import type { WorkspaceContext } from '../ports/context.js';
+import type { PinItemInput } from '../schemas/pins.js';
 
 /**
  * Pins a document or drawing at the top of its scope in the sidebar, the project's root or its folder,
@@ -17,13 +17,5 @@ export function pinItem(ctx: WorkspaceContext, input: PinItemInput): Promise<{ p
     const pinnedAt = ctx.now();
     await repo.setPinnedAt(input.type, item.id, pinnedAt);
     return { pinnedAt };
-  });
-}
-
-export function unpinItem(ctx: WorkspaceContext, input: PinItemInput): Promise<{ pinnedAt: string | null }> {
-  return ctx.writeWithoutRequestRecord(async (repo) => {
-    const item = await requireLiveItem(repo, input.type, input.id);
-    if (item.pinnedAt) await repo.setPinnedAt(input.type, item.id, null);
-    return { pinnedAt: null };
   });
 }

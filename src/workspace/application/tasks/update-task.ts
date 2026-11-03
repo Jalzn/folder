@@ -1,8 +1,10 @@
 import type { TaskAck } from '../../domain/task-models.js';
-import { assertVersion, projectForEditedItem, requireTask } from '../helpers.js';
 import type { WorkspaceContext, WorkspaceRepository } from '../ports/context.js';
 import type { TaskRecord } from '../ports/tasks.js';
+import { projectForEditedItem } from '../projects/project-lookups.js';
 import type { UpdateTaskInput } from '../schemas/tasks.js';
+import { assertVersion } from '../version.js';
+import { requireTask } from './task-lookups.js';
 import { columnFor, completionIn, placeIn, requireTaskLabels, taskAck } from './task-rules.js';
 
 /** Whether `labels`, when sent, are the task's active labels already, in any order. */

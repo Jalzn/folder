@@ -5,6 +5,8 @@ import { documentPlainText, withBlockIds } from '../../domain/document.js';
 import type { DocumentContent } from '../../domain/document-models.js';
 import type { TaskAck } from '../../domain/task-models.js';
 import { TASK_LIMITS } from '../../domain/tasks.js';
+import { titleOrUntitled } from '../../domain/text.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceRepository } from '../ports/context.js';
 import type { TaskRecord } from '../ports/tasks.js';
 
@@ -26,7 +28,7 @@ export async function columnFor(
   const columns = await repo.activeColumns();
   const id = input.columnId ?? fallback(columns)?.id;
   const column = columns.find((candidate) => candidate.id === id);
-  if (!column) throw new AppError('NOT_FOUND', 'A coluna não está disponível.');
+  if (!column) throw workspaceErrors.columnMissing();
   return column;
 }
 
@@ -57,8 +59,7 @@ export async function requireTaskLabels(repo: WorkspaceRepository, labelIds: rea
   if (ids.length > TASK_LIMITS.labels)
     throw new AppError('VALIDATION', `Use até ${TASK_LIMITS.labels} etiquetas numa tarefa.`);
   const found = await repo.findLabels(ids);
-  if (found.length !== ids.length || found.some((label) => label.deletedAt))
-    throw new AppError('NOT_FOUND', 'A etiqueta não está disponível.');
+  if (found.length !== ids.length || found.some((label) => label.deletedAt)) throw workspaceErrors.labelMissing();
   return ids;
 }
 
@@ -70,7 +71,7 @@ export function taskText(title: string, description: DocumentContent, newId: () 
   const content = withBlockIds(description, newId);
   const checklist = checklistProgress(content);
   return {
-    title: title || 'Sem título',
+    title: titleOrUntitled(title),
     description: content,
     descriptionPlainText: documentPlainText(content),
     checklistDone: checklist.done,

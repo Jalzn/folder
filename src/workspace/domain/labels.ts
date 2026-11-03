@@ -1,3 +1,4 @@
+import { firstUnused } from './palette.js';
 /** A label, the same for every project. A deleted label keeps its row and its links to tasks. */
 export interface Label {
   id: string;
@@ -19,8 +20,10 @@ export const LABEL_LIMITS = { nameChars: 30, active: 100 } as const;
 
 /** A new label's color: the first no active label uses, or the first again once all are taken. */
 export function nextLabelColor(active: readonly Pick<Label, 'color'>[]): LabelColor {
-  const used = new Set(active.map((label) => label.color));
-  return LABEL_COLORS.find((color) => !used.has(color)) ?? LABEL_COLORS[0];
+  return firstUnused(
+    LABEL_COLORS,
+    active.map((label) => label.color),
+  );
 }
 
 /** Labels in alphabetical order, as Portuguese sorts them, IDs breaking ties. */

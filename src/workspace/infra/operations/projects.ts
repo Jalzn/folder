@@ -1,5 +1,8 @@
 import type { WorkspaceContext } from '../../application/ports/context.js';
-import { createProject, listProjects, moveProject, updateProject } from '../../application/projects.js';
+import { createProject } from '../../application/projects/create-project.js';
+import { listProjects } from '../../application/projects/list-projects.js';
+import { moveProject } from '../../application/projects/move-project.js';
+import { updateProject } from '../../application/projects/update-project.js';
 import {
   CreateProjectInput,
   ListProjectsInput,

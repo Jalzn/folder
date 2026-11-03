@@ -1,11 +1,11 @@
-import { AppError } from '@tinyfold/core/application';
 import { embedResolver } from '../../domain/embed-resolver.js';
 import { type EmbedKind, embedIds } from '../../domain/embeds.js';
-import { textFingerprint } from '../../domain/fingerprint.js';
 import { documentToMarkdown } from '../../domain/markdown.js';
-import { pageMarkdown } from '../../domain/markdown-pages.js';
-import { documentCursor, readDocumentCursor } from '../../domain/paging.js';
+import { readDocumentCursor } from '../../domain/paging.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
+import { workspaceErrors } from '../errors.js';
+import { optionalCursor } from './optional-cursor.js';
+import { pagedMarkdown } from './paged-markdown.js';
 import type { ReadingContext } from './ports.js';
 import type { ReadDocumentInput } from './schemas.js';
 
@@ -20,7 +20,7 @@ import type { ReadDocumentInput } from './schemas.js';
 const agentEmbedHref = (kind: EmbedKind, id: string) => `tinyfold:${kind}/${id}`;
 
 export async function readDocument(ctx: ReadingContext, input: ReadDocumentInput) {
-  const cursor = input.cursor === undefined ? undefined : readDocumentCursor(input.cursor);
+  const cursor = optionalCursor(input.cursor, readDocumentCursor);
   const found = await ctx.read(async (reader) => {
     const document = await reader.documentForReading(input.id);
     if (!document) return undefined;
@@ -29,18 +29,20 @@ export async function readDocument(ctx: ReadingContext, input: ReadDocumentInput
       : await reader.tasksFromDocument(document.id, READING_LIMITS.document.originTasks);
     return { document, tasks, embeds: await reader.embeds(embedIds(document.content)) };
   });
-  if (!found) throw new AppError('NOT_FOUND', 'Documento não encontrado ou na lixeira.');
+  if (!found) throw workspaceErrors.documentUnreadable();
   const { content, ...document } = found.document;
   const markdown = documentToMarkdown(content, { embeds: embedResolver(found.embeds, agentEmbedHref) });
-  const textPrint = textFingerprint(markdown);
-  if (cursor && cursor.textPrint !== textPrint)
-    throw new AppError('VERSION_CONFLICT', 'O documento mudou desde a primeira página. Leia de novo sem cursor.');
-  const page = pageMarkdown(markdown, cursor?.offset ?? 0, READING_LIMITS.document.pageChars);
+  const { page, nextCursor } = pagedMarkdown(
+    markdown,
+    cursor,
+    READING_LIMITS.document.pageChars,
+    'O documento mudou desde a primeira página. Leia de novo sem cursor.',
+  );
   return {
     document,
     originTasks: found.tasks.items,
     originTaskCount: found.tasks.total,
     page,
-    nextCursor: page.nextOffset === null ? null : documentCursor(textPrint, page.nextOffset),
+    nextCursor,
   };
 }

@@ -1,10 +1,11 @@
-import { AppError } from '@tinyfold/core/application';
-import type { Canvas } from '../../domain/canvas.js';
-import type { Document } from '../../domain/document-models.js';
+import type { FiledItem } from '../../domain/items.js';
+import { workspaceErrors } from '../errors.js';
 import { requireFolderInProject, requireProjectForFolders } from '../folders/folder-rules.js';
-import { assertVersion, requireActiveProject, requireLiveItem } from '../helpers.js';
+import { requireLiveItem } from '../items/require-item.js';
 import type { WorkspaceContext, WorkspaceRepository } from '../ports/context.js';
+import { requireActiveProject } from '../projects/project-lookups.js';
 import type { MoveItemInput } from '../schemas/moves.js';
+import { assertVersion } from '../version.js';
 import { keepPinIfRoom } from './pin-scope.js';
 
 /** Where a moved item is now, and the version an open editor saves against from then on. */
@@ -16,7 +17,7 @@ export interface MovedItem {
   pinnedAt: string | null;
 }
 
-const where = (item: Document | Canvas): MovedItem => ({
+const where = (item: FiledItem): MovedItem => ({
   id: item.id,
   projectId: item.projectId,
   folderId: item.folderId,
@@ -42,16 +43,16 @@ export function moveItem(ctx: WorkspaceContext, input: MoveItemInput): Promise<M
   });
 }
 
-async function moveToProject(repo: WorkspaceRepository, item: Document | Canvas, input: MoveItemInput) {
-  if (input.expectedVersion === undefined) throw new AppError('VALIDATION', 'Informe a versão para mudar de projeto.');
-  if (input.folderId) throw new AppError('VALIDATION', 'Mova para o projeto antes de escolher a pasta.');
+async function moveToProject(repo: WorkspaceRepository, item: FiledItem, input: MoveItemInput) {
+  if (input.expectedVersion === undefined) throw workspaceErrors.moveVersionRequired();
+  if (input.folderId) throw workspaceErrors.moveProjectFirst();
   assertVersion(item.version, input.expectedVersion);
   const project = await requireActiveProject(repo, input.projectId);
   await repo.moveItem(input.type, item.id, project.id, item.version);
   return { id: item.id, projectId: project.id, folderId: null, version: item.version + 1, pinnedAt: null };
 }
 
-async function fileInFolder(repo: WorkspaceRepository, item: Document | Canvas, input: MoveItemInput) {
+async function fileInFolder(repo: WorkspaceRepository, item: FiledItem, input: MoveItemInput) {
   const folderId = input.folderId;
   if (folderId === undefined || folderId === item.folderId) return where(item);
   await requireProjectForFolders(repo, item.projectId);

@@ -1,6 +1,6 @@
-import { assertVersion } from '../helpers.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { UpdateLabelInput } from '../schemas/labels.js';
+import { assertVersion } from '../version.js';
 import { assertLabelNameFree, readLabelName, requireActiveLabel } from './label-rules.js';
 
 /** Renames or recolors an active label, with a new version. */

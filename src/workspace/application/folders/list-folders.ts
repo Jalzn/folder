@@ -1,6 +1,6 @@
-import { requireProject } from '../helpers.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { FolderSummary } from '../ports/folders.js';
+import { requireProject } from '../projects/project-lookups.js';
 import type { ListFoldersInput } from '../schemas/folders.js';
 
 /** The active folders of one project, or of every project, by project and position, with their items counted. */

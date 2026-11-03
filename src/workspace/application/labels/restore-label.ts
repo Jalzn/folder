@@ -1,8 +1,8 @@
-import { AppError } from '@tinyfold/core/application';
 import { TASK_LIMITS } from '../../domain/tasks.js';
-import { assertVersion } from '../helpers.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { RestoreLabelInput } from '../schemas/labels.js';
+import { assertVersion } from '../version.js';
 import { assertLabelNameFree, assertRoomForLabel } from './label-rules.js';
 
 /**
@@ -13,9 +13,9 @@ import { assertLabelNameFree, assertRoomForLabel } from './label-rules.js';
 export function restoreLabel(ctx: WorkspaceContext, input: RestoreLabelInput) {
   return ctx.write('workspace.restoreLabel', input, async (repo) => {
     const label = await repo.findLabel(input.id);
-    if (!label) throw new AppError('NOT_FOUND', 'A etiqueta não está disponível.');
+    if (!label) throw workspaceErrors.labelMissing();
     assertVersion(label.version, input.expectedVersion);
-    if (!label.deletedAt) throw new AppError('DOMAIN_RULE', 'Esta etiqueta não foi excluída.');
+    if (!label.deletedAt) throw workspaceErrors.labelNotTrashed();
     const labels = await repo.activeLabels();
     assertLabelNameFree(labels, label.name, label.id, ' Renomeie-a antes de desfazer.');
     assertRoomForLabel(labels);

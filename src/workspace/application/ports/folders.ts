@@ -1,4 +1,5 @@
 import type { Folder } from '../../domain/folders.js';
+import type { FiledItem } from '../../domain/items.js';
 import type { NavItemType } from '../../domain/navigation.js';
 
 /** An active folder as lists show it, with its live documents and drawings counted. */
@@ -13,14 +14,8 @@ export interface FolderSummary {
 }
 
 /** A document or drawing as folder operations see it, live or trashed, without its content. */
-export interface FolderItem {
+export interface FolderItem extends FiledItem {
   type: NavItemType;
-  id: string;
-  projectId: string;
-  folderId: string | null;
-  version: number;
-  pinnedAt: string | null;
-  deletedAt: string | null;
 }
 
 /** Folders of documents and drawings, active or deleted, and where items are filed. */

@@ -1,6 +1,6 @@
-import { assertVersion } from '../helpers.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { RenameColumnInput } from '../schemas/columns.js';
+import { assertVersion } from '../version.js';
 import { assertColumnNameFree, readColumnName, requireActiveColumn } from './column-rules.js';
 
 /** Renames an active column, with a new version. The order stays, and so does the revision. */

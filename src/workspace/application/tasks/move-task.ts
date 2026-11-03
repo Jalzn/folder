@@ -1,8 +1,9 @@
-import { AppError } from '@tinyfold/core/application';
 import type { TaskAck } from '../../domain/task-models.js';
-import { assertVersion, requireTask } from '../helpers.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { MoveTaskInput } from '../schemas/tasks.js';
+import { assertVersion } from '../version.js';
+import { requireTask } from './task-lookups.js';
 import { columnFor, completionIn, taskAck } from './task-rules.js';
 
 /**
@@ -15,17 +16,16 @@ import { columnFor, completionIn, taskAck } from './task-rules.js';
 export function moveTask(ctx: WorkspaceContext, input: MoveTaskInput): Promise<TaskAck> {
   return ctx.write('workspace.moveTask', input, async (repo) => {
     if (input.expectedRevision !== undefined && (await repo.revision()) !== input.expectedRevision)
-      throw new AppError('VERSION_CONFLICT', 'O quadro mudou em outro dispositivo. Atualize antes de mover a tarefa.');
+      throw workspaceErrors.boardConflict();
     const task = await requireTask(repo, input.id);
     assertVersion(task.version, input.expectedVersion);
-    if (input.beforeTaskId === task.id) throw new AppError('VALIDATION', 'Escolha outra tarefa como referência.');
+    if (input.beforeTaskId === task.id) throw workspaceErrors.sameTaskReference();
     const column = await columnFor(repo, input, () => undefined);
     // Boards are per project, so the column renumbered is the task's project's.
     const tasks = (await repo.tasksInColumn(task.projectId, column.id)).filter((item) => item.id !== task.id);
     let index = input.beforeTaskId ? tasks.findIndex((item) => item.id === input.beforeTaskId) : tasks.length;
     if (index < 0 && input.expectedRevision === undefined) index = tasks.length;
-    if (index < 0)
-      throw new AppError('VERSION_CONFLICT', 'A posição escolhida não está mais disponível. Atualize o quadro.');
+    if (index < 0) throw workspaceErrors.staleTaskPosition();
     tasks.splice(index, 0, task);
     const now = ctx.now();
     const moved = {

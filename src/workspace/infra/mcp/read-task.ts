@@ -2,7 +2,8 @@ import type { ReadingContext } from '../../application/reading/ports.js';
 import { readTask } from '../../application/reading/read-task.js';
 import { ReadTaskInput } from '../../application/reading/schemas.js';
 import { READING_LIMITS } from '../../domain/reading-limits.js';
-import { taskHeader, textResult } from './format.js';
+import { taskHeader } from './format.js';
+import { pagedMarkdownResult } from './paged-result.js';
 import { defineTool, readOnlyAnnotations } from './types.js';
 
 export const readTaskTool = (reading: ReadingContext) =>
@@ -19,22 +20,13 @@ export const readTaskTool = (reading: ReadingContext) =>
     annotations: readOnlyAnnotations,
     async handler(input) {
       const { task, today, page, nextCursor } = await readTask(reading, input);
-      const parts: string[] = [];
-      // Only line breaks are trimmed: a page cut mid-line keeps the space at its end.
-      if (page.text.trim()) parts.push(page.text.replace(/\n+$/u, ''));
-      if (page.count > 1) {
-        const next = nextCursor && ` Continue com read_task ${JSON.stringify({ id: task.id, cursor: nextCursor })}.`;
-        parts.push(`---\nPágina ${page.number} de ${page.count}.${next ?? ''}`);
-      }
-      if (page.number === 1) {
-        // The header gets what the page and its footer leave of the result, up to its own budget.
-        const room = READING_LIMITS.toolTextChars - parts.join('\n\n').length - '\n\n---\n\n'.length;
-        const header = taskHeader(
-          { task, today, empty: !page.text.trim() },
-          Math.min(READING_LIMITS.task.headerChars, room),
-        );
-        parts.unshift(header, '---');
-      }
-      return textResult(parts.join('\n\n'));
+      return pagedMarkdownResult({
+        page,
+        nextCursor,
+        id: task.id,
+        tool: 'read_task',
+        headerChars: READING_LIMITS.task.headerChars,
+        header: (empty, room) => taskHeader({ task, today, empty }, room),
+      });
     },
   });

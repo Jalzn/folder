@@ -1,5 +1,5 @@
-import { AppError } from '@tinyfold/core/application';
-import { reorder } from '../../domain/order.js';
+import { reorderById } from '../../domain/order.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { MoveFolderInput } from '../schemas/folders.js';
 import { renumberFolders, requireActiveFolder, requireProjectForFolders } from './folder-rules.js';
@@ -12,16 +12,10 @@ export function moveFolder(ctx: WorkspaceContext, input: MoveFolderInput) {
   return ctx.write('workspace.moveFolder', input, async (repo) => {
     const folder = await requireActiveFolder(repo, input.id);
     await requireProjectForFolders(repo, folder.projectId);
-    if (input.beforeFolderId === folder.id) throw new AppError('VALIDATION', 'Escolha outra pasta como referência.');
+    if (input.beforeFolderId === folder.id) throw workspaceErrors.sameFolderReference();
     const folders = await repo.activeFolders(folder.projectId);
-    const order = reorder(
-      folders.map((item) => item.id),
-      folder.id,
-      input.beforeFolderId,
-    );
-    if (!order) throw new AppError('VERSION_CONFLICT', 'A pasta de referência não está mais entre as do projeto.');
-    const byId = new Map(folders.map((item) => [item.id, item]));
-    const ordered = order.flatMap((id) => byId.get(id) ?? []);
+    const ordered = reorderById(folders, folder.id, input.beforeFolderId);
+    if (!ordered) throw workspaceErrors.staleFolderReference();
     await renumberFolders(repo, ordered);
     return { folders: ordered.map((item, position) => ({ id: item.id, position })) };
   });

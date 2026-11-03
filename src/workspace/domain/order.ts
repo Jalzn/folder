@@ -14,3 +14,20 @@ export function reorder(ids: readonly string[], id: string, beforeId: string | n
 export function restoredPosition(position: number, activeCount: number): number {
   return Math.min(Math.max(position, 0), activeCount);
 }
+
+export const compareCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+export const byPosition = (a: { position: number }, b: { position: number }): number => a.position - b.position;
+export function reorderById<T extends { id: string }>(
+  items: readonly T[],
+  id: string,
+  beforeId: string | null,
+): T[] | undefined {
+  const order = reorder(
+    items.map((item) => item.id),
+    id,
+    beforeId,
+  );
+  if (!order) return undefined;
+  const byId = new Map(items.map((item) => [item.id, item]));
+  return order.flatMap((id) => byId.get(id) ?? []);
+}

@@ -1,6 +1,6 @@
-import { assertVersion } from '../helpers.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { RenameFolderInput } from '../schemas/folders.js';
+import { assertVersion } from '../version.js';
 import { assertFolderNameFree, readFolderName, requireActiveFolder, requireProjectForFolders } from './folder-rules.js';
 
 /** Renames an active folder; the same name in another case or accent is the folder's own. */

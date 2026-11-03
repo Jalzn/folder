@@ -1,7 +1,7 @@
 import { type CompletedKey, completedCursor, readCompletedCursor } from '../../domain/paging.js';
 import { readClientCursor } from '../client-cursor.js';
-import { requireProject } from '../helpers.js';
 import type { WorkspaceContext } from '../ports/context.js';
+import { requireProject } from '../projects/project-lookups.js';
 import type { ListCompletedTasksInput } from '../schemas/tasks.js';
 
 function readCursor(cursor: string | undefined): CompletedKey | undefined {

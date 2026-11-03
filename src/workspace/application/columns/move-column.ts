@@ -1,5 +1,5 @@
-import { AppError } from '@tinyfold/core/application';
-import { reorder } from '../../domain/order.js';
+import { reorderById } from '../../domain/order.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { MoveColumnInput } from '../schemas/columns.js';
 import { renumberColumns, requireActiveColumn } from './column-rules.js';
@@ -8,16 +8,10 @@ import { renumberColumns, requireActiveColumn } from './column-rules.js';
 export function moveColumn(ctx: WorkspaceContext, input: MoveColumnInput) {
   return ctx.write('workspace.moveColumn', input, async (repo) => {
     const column = await requireActiveColumn(repo, input.id);
-    if (input.beforeColumnId === column.id) throw new AppError('VALIDATION', 'Escolha outra coluna como referência.');
+    if (input.beforeColumnId === column.id) throw workspaceErrors.sameColumnReference();
     const columns = await repo.activeColumns();
-    const order = reorder(
-      columns.map((item) => item.id),
-      column.id,
-      input.beforeColumnId,
-    );
-    if (!order) throw new AppError('VERSION_CONFLICT', 'A coluna de referência não está mais entre as do quadro.');
-    const byId = new Map(columns.map((item) => [item.id, item]));
-    const ordered = order.flatMap((id) => byId.get(id) ?? []);
+    const ordered = reorderById(columns, column.id, input.beforeColumnId);
+    if (!ordered) throw workspaceErrors.staleColumnReference();
     await renumberColumns(repo, ordered);
     return {
       revision: await repo.bumpRevision(),

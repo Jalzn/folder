@@ -4,7 +4,7 @@ import type { TaskListing } from '../../application/reading/read-models.js';
 import { ListTasksInput } from '../../application/reading/schemas.js';
 import type { Column } from '../../domain/columns.js';
 import { isOverdue } from '../../domain/task-dates.js';
-import { compactJson, fitItems, textResult } from './format.js';
+import { keysetJsonResult } from './paged-result.js';
 import { defineTool, readOnlyAnnotations } from './types.js';
 
 const taskView = (today: string) => (task: TaskListing) => ({
@@ -45,9 +45,10 @@ export const listTasksTool = (reading: ReadingContext) =>
       const page = await listTasks(reading, input);
       const view = taskView(page.today);
       const columns = page.columns.map(columnView);
-      const text = fitItems(page.items, (shown) =>
-        compactJson({ columns, tasks: shown.map(view), nextCursor: page.nextCursor(shown.length) }),
-      );
-      return textResult(text);
+      return keysetJsonResult(page.items, (shown) => ({
+        columns,
+        tasks: shown.map(view),
+        nextCursor: page.nextCursor(shown.length),
+      }));
     },
   });

@@ -1,4 +1,5 @@
 import type { FiledItemType } from './items.js';
+import { compareCodeUnits } from './order.js';
 
 /** The item types the sidebar's tree lists, which are also the ones that can be pinned and filed. */
 export { FILED_ITEM_TYPES as NAV_ITEM_TYPES } from './items.js';
@@ -23,7 +24,7 @@ export interface NavItem {
 }
 
 const titles = new Intl.Collator('pt-BR');
-const ascending = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+const ascending = compareCodeUnits;
 const descending = (a: string, b: string) => ascending(b, a);
 
 const orders: Record<NavSort, (a: NavItem, b: NavItem) => number> = {

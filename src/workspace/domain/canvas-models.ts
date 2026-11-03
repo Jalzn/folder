@@ -1,4 +1,4 @@
-import type { ItemAck } from './items.js';
+import type { FiledItem, ItemAck } from './items.js';
 import type { JsonValue } from './json.js';
 
 /**
@@ -25,20 +25,13 @@ export interface CanvasScene {
   elements: CanvasElement[];
   appState: { viewBackgroundColor: string };
 }
-export interface CanvasSummary {
-  id: string;
+export interface CanvasSummary extends FiledItem {
   title: string;
-  projectId: string;
   plainText: string;
   formatVersion: number;
-  version: number;
   createdAt: string;
   updatedAt: string;
-  deletedAt: string | null;
-  /** When it was pinned at the top of its sidebar section; moving it or trashing it unpins it. */
-  pinnedAt: string | null;
   /** The folder it is in, or null at the project's root. A trashed item keeps it as its origin. */
-  folderId: string | null;
 }
 export interface Canvas extends CanvasSummary {
   scene: CanvasScene;

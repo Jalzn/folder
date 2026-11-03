@@ -1,6 +1,6 @@
-import { AppError } from '@tinyfold/core/application';
 import { outlineCanvasScene } from '../../domain/canvas-outline.js';
 import { previewShowsScene } from '../../domain/canvas-preview.js';
+import { workspaceErrors } from '../errors.js';
 import type { ReadingContext } from './ports.js';
 import type { StoredPreview } from './read-models.js';
 import type { ReadDrawingInput } from './schemas.js';
@@ -17,7 +17,7 @@ export type DrawingImage =
  */
 export async function readDrawing(ctx: ReadingContext, input: ReadDrawingInput) {
   const canvas = await ctx.read((reader) => reader.canvasForReading(input.id));
-  if (!canvas) throw new AppError('NOT_FOUND', 'Desenho não encontrado ou na lixeira.');
+  if (!canvas) throw workspaceErrors.drawingUnreadable();
   const { scene, preview, ...drawing } = canvas;
   const empty = !scene.elements.some((element) => !element.isDeleted);
   const image: DrawingImage = empty

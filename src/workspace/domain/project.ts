@@ -1,3 +1,4 @@
+import { firstUnused } from './palette.js';
 /** The mark colours a project can have, in the order a new project takes the first unused one. */
 export const PROJECT_COLORS = ['violet', 'ochre', 'gray', 'green'] as const;
 
@@ -19,6 +20,5 @@ export function projectInitial(name: string): string {
 
 /** The first colour no active project uses; once all are taken, colours repeat from the first. */
 export function defaultProjectColor(activeColors: Iterable<ProjectColor>): ProjectColor {
-  const used = new Set(activeColors);
-  return PROJECT_COLORS.find((color) => !used.has(color)) ?? PROJECT_COLORS[0];
+  return firstUnused(PROJECT_COLORS, activeColors);
 }

@@ -1,12 +1,10 @@
 import { saveCanvasPreview } from '../../application/canvas-previews.js';
-import {
-  createCanvas,
-  deleteCanvas,
-  getCanvas,
-  listCanvases,
-  restoreCanvas,
-  saveCanvas,
-} from '../../application/canvases.js';
+import { createCanvas } from '../../application/canvases/create-canvas.js';
+import { deleteCanvas } from '../../application/canvases/delete-canvas.js';
+import { getCanvas } from '../../application/canvases/get-canvas.js';
+import { listCanvases } from '../../application/canvases/list-canvases.js';
+import { restoreCanvas } from '../../application/canvases/restore-canvas.js';
+import { saveCanvas } from '../../application/canvases/save-canvas.js';
 import type { WorkspaceContext } from '../../application/ports/context.js';
 import {
   CreateCanvasInput,

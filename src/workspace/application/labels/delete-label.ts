@@ -1,6 +1,6 @@
-import { assertVersion } from '../helpers.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { DeleteLabelInput } from '../schemas/labels.js';
+import { assertVersion } from '../version.js';
 import { requireActiveLabel } from './label-rules.js';
 
 /**

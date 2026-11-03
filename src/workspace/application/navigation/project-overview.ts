@@ -1,7 +1,7 @@
 import { NAVIGATION_LIMITS } from '../../domain/navigation-limits.js';
 import { overviewTasks } from '../../domain/overview-tasks.js';
 import { doneWindowStart, isOverdue } from '../../domain/task-dates.js';
-import { requireProject } from '../helpers.js';
+import { requireProject } from '../projects/project-lookups.js';
 import type { ProjectOverviewInput } from '../schemas/navigation.js';
 import type { NavigationContext } from './ports.js';
 

@@ -1,5 +1,5 @@
-import { AppError } from '@tinyfold/core/application';
 import { COLUMN_LIMITS } from '../../domain/columns.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { SetDoneColumnInput } from '../schemas/columns.js';
 import { assertPastCompletions, requireActiveColumn } from './column-rules.js';
@@ -20,9 +20,9 @@ export function setDoneColumn(ctx: WorkspaceContext, input: SetDoneColumnInput) 
       ctx.now(),
     );
     const column = await requireActiveColumn(repo, input.id);
-    if (column.isDone) throw new AppError('DOMAIN_RULE', 'Esta coluna já é a de conclusão.');
+    if (column.isDone) throw workspaceErrors.columnAlreadyDone();
     const previous = (await repo.activeColumns()).find((item) => item.isDone);
-    if (!previous) throw new AppError('DOMAIN_RULE', 'O quadro não tem coluna de conclusão.');
+    if (!previous) throw workspaceErrors.doneColumnMissing();
     // Every task in the done column has a completion: a trigger keeps it so.
     const left = (await repo.tasksOfColumn(previous.id)).flatMap((task) =>
       task.completedAt ? [{ id: task.id, completedAt: task.completedAt }] : [],

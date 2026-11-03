@@ -3,6 +3,7 @@ import { isCanvasId } from '../domain/canvas.js';
 import { exceedsPreviewLimits, MAX_PREVIEW_BYTES, MAX_PREVIEW_SIDE } from '../domain/canvas-preview.js';
 import { hasValidRowFilters, readPngInfo } from '../domain/png.js';
 import { sceneFingerprint } from '../domain/scene-fingerprint.js';
+import { workspaceErrors } from './errors.js';
 import type { PngImageData } from './ports/canvases.js';
 import type { WorkspaceContext } from './ports/context.js';
 import type { SaveCanvasPreviewInput } from './schemas/canvases.js';
@@ -21,7 +22,7 @@ export interface CanvasPreviewImage {
  * browser revalidates and never shows an older scene once a newer preview is stored.
  */
 export function readCanvasPreviewImage(ctx: WorkspaceContext, id: string): Promise<CanvasPreviewImage | undefined> {
-  if (!isCanvasId(id)) throw new AppError('VALIDATION', 'Identificador de desenho inválido.');
+  if (!isCanvasId(id)) throw workspaceErrors.invalidDrawingId();
   return ctx.read(async (repo) => {
     const preview = await repo.liveCanvasPreviewImage(id);
     return preview && { png: preview.png, etag: `"${preview.sceneFingerprint ?? `v${preview.sceneVersion}`}"` };
@@ -54,7 +55,7 @@ export async function saveCanvasPreview(
   );
   // Cheapest checks first: the size, the container, the sides, and only then the image data.
   if (input.png.byteLength > MAX_PREVIEW_BYTES) throw tooLarge;
-  const notPng = new AppError('VALIDATION', 'A prévia precisa ser uma imagem PNG.');
+  const notPng = workspaceErrors.previewMustBePng();
   const info = readPngInfo(input.png);
   if (!info) throw notPng;
   if (exceedsPreviewLimits(info, input.png.byteLength)) throw tooLarge;
@@ -62,9 +63,8 @@ export async function saveCanvasPreview(
   if (!inflated || !hasValidRowFilters(info, inflated)) throw notPng;
   return ctx.writeWithoutRequestRecord(async (repo) => {
     const canvas = await repo.findCanvas(input.id);
-    if (!canvas || canvas.deletedAt) throw new AppError('NOT_FOUND', 'O desenho não está disponível.');
-    if (input.version > canvas.version)
-      throw new AppError('VALIDATION', 'A prévia é de uma versão que o desenho ainda não tem.');
+    if (!canvas || canvas.deletedAt) throw workspaceErrors.drawingMissing();
+    if (input.version > canvas.version) throw workspaceErrors.futurePreview();
     const previewVersion = (await repo.canvasPreview(input.id))?.sceneVersion ?? null;
     const fingerprint = sceneFingerprint(canvas.scene);
     const showsCurrentScene =

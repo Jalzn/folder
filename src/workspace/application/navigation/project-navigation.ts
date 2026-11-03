@@ -1,5 +1,5 @@
 import { navTree } from '../../domain/navigation-tree.js';
-import { requireProject } from '../helpers.js';
+import { requireProject } from '../projects/project-lookups.js';
 import type { ProjectNavigationInput } from '../schemas/navigation.js';
 import type { NavigationContext } from './ports.js';
 

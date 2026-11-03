@@ -2,10 +2,13 @@ import { AppError } from '@tinyfold/core/application';
 import { firstOpenColumn } from '../../domain/columns.js';
 import type { TaskAck } from '../../domain/task-models.js';
 import { excerptPresent } from '../../domain/task-source.js';
-import { assertVersion, requireActiveProject, requireDocument } from '../helpers.js';
+import { requireDocument } from '../documents/document-lookups.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { TaskRecord, TaskSourceRecord } from '../ports/tasks.js';
+import { requireActiveProject } from '../projects/project-lookups.js';
 import type { CreateTaskInput } from '../schemas/tasks.js';
+import { assertVersion } from '../version.js';
 import { columnFor, completionIn, placeIn, requireTaskLabels, taskAck, taskText } from './task-rules.js';
 
 /**
@@ -37,7 +40,7 @@ export function createTask(ctx: WorkspaceContext, input: CreateTaskInput): Promi
       };
     }
     // CreateTaskInput lets the project be missing only with a source, whose document has one.
-    if (projectId === undefined) throw new AppError('VALIDATION', 'Escolha o projeto da tarefa.');
+    if (projectId === undefined) throw workspaceErrors.taskProjectRequired();
     const project = await requireActiveProject(repo, projectId);
     const column = await columnFor(repo, input, firstOpenColumn);
     const labels = input.labelIds ? await requireTaskLabels(repo, input.labelIds) : [];

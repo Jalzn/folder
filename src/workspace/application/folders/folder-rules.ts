@@ -1,15 +1,15 @@
-import { AppError } from '@tinyfold/core/application';
 import { FOLDER_LIMITS, type Folder } from '../../domain/folders.js';
 import type { Project } from '../../domain/project-models.js';
-import { requireProject } from '../helpers.js';
-import { assertNameFree, readName } from '../name-rules.js';
+import { workspaceErrors } from '../errors.js';
+import { namedCollection, renumber } from '../named-collection.js';
 import type { WorkspaceRepository } from '../ports/context.js';
 import type { FolderRepository } from '../ports/folders.js';
+import { requireProject } from '../projects/project-lookups.js';
 
 /** An active folder: a deleted one takes nothing new and cannot change. */
 export async function requireActiveFolder(repo: Pick<FolderRepository, 'findFolder'>, id: string): Promise<Folder> {
   const folder = await repo.findFolder(id);
-  if (!folder || folder.deletedAt) throw new AppError('NOT_FOUND', 'A pasta não está disponível.');
+  if (!folder || folder.deletedAt) throw workspaceErrors.folderMissing();
   return folder;
 }
 
@@ -20,7 +20,7 @@ export async function requireFolderInProject(
   projectId: string,
 ): Promise<Folder> {
   const folder = await requireActiveFolder(repo, id);
-  if (folder.projectId !== projectId) throw new AppError('VALIDATION', 'A pasta não é deste projeto.');
+  if (folder.projectId !== projectId) throw workspaceErrors.folderProjectMismatch();
   return folder;
 }
 
@@ -40,28 +40,20 @@ export async function folderAfterRestore(
 /** The project whose folders change: an archived project's folders are read-only. */
 export async function requireProjectForFolders(repo: WorkspaceRepository, projectId: string): Promise<Project> {
   const project = await requireProject(repo, projectId);
-  if (project.archivedAt) throw new AppError('DOMAIN_RULE', 'Desarquive o projeto antes de mudar as pastas.');
+  if (project.archivedAt) throw workspaceErrors.folderProjectArchived();
   return project;
-}
-
-/** A folder's name as stored: see readName. */
-export const readFolderName = (raw: string): string => readName(raw, 'pasta', FOLDER_LIMITS.nameChars);
-
-/**
- * Refuses a name another active folder of the project already has, case and accents aside, naming
- * that folder. `except` is the folder being renamed, which may keep its own name in another case.
- */
-export const assertFolderNameFree = (folders: readonly Folder[], name: string, except?: string, suffix = ''): void =>
-  assertNameFree(folders, name, 'pasta', { ...(except ? { except } : {}), suffix });
-
-/** Refuses the folder after the last one a project may have. */
-export function assertRoomForFolder(folders: readonly Folder[]): void {
-  if (folders.length >= FOLDER_LIMITS.perProject)
-    throw new AppError('DOMAIN_RULE', `Máximo de ${FOLDER_LIMITS.perProject} pastas neste projeto.`);
 }
 
 /** Numbers the folders in the given order from 0, writing only the positions that change. */
 export async function renumberFolders(repo: FolderRepository, ordered: readonly Folder[]): Promise<void> {
-  for (const [position, folder] of ordered.entries())
-    if (folder.position !== position) await repo.setFolderPosition(folder.id, position);
+  await renumber(ordered, (id, position) => repo.setFolderPosition(id, position));
 }
+const collection = namedCollection({
+  thing: 'pasta',
+  maxChars: FOLDER_LIMITS.nameChars,
+  limit: FOLDER_LIMITS.perProject,
+  fullMessage: `Máximo de ${FOLDER_LIMITS.perProject} pastas neste projeto.`,
+});
+export const readFolderName = collection.readName;
+export const assertFolderNameFree = collection.assertNameFree;
+export const assertRoomForFolder = collection.assertRoom;

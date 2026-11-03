@@ -1,8 +1,8 @@
-import { AppError } from '@tinyfold/core/application';
+import { searchKey } from '../../domain/list-order.js';
 import { readSearchCursor, SEARCH_ITEM_TYPES, searchCursor } from '../../domain/paging.js';
 import { readClientCursor } from '../client-cursor.js';
+import { workspaceErrors } from '../errors.js';
 import { keysetPage } from './keyset-page.js';
-import { searchKey } from './list-order.js';
 import type { ReadingContext } from './ports.js';
 import { queryTerms } from './query-terms.js';
 import type { SearchInput } from './schemas.js';
@@ -20,9 +20,8 @@ export async function search(ctx: ReadingContext, input: SearchInput) {
   const page = await ctx.read(async (reader) => {
     if (input.folderId) {
       const folder = await reader.folder(input.folderId);
-      if (!folder || folder.deleted) throw new AppError('NOT_FOUND', 'Pasta não encontrada.');
-      if (input.projectId && folder.projectId !== input.projectId)
-        throw new AppError('VALIDATION', 'A pasta não é deste projeto.');
+      if (!folder || folder.deleted) throw workspaceErrors.folderUnreadable();
+      if (input.projectId && folder.projectId !== input.projectId) throw workspaceErrors.folderProjectMismatch();
     }
     return reader.searchItems({
       terms,

@@ -1,9 +1,9 @@
-import { AppError } from '@tinyfold/core/application';
 import { COLUMN_LIMITS, columnDeletionBlocker } from '../../domain/columns.js';
-import { assertVersion } from '../helpers.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext } from '../ports/context.js';
 import type { TaskRecord } from '../ports/tasks.js';
 import type { DeleteColumnInput } from '../schemas/columns.js';
+import { assertVersion } from '../version.js';
 import { renumberColumns, requireActiveColumn } from './column-rules.js';
 
 /** A task a deletion moved to the destination: its new version, and its place and completion before. */
@@ -28,15 +28,13 @@ export function deleteColumn(ctx: WorkspaceContext, input: DeleteColumnInput) {
     assertVersion(column.version, input.expectedVersion);
     const columns = await repo.activeColumns();
     const blocker = columnDeletionBlocker(column, columns);
-    if (blocker === 'done') throw new AppError('DOMAIN_RULE', 'Marque outra coluna como conclusão antes.');
-    if (blocker === 'lastOpen')
-      throw new AppError('DOMAIN_RULE', 'O quadro precisa de pelo menos uma coluna além da de conclusão.');
+    if (blocker === 'done') throw workspaceErrors.cannotDeleteDoneColumn();
+    if (blocker === 'lastOpen') throw workspaceErrors.cannotDeleteLastOpenColumn();
     const tasks = await repo.tasksOfColumn(column.id);
-    if (input.destinationId === column.id) throw new AppError('VALIDATION', 'Escolha outra coluna como destino.');
+    if (input.destinationId === column.id) throw workspaceErrors.sameColumnDestination();
     const destination = input.destinationId ? columns.find((item) => item.id === input.destinationId) : undefined;
-    if (input.destinationId && !destination)
-      throw new AppError('VALIDATION', 'A coluna de destino não está disponível.');
-    if (tasks.length && !destination) throw new AppError('VALIDATION', 'Escolha para qual coluna vão as tarefas.');
+    if (input.destinationId && !destination) throw workspaceErrors.columnDestinationMissing();
+    if (tasks.length && !destination) throw workspaceErrors.columnDestinationRequired();
 
     const now = ctx.now();
     const moved: MovedTask[] = [];

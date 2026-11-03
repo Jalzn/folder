@@ -1,7 +1,8 @@
 import { AppError } from '@tinyfold/core/application';
-import { assertVersion } from '../helpers.js';
+import { workspaceErrors } from '../errors.js';
 import type { WorkspaceContext, WorkspaceRepository } from '../ports/context.js';
 import type { PurgeItemInput } from '../schemas/trash.js';
+import { assertVersion } from '../version.js';
 
 /** What deleting an item for good needs to know of it, whatever its type. */
 export interface TrashedItem {
@@ -34,7 +35,7 @@ export function purgeTrashedItem(
     const item = await removal.find(repo, input.id);
     if (!item) throw new AppError('NOT_FOUND', removal.missing);
     assertVersion(item.version, input.expectedVersion);
-    if (!item.deletedAt) throw new AppError('DOMAIN_RULE', 'Mova o item para a lixeira antes de excluir de vez.');
+    if (!item.deletedAt) throw workspaceErrors.itemNotTrashed();
     await removal.remove(repo, item);
     return { id: item.id };
   });
